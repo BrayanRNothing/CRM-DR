@@ -6,8 +6,8 @@ const { toMongoFormat, toMongoFormatMany } = require('../lib/helpers');
 
 const esCloser = (req, res, next) => {
     const rol = String(req.usuario.rol).toLowerCase();
-    if (rol !== 'closer' && rol !== 'doctor' && rol !== 'admin') {
-        return res.status(403).json({ msg: 'Acceso denegado. Solo closers, doctores o admins.' });
+    if (rol !== 'closer' && rol !== 'individual' && rol !== 'admin') {
+        return res.status(403).json({ msg: 'Acceso denegado. Solo closers, individuales o admins.' });
     }
     next();
 };
@@ -370,7 +370,7 @@ router.post('/registrar-actividad', [auth, esCloser], async (req, res) => {
         }
         const closerId = parseInt(req.usuario.id);
 
-        const rolesPermitidos = ['prospector', 'closer', 'doctor'];
+        const rolesPermitidos = ['prospector', 'closer', 'individual'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permiso para registrar actividades' });
         }
@@ -499,7 +499,7 @@ router.get('/prospecto/:id/historial-completo', auth, async (req, res) => {
         }
 
         // UNIFICADO: Cualquier prospector o closer puede ver el historial (acceso compartido)
-        const rolesPermitidos = ['prospector', 'closer', 'doctor'];
+        const rolesPermitidos = ['prospector', 'closer', 'individual'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permisos de rol para ver esto' });
         }
@@ -582,7 +582,7 @@ router.get('/prospectos/:id/actividades', auth, async (req, res) => {
         const prospectoId = parseInt(req.params.id);
 
         // UNIFICADO: Acceso por rol
-        const rolesPermitidos = ['prospector', 'closer', 'doctor'];
+        const rolesPermitidos = ['prospector', 'closer', 'individual'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No autorizado' });
         }
@@ -618,7 +618,7 @@ router.post('/registrar-reunion', [auth, esCloser], async (req, res) => {
         if (!c) return res.status(404).json({ msg: 'Cliente no encontrado' });
 
         // UNIFICADO: Acceso por rol
-        const rolesPermitidos = ['prospector', 'closer', 'doctor'];
+        const rolesPermitidos = ['prospector', 'closer', 'individual'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No autorizado' });
         }
@@ -782,7 +782,7 @@ router.post('/pasar-a-cliente/:id', [auth, esCloser], async (req, res) => {
         }
 
         // UNIFICADO: Acceso por rol
-        const rolesPermitidos = ['prospector', 'closer', 'doctor'];
+        const rolesPermitidos = ['prospector', 'closer', 'individual'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permiso' });
         }
@@ -822,7 +822,7 @@ router.post('/descartar-prospecto/:id', [auth, esCloser], async (req, res) => {
         }
 
         // UNIFICADO: Acceso por rol
-        const rolesPermitidos = ['prospector', 'closer', 'doctor'];
+        const rolesPermitidos = ['prospector', 'closer', 'individual'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permiso' });
         }

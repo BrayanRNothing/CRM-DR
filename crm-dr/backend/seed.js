@@ -15,15 +15,15 @@ const seedData = async () => {
         db.pragma('foreign_keys = ON');
         console.log('🗑️  Datos anteriores eliminados');
 
-        const hashDoctor = await bcrypt.hash('doctor123', 10);
+        const hashIndividual = await bcrypt.hash('individual123', 10);
 
         db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono) VALUES (?, ?, ?, ?, ?, ?)')
-            .run('doctor', hashDoctor, 'doctor', 'Administrador CRM', 'admin@crmmedico.com', '5551234567');
+            .run('individual', hashIndividual, 'individual', 'Administrador CRM', 'admin@crmmedico.com', '5551234567');
 
         console.log('👥 Usuario Administrador creado');
         console.log('\n✅ Seed completado');
         console.log('\n📝 Credenciales:');
-        console.log('   Doctor Admin: doctor / doctor123');
+        console.log('   Individual Admin: individual / individual123');
 
         process.exit(0);
     } catch (error) {

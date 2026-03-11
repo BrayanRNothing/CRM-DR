@@ -48,7 +48,7 @@ const esSuperUser = (req, res, next) => {
     }
 
     // Lista de roles permitidos
-    const rolesPermitidos = ['closer', 'prospector', 'doctor', 'admin'];
+    const rolesPermitidos = ['closer', 'prospector', 'individual', 'admin'];
 
     if (rolesPermitidos.includes(req.usuario.rol)) {
         next();

@@ -229,10 +229,10 @@ const initDb = async () => {
     if (userCount && parseInt(userCount.count) === 0) {
       console.log('🌱 Base de datos vacía, insertando usuarios predeterminados...');
       const bcrypt = require('bcryptjs');
-      const hashDoctor = await bcrypt.hash('doctor123', 10);
+      const hashIndividual = await bcrypt.hash('individual123', 10);
 
       await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono) VALUES (?, ?, ?, ?, ?, ?)')
-        .run('doctor', hashDoctor, 'doctor', 'Administrador CRM', 'admin@crmmedico.com', '5551234567');
+        .run('individual', hashIndividual, 'individual', 'Administrador CRM', 'admin@crmmedico.com', '5551234567');
 
       console.log('✅ Usuarios predeterminados creados');
     }
