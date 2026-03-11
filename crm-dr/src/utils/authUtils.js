@@ -78,3 +78,18 @@ export const saveUser = (user, remember = false) => {
         sessionStorage.setItem('user', userData);
     }
 };
+
+/**
+ * Decodifica el rol del usuario desde el JWT
+ * @returns {string|null} Rol del usuario o null si no hay sesión/token inválido
+ */
+export const decodeRole = () => {
+    try {
+        const token = getToken();
+        if (!token) return null;
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.usuario?.rol || null;
+    } catch {
+        return null;
+    }
+};

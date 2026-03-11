@@ -3,9 +3,9 @@ import { Calendar, Phone, UserPlus, RefreshCw, CheckCircle2, DollarSign, Target,
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-import API_URL from '../../../config/api';
-import socket from '../../../config/socket';
-import { getUser } from '../../../utils/authUtils';
+import API_URL from '../../config/api';
+import socket from '../../config/socket';
+import { getUser } from '../../utils/authUtils';
 
 const DashboardMain = () => {
     const navigate = useNavigate();

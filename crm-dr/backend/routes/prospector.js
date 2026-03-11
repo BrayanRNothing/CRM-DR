@@ -402,6 +402,16 @@ router.post('/registrar-actividad', [auth, esProspector], async (req, res) => {
         const actividad = toMongoFormat(actRow);
         if (actividad) actividad.cliente = { nombres: cliente.nombres, apellidoPaterno: cliente.apellidoPaterno, empresa: cliente.empresa };
 
+        // 🚀 Web Sockets: Emitir evento de actualización
+        if (req.app.get('io')) {
+            req.app.get('io').emit('prospectos_actualizados', {
+                origen: prospectorId,
+                accion: 'actividad_registrada',
+                tipo: tipo,
+                clienteId: cid
+            });
+        }
+
         res.status(201).json({ msg: 'Actividad registrada', actividad: actividad || actRow });
     } catch (error) {
         console.error('Error al registrar actividad:', error);
@@ -1020,6 +1030,8 @@ router.post('/importar-csv', [auth, esProspector], async (req, res) => {
         let insertados = 0;
         let duplicados = 0;
         let errores = 0;
+        const etapa = req.body.etapaEmbudo || 'prospecto_nuevo';
+
         for (const p of prospectos) {
             try {
                 if (p.telefono) {
@@ -1035,7 +1047,7 @@ router.post('/importar-csv', [auth, esProspector], async (req, res) => {
                 const notas = (p.notas || '').trim();
                 const ahora = new Date().toISOString();
                 const sql = 'INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, notas, etapaEmbudo, vendedorAsignado, prospectorAsignado, fechaRegistro, fechaUltimaEtapa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-                await db.prepare(sql).run(nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, notas, 'prospecto_nuevo', prospectorId, prospectorId, ahora, ahora);
+                await db.prepare(sql).run(nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, notas, etapa, prospectorId, prospectorId, ahora, ahora);
                 insertados++;
             } catch (err) {
                 console.error('Error en fila CSV:', err.message);

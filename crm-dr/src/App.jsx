@@ -9,24 +9,22 @@ import SkeletonLoader from './components/ui/SkeletonLoader.jsx';
 
 // Páginas
 import React, { Suspense, lazy } from 'react';
-const Login = lazy(() => import('./pages/auth/Login.jsx'));
+const Login = lazy(() => import('./pages/auth/login.jsx'));
 const Register = lazy(() => import('./pages/auth/Register.jsx'));
 const AjustesEmpresa = lazy(() => import('./pages/settings/AjustesEmpresa.jsx'));
 
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 
+// FEATURES (Ahora importamos desde features)
+const SeguimientoContactos = lazy(() => import('./features/prospects/SeguimientoProspectos.jsx'));
+const CalendarioCompleto = lazy(() => import('./features/calendarios/UserFullCalendar.jsx'));
+const DashboardMain = lazy(() => import('./features/dashboards/CloserDashboard.jsx'));
 
-const SeguimientoContactos = lazy(() => import('./pages/contacts/SeguimientoContactos.jsx'));
-const CalendarioCompleto = lazy(() => import('./pages/calendar/CalendarioCompleto.jsx'));
-
-
-
-
-const DashboardMain = lazy(() => import('./pages/dashboard/DashboardMain.jsx'));
+// Otras paginas
 const Estadisticas = lazy(() => import('./pages/dashboard/Estadisticas.jsx'));
 
-// Shared Components
-const Directorio = lazy(() => import('./pages/contacts/Directorio.jsx'));
+// Shared Components / Features
+const Directorio = lazy(() => import('./features/prospects/ListaClientes.jsx'));
 const UserManagement = lazy(() => import('./pages/users/UserManagement.jsx'));
 const UserProfile = lazy(() => import('./pages/users/UserProfile.jsx'));
 

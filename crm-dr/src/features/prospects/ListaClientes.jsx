@@ -1,11 +1,71 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Search, Filter, Star, Plus, X, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, AlertTriangle } from 'lucide-react';
+import { Search, Filter, Star, Plus, X, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, AlertTriangle, Download, Upload } from 'lucide-react';
 import axios from 'axios';
 import { getToken, decodeRole } from '../../utils/authUtils';
 import { loadProspectos, saveProspectos } from '../../utils/prospectosStore';
 import { HistorialInteracciones } from '../../components/HistorialInteracciones';
+import Modal from '../../components/ui/Modal';
+import toast from 'react-hot-toast';
 
 import API_URL from '../../config/api';
+
+// --- CSV helpers ---
+const CSV_HEADERS = ['nombres', 'apellidoPaterno', 'apellidoMaterno', 'telefono', 'correo', 'empresa', 'sitioWeb', 'ubicacion', 'notas'];
+const CSV_LABELS = ['Nombres', 'Apellido Paterno', 'Apellido Materno', 'Telefono', 'Correo', 'Empresa', 'Sitio Web', 'Ubicacion', 'Notas'];
+
+function prospectosToCsv(prospectos) {
+    const escape = (val) => {
+        if (val == null) return '';
+        const s = String(val).replace(/"/g, '""');
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
+    };
+    const rows = [CSV_LABELS.join(',')];
+    for (const p of prospectos) rows.push(CSV_HEADERS.map(h => escape(p[h])).join(','));
+    return rows.join('\n');
+}
+
+function parseCsvRow(row) {
+    const cells = [];
+    let cur = ''; let inQuote = false;
+    for (let i = 0; i < row.length; i++) {
+        const ch = row[i];
+        if (ch === '"') { if (inQuote && row[i + 1] === '"') { cur += '"'; i++; } else inQuote = !inQuote; }
+        else if (ch === ',' && !inQuote) { cells.push(cur.trim()); cur = ''; }
+        else cur += ch;
+    }
+    cells.push(cur.trim());
+    return cells;
+}
+
+function csvToProspectos(text) {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return { data: [], errors: ['El CSV está vacío o solo tiene encabezados.'] };
+    const header = parseCsvRow(lines[0]).map(h => h.toLowerCase().replace(/\s+/g, ''));
+    const colMap = {
+        nombres: ['nombres', 'nombre'], apellidoPaterno: ['apellidopaterno', 'apellido'],
+        apellidoMaterno: ['apellidomaterno'], telefono: ['telefono', 'tel', 'phone'],
+        correo: ['correo', 'email', 'mail'], empresa: ['empresa', 'company'],
+        sitioWeb: ['sitioweb', 'web', 'website'], ubicacion: ['ubicacion', 'ubicación', 'ciudad', 'direccion'],
+        notas: ['notas', 'nota', 'notes', 'comentarios'],
+    };
+    const colIndex = {};
+    for (const [field, aliases] of Object.entries(colMap)) {
+        for (const alias of aliases) { const idx = header.indexOf(alias); if (idx !== -1) { colIndex[field] = idx; break; } }
+    }
+    const errors = []; const data = [];
+    for (let i = 1; i < lines.length; i++) {
+        const cells = parseCsvRow(lines[i]);
+        const row = {};
+        let hasData = false;
+        for (const [field, idx] of Object.entries(colIndex)) {
+            row[field] = cells[idx] || '';
+            if (row[field]) hasData = true;
+        }
+        if (hasData) data.push(row);
+    }
+    if (data.length === 0) errors.push("No se encontraron registros válidos o las columnas no coinciden con los formatos esperados.");
+    return { data, errors };
+}
 
 const Directorio = () => {
     const [clientes, setClientes] = useState([]);
@@ -13,6 +73,12 @@ const Directorio = () => {
     const [busqueda, setBusqueda] = useState('');
     const [clienteAEliminar, setClienteAEliminar] = useState(null);
     const [eliminando, setEliminando] = useState(false);
+
+    // Estados para CSV
+    const [isImportModalAbierto, setIsImportModalAbierto] = useState(false);
+    const [fileToImport, setFileToImport] = useState(null);
+    const [csvErrors, setCsvErrors] = useState([]);
+    const [importandoCsv, setImportandoCsv] = useState(false);
 
     // Estados para la vista detallada
     const [prospectoSeleccionado, setProspectoSeleccionado] = useState(null);
@@ -99,6 +165,86 @@ const Directorio = () => {
         } finally {
             setEliminando(false);
         }
+    };
+
+    const handleExportCsv = () => {
+        if (clientes.length === 0) {
+            toast.error('No hay clientes para exportar.');
+            return;
+        }
+        const csvStr = prospectosToCsv(clientesFiltrados.length > 0 ? clientesFiltrados : clientes);
+        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvStr], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `directorio_clientes_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        toast.success('CSV exportado correctamente.');
+    };
+
+    const resetImportModal = () => {
+        setIsImportModalAbierto(false);
+        setFileToImport(null);
+        setCsvErrors([]);
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        setCsvErrors([]);
+        if (!file) return;
+        if (!file.name.endsWith('.csv')) {
+            setCsvErrors(['El archivo debe ser un .csv']);
+            return;
+        }
+        setFileToImport(file);
+    };
+
+    const handleImportCSV = async () => {
+        setCsvErrors([]);
+        if (!fileToImport) { setCsvErrors(['Selecciona un archivo primero.']); return; }
+        setImportandoCsv(true);
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const text = e.target.result;
+            const resData = csvToProspectos(text);
+            if (resData.errors.length > 0) {
+                setCsvErrors(resData.errors);
+                setImportandoCsv(false);
+                return;
+            }
+            if (resData.data.length === 0) {
+                setCsvErrors(['No se detectaron clientes válidos en el archivo.']);
+                setImportandoCsv(false);
+                return;
+            }
+
+            try {
+                // Enviar al backend
+                const rolePath = role === 'closer' ? 'closer' : 'prospector';
+                const response = await axios.post(`${API_URL}/api/${rolePath}/importar-csv`, {
+                    prospectos: resData.data,
+                    etapaEmbudo: 'venta_ganada' // Insertar directamente como ganados
+                }, { headers: getAuthHeaders() });
+
+                toast.success(`Importación exitosa. ${response.data.insertados || 0} agregados, ${response.data.duplicados || 0} duplicados ignorados.`);
+                resetImportModal();
+                cargarClientes();
+            } catch (error) {
+                console.error('Error importando:', error);
+                setCsvErrors([error.response?.data?.msg || 'Error de servidor al importar']);
+                toast.error('Error al importar CSV');
+            } finally {
+                setImportandoCsv(false);
+            }
+        };
+        reader.onerror = () => {
+            setCsvErrors(['No se pudo leer el archivo localmente.']);
+            setImportandoCsv(false);
+        };
+        reader.readAsText(fileToImport);
     };
 
     const clientesFiltrados = useMemo(() => {
@@ -195,14 +341,24 @@ const Directorio = () => {
                             <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
                             <p className="text-gray-500">Cartera de clientes ganados.</p>
                         </div>
-                        <button
-                            onClick={cargarClientes}
-                            disabled={loading}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-950 disabled:opacity-50 transition-colors"
-                        >
-                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                            Actualizar
-                        </button>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <button onClick={handleExportCsv} className="flex items-center gap-2 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-lg font-medium shadow-sm transition-all" title="Exportar directorio a CSV">
+                                <Download className="w-4 h-4" />
+                                <span className="hidden sm:inline">Exportar CSV</span>
+                            </button>
+                            <button onClick={() => setIsImportModalAbierto(true)} className="flex items-center gap-2 bg-white hover:bg-amber-50 text-amber-700 border border-amber-200 px-4 py-2 rounded-lg font-medium shadow-sm transition-all" title="Importar clientes desde CSV">
+                                <Upload className="w-4 h-4" />
+                                <span className="hidden sm:inline">Importar CSV</span>
+                            </button>
+                            <button
+                                onClick={cargarClientes}
+                                disabled={loading}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-950 disabled:opacity-50 transition-colors"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                Actualizar
+                            </button>
+                        </div>
                     </div>
 
                     <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm mb-6">
@@ -317,6 +473,78 @@ const Directorio = () => {
                     </div>
                 </div>
             )}
+
+            {/* Modal Importar CSV */}
+            <Modal isOpen={isImportModalAbierto} onClose={resetImportModal} title="Importar Clientes desde CSV">
+                <div className="space-y-6">
+                    <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                        <div className="flex items-start gap-3">
+                            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                                <h3 className="font-semibold text-amber-800 mb-2">Instrucciones de Importación</h3>
+                                <p className="text-sm text-amber-900/80 mb-2">
+                                    Los clientes importados aquí se agregarán directamente como <strong>clientes ganados</strong> en el directorio.
+                                </p>
+                                <p className="font-semibold mb-1 text-sm text-amber-900 text-sm">Formato esperado del CSV:</p>
+                                <code className="text-xs bg-white px-2 py-1 rounded border border-amber-200 block overflow-x-auto whitespace-nowrap text-amber-900">
+                                    {CSV_HEADERS.join(',')}
+                                </code>
+                                <p className="mt-2 text-amber-700 text-xs">Todos los campos son opcionales. Los datos se importarán tal como estén en el CSV.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Seleccionar archivo CSV</label>
+                        <div className="relative">
+                            <input
+                                type="file"
+                                accept=".csv"
+                                onChange={handleFileChange}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            />
+                            <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${fileToImport ? 'border-amber-300 bg-amber-50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100'}`}>
+                                <Upload className={`w-8 h-8 mx-auto mb-3 ${fileToImport ? 'text-amber-500' : 'text-slate-400'}`} />
+                                {fileToImport ? (
+                                    <div>
+                                        <p className="font-semibold text-amber-800">{fileToImport.name}</p>
+                                        <p className="text-amber-600 text-sm mt-1">{(fileToImport.size / 1024).toFixed(1)} KB</p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p className="font-semibold text-slate-600">Arrastra un CSV aquí o haz clic para seleccionar</p>
+                                        <p className="text-slate-400 text-sm mt-1">Solo archivos .csv</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {csvErrors.length > 0 && (
+                        <div className="bg-red-50 text-red-700 p-4 rounded-xl text-sm border border-red-100">
+                            <p className="font-semibold mb-2 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Errores detectados:</p>
+                            <ul className="list-disc pl-5 space-y-1">
+                                {csvErrors.map((e, i) => <li key={i}>{e}</li>)}
+                            </ul>
+                        </div>
+                    )}
+
+                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                        <button type="button" onClick={resetImportModal} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-medium">
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleImportCSV}
+                            disabled={!fileToImport || importandoCsv || csvErrors.length > 0}
+                            className="flex items-center gap-2 bg-amber-600 text-white px-6 py-2 rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors font-medium shadow-sm"
+                        >
+                            {importandoCsv ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                            {importandoCsv ? 'Importando...' : 'Importar Clientes'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </>
     );
 };

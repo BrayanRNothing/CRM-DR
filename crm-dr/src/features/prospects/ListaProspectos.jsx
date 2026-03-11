@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { getToken, decodeRole } from '../../utils/authUtils';
+import { getToken } from '../../utils/authUtils';
 import HistorialInteracciones from '../../components/HistorialInteracciones';
 import TimeWheelPicker from '../../components/TimeWheelPicker';
 
@@ -64,7 +64,7 @@ function parseCsvRow(row) {
 
 function csvToProspectos(text) {
     const lines = text.split(/\r?\n/).filter(l => l.trim());
-    if (lines.length < 2) return { data: [], errors: ['El CSV est� vac�o o solo tiene encabezados.'] };
+    if (lines.length < 2) return { data: [], errors: ['El CSV est— vac—o o solo tiene encabezados.'] };
     const header = parseCsvRow(lines[0]).map(h => h.toLowerCase().replace(/\s+/g, ''));
     const colMap = {
         nombres: ['nombres', 'nombre'], apellidoPaterno: ['apellidopaterno', 'apellido'],
@@ -96,7 +96,7 @@ const TIPOS_ACTIVIDAD = [
 const RESULTADOS = [
     { value: 'exitoso', label: 'Exitoso', icon: CheckCircle2 },
     { value: 'pendiente', label: 'Pendiente', icon: Clock },
-    { value: 'fallido', label: 'No contest�', icon: XCircle }
+    { value: 'fallido', label: 'No contestó', icon: XCircle }
 ];
 
 const getTipoLabel = (tipo) => TIPOS_ACTIVIDAD.find(t => t.value === tipo)?.label || tipo;
@@ -108,7 +108,7 @@ const ETAPAS_EMBUDO = {
     'en_contacto': { label: 'En contacto', color: 'bg-blue-100 text-blue-600' },
     'reunion_agendada': { label: 'Cita agendada', color: 'bg-blue-100 text-blue-900' },
     'reunion_realizada': { label: 'Cita realizada', color: 'bg-indigo-100 text-indigo-600' },
-    'en_negociacion': { label: 'Negociaci�n', color: 'bg-amber-100 text-amber-600' },
+    'en_negociacion': { label: 'Negociación', color: 'bg-amber-100 text-amber-600' },
     'venta_ganada': { label: 'Venta ganada', color: 'bg-emerald-100 text-emerald-600' },
     'perdido': { label: 'Perdido', color: 'bg-rose-100 text-rose-600' }
 };
@@ -116,13 +116,10 @@ const ETAPAS_EMBUDO = {
 const getEtapaLabel = (etapa) => ETAPAS_EMBUDO[etapa]?.label || etapa;
 const getEtapaColor = (etapa) => ETAPAS_EMBUDO[etapa]?.color || 'bg-gray-100 text-gray-600';
 
-const SeguimientoContactos = () => {
-    const role = decodeRole();
-    const rolePath = role === 'closer' ? 'closer' : 'prospector';
-    const isDoctorOrAdmin = role === 'doctor' || role === 'admin';
-    const labelMain = isDoctorOrAdmin ? 'Pacientes' : 'Prospectos';
-    const labelSingle = isDoctorOrAdmin ? 'Paciente' : 'Prospecto';
-
+const DoctorPacientes = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const rolePath = location.pathname.startsWith('/doctor') ? 'doctor' : 'doctor';
     const [prospectos, setProspectos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [usandoMock, setUsandoMock] = useState(false);
@@ -147,12 +144,12 @@ const SeguimientoContactos = () => {
         notas: ''
     });
 
-    // Estado para la edici�n de prospectos
+    // Estado para la edición de prospectos
     const [modalEditarAbierto, setModalEditarAbierto] = useState(false);
     const [prospectoAEditar, setProspectoAEditar] = useState({});
     const [loadingEditar, setLoadingEditar] = useState(false);
 
-    // Estados para modales de conversi�n y descarte
+    // Estados para modales de conversión y descarte
     const [modalPasarClienteAbierto, setModalPasarClienteAbierto] = useState(false);
     const [modalDescartarAbierto, setModalDescartarAbierto] = useState(false);
     const [notaConversion, setNotaConversion] = useState('');
@@ -169,10 +166,10 @@ const SeguimientoContactos = () => {
     const [importResult, setImportResult] = useState(null);
     const fileInputRef = useRef(null);
 
-    // Estado para el acorde�n de acciones de cierre
+    // Estado para el acordeón de acciones de cierre
     const [acordeonCierreAbierto, setAcordeonCierreAbierto] = useState(false);
 
-    // Estado para edici�n r�pida de fecha de seguimiento
+    // Estado para edición r—pida de fecha de seguimiento
     const [editandoFechaSeguimiento, setEditandoFechaSeguimiento] = useState(false);
     const [nuevaFechaSeguimiento, setNuevaFechaSeguimiento] = useState('');
 
@@ -185,7 +182,7 @@ const SeguimientoContactos = () => {
             );
             toast.success('Fecha de seguimiento actualizada');
             setEditandoFechaSeguimiento(false);
-            const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
+            const res = await axios.get(`${API_URL}/api/doctor/prospectos`, { headers: getAuthHeaders() });
             const updated = res.data.find(p => p.id === pid || p._id === pid);
             if (updated) { setProspectoSeleccionado(updated); setProspectos(res.data); }
         } catch { toast.error('Error al actualizar la fecha'); }
@@ -221,7 +218,7 @@ const SeguimientoContactos = () => {
             });
             toast.success('Prospecto actualizado');
             setModalEditarAbierto(false);
-            // Recargar datos y actualizar el panel de detalle si est� abierto
+            // Recargar datos y actualizar el panel de detalle si est— abierto
             const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
             setProspectos(res.data);
             if (prospectoSeleccionado && (prospectoSeleccionado.id === prospectoAEditar.id || prospectoSeleccionado._id === prospectoAEditar.id)) {
@@ -252,7 +249,7 @@ const SeguimientoContactos = () => {
         try {
             const pid = prospectoSeleccionado.id || prospectoSeleccionado._id;
             await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}/editar`, {
-                // Solo enviamos los campos editables m�nimos para no sobreescribir datos enriquecidos
+                // Solo enviamos los campos editables m—nimos para no sobreescribir datos enriquecidos
                 nombres: prospectoSeleccionado.nombres || '',
                 apellidoPaterno: prospectoSeleccionado.apellidoPaterno || '',
                 apellidoMaterno: prospectoSeleccionado.apellidoMaterno || '',
@@ -282,7 +279,7 @@ const SeguimientoContactos = () => {
     const cargarDatos = async () => {
         setLoading(true);
         try {
-            const resProspectos = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
+            const resProspectos = await axios.get(`${API_URL}/api/doctor/prospectos`, { headers: getAuthHeaders() });
             setProspectos(resProspectos.data);
             setUsandoMock(false);
         } catch (error) {
@@ -297,7 +294,7 @@ const SeguimientoContactos = () => {
     useEffect(() => {
         const init = async () => {
             await cargarDatos();
-            // Si venimos de otra p�gina con un ID seleccionado
+            // Si venimos de otra página con un ID seleccionado
             if (location.state?.selectedId) {
                 const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
                 // eslint-disable-next-line eqeqeq
@@ -321,7 +318,7 @@ const SeguimientoContactos = () => {
         };
     }, []);
 
-    // Orden de prioridad de etapas (m�s avanzadas primero, perdido al fondo)
+    // Orden de prioridad de etapas (más avanzadas primero, perdido al fondo)
     const ORDEN_ETAPA = {
         'reunion_agendada': 1,
         'reunion_realizada': 2,
@@ -335,7 +332,7 @@ const SeguimientoContactos = () => {
     const prospectosFiltrados = useMemo(() => {
         let filtrados = prospectos;
 
-        // B�squeda...
+        // Búsqueda...
         if (busquedaProspecto.trim()) {
             const termino = busquedaProspecto.toLowerCase();
             filtrados = filtrados.filter(p =>
@@ -349,13 +346,13 @@ const SeguimientoContactos = () => {
 
         // Etapa (filtros agrupados)...
         if (filtroEtapa === 'en_contacto') {
-            // Respondi�: etapa avanz� m�s all� de prospecto_nuevo
+            // Respondi—: etapa avanz— más allá de prospecto_nuevo
             filtrados = filtrados.filter(p => p.etapaEmbudo !== 'prospecto_nuevo');
         } else if (filtroEtapa === 'sin_respuesta') {
-            // Intentaron contactar (hay actividades) pero sigue en prospecto_nuevo ? no contest�
+            // Intentaron contactar (hay actividades) pero sigue en prospecto_nuevo ? no contestó
             filtrados = filtrados.filter(p => p.etapaEmbudo === 'prospecto_nuevo' && !!p.ultimaActTipo);
         } else if (filtroEtapa === 'no_contactado') {
-            // Sin ninguna actividad registrada = nuevo prospecto sin interacci�n
+            // Sin ninguna actividad registrada = nuevo prospecto sin interacción
             filtrados = filtrados.filter(p => p.etapaEmbudo === 'prospecto_nuevo' && !p.ultimaActTipo);
         } else if (filtroEtapa === 'con_cita') {
             // Tiene cita agendada o realizada
@@ -392,7 +389,7 @@ const SeguimientoContactos = () => {
                 if (filtroFecha === 'personalizado' && fechaDesde && fechaHasta) {
                     const dDesde = new Date(fechaDesde);
                     dDesde.setHours(0, 0, 0, 0);
-                    // Aumentamos 1 d�a a la fechaHasta local para que sea inclusivo el d�a entero
+                    // Aumentamos 1 día a la fechaHasta local para que sea inclusivo el día entero
                     const dHasta = new Date(fechaHasta);
                     dHasta.setHours(23, 59, 59, 999);
                     return fechaCreacion >= dDesde && fechaCreacion <= dHasta;
@@ -406,7 +403,7 @@ const SeguimientoContactos = () => {
             const ahora = new Date();
             filtrados = filtrados.filter(p => {
                 if (!p.proximaLlamada) return false;
-                // 'vencido': ya pas� la fecha. 'futuro': a�n no. Ambos se muestran, vencidos primero.
+                // 'vencido': ya pasí la fecha. 'futuro': aún no. Ambos se muestran, vencidos primero.
                 return true;
             });
         }
@@ -418,7 +415,7 @@ const SeguimientoContactos = () => {
         const esPerdidoB = b.etapaEmbudo === 'perdido';
         if (esPerdidoA !== esPerdidoB) return esPerdidoA ? 1 : -1;
 
-        // Con pr�xima llamada urgente primero (vencidas a�n antes que futuras)
+        // Con próxima llamada urgente primero (vencidas aún antes que futuras)
         const tieneRecordA = !!a.proximaLlamada;
         const tieneRecordB = !!b.proximaLlamada;
         if (tieneRecordA !== tieneRecordB) return tieneRecordA ? -1 : 1;
@@ -430,12 +427,12 @@ const SeguimientoContactos = () => {
             return new Date(a.proximaLlamada) - new Date(b.proximaLlamada);
         }
 
-        // Mayor inter�s primero
+        // Mayor interés primero
         const interesA = a.interes || 0;
         const interesB = b.interes || 0;
         if (interesB !== interesA) return interesB - interesA;
 
-        // Etapa m�s avanzada primero
+        // Etapa más avanzada primero
         const orA = ORDEN_ETAPA[a.etapaEmbudo] ?? 10;
         const orB = ORDEN_ETAPA[b.etapaEmbudo] ?? 10;
         return orA - orB;
@@ -461,13 +458,13 @@ const SeguimientoContactos = () => {
     };
 
     const handleImportCsv = async () => {
-        if (!csvPreview || csvPreview.data.length === 0) { toast.error('No hay datos v�lidos para importar.'); return; }
+        if (!csvPreview || csvPreview.data.length === 0) { toast.error('No hay datos v—lidos para importar.'); return; }
         try {
             setImportando(true);
             const response = await axios.post(`${API_URL}/api/${rolePath}/importar-csv`, { prospectos: csvPreview.data }, { headers: getAuthHeaders() });
             setImportResult(response.data);
             cargarDatos();
-            toast.success(`Importaci�n completada: ${response.data.insertados} nuevos.`);
+            toast.success(`Importación completada: ${response.data.insertados} nuevos.`);
         } catch (error) {
             toast.error(error.response?.data?.msg || 'Error al importar el CSV.');
         } finally { setImportando(false); }
@@ -483,8 +480,8 @@ const SeguimientoContactos = () => {
         if (!prospectoAEliminar) return;
         try {
             setEliminando(true);
-            await axios.delete(`${API_URL}/api/${rolePath}/prospectos/${prospectoAEliminar.id || prospectoAEliminar._id}`, { headers: getAuthHeaders() });
-            toast.success('Prospecto eliminado correctamente');
+            await axios.delete(`${API_URL}/api/doctor/prospectos/${prospectoAEliminar.id || prospectoAEliminar._id}`, { headers: getAuthHeaders() });
+            toast.success('Paciente eliminado correctamente');
             setProspectoAEliminar(null);
             cargarDatos();
         } catch (error) {
@@ -498,10 +495,10 @@ const SeguimientoContactos = () => {
             const telefonosLimpios = formCrear.telefonos.filter(t => t.trim());
             const payload = { ...formCrear, telefono: telefonosLimpios[0] || '', telefono2: telefonosLimpios.slice(1).join(', ') || '' };
             delete payload.telefonos;
-            await axios.post(`${API_URL}/api/${rolePath}/crear-prospecto`, payload, {
+            await axios.post(`${API_URL}/api/doctor/crear-prospecto`, payload, {
                 headers: getAuthHeaders()
             });
-            toast.success('Prospecto creado');
+            toast.success('Paciente creado');
             setModalCrearAbierto(false);
             setFormCrear({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '' });
             cargarDatos();
@@ -514,9 +511,9 @@ const SeguimientoContactos = () => {
 
     const handleSeleccionarProspecto = async (p) => {
         setProspectoSeleccionado(p);
-        setNotasRapidas(p.notas || ''); // Inicializar notas r�pidas
-        setEditandoFechaSeguimiento(false); // Resetear edici�n inline de fecha
-        setAcordeonCierreAbierto(false);    // Colapsar acorde�n de cierre
+        setNotasRapidas(p.notas || ''); // Inicializar notas r—pidas
+        setEditandoFechaSeguimiento(false); // Resetear edición inline de fecha
+        setAcordeonCierreAbierto(false);    // Colapsar acordeón de cierre
         setLoadingContext(true);
         try {
             // MEJORADO: Usar endpoint de historial completo para ver actividades de AMBOS (prospector y closer)
@@ -555,7 +552,7 @@ const SeguimientoContactos = () => {
     };
 
     const handleDeleteActividadContext = async (actividadId) => {
-        if (!window.confirm('�Eliminar esta actividad? Esta acci�n no se puede deshacer.')) return;
+        if (!window.confirm('—Eliminar esta actividad? Esta acción no se puede deshacer.')) return;
         try {
             await axios.delete(`${API_URL}/api/actividades/${actividadId}`, { headers: getAuthHeaders() });
             setActividadesContext(prev => prev.filter(a => a.id !== actividadId));
@@ -568,13 +565,13 @@ const SeguimientoContactos = () => {
     const actualizarInteres = async (id, nuevoInteres) => {
         try {
             await axios.put(`${API_URL}/api/${rolePath}/prospectos/${id}`, { interes: nuevoInteres }, { headers: getAuthHeaders() });
-            toast.success('Inter�s actualizado');
+            toast.success('Interés actualizado');
             setProspectos(prev => prev.map(p => (p.id === id || p._id === id) ? { ...p, interes: nuevoInteres } : p));
             if (prospectoSeleccionado && (prospectoSeleccionado.id === id || prospectoSeleccionado._id === id)) {
                 setProspectoSeleccionado({ ...prospectoSeleccionado, interes: nuevoInteres });
             }
         } catch (error) {
-            toast.error('Error al actualizar inter�s');
+            toast.error('Error al actualizar interés');
         }
     };
 
@@ -607,7 +604,7 @@ const SeguimientoContactos = () => {
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-lg max-w-sm w-full">
                         <div className="p-4 border-b border-slate-100">
-                            <h2 className="text-lg font-bold text-gray-900">+ Nuevo prospecto</h2>
+                            <h2 className="text-lg font-bold text-gray-900">+ Nuevo paciente</h2>
                         </div>
                         <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
                             <div className="grid grid-cols-2 gap-3">
@@ -628,12 +625,12 @@ const SeguimientoContactos = () => {
                                         value={formCrear.apellidoPaterno}
                                         onChange={(e) => setFormCrear((f) => ({ ...f, apellidoPaterno: e.target.value }))}
                                         className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                        placeholder="Garc�a"
+                                        placeholder="Garc—a"
                                     />
                                 </div>
                                 <div className="col-span-2">
                                     <div className="flex items-center justify-between mb-1">
-                                        <label className="block text-xs font-medium text-gray-700">Tel�fonos</label>
+                                        <label className="block text-xs font-medium text-gray-700">Teléfonos</label>
                                         <button
                                             type="button"
                                             onClick={() => setFormCrear((f) => ({ ...f, telefonos: [...f.telefonos, ''] }))}
@@ -696,13 +693,13 @@ const SeguimientoContactos = () => {
                                     />
                                 </div>
                                 <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Ubicaci�n</label>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Ubicación</label>
                                     <input
                                         type="text"
                                         value={formCrear.ubicacion}
                                         onChange={(e) => setFormCrear((f) => ({ ...f, ubicacion: e.target.value }))}
                                         className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                        placeholder="Ciudad, Estado, Pa�s"
+                                        placeholder="Ciudad, Estado, Pa—s"
                                     />
                                 </div>
                                 <div className="col-span-2">
@@ -712,7 +709,7 @@ const SeguimientoContactos = () => {
                                         value={formCrear.notas}
                                         onChange={(e) => setFormCrear((f) => ({ ...f, notas: e.target.value }))}
                                         className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm resize-none"
-                                        placeholder="Informaci�n relevante sobre el primer contacto..."
+                                        placeholder="Información relevante sobre el primer contacto..."
                                     />
                                 </div>
                             </div>
@@ -743,7 +740,7 @@ const SeguimientoContactos = () => {
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-lg max-w-sm w-full">
                         <div className="p-4 border-b border-slate-100">
-                            <h2 className="text-lg font-bold text-gray-900">?? Editar prospecto</h2>
+                            <h2 className="text-lg font-bold text-gray-900">?? Editar paciente</h2>
                         </div>
                         <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
                             <div className="grid grid-cols-2 gap-3">
@@ -767,7 +764,7 @@ const SeguimientoContactos = () => {
                                 </div>
                                 <div className="col-span-2">
                                     <div className="flex items-center justify-between mb-1">
-                                        <label className="block text-xs font-medium text-gray-700">Tel�fonos</label>
+                                        <label className="block text-xs font-medium text-gray-700">Teléfonos</label>
                                         <button
                                             type="button"
                                             onClick={() => setProspectoAEditar((f) => ({ ...f, telefonos: [...(f.telefonos || ['']), ''] }))}
@@ -828,13 +825,13 @@ const SeguimientoContactos = () => {
                                     />
                                 </div>
                                 <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Ubicaci�n</label>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Ubicación</label>
                                     <input
                                         type="text"
                                         value={prospectoAEditar.ubicacion || ''}
                                         onChange={(e) => setProspectoAEditar((f) => ({ ...f, ubicacion: e.target.value }))}
                                         className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                        placeholder="Ciudad, Estado, Pa�s"
+                                        placeholder="Ciudad, Estado, Pa—s"
                                     />
                                 </div>
                                 <div className="col-span-2">
@@ -860,7 +857,7 @@ const SeguimientoContactos = () => {
                                     </select>
                                 </div>
                                 <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Recordatorio (Pr�xima Llamada)</label>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Recordatorio (Próxima Llamada)</label>
                                     <TimeWheelPicker
                                         value={prospectoAEditar.proximaLlamada || ''}
                                         onChange={(val) => setProspectoAEditar((f) => ({ ...f, proximaLlamada: val }))}
@@ -896,7 +893,7 @@ const SeguimientoContactos = () => {
                         </div>
                         <div className="p-4 space-y-3">
                             <p className="text-gray-600 text-sm">
-                                �Confirmas que <span className="font-semibold">{prospectoSeleccionado?.nombres} {prospectoSeleccionado?.apellidoPaterno}</span> se convierte en cliente?
+                                —Confirmas que <span className="font-semibold">{prospectoSeleccionado?.nombres} {prospectoSeleccionado?.apellidoPaterno}</span> se convierte en cliente?
                             </p>
                             <textarea
                                 rows={2}
@@ -934,7 +931,7 @@ const SeguimientoContactos = () => {
                         </div>
                         <div className="p-4 space-y-3">
                             <p className="text-gray-600 text-sm">
-                                �Descartar a <span className="font-semibold">{prospectoSeleccionado?.nombres} {prospectoSeleccionado?.apellidoPaterno}</span>? Se registrar� en el historial.
+                                —Descartar a <span className="font-semibold">{prospectoSeleccionado?.nombres} {prospectoSeleccionado?.apellidoPaterno}</span>? Se registrar— en el historial.
                             </p>
                             <textarea
                                 rows={2}
@@ -973,8 +970,8 @@ const SeguimientoContactos = () => {
                         </div>
                         <div className="p-4">
                             <p className="text-gray-600 text-sm">
-                                �Est�s seguro de eliminar a <strong>{prospectoAEliminar.nombres} {prospectoAEliminar.apellidoPaterno}</strong>?
-                                Esta acci�n no se puede deshacer.
+                                —Est—s seguro de eliminar a <strong>{prospectoAEliminar.nombres} {prospectoAEliminar.apellidoPaterno}</strong>?
+                                Esta acción no se puede deshacer.
                             </p>
                         </div>
                         <div className="flex gap-2 p-4 border-t border-slate-100">
@@ -990,7 +987,7 @@ const SeguimientoContactos = () => {
                                 className="flex-1 px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 font-medium disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 <Trash2 className="w-4 h-4" />
-                                {eliminando ? 'Eliminando...' : 'S�, eliminar'}
+                                {eliminando ? 'Eliminando...' : 'Sí, eliminar'}
                             </button>
                         </div>
                     </div>
@@ -1024,7 +1021,7 @@ const SeguimientoContactos = () => {
                                         {csvFile ? (
                                             <p className="font-semibold text-slate-700 text-sm">{csvFile.name}</p>
                                         ) : (
-                                            <p className="text-slate-500 text-sm">Arrastra un CSV aqu� o haz clic para seleccionar</p>
+                                            <p className="text-slate-500 text-sm">Arrastra un CSV aquí o haz clic para seleccionar</p>
                                         )}
                                     </div>
                                     {csvPreview && (
@@ -1051,8 +1048,8 @@ const SeguimientoContactos = () => {
                             ) : (
                                 <div className="space-y-3">
                                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-800">
-                                        <p className="font-semibold">? Importaci�n completada</p>
-                                        <p>Insertados: {importResult.insertados} � Duplicados: {importResult.duplicados} � Errores: {importResult.errores}</p>
+                                        <p className="font-semibold">? Importación completada</p>
+                                        <p>Insertados: {importResult.insertados} — Duplicados: {importResult.duplicados} — Errores: {importResult.errores}</p>
                                     </div>
                                     <button onClick={resetImportModal} className="w-full px-3 py-2 bg-blue-900 text-white rounded text-sm hover:bg-blue-950 font-medium">Cerrar</button>
                                 </div>
@@ -1073,11 +1070,11 @@ const SeguimientoContactos = () => {
                 { notas: notaConversion || 'Prospecto convertido a cliente' },
                 { headers: getAuthHeaders() }
             );
-            toast.success('�Prospecto convertido a cliente!');
+            toast.success('—Prospecto convertido a cliente!');
             setModalPasarClienteAbierto(false);
             setNotaConversion('');
             setProspectoSeleccionado(null);
-            // Redirigir a la p�gina de clientes
+            // Redirigir a la página de clientes
             setTimeout(() => {
                 navigate(`/${rolePath}/clientes`);
             }, 800);
@@ -1119,9 +1116,9 @@ const SeguimientoContactos = () => {
             // Evaluamos primero notas para las opciones personalizables de llamadas
             if (act.tipo === 'llamada') {
                 if (act.notas?.includes('WhatsApp')) return { icon: '??', color: 'bg-green-500', label: 'WhatsApp / Correo' };
-                if (act.notas?.includes('llamar despu�s')) return { icon: '??', color: 'bg-indigo-500', label: 'Llamar despu�s' };
-                if (act.notas?.toLowerCase().includes('sin inter�s')) return { icon: '??', color: 'bg-gray-500', label: 'Sin inter�s' };
-                if (act.notas?.includes('Agend� reuni�n')) return { icon: '??', color: 'bg-blue-800', label: 'Cita Agendada' };
+                if (act.notas?.includes('llamar después')) return { icon: '??', color: 'bg-indigo-500', label: 'Llamar después' };
+                if (act.notas?.toLowerCase().includes('sin interés')) return { icon: '??', color: 'bg-gray-500', label: 'Sin interés' };
+                if (act.notas?.includes('Agendó reunión')) return { icon: '??', color: 'bg-blue-800', label: 'Cita Agendada' };
 
                 if (act.resultado === 'exitoso') return { icon: '??', color: 'bg-emerald-500', label: 'Llamada exitosa' };
                 if (act.resultado === 'fallido') return { icon: '??', color: 'bg-rose-500', label: 'Sin respuesta' };
@@ -1130,25 +1127,25 @@ const SeguimientoContactos = () => {
             if (act.tipo === 'cita') {
                 const desc = act.descripcion || '';
                 if (act.resultado === 'pendiente') return { icon: '??', color: 'bg-blue-500', label: 'Cita Agendada' };
-                if (desc.includes('no asisti�') || desc.includes('No asisti�')) return { icon: '?', color: 'bg-red-500', label: desc };
-                if (desc.includes('Venta cerrada') || desc.includes('�Venta')) return { icon: '??', color: 'bg-green-500', label: desc };
-                if (desc.includes('cotizaci�n') || desc.includes('Cotizaci�n')) return { icon: '??', color: 'bg-blue-600', label: desc };
-                if (desc.includes('otra reuni�n') || desc.includes('Otra reuni�n')) return { icon: '??', color: 'bg-yellow-500', label: desc };
-                if (desc.includes('No le interes�') || desc.includes('no le interes�')) return { icon: '??', color: 'bg-gray-500', label: desc };
-                return { icon: '??', color: 'bg-blue-500', label: desc || 'Reuni�n' };
+                if (desc.includes('no asistió') || desc.includes('No asistió')) return { icon: '?', color: 'bg-red-500', label: desc };
+                if (desc.includes('Venta cerrada') || desc.includes('—Venta')) return { icon: '??', color: 'bg-green-500', label: desc };
+                if (desc.includes('cotización') || desc.includes('Cotización')) return { icon: '??', color: 'bg-blue-600', label: desc };
+                if (desc.includes('otra reunión') || desc.includes('Otra reunión')) return { icon: '??', color: 'bg-yellow-500', label: desc };
+                if (desc.includes('No le interesí') || desc.includes('no le interesí')) return { icon: '??', color: 'bg-gray-500', label: desc };
+                return { icon: '??', color: 'bg-blue-500', label: desc || 'Reunión' };
             }
             if (act.tipo === 'whatsapp') return { icon: '??', color: 'bg-green-500', label: 'WhatsApp' };
             if (act.tipo === 'cliente') return { icon: '??', color: 'bg-yellow-500', label: 'Convertido a cliente' };
             if (act.tipo === 'descartado') return { icon: '???', color: 'bg-gray-400', label: 'Descartado' };
-            return { icon: '??', color: 'bg-slate-400', label: act.tipo || 'Interacci�n' };
+            return { icon: '??', color: 'bg-slate-400', label: act.tipo || 'Interacción' };
         };
         const getResultadoTexto = (act) => {
-            if (act.tipo === 'llamada' && act.resultado === 'exitoso') return 'Contest� ?';
-            if (act.tipo === 'llamada' && act.resultado === 'fallido') return 'No contest� ?';
+            if (act.tipo === 'llamada' && act.resultado === 'exitoso') return 'Contestó ✓';
+            if (act.tipo === 'llamada' && act.resultado === 'fallido') return 'No contestó ✗';
             if (act.tipo === 'cita') {
                 if (act.resultado === 'pendiente') return 'Cita programada';
                 if (act.descripcion) return act.descripcion;
-                const mapa = { exitoso: 'Reuni�n realizada', fallido: 'No asisti� / Cancelada', convertido: 'Venta cerrada' };
+                const mapa = { exitoso: 'Reunión realizada', fallido: 'No asistió / Cancelada', convertido: 'Venta cerrada' };
                 return mapa[act.resultado] || act.resultado;
             }
             if (act.tipo === 'whatsapp') return 'Mensaje enviado';
@@ -1156,13 +1153,13 @@ const SeguimientoContactos = () => {
             return '';
         };
 
-        // Tarea pendiente: mostrar si hay una pr�xima llamada agendada o cita
+        // Tarea pendiente: mostrar si hay una próxima llamada agendada o cita
         const tareaLlamar = prospectoSeleccionado.proximaLlamada ? { fecha: prospectoSeleccionado.proximaLlamada, tipo: 'llamada' } : null;
         const proximaCita = actividadesContext.find(a => a.tipo === 'cita' && a.resultado === 'pendiente' && new Date(a.fechaCita || a.fecha) >= new Date());
 
         const registrarActividad = async (payload) => {
             try {
-                // Promover etapa autom�ticamente si corresponde
+                // Promover etapa automáticamente si corresponde
                 const payloadFinal = { ...payload };
                 if (
                     payload.tipo === 'llamada' &&
@@ -1173,7 +1170,7 @@ const SeguimientoContactos = () => {
                 }
 
                 // Al registrar cualquier llamada, limpiar el seguimiento pendiente
-                // (si se agenda nueva fecha, el flujo "Llamar despu�s" la sobreescribe)
+                // (si se agenda nueva fecha, el flujo "Llamar después" la sobreescribe)
                 if (payload.tipo === 'llamada' && prospectoSeleccionado.proximaLlamada) {
                     await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, {
                         proximaLlamada: null
@@ -1181,7 +1178,7 @@ const SeguimientoContactos = () => {
                 }
 
                 await axios.post(`${API_URL}/api/${rolePath}/registrar-actividad`, { clienteId: pid, ...payloadFinal }, { headers: getAuthHeaders() });
-                toast.success('Interacci�n registrada');
+                toast.success('Interacción registrada');
 
                 // Recargar prospecto fresco desde el servidor (evitar estado obsoleto)
                 const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
@@ -1198,7 +1195,7 @@ const SeguimientoContactos = () => {
         return (
             <div className="min-h-screen p-6 bg-slate-50">
                 <div className="w-full space-y-6">
-                    {/* Bot�n regresar */}
+                    {/* Botón regresar */}
                     <button
                         onClick={() => setProspectoSeleccionado(null)}
                         className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors font-medium mb-2"
@@ -1234,7 +1231,7 @@ const SeguimientoContactos = () => {
                                             )}
                                         </div>
                                     </div>
-                                    {/* Inter�s (estrellas) */}
+                                    {/* Interés (estrellas) */}
                                     <div className="flex items-center gap-1 text-yellow-500 shrink-0">
                                         {[1, 2, 3, 4, 5].map((value) => (
                                             <button
@@ -1249,11 +1246,11 @@ const SeguimientoContactos = () => {
                                     </div>
                                 </div>
 
-                                {/* Recordatorio de pr�xima acci�n */}
+                                {/* Recordatorio de próxima acción */}
                                 {tareaLlamar && !editandoFechaSeguimiento && (
                                     <div className="mt-4 flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 font-medium">
                                         <Clock className="w-4 h-4 shrink-0" />
-                                        <span className="flex-1">Pr�ximo seguimiento: {new Date(tareaLlamar.fecha).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                        <span className="flex-1">Próximo seguimiento: {new Date(tareaLlamar.fecha).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</span>
                                         <button
                                             title="Editar fecha de seguimiento"
                                             onClick={() => { setNuevaFechaSeguimiento(prospectoSeleccionado.proximaLlamada ? prospectoSeleccionado.proximaLlamada.slice(0, 16) : ''); setEditandoFechaSeguimiento(true); }}
@@ -1287,15 +1284,15 @@ const SeguimientoContactos = () => {
                                 )}
                             </div>
 
-                            {/* Estad�sticas editables */}
+                            {/* Estadísticas editables */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">S� contest�</p>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Sí contestó</p>
                                     <p className="text-3xl font-black text-emerald-500">{llamadasExitosas}</p>
                                     <p className="text-xs text-gray-400 mt-1">veces</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">No contest�</p>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">No contestó</p>
                                     <p className="text-3xl font-black text-rose-500">{llamadasFallidas}</p>
                                     <p className="text-xs text-gray-400 mt-1">veces</p>
                                 </div>
@@ -1311,19 +1308,19 @@ const SeguimientoContactos = () => {
                                 </div>
                             </div>
 
-                            {/* Pr�xima cita */}
+                            {/* Próxima cita */}
                             {proximaCita && (
                                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
                                     <Calendar className="w-8 h-8 text-blue-500 shrink-0" />
                                     <div>
-                                        <p className="text-xs font-bold text-blue-500 uppercase tracking-wider">Pr�xima Reuni�n</p>
+                                        <p className="text-xs font-bold text-blue-500 uppercase tracking-wider">Próxima Reunión</p>
                                         <p className="font-bold text-gray-900">{new Date(proximaCita.fecha).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                                         <p className="text-sm text-gray-500">{formatHora(proximaCita.fecha)}</p>
                                     </div>
                                 </div>
                             )}
 
-                            {/* ==================== �RBOL DE LLAMADA ==================== */}
+                            {/* ==================== ÁRBOL DE LLAMADA ==================== */}
                             <div className="space-y-3">
                                 {llamadaFlow === null ? (
                                     <div className="grid grid-cols-3 gap-3">
@@ -1345,13 +1342,13 @@ const SeguimientoContactos = () => {
                                             <MessageSquare className="w-6 h-6" />
                                             WhatsApp
                                         </button>
-                                        {/* Agendar reuni�n */}
+                                        {/* Agendar reunión */}
                                         <button
                                             onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })}
                                             className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-blue-800 rounded-xl p-4 text-gray-700 hover:text-blue-900 transition-all shadow-sm font-bold text-sm text-center leading-tight"
                                         >
                                             <Calendar className="w-6 h-6" />
-                                            Agendar Reuni�n
+                                            Agendar Reunión
                                         </button>
                                     </div>
                                 ) : (
@@ -1362,26 +1359,26 @@ const SeguimientoContactos = () => {
                                             <button onClick={() => setLlamadaFlow(null)} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-white/60">? Cancelar</button>
                                         </div>
 
-                                        {/* Paso 1: �Contest�? */}
+                                        {/* Paso 1: —Contestó? */}
                                         {llamadaFlow.paso === 'contesto' && (
                                             <div className="space-y-3">
-                                                <p className="font-semibold text-gray-800">�Contest� la llamada?</p>
+                                                <p className="font-semibold text-gray-800">¿Contestó la llamada?</p>
                                                 <div className="flex gap-3">
                                                     <button
                                                         onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'opciones_contesto', contesto: true }))}
                                                         className="flex-1 py-2.5 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition-colors"
-                                                    >? S�, contest�</button>
+                                                    >? Sí, contestó</button>
                                                     <button
                                                         onClick={async () => {
                                                             // Registrar llamada fallida y sugerir agendar reintento
-                                                            await registrarActividad({ tipo: 'llamada', resultado: 'fallido', notas: 'No contest�' });
+                                                            await registrarActividad({ tipo: 'llamada', resultado: 'fallido', notas: 'No contestó' });
                                                             const hoy = new Date();
                                                             hoy.setDate(hoy.getDate() + 1);
                                                             const defaultDate = hoy.toISOString().slice(0, 16);
                                                             setLlamadaFlow({ paso: 'reintento', notas: '', fechaProxima: defaultDate });
                                                         }}
                                                         className="flex-1 py-2.5 bg-rose-500 text-white rounded-lg font-bold hover:bg-rose-600 transition-colors"
-                                                    >? No contest�</button>
+                                                    >✗ No contestó</button>
                                                 </div>
                                             </div>
                                         )}
@@ -1389,7 +1386,7 @@ const SeguimientoContactos = () => {
                                         {/* Paso 2: Opciones al contestar */}
                                         {llamadaFlow.paso === 'opciones_contesto' && (
                                             <div className="space-y-3">
-                                                <p className="font-semibold text-gray-800">�Cu�l fue el resultado de la llamada?</p>
+                                                <p className="font-semibold text-gray-800">¿Cuál fue el resultado de la llamada?</p>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <button
                                                         onClick={() => {
@@ -1397,7 +1394,7 @@ const SeguimientoContactos = () => {
                                                             navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } });
                                                         }}
                                                         className="py-2.5 bg-blue-800 text-white rounded-lg font-bold hover:bg-blue-900 transition-colors text-sm"
-                                                    >?? Agend� reuni�n</button>
+                                                    >📅 Agendó reunión</button>
 
                                                     <button
                                                         onClick={() => {
@@ -1407,24 +1404,24 @@ const SeguimientoContactos = () => {
                                                             setLlamadaFlow(f => ({ ...f, paso: 'llamarDespues', interesado: true, fechaProxima: defaultDate }));
                                                         }}
                                                         className="py-2.5 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition-colors text-sm"
-                                                    >?? Llamar despu�s</button>
+                                                    >📞 Llamar después</button>
 
                                                     <button
                                                         onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'whatsapp' }))}
                                                         className="py-2.5 bg-green-500 text-white rounded-lg font-bold hover:bg-green-600 transition-colors text-sm"
-                                                    >?? WhatsApp o Correo</button>
+                                                    >💬 WhatsApp o Correo</button>
 
                                                     <button
                                                         onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'sin_interes' }))}
                                                         className="py-2.5 bg-gray-400 text-white rounded-lg font-bold hover:bg-gray-500 transition-colors text-sm"
-                                                    >? Sin inter�s</button>
+                                                    >✗ Sin interés</button>
                                                 </div>
                                             </div>
                                         )}
-                                        {/* 2b: No contest� � programar reintento */}
+                                        {/* 2b: No contestó — programar reintento */}
                                         {llamadaFlow.paso === 'reintento' && (
                                             <div className="space-y-3">
-                                                <p className="font-semibold text-rose-700">?? No contest� � �Cu�ndo reintentas?</p>
+                                                <p className="font-semibold text-rose-700">?✗ No contestó — ¿Cuándo reintentas?</p>
                                                 <TimeWheelPicker
                                                     value={llamadaFlow.fechaProxima}
                                                     onChange={val => setLlamadaFlow(f => ({ ...f, fechaProxima: val }))}
@@ -1447,7 +1444,7 @@ const SeguimientoContactos = () => {
                                                             } catch { toast.error('Error al programar reintento'); }
                                                         }}
                                                         className="flex-1 py-2 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700"
-                                                    >?? Programar reintento</button>
+                                                    >📅 Programar reintento</button>
                                                     <button
                                                         onClick={() => setLlamadaFlow(null)}
                                                         className="px-4 py-2 border border-slate-200 text-gray-600 rounded-lg hover:bg-slate-50 text-sm"
@@ -1459,7 +1456,7 @@ const SeguimientoContactos = () => {
                                         {/* 3b: WhatsApp o Correo */}
                                         {llamadaFlow.paso === 'whatsapp' && (
                                             <div className="space-y-3">
-                                                <p className="font-semibold text-green-700">?? A�adir nota para WhatsApp/Correo</p>
+                                                <p className="font-semibold text-green-700">📝 Añadir nota para WhatsApp/Correo</p>
                                                 <textarea
                                                     rows={2}
                                                     value={llamadaFlow.notas || ''}
@@ -1469,20 +1466,20 @@ const SeguimientoContactos = () => {
                                                 />
                                                 <button
                                                     onClick={async () => {
-                                                        const notaFinal = llamadaFlow.notas ? `Prefiere atenci�n por WhatsApp o correo - ${llamadaFlow.notas}` : 'Prefiere atenci�n por WhatsApp o correo';
+                                                        const notaFinal = llamadaFlow.notas ? `Prefiere atención por WhatsApp o correo - ${llamadaFlow.notas}` : 'Prefiere atención por WhatsApp o correo';
                                                         await registrarActividad({ tipo: 'llamada', resultado: 'exitoso', notas: notaFinal });
                                                         setLlamadaFlow(null);
                                                         toast('Registrado: Prefiere WhatsApp/Correo', { icon: '??' });
                                                     }}
                                                     className="w-full py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700"
-                                                >? Guardar interacci�n</button>
+                                                >✓ Guardar interacción</button>
                                             </div>
                                         )}
 
-                                        {/* 3c: Sin Inter�s */}
+                                        {/* 3c: Sin Interés */}
                                         {llamadaFlow.paso === 'sin_interes' && (
                                             <div className="space-y-3">
-                                                <p className="font-semibold text-gray-700">? Motivo de falta de inter�s</p>
+                                                <p className="font-semibold text-gray-700">❓ Motivo de falta de interés</p>
                                                 <textarea
                                                     rows={2}
                                                     value={llamadaFlow.notas || ''}
@@ -1492,20 +1489,20 @@ const SeguimientoContactos = () => {
                                                 />
                                                 <button
                                                     onClick={async () => {
-                                                        const notaFinal = llamadaFlow.notas ? `Sin inter�s - ${llamadaFlow.notas}` : 'Contest�, sin inter�s';
+                                                        const notaFinal = llamadaFlow.notas ? `Sin interés - ${llamadaFlow.notas}` : 'Contestó, sin interés';
                                                         await registrarActividad({ tipo: 'llamada', resultado: 'exitoso', notas: notaFinal });
                                                         setLlamadaFlow(null);
-                                                        toast('Sin inter�s � considera descartarlo', { icon: '??' });
+                                                        toast('Sin interés — considera descartarlo', { icon: '??' });
                                                     }}
                                                     className="w-full py-2 bg-gray-500 text-white rounded-lg font-bold hover:bg-gray-600"
-                                                >? Guardar y cerrar</button>
+                                                >✓ Guardar y cerrar</button>
                                             </div>
                                         )}
 
-                                        {/* 3d: Llamar despu�s � marcar fecha */}
+                                        {/* 3d: Llamar después — marcar fecha */}
                                         {llamadaFlow.paso === 'llamarDespues' && (
                                             <div className="space-y-3">
-                                                <p className="font-semibold text-blue-700">?? �Cu�ndo le llamamos?</p>
+                                                <p className="font-semibold text-blue-700">📅 ¿Cuándo le llamamos?</p>
                                                 <TimeWheelPicker
                                                     value={llamadaFlow.fechaProxima}
                                                     onChange={val => setLlamadaFlow(f => ({ ...f, fechaProxima: val }))}
@@ -1520,7 +1517,7 @@ const SeguimientoContactos = () => {
                                                 <button
                                                     onClick={async () => {
                                                         try {
-                                                            const notasFin = llamadaFlow.notas || 'Interesado, llamar despu�s';
+                                                            const notasFin = llamadaFlow.notas || 'Interesado, llamar después';
                                                             const pidLocal = prospectoSeleccionado.id || prospectoSeleccionado._id;
 
                                                             // 1. Registrar Actividad (usa el helper que auto-promueve la etapa)
@@ -1554,7 +1551,7 @@ const SeguimientoContactos = () => {
                                                         }
                                                     }}
                                                     className="w-full py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700"
-                                                >? Guardar seguimiento</button>
+                                                >✓ Guardar seguimiento</button>
                                             </div>
                                         )}
                                     </div>
@@ -1575,12 +1572,12 @@ const SeguimientoContactos = () => {
                                     <textarea
                                         value={notasRapidas}
                                         onChange={(e) => setNotasRapidas(e.target.value)}
-                                        placeholder="Escribe notas importantes aqu�..."
+                                        placeholder="Escribe notas importantes aquí..."
                                         className="w-full bg-white border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-700 focus:border-transparent outline-none min-h-[100px] resize-none scrollbar-hide"
                                     />
                                 </div>
 
-                                {/* Acciones de cierre (acorde�n para evitar missclick) */}
+                                {/* Acciones de cierre (acordeón para evitar missclick) */}
                                 <div className="border border-slate-200 rounded-xl overflow-hidden">
                                     <button
                                         onClick={() => setAcordeonCierreAbierto(v => !v)}
@@ -1632,14 +1629,14 @@ const SeguimientoContactos = () => {
                                 ) : actividadesContext.length === 0 ? (
                                     <div className="text-center text-gray-400 mt-10">
                                         <Clock className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                                        <p className="text-sm">Sin interacciones registradas a�n.</p>
+                                        <p className="text-sm">Sin interacciones registradas aún.</p>
                                     </div>
                                 ) : (
                                     [...actividadesContext].reverse().map((act, index) => {
                                         const meta = getActIcon(act);
                                         return (
                                             <div key={act.id || index} className="flex gap-3">
-                                                {/* �cono */}
+                                                {/* Ícono */}
                                                 <div className={`w-9 h-9 rounded-full ${meta.color} flex items-center justify-center text-lg shrink-0 shadow-sm`}>
                                                     <span>{meta.icon}</span>
                                                 </div>
@@ -1660,7 +1657,7 @@ const SeguimientoContactos = () => {
                                                     </div>
                                                     <p className="text-xs text-gray-500 mt-0.5">
                                                         {new Date(act.fecha).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                        {act.vendedorNombre && <> � {act.vendedorNombre}</>}
+                                                        {act.vendedorNombre && <> — {act.vendedorNombre}</>}
                                                     </p>
                                                     {getResultadoTexto(act) && (
                                                         <p className="text-xs font-medium text-gray-600 mt-1">{getResultadoTexto(act)}</p>
@@ -1741,7 +1738,7 @@ const SeguimientoContactos = () => {
                 {/* Buscador + Filtros 30/70 */}
                 <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
                     <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-4 items-center">
-                        {/* 30% B�squeda */}
+                        {/* 30% Búsqueda */}
                         <div className="relative w-full">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
@@ -1750,20 +1747,20 @@ const SeguimientoContactos = () => {
                                 value={busquedaProspecto}
                                 onChange={(e) => setBusquedaProspecto(e.target.value)}
                                 className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-800 focus:border-blue-800 bg-slate-50 text-sm h-[42px]"
-                                title="Buscar por nombre, empresa, correo o tel�fono"
+                                title="Buscar por nombre, empresa, correo o teléfono"
                             />
                         </div>
                         {/* 70% Filtros */}
                         <div className="flex flex-wrap gap-2 items-center w-full">
                             <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-                            {/* Filtros r�pidos por contacto */}
+                            {/* Filtros rápidos por contacto */}
                             <div className="flex flex-wrap gap-1.5">
                                 {[
                                     { value: 'todos', label: 'Todos' },
-                                    { value: 'en_contacto', label: '? En contacto' },
-                                    { value: 'sin_respuesta', label: '?? Sin respuesta' },
-                                    { value: 'no_contactado', label: '?? No contactado' },
-                                    { value: 'con_cita', label: '?? Con cita' },
+                                    { value: 'en_contacto', label: '✅ En contacto' },
+                                    { value: 'sin_respuesta', label: '📵 Sin respuesta' },
+                                    { value: 'no_contactado', label: '⭕ No contactado' },
+                                    { value: 'con_cita', label: '📅 Con cita' },
                                 ].map(btn => (
                                     <button
                                         key={btn.value}
@@ -1811,7 +1808,7 @@ const SeguimientoContactos = () => {
                     <div className="rounded-xl p-12 text-center">
                         <User className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                         <p className="text-gray-500 font-medium">No se encontraron prospectos.</p>
-                        <p className="text-gray-400 text-sm mt-1">Intenta con otra b�squeda o crea uno nuevo.</p>
+                        <p className="text-gray-400 text-sm mt-1">Intenta con otra búsqueda o crea uno nuevo.</p>
                     </div>
                 ) : (
                     <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
@@ -1823,7 +1820,7 @@ const SeguimientoContactos = () => {
                                         <th className="px-4 py-3 text-left font-semibold">Empresa</th>
                                         <th className="px-4 py-3 text-left font-semibold">Contacto</th>
                                         <th className="px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider">Etapa</th>
-                                        <th className="px-4 py-3 text-left font-semibold">�ltima interacci�n</th>
+                                        <th className="px-4 py-3 text-left font-semibold">Última interacción</th>
                                         <th className="px-4 py-3 text-left font-semibold">Recordatorio</th>
                                         <th className="px-4 py-3 text-center font-semibold">Acciones</th>
                                     </tr>
@@ -1843,7 +1840,7 @@ const SeguimientoContactos = () => {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-gray-600 text-sm">{p.empresa || '�'}</td>
+                                            <td className="px-4 py-3 text-gray-600 text-sm">{p.empresa || '—'}</td>
                                             <td className="px-4 py-3">
                                                 <div className="space-y-0.5">
                                                     {p.telefono ? (
@@ -1884,7 +1881,7 @@ const SeguimientoContactos = () => {
                                                         </div>
                                                         <p className="text-[11px] text-slate-600 leading-snug" title={p.ultimaActNotas || ''}>
                                                             {p.ultimaActNotas
-                                                                ? (p.ultimaActNotas.length > 50 ? p.ultimaActNotas.slice(0, 50) + '�' : p.ultimaActNotas)
+                                                                ? (p.ultimaActNotas.length > 50 ? p.ultimaActNotas.slice(0, 50) + '…' : p.ultimaActNotas)
                                                                 : <span className="italic text-slate-400">{getTipoLabel(p.ultimaActTipo)}</span>}
                                                         </p>
                                                     </div>
@@ -1941,4 +1938,4 @@ const SeguimientoContactos = () => {
     );
 };
 
-export default SeguimientoContactos;
+export default DoctorPacientes;

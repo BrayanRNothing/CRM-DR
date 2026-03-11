@@ -9,7 +9,7 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import ProspectorSidebar from '../../components/prospector/ProspectorSidebar';
 import ProspectorNavbar from '../../components/prospector/ProspectorNavbar';
-import Modal from '../../components/common/Modal';
+import Modal from '../../components/ui/Modal';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import CalendarioCompleto from './CalendarioCompleto.jsx';
+import CalendarioCompleto from '../../features/calendarios/UserFullCalendar';
 
 const CalendarioVista = () => {
     return <CalendarioCompleto forceModo="vista" />;
