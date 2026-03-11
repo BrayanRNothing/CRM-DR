@@ -7,7 +7,7 @@ import { HistorialInteracciones } from '../../components/HistorialInteracciones'
 import Modal from '../../components/ui/Modal';
 import toast from 'react-hot-toast';
 
-import API_URL from '../../config/api';
+import API_URL from '../../services/api';
 
 // --- CSV helpers ---
 const CSV_HEADERS = ['nombres', 'apellidoPaterno', 'apellidoMaterno', 'telefono', 'correo', 'empresa', 'sitioWeb', 'ubicacion', 'notas'];

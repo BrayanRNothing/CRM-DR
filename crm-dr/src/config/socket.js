@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import API_URL from './api';
+import API_URL from '../services/api';
 
 // Inicializar conexión con el servidor
 export const socket = io(API_URL, {

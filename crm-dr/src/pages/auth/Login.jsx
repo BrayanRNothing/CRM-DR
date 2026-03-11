@@ -6,7 +6,7 @@ import { getUser, saveUser, saveToken } from '../../utils/authUtils';
 import { Mail, Lock, Check, Eye, EyeOff, ShieldCheck, ArrowRight } from 'lucide-react';
 
 // URL DEL BACKEND (Ajústala si pruebas en local)
-import API_URL from '../../config/api';
+import API_URL from '../../services/api';
 // const API_URL = 'http://localhost:4000'; 
 
 const Login = () => {

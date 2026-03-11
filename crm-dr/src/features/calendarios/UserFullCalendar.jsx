@@ -6,7 +6,7 @@ import {
     Plus, Mail, Briefcase, RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import API_URL from '../../config/api';
+import API_URL from '../../services/api';
 import { getToken } from '../../utils/authUtils';
 
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];

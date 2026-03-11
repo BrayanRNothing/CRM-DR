@@ -31,7 +31,7 @@ import { getToken, decodeRole } from '../../utils/authUtils';
 import HistorialInteracciones from '../../components/HistorialInteracciones';
 import TimeWheelPicker from '../../components/TimeWheelPicker';
 
-import API_URL from '../../config/api';
+import API_URL from '../../services/api';
 import socket from '../../config/socket';
 
 // --- CSV helpers ---

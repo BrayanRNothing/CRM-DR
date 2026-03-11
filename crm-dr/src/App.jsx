@@ -2,7 +2,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
-import AppLayout from './layouts/AppLayout.jsx';
+import AppLayout from './layouts/TeamCloserLayout.jsx';
 
 // Components
 import SkeletonLoader from './components/ui/SkeletonLoader.jsx';
@@ -10,7 +10,7 @@ import SkeletonLoader from './components/ui/SkeletonLoader.jsx';
 // Páginas
 import React, { Suspense, lazy } from 'react';
 const Login = lazy(() => import('./pages/auth/login.jsx'));
-const Register = lazy(() => import('./pages/auth/Register.jsx'));
+const Register = lazy(() => import('./pages/auth/registro.jsx'));
 const AjustesEmpresa = lazy(() => import('./pages/settings/AjustesEmpresa.jsx'));
 
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
@@ -21,11 +21,11 @@ const CalendarioCompleto = lazy(() => import('./features/calendarios/UserFullCal
 const DashboardMain = lazy(() => import('./features/dashboards/CloserDashboard.jsx'));
 
 // Otras paginas
-const Estadisticas = lazy(() => import('./pages/dashboard/Estadisticas.jsx'));
+const Estadisticas = lazy(() => import('./features/dashboards/Estadisticas.jsx'));
 
 // Shared Components / Features
 const Directorio = lazy(() => import('./features/prospects/ListaClientes.jsx'));
-const UserManagement = lazy(() => import('./pages/users/UserManagement.jsx'));
+const UserManagement = lazy(() => import('./features/users-management/TeamManagement.jsx'));
 const UserProfile = lazy(() => import('./pages/users/UserProfile.jsx'));
 
 function App() {

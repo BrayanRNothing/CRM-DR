@@ -8,7 +8,7 @@ import Avatar from '../../components/ui/Avatar';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
-import API_URL from '../../config/api';
+import API_URL from '../../services/api';
 import { getUser, saveUser, getToken } from '../../utils/authUtils';
 
 const GoogleIcon = ({ size = 20 }) => (
