@@ -54,20 +54,23 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                 }`}
         >
             {/* Header */}
-            <div className={`flex items-center p-4 border-b ${borderClass} ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+            <div className={`flex items-center border-b ${borderClass} ${isCollapsed ? 'justify-center p-3' : 'justify-between px-4 py-3'}`}>
                 {isCollapsed ? (
                     <button
                         onClick={handleToggle}
                         className="relative flex items-center justify-center w-full group"
                         title="Expandir menú"
                     >
-                        <img
-                            src={logo}
-                            alt={title}
-                            className="h-8 w-8 object-contain transition-opacity duration-300 group-hover:opacity-20"
-                        />
+                        <div className={`flex items-center justify-center w-11 h-11 rounded-xl transition-all duration-300 group-hover:scale-95 ${isDark ? 'bg-gray-800' : 'bg-blue-50 shadow-sm'}`}>
+                            <img
+                                src={logo}
+                                alt={title}
+                                className="h-8 w-8 object-contain"
+                                style={{ mixBlendMode: isDark ? 'normal' : 'multiply' }}
+                            />
+                        </div>
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <ChevronRight size={24} className={`${isDark ? 'text-white' : 'text-gray-800'}`} />
+                            <ChevronRight size={18} className={`${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
                         </div>
                         {/* Indicador one-time: punto pulsante + tooltip */}
                         {showHint && (
@@ -85,52 +88,38 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                     </button>
                 ) : (
                     <>
-                        {logo ? (
-                            <button
-                                onClick={handleToggle}
-                                className="flex-1 flex justify-center hover:opacity-80 transition-opacity cursor-pointer focus:outline-none"
-                                title="Contraer/Expandir menú"
-                            >
-                                <img
-                                    src={logo}
-                                    alt={title}
-                                    className="h-10 w-auto object-contain"
-                                />
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleToggle}
-                                className={`font-bold text-xl hover:opacity-80 transition-opacity cursor-pointer focus:outline-none ${isDark ? 'text-white' : 'text-gray-800'}`}
-                                title="Contraer/Expandir menú"
-                            >
-                                {title}
-                            </button>
-                        )}
                         <button
                             onClick={handleToggle}
-                            className={`p-1.5 rounded-lg transition-colors absolute right-4 ${hoverClasses}`}
+                            className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity cursor-pointer focus:outline-none"
+                            title="Contraer/Expandir menú"
                         >
-                            <ChevronLeft size={20} />
+                            {logo && (
+                                <div className={`shrink-0 flex items-center justify-center w-10 h-10 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-blue-50 shadow-sm'}`}>
+                                    <img
+                                        src={logo}
+                                        alt={title}
+                                        className="h-7 w-7 object-contain"
+                                        style={{ mixBlendMode: isDark ? 'normal' : 'multiply' }}
+                                    />
+                                </div>
+                            )}
+                            <div className="flex flex-col min-w-0">
+                                <span className={`font-semibold text-sm leading-tight truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                    CRM Médico
+                                </span>
+                            </div>
+                        </button>
+                        <button
+                            onClick={handleToggle}
+                            className={`shrink-0 p-1.5 rounded-lg transition-colors ${hoverClasses}`}
+                        >
+                            <ChevronLeft size={18} />
                         </button>
                     </>
                 )}
             </div>
 
-            {/* User Greeting */}
-            <div className={`px-4 py-3 border-b ${borderClass}`}>
-                {!isCollapsed ? (
-                    <div className="flex items-center gap-3">
-                        <Avatar name={userInfo?.nombre || 'U'} size="sm" />
-                        <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                            Hola, {userInfo?.nombre || 'Usuario'}
-                        </p>
-                    </div>
-                ) : (
-                    <div className="flex justify-center">
-                        <Avatar name={userInfo?.nombre || 'U'} size="sm" />
-                    </div>
-                )}
-            </div>
+
 
             {/* Navigation */}
             <nav className="flex-1 p-3 flex flex-col overflow-y-auto scrollbar-hide">
@@ -143,7 +132,7 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                                 <div key={index}>
                                     <button
                                         onClick={() => !isCollapsed && toggleAccordion(item.name)}
-                                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${inactiveClasses} ${hoverClasses}`}
+                                        className={`w-full flex items-center gap-3 py-3 rounded-xl transition-all ${isCollapsed ? 'justify-center px-0' : 'px-3'} ${inactiveClasses} ${hoverClasses}`}
                                         title={isCollapsed ? item.name : ''}
                                     >
                                         <div className="flex-shrink-0">{item.icon}</div>
@@ -175,7 +164,7 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                         const isActive = location.pathname === item.path;
                         return (
                             <Link key={index} to={item.path}
-                                className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                className={`flex items-center gap-3 py-3 rounded-xl transition-all ${isCollapsed ? 'justify-center px-0' : 'px-3'} ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                 title={isCollapsed ? item.name : ''}
                             >
                                 <div className="flex-shrink-0">{item.icon}</div>
@@ -197,7 +186,7 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                                 <div key={`bot-${index}`}>
                                     <button
                                         onClick={() => !isCollapsed && toggleAccordion(item.name)}
-                                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${inactiveClasses} ${hoverClasses}`}
+                                        className={`w-full flex items-center gap-3 py-3 rounded-xl transition-all ${isCollapsed ? 'justify-center px-0' : 'px-3'} ${inactiveClasses} ${hoverClasses}`}
                                         title={isCollapsed ? item.name : ''}
                                     >
                                         <div className="flex-shrink-0">{item.icon}</div>
@@ -229,7 +218,7 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                         const isActive = location.pathname === item.path;
                         return (
                             <Link key={`bot-${index}`} to={item.path}
-                                className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                className={`flex items-center gap-3 py-3 rounded-xl transition-all ${isCollapsed ? 'justify-center px-0' : 'px-3'} ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                 title={isCollapsed ? item.name : ''}
                             >
                                 <div className="flex-shrink-0">{item.icon}</div>

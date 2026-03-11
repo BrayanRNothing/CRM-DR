@@ -6,7 +6,7 @@ const { toMongoFormat, toMongoFormatMany } = require('../lib/helpers');
 
 const esProspector = (req, res, next) => {
     const rol = String(req.usuario.rol).toLowerCase();
-    if (rol !== 'prospector' && rol !== 'closer' && rol !== 'doctor') {
+    if (rol !== 'prospector' && rol !== 'closer' && rol !== 'doctor' && rol !== 'admin') {
         return res.status(403).json({ msg: 'Acceso denegado. Rol no autorizado.' });
     }
     next();

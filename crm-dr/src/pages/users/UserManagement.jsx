@@ -18,10 +18,17 @@ const inp = 'w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gr
 
 function ModalUsuario({ modoEdicion, formData, setFormData, handleSubmit, cerrarModal }) {
     const isCloser = formData.rol === 'closer';
+    const isAdmin = formData.rol === 'admin';
     const [showPassword, setShowPassword] = useState(false);
 
     // Theme configuration based on role
-    const theme = isCloser ? {
+    const theme = isAdmin ? {
+        gradient: 'from-purple-600 to-indigo-600',
+        lightBg: 'bg-purple-50/50',
+        iconColor: 'text-purple-500',
+        ring: 'focus:ring-purple-500',
+        button: 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/30'
+    } : isCloser ? {
         gradient: 'from-blue-600 to-indigo-600',
         lightBg: 'bg-blue-50/50',
         iconColor: 'text-blue-500',
@@ -68,17 +75,17 @@ function ModalUsuario({ modoEdicion, formData, setFormData, handleSubmit, cerrar
                             <div className="grid grid-cols-2 gap-4">
                                 <button type="button"
                                     onClick={() => setFormData(p => ({ ...p, rol: 'prospector' }))}
-                                    className={`relative flex flex-col items-center justify-center p-4 border-2 rounded-2xl transition-all duration-300 group ${!isCloser
+                                    className={`relative flex flex-col items-center justify-center p-4 border-2 rounded-2xl transition-all duration-300 group ${formData.rol === 'prospector'
                                         ? 'border-[#8bc34a] bg-green-50 shadow-md shadow-green-100 scale-[1.02]'
                                         : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50 opacity-60 hover:opacity-100'
                                         }`}>
                                     {formData.rol === 'prospector' && (
                                         <div className="absolute top-3 right-3 text-[#8bc34a]"><CheckCircle2 size={18} fill="#8bc34a" className="text-white" /></div>
                                     )}
-                                    <div className={`p-3 rounded-2xl mb-3 transition-colors ${!isCloser ? 'bg-[#8bc34a] text-white shadow-lg shadow-green-200' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
+                                    <div className={`p-3 rounded-2xl mb-3 transition-colors ${formData.rol === 'prospector' ? 'bg-[#8bc34a] text-white shadow-lg shadow-green-200' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
                                         <Search size={24} strokeWidth={2.5} />
                                     </div>
-                                    <span className={`font-black text-sm tracking-wide ${!isCloser ? 'text-[#8bc34a]' : 'text-slate-500'}`}>PROSPECTOR</span>
+                                    <span className={`font-black text-sm tracking-wide ${formData.rol === 'prospector' ? 'text-[#8bc34a]' : 'text-slate-500'}`}>PROSPECTOR</span>
                                 </button>
 
                                 <button type="button"
@@ -87,13 +94,30 @@ function ModalUsuario({ modoEdicion, formData, setFormData, handleSubmit, cerrar
                                         ? 'border-blue-600 bg-blue-50 shadow-md shadow-blue-100 scale-[1.02]'
                                         : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50 opacity-60 hover:opacity-100'
                                         }`}>
-                                    {formData.rol === 'closer' && (
+                                    {isCloser && (
                                         <div className="absolute top-3 right-3 text-blue-600"><CheckCircle2 size={18} fill="#2563eb" className="text-white" /></div>
                                     )}
                                     <div className={`p-3 rounded-2xl mb-3 transition-colors ${isCloser ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
                                         <Target size={24} strokeWidth={2.5} />
                                     </div>
                                     <span className={`font-black text-sm tracking-wide ${isCloser ? 'text-blue-600' : 'text-slate-500'}`}>CLOSER</span>
+                                </button>
+                            </div>
+                            
+                            <div className="mt-4">
+                                <button type="button"
+                                    onClick={() => setFormData(p => ({ ...p, rol: 'admin' }))}
+                                    className={`relative w-full flex flex-col items-center justify-center p-4 border-2 rounded-2xl transition-all duration-300 group ${isAdmin
+                                        ? 'border-purple-600 bg-purple-50 shadow-md shadow-purple-100 scale-[1.02]'
+                                        : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50 opacity-60 hover:opacity-100'
+                                        }`}>
+                                    {isAdmin && (
+                                        <div className="absolute top-3 right-3 text-purple-600"><CheckCircle2 size={18} fill="#9333ea" className="text-white" /></div>
+                                    )}
+                                    <div className={`p-3 rounded-2xl mb-3 transition-colors ${isAdmin ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
+                                        <Shield size={24} strokeWidth={2.5} />
+                                    </div>
+                                    <span className={`font-black text-sm tracking-wide ${isAdmin ? 'text-purple-600' : 'text-slate-500'}`}>ADMINISTRADOR</span>
                                 </button>
                             </div>
                         </div>
@@ -315,9 +339,10 @@ function UserManagement({ initialRole }) {
     const me = (() => { try { return JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user')); } catch { return null; } })();
     const myGoogleToken = localStorage.getItem('google_access_token');
 
-    const getRoleStyle = (role) => role === 'closer'
-        ? { bar: 'from-blue-500 to-indigo-600', badge: 'bg-blue-50 text-blue-700 border-blue-200', label: '🎯 Closer' }
-        : { bar: 'from-blue-800 to-emerald-600', badge: 'bg-blue-50 text-blue-950 border-blue-300', label: '🔍 Prospector' };
+    const getRoleStyle = (role) => 
+        role === 'admin' ? { bar: 'from-purple-500 to-indigo-600', badge: 'bg-purple-50 text-purple-700 border-purple-200', label: '👑 Admin' } :
+        role === 'closer' ? { bar: 'from-blue-500 to-indigo-600', badge: 'bg-blue-50 text-blue-700 border-blue-200', label: '🎯 Closer' } :
+        { bar: 'from-blue-800 to-emerald-600', badge: 'bg-blue-50 text-blue-950 border-blue-300', label: '🔍 Prospector' };
 
     return (
         <div className="w-full min-h-full bg-slate-50 p-6 md:p-8">

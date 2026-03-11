@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import API_URL from '../../config/api';
 import socket from '../../config/socket';
 
-const CloserDashboard = () => {
+const DoctorDashboard = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
 
@@ -37,10 +37,10 @@ const CloserDashboard = () => {
             const config = { headers: { 'x-auth-token': token } };
 
             const [prospectorRes, closerRes, tareasRes, reunionesRes] = await Promise.all([
-                axios.get(`${API_URL}/api/prospector/dashboard`, config).catch(() => ({ data: {} })),
-                axios.get(`${API_URL}/api/closer/dashboard`, config).catch(() => ({ data: {} })),
+                axios.get(`${API_URL}/api/doctor/dashboard`, config).catch(() => ({ data: {} })),
+                axios.get(`${API_URL}/api/doctor/dashboard-extra`, config).catch(() => ({ data: {} })),
                 axios.get(`${API_URL}/api/tareas`, config).catch(() => ({ data: [] })),
-                axios.get(`${API_URL}/api/closer/calendario`, config).catch(() => ({ data: [] }))
+                axios.get(`${API_URL}/api/doctor/calendario`, config).catch(() => ({ data: [] }))
             ]);
 
             const pData = prospectorRes.data;
@@ -142,7 +142,7 @@ const CloserDashboard = () => {
             label: 'Agendadas Hoy',
             gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
             glow: 'rgba(79,172,254,0.35)',
-            badge: kpis.citasPendientes > 0 ? `${kpis.citasPendientes} PEND` : null,
+            badge: kpis.citasPendientes > 0 ? `${kpis.citasPendientes} PENDIENTES` : null,
             badgeColor: 'rgba(255,255,255,0.25)',
         },
         {
@@ -176,7 +176,7 @@ const CloserDashboard = () => {
         <div className="h-full flex flex-col overflow-hidden" style={{ background: 'linear-gradient(160deg, #f8faff 0%, #eef2ff 50%, #f0fdf4 100%)' }}>
 
             {/* ═══ Header ═══ */}
-            <div className="px-6 pt-2 pb-1 flex-shrink-0">
+            <div className="px-6 pt-2 pb-1 shrink-0">
                 <div className="flex items-center gap-3">
 
                 </div>
@@ -185,7 +185,7 @@ const CloserDashboard = () => {
             <div className="flex-1 flex flex-col px-6 pb-6 gap-5 overflow-hidden min-h-0">
 
                 {/* ═══ KPI Cards ═══ */}
-                <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 flex-shrink-0">
+                <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 shrink-0">
                     {kpiCards.map((card, i) => {
                         const Icon = card.icon;
                         return (
@@ -227,7 +227,7 @@ const CloserDashboard = () => {
                     {/* ═══ Columna Izquierda: Metas y Tareas ═══ */}
                     <div className="rounded-2xl flex flex-col overflow-hidden min-h-0" style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', border: '1px solid rgba(255,255,255,0.9)' }}>
                         {/* Card header */}
-                        <div className="px-6 pt-5 pb-4 flex-shrink-0 border-b border-slate-100">
+                        <div className="px-6 pt-5 pb-4 shrink-0 border-b border-slate-100">
                             <h2 className="text-base font-black text-slate-800 flex items-center gap-2">
                                 <div className="p-1.5 rounded-lg" style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', boxShadow: '0 4px 12px rgba(102,126,234,0.3)' }}>
                                     <Target className="w-4 h-4 text-white" />
@@ -267,7 +267,7 @@ const CloserDashboard = () => {
                                     <div className="flex justify-between items-center text-xs font-bold text-slate-700 mb-2">
                                         <span className="flex items-center gap-1.5">
                                             <UserPlus className="w-3.5 h-3.5 text-indigo-400" />
-                                            Meta: 1 Prospecto Diario
+                                            Meta: 1 Paciente Diario
                                         </span>
                                         <span className={kpis.prospectosHoy >= 1 ? 'text-emerald-600 font-black' : 'text-slate-400'}>
                                             {kpis.prospectosHoy} / 1
@@ -320,14 +320,14 @@ const CloserDashboard = () => {
                                             >
                                                 <div className="flex-1 min-w-0 pr-4">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${t.prioridad === 'alta' ? 'bg-rose-500' : 'bg-indigo-400'}`} style={{ boxShadow: t.prioridad === 'alta' ? '0 0 6px rgba(239,68,68,0.5)' : '0 0 6px rgba(99,102,241,0.5)' }} />
+                                                        <span className={`w-2 h-2 rounded-full shrink-0 ${t.prioridad === 'alta' ? 'bg-rose-500' : 'bg-indigo-400'}`} style={{ boxShadow: t.prioridad === 'alta' ? '0 0 6px rgba(239,68,68,0.5)' : '0 0 6px rgba(99,102,241,0.5)' }} />
                                                         <h3 className="font-bold text-slate-800 text-sm truncate">{t.titulo}</h3>
                                                     </div>
                                                     <p className="text-xs text-slate-500 line-clamp-1">{t.descripcion}</p>
                                                     {(t.clienteNombre || irAProspecto) && (
                                                         <p className="flex items-center gap-1 text-[10px] text-slate-400 font-bold mt-1.5 uppercase tracking-wider group-hover:text-indigo-600 transition-colors">
                                                             <Briefcase className="w-3 h-3" />
-                                                            {t.clienteNombre ? `${t.clienteNombre} ${t.clienteApellido || ''}` : 'Ver prospecto'}
+                                                            {t.clienteNombre ? `${t.clienteNombre} ${t.clienteApellido || ''}` : 'Ver paciente'}
                                                             <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                         </p>
                                                     )}
@@ -353,7 +353,7 @@ const CloserDashboard = () => {
                     {/* ═══ Columna Derecha: Próximas Citas ═══ */}
                     <div className="rounded-2xl flex flex-col overflow-hidden min-h-0" style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', border: '1px solid rgba(255,255,255,0.9)' }}>
                         {/* Card header */}
-                        <div className="px-6 pt-5 pb-4 flex-shrink-0 border-b border-slate-100">
+                        <div className="px-6 pt-5 pb-4 shrink-0 border-b border-slate-100">
                             <h2 className="text-base font-black text-slate-800 flex items-center gap-2">
                                 <div className="p-1.5 rounded-lg" style={{ background: 'linear-gradient(135deg, #4facfe, #00f2fe)', boxShadow: '0 4px 12px rgba(79,172,254,0.3)' }}>
                                     <Clock className="w-4 h-4 text-white" />
@@ -447,4 +447,4 @@ const CloserDashboard = () => {
     );
 };
 
-export default CloserDashboard;
+export default DoctorDashboard;

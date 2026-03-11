@@ -51,7 +51,10 @@ router.post('/login', async (req, res) => {
                         nombre: row.nombre,
                         rol: row.rol,
                         email: row.email,
-                        telefono: row.telefono
+                        telefono: row.telefono,
+                        modo_crm: row.modo_crm,
+                        nombreEmpresa: row.nombreEmpresa,
+                        logoEmpresa: row.logoEmpresa
                     }
                 });
             }
@@ -68,9 +71,10 @@ router.post('/login', async (req, res) => {
 router.post('/register', async (req, res) => {
     try {
         console.log('📝 Intento de registro recibido:', { ...req.body, contraseña: '***' });
-        let { usuario, contraseña, nombre, email, telefono, rol } = req.body;
+        let { usuario, contraseña, nombre, email, telefono, rol, modo_crm } = req.body;
 
-        if (!rol) rol = 'closer';
+        if (!rol) rol = 'admin';
+        if (!modo_crm) modo_crm = 'individual';
 
         if (!usuario || !contraseña || !nombre) {
             console.log('⚠️ Registro fallido: Faltan campos obligatorios');
@@ -86,10 +90,10 @@ router.post('/register', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hash = await bcrypt.hash(contraseña, salt);
 
-        const stmt = await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono) VALUES (?, ?, ?, ?, ?, ?)');
-        const result = await stmt.run(usuario.trim(), hash, rol, nombre.trim(), (email || '').trim(), (telefono || '').trim());
+        const stmt = await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono, modo_crm) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        const result = await stmt.run(usuario.trim(), hash, rol, nombre.trim(), (email || '').trim(), (telefono || '').trim(), modo_crm);
 
-        const newUser = await db.prepare('SELECT id, usuario, nombre, rol, email FROM usuarios WHERE id = ?').get(result.lastInsertRowid);
+        const newUser = await db.prepare('SELECT id, usuario, nombre, rol, email, modo_crm FROM usuarios WHERE id = ?').get(result.lastInsertRowid);
 
         console.log('✅ Usuario registrado con éxito:', newUser.usuario);
         res.status(201).json({
@@ -107,7 +111,7 @@ router.post('/register', async (req, res) => {
 // @access  Private
 router.get('/me', auth, async (req, res) => {
     try {
-        const user = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo FROM usuarios WHERE id = ?').get(req.usuario.id);
+        const user = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo, modo_crm, nombreEmpresa, logoEmpresa FROM usuarios WHERE id = ?').get(req.usuario.id);
         res.json(user);
     } catch (error) {
         console.error('Error en auth/me:', error);

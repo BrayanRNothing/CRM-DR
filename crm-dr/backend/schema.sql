@@ -72,10 +72,11 @@ CREATE TABLE usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             usuario TEXT UNIQUE NOT NULL,
             contraseña TEXT NOT NULL,
-            rol TEXT NOT NULL CHECK(rol IN ('prospector','closer')),
+            rol TEXT NOT NULL,
             nombre TEXT NOT NULL,
             email TEXT,
             telefono TEXT,
+            modo_crm TEXT DEFAULT 'individual',
             activo INTEGER DEFAULT 1,
             fechaCreacion TEXT DEFAULT (datetime('now'))
         , googleRefreshToken TEXT, googleAccessToken TEXT, googleTokenExpiry REAL)

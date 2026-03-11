@@ -14,7 +14,10 @@ const formatUser = (row) => ({
     telefono: row.telefono,
     activo: !!row.activo,
     fechaCreacion: row.fechaCreacion,
-    googleLinked: !!(row.googleRefreshToken || row.googleAccessToken)
+    googleLinked: !!(row.googleRefreshToken || row.googleAccessToken),
+    modo_crm: row.modo_crm,
+    nombreEmpresa: row.nombreEmpresa,
+    logoEmpresa: row.logoEmpresa
 });
 
 // @route   GET api/usuarios
@@ -24,7 +27,7 @@ router.get('/', auth, async (req, res) => {
     try {
         // Permitir a todos los autenticados ver la lista de usuarios (para el sidebar)
         // O restringir si es necesario. Por ahora abierto a autenticados.
-        const rows = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo, fechaCreacion, googleRefreshToken, googleAccessToken FROM usuarios WHERE activo = 1 ORDER BY nombre ASC').all();
+        const rows = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo, fechaCreacion, googleRefreshToken, googleAccessToken, modo_crm, nombreEmpresa, logoEmpresa FROM usuarios WHERE activo = 1 ORDER BY nombre ASC').all();
         res.json(rows.map(formatUser));
     } catch (error) {
         console.error("Error in GET /api/usuarios:", error);
@@ -64,7 +67,7 @@ router.post('/', auth, esSuperUser, async (req, res) => {
 // @access  Private (Admin)
 router.put('/:id', auth, esSuperUser, async (req, res) => {
     try {
-        const { nombre, email, telefono, activo, contraseña, rol } = req.body;
+        const { nombre, email, telefono, activo, contraseña, rol, nombreEmpresa, logoEmpresa, modo_crm } = req.body;
         const id = parseInt(req.params.id);
 
         const row = await db.prepare('SELECT * FROM usuarios WHERE id = ?').get(id);
@@ -78,6 +81,9 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
         if (telefono !== undefined) { updates.push('telefono = ?'); params.push(telefono); }
         if (activo !== undefined) { updates.push('activo = ?'); params.push(activo ? 1 : 0); }
         if (rol) { updates.push('rol = ?'); params.push(rol); }
+        if (nombreEmpresa !== undefined) { updates.push('nombreEmpresa = ?'); params.push(nombreEmpresa); }
+        if (logoEmpresa !== undefined) { updates.push('logoEmpresa = ?'); params.push(logoEmpresa); }
+        if (modo_crm !== undefined) { updates.push('modo_crm = ?'); params.push(modo_crm); }
         if (contraseña) {
             const hash = await bcrypt.hash(contraseña, 10);
             updates.push('contraseña = ?');

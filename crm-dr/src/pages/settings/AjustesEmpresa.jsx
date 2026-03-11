@@ -24,15 +24,15 @@ const Toggle = ({ value, onChange }) => (
     <button
         type="button"
         onClick={() => onChange(!value)}
-        className={`relative flex-shrink-0 w-12 h-6 rounded-full transition-all duration-300 focus:outline-none ${value ? 'bg-gradient-to-r from-blue-800 to-emerald-400 shadow-lg shadow-blue-800/30' : 'bg-slate-200'}`}
+        className={`relative flex-shrink-0 w-12 h-6 rounded-full transition-all duration-300 focus:outline-none ${value ? 'bg-gradient-to-r from-blue-600 to-blue-400 shadow-lg shadow-blue-800/30' : 'bg-slate-200'}`}
     >
         <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full shadow-md transition-transform duration-300 ${value ? 'translate-x-6' : ''}`} />
     </button>
 );
 
-export default function VendedorAjustes() {
+export default function AjustesEmpresa() {
     const navigate = useNavigate();
-    const [user, setUser] = useState({ nombre: 'Usuario', usuario: 'usuario', email: '', telefono: '', rol: 'prospector', id: null });
+    const [user, setUser] = useState({ nombre: 'Usuario', usuario: 'usuario', email: '', telefono: '', rol: 'prospector', id: null, nombreEmpresa: '', modo_crm: 'individual', logoEmpresa: '' });
     const [notifs, setNotifs] = useState({ email: true, tasks: true, updates: false });
     const [googleConnected, setGoogleConnected] = useState(false);
     const [googleUser, setGoogleUser] = useState(null);
@@ -40,6 +40,8 @@ export default function VendedorAjustes() {
     const [savingPass, setSavingPass] = useState(false);
     const [profileForm, setProfileForm] = useState({ nombre: '', email: '', telefono: '' });
     const [passForm, setPassForm] = useState({ next: '', confirm: '' });
+    const [empresaForm, setEmpresaForm] = useState({ nombreEmpresa: '', modo_crm: 'individual', logoEmpresa: '' });
+    const [savingEmpresa, setSavingEmpresa] = useState(false);
     const [activeTab, setActiveTab] = useState('perfil');
 
     useEffect(() => {
@@ -47,6 +49,7 @@ export default function VendedorAjustes() {
         if (storedUser) {
             setUser(storedUser);
             setProfileForm({ nombre: storedUser.nombre || '', email: storedUser.email || '', telefono: storedUser.telefono || '' });
+            setEmpresaForm({ nombreEmpresa: storedUser.nombreEmpresa || '', modo_crm: storedUser.modo_crm || 'individual', logoEmpresa: storedUser.logoEmpresa || '' });
         }
         const gLinked = localStorage.getItem('google_linked');
         if (gLinked === 'true') {
@@ -131,6 +134,28 @@ export default function VendedorAjustes() {
         finally { setSavingPass(false); }
     };
 
+    const handleSaveEmpresa = async (e) => {
+        e.preventDefault();
+        const userId = user?.id || user?._id;
+        if (!userId) return;
+        setSavingEmpresa(true);
+        try {
+            const token = getToken();
+            const res = await fetch(`${API_URL}/api/usuarios/${userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                body: JSON.stringify({ nombreEmpresa: empresaForm.nombreEmpresa, modo_crm: empresaForm.modo_crm, logoEmpresa: empresaForm.logoEmpresa })
+            });
+            if (res.ok) {
+                const updated = { ...user, ...empresaForm };
+                saveUser(updated, !!localStorage.getItem('user'));
+                setUser(updated);
+                toast.success('🏢 Datos de Empresa guardados');
+            } else toast.error('Error al guardar datos de la empresa');
+        } catch { toast.error('Error de conexión'); }
+        finally { setSavingEmpresa(false); }
+    };
+
     const handleLogout = () => {
         localStorage.clear();
         sessionStorage.clear();
@@ -138,8 +163,8 @@ export default function VendedorAjustes() {
     };
 
     const roleColors = {
-        closer: 'from-blue-500 to-indigo-600',
-        prospector: 'from-blue-800 to-emerald-600',
+        closer: 'from-blue-600 to-blue-800',
+        prospector: 'from-blue-600 to-blue-800',
     };
     const roleBg = roleColors[user?.rol] || 'from-slate-500 to-slate-600';
 
@@ -151,6 +176,10 @@ export default function VendedorAjustes() {
         { id: 'integraciones', label: 'Google', icon: Link2 },
         { id: 'preferencias', label: 'Preferencias', icon: Palette },
     ];
+    
+    if (user?.rol === 'admin') {
+        tabs.push({ id: 'empresa', label: 'Empresa', icon: Monitor });
+    }
 
     return (
         <div className="w-full h-screen overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-white">
@@ -286,7 +315,7 @@ export default function VendedorAjustes() {
                                 <div className="" />
                                 <div className="p-6 sm:p-8">
                                     <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
-                                        <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600">
+                                        <div className="p-2 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800">
                                             <Shield className="text-white" size={16} />
                                         </div>
                                         Cambiar Contraseña
@@ -333,7 +362,7 @@ export default function VendedorAjustes() {
                                         )}
 
                                         <button type="submit" disabled={savingPass}
-                                            className="flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50">
+                                            className="flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-gradient-to-r from-blue-600 to-blue-800 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50">
                                             <KeyRound size={16} />
                                             {savingPass ? 'Actualizando...' : 'Actualizar Contraseña'}
                                         </button>
@@ -419,7 +448,7 @@ export default function VendedorAjustes() {
                                 <div className="" />
                                 <div className="p-6 sm:p-8">
                                     <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
-                                        <div className="p-2 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600">
+                                        <div className="p-2 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800">
                                             <Bell className="text-white" size={15} />
                                         </div>
                                         Notificaciones
@@ -444,6 +473,76 @@ export default function VendedorAjustes() {
 
 
                         </div>
+                    )}
+
+                    {/* ═══ TAB: EMPRESA ═══ */}
+                    {activeTab === 'empresa' && user?.rol === 'admin' && (
+                        <form onSubmit={handleSaveEmpresa}>
+                            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                                <div className="p-6 sm:p-8">
+                                    <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
+                                        <div className={`p-2 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800`}>
+                                            <Monitor className="text-white" size={16} />
+                                        </div>
+                                        Ajustes de la Empresa
+                                    </h2>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+                                        <div className="sm:col-span-2">
+                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nombre de la Empresa</label>
+                                            <div className="relative">
+                                                <Monitor className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                                                <input type="text" value={empresaForm.nombreEmpresa}
+                                                    onChange={e => setEmpresaForm(p => ({ ...p, nombreEmpresa: e.target.value }))}
+                                                    className={`${inp} pl-10`} placeholder="Ej: MediCRM Group" />
+                                            </div>
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">URL del Logo (Opcional)</label>
+                                            <div className="relative flex gap-3">
+                                                <div className="relative flex-1">
+                                                    <Camera className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                                                    <input type="text" value={empresaForm.logoEmpresa}
+                                                        onChange={e => setEmpresaForm(p => ({ ...p, logoEmpresa: e.target.value }))}
+                                                        className={`${inp} pl-10`} placeholder="https://ejemplo.com/logo.png" />
+                                                </div>
+                                                {empresaForm.logoEmpresa && (
+                                                    <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
+                                                        <img src={empresaForm.logoEmpresa} alt="Logo preview" className="max-w-full max-h-full object-contain p-1" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <h3 className="font-bold text-slate-700 text-sm mb-3">Modo del CRM</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                        <label className={`cursor-pointer rounded-2xl border-2 p-4 flex flex-col items-center justify-center text-center transition-all ${empresaForm.modo_crm === 'individual' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 bg-transparent hover:border-slate-300'}`}>
+                                            <input type="radio" name="modo_crm" value="individual" className="sr-only" checked={empresaForm.modo_crm === 'individual'} onChange={() => setEmpresaForm(p => ({ ...p, modo_crm: 'individual' }))} />
+                                            <User className={`w-8 h-8 mb-2 ${empresaForm.modo_crm === 'individual' ? 'text-blue-600' : 'text-slate-400'}`} />
+                                            <span className="font-bold text-slate-800">Modo Individual</span>
+                                            <span className="text-xs text-slate-500 mt-1">Uso personal, tú manejas todo.</span>
+                                        </label>
+                                        <label className={`cursor-pointer rounded-2xl border-2 p-4 flex flex-col items-center justify-center text-center transition-all ${empresaForm.modo_crm === 'cooperativo' ? 'border-purple-600 bg-purple-50/50' : 'border-slate-100 bg-transparent hover:border-slate-300'}`}>
+                                            <input type="radio" name="modo_crm" value="cooperativo" className="sr-only" checked={empresaForm.modo_crm === 'cooperativo'} onChange={() => setEmpresaForm(p => ({ ...p, modo_crm: 'cooperativo' }))} />
+                                            <div className="flex -space-x-2 mb-2">
+                                                <User className={`w-8 h-8 ${empresaForm.modo_crm === 'cooperativo' ? 'text-purple-600' : 'text-slate-400'}`} />
+                                                <User className={`w-8 h-8 ${empresaForm.modo_crm === 'cooperativo' ? 'text-purple-400' : 'text-slate-300'}`} />
+                                            </div>
+                                            <span className="font-bold text-slate-800">Modo Cooperativo</span>
+                                            <span className="text-xs text-slate-500 mt-1">Múltiples roles (Agendador, Closer).</span>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex justify-end">
+                                        <button type="submit" disabled={savingEmpresa}
+                                            className={`flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-gradient-to-r from-indigo-600 to-indigo-800 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50`}>
+                                            <Save size={16} />
+                                            {savingEmpresa ? 'Guardando...' : 'Guardar Empresa'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
                     )}
 
                 </div>

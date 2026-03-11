@@ -138,7 +138,7 @@ const initDb = async () => {
     id SERIAL PRIMARY KEY,
     usuario TEXT UNIQUE NOT NULL,
     contraseña TEXT NOT NULL,
-    rol TEXT NOT NULL CHECK(rol IN ('prospector','closer','doctor')),
+    rol TEXT NOT NULL,
     nombre TEXT NOT NULL,
     email TEXT,
     telefono TEXT,
@@ -284,6 +284,24 @@ const initDb = async () => {
   } catch (e) {
     if (!e.message.includes('duplicate') && !e.message.includes('already exists')) {
       console.error('⚠️ Migración telefono2 falló (no crítico):', e.message);
+    }
+  }
+
+  // Migración: agregar config de empresa en usuarios
+  try {
+    if (isPostgres) {
+      await internalDb.query("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS modo_crm TEXT DEFAULT 'individual'");
+      await internalDb.query("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nombreEmpresa TEXT");
+      await internalDb.query("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS logoEmpresa TEXT");
+    } else {
+      try { internalDb.exec("ALTER TABLE usuarios ADD COLUMN modo_crm TEXT DEFAULT 'individual'"); } catch(e){}
+      try { internalDb.exec("ALTER TABLE usuarios ADD COLUMN nombreEmpresa TEXT"); } catch(e){}
+      try { internalDb.exec("ALTER TABLE usuarios ADD COLUMN logoEmpresa TEXT"); } catch(e){}
+    }
+    console.log('✅ Migración configuración de empresa completada');
+  } catch (e) {
+    if (!e.message.includes('duplicate') && !e.message.includes('already exists')) {
+      console.error('⚠️ Migración config empresa falló:', e.message);
     }
   }
 };

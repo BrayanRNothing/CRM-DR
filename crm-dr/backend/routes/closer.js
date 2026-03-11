@@ -6,8 +6,8 @@ const { toMongoFormat, toMongoFormatMany } = require('../lib/helpers');
 
 const esCloser = (req, res, next) => {
     const rol = String(req.usuario.rol).toLowerCase();
-    if (rol !== 'closer' && rol !== 'doctor') {
-        return res.status(403).json({ msg: 'Acceso denegado. Solo closers o doctores.' });
+    if (rol !== 'closer' && rol !== 'doctor' && rol !== 'admin') {
+        return res.status(403).json({ msg: 'Acceso denegado. Solo closers, doctores o admins.' });
     }
     next();
 };
