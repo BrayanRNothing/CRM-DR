@@ -79,3 +79,17 @@ Al registrar una actividad en el historial, el `tipo` ahora puede ser un valor p
 El sistema sincroniza `citas` hacia Google Calendar.
 Los tokens de los usuarios (`googleRefreshToken`, `googleAccessToken`, `googleTokenExpiry`) deben mantenerse seguros y renovarse automáticamente vía la lógica en `backend/routes/google.js`. 
 Si se toca la lógica del agendador, se debe verificar rigurosamente que las horas concuerden (Manejo de Tiempos ISO 8601).
+
+---
+
+## 5. Temas y Colores (Personalización Futura)
+
+Como es un CRM personalizable, en el futuro el tema también cambiará con colores completos. Estos son los temas que se usarán:
+
+| Tema | Color Principal (Hex) | Nombre Sugerido | Ideal para... |
+| :--- | :--- | :--- | :--- |
+| **1. Business** | `#2563EB` | Azul Corporativo | Consultorías, Agencias, Ventas. |
+| **2. Health** | `#0D9488` | Verde Turquesa | Doctores, Clínicas, Dentistas. |
+| **3. Industrial** | `#EA580C` | Naranja Taller | Mecánicos, Logística, Ferreterías. |
+| **4. Luxury** | `#7C3AED` | Violeta Elegante | Inmobiliarias, Estética, Fotografía. |
+| **5. Forest** | `#15803D` | Verde Bosque | Agronegocios, Finanzas, Ecología. |
