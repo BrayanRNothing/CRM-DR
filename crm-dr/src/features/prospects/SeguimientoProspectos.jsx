@@ -1268,288 +1268,200 @@ const SeguimientoContactos = () => {
             }
         };
         return (
-            <div className="flex h-[calc(100vh-6.5rem)] min-h-[700px] bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden rounded-2xl border border-slate-200 shadow-2xl shadow-slate-200/50">
-                {/* ============ COLUMNA IZQUIERDA ============ */}
-                <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-6 gap-6">
+            <div className="flex h-full min-h-[700px] bg-gray-50 overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+                {/* LEFT COLUMN */}
+                <div className="flex-1 min-w-0 flex flex-col overflow-y-auto">
 
-                    {/* â”€â”€ HEADER ROW â”€â”€ */}
-                    <div className="bg-white border border-slate-200 rounded-xl shadow-sm shrink-0 px-4 py-3">
-                        <div className="flex items-start gap-2">
+                    {/* Back */}
+                    <div className="px-6 pt-5 pb-2">
+                        <button
+                            onClick={() => setProspectoSeleccionado(null)}
+                            className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors"
+                        >
+                            <ArrowLeft className="w-4 h-4" /> Regresar a la lista
+                        </button>
+                    </div>
 
-                            {/* Avatar + regresar */}
-                            <div className="flex flex-col items-center gap-1 shrink-0">
-                                <button onClick={() => setProspectoSeleccionado(null)} className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 hover:scale-105 active:scale-95 transition-all shadow-inner">
-                                    <User className="w-5 h-5 text-slate-500" />
-                                </button>
+                    {/* Prospect header */}
+                    <div className="mx-6 mt-3 mb-5 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                    <h1 className="text-3xl font-bold text-gray-900">
+                                        {prospectoSeleccionado.nombres} {prospectoSeleccionado.apellidoPaterno}
+                                    </h1>
+                                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide ${getEtapaColor(prospectoSeleccionado.etapaEmbudo)}`}>
+                                        {prospectoSeleccionado.etapaEmbudo === 'prospecto_nuevo' && !actividadesContext.length
+                                            ? 'Sin contacto'
+                                            : getEtapaLabel(prospectoSeleccionado.etapaEmbudo)}
+                                    </span>
+                                </div>
+                                {prospectoSeleccionado.telefono && (
+                                    <p className="flex items-center gap-1.5 text-gray-500 text-sm">
+                                        <Phone className="w-3.5 h-3.5" />
+                                        {prospectoSeleccionado.telefono}{prospectoSeleccionado.telefono2 ? ` · ${prospectoSeleccionado.telefono2}` : ''}
+                                    </p>
+                                )}
+                                {prospectoSeleccionado.correo && (
+                                    <p className="flex items-center gap-1.5 text-gray-500 text-sm mt-0.5">
+                                        <Mail className="w-3.5 h-3.5" />
+                                        {prospectoSeleccionado.correo}
+                                    </p>
+                                )}
+                                {prospectoSeleccionado.empresa && (
+                                    <p className="flex items-center gap-1.5 text-gray-500 text-sm mt-0.5">
+                                        <Building2 className="w-3.5 h-3.5" />
+                                        {prospectoSeleccionado.empresa}
+                                    </p>
+                                )}
                             </div>
-
-                            {/* Nombre + Estrellas */}
-                            <div className="flex flex-col shrink-0">
-                                <span className="px-5 py-2.5 bg-indigo-950 text-white text-base font-black rounded-xl uppercase tracking-wider cursor-pointer hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-indigo-950/20" onClick={() => setProspectoSeleccionado(null)}>
-                                    {prospectoSeleccionado.nombres} {prospectoSeleccionado.apellidoPaterno}
-                                </span>
-                                <div className="flex items-center gap-1 mt-2">
+                            <div className="flex flex-col items-end gap-3 shrink-0">
+                                <div className="flex items-center gap-0.5">
                                     {[1,2,3,4,5].map(v => (
                                         <button key={v} onClick={() => actualizarInteres(pid, v)}>
-                                            <Star className={`w-5 h-5 ${prospectoSeleccionado.interes >= v ? 'fill-yellow-400 text-yellow-400' : 'fill-slate-200 text-slate-200'}`} />
+                                            <Star className={`w-5 h-5 ${prospectoSeleccionado.interes >= v ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'}`} />
                                         </button>
                                     ))}
                                 </div>
+                                <button
+                                    onClick={() => abrirModalEditar(prospectoSeleccionado)}
+                                    className="text-xs text-gray-400 hover:text-blue-600 flex items-center gap-1 transition-colors"
+                                >
+                                    <Edit2 className="w-3.5 h-3.5" /> Editar
+                                </button>
                             </div>
-
-                            {/* BOX: Datos de contacto */}
-                            <div className="flex-1 min-w-0 border border-slate-200 rounded-lg px-3 py-2.5 bg-slate-50 text-sm text-slate-600 space-y-1.5">
-                                {prospectoSeleccionado.telefono && (
-                                    <div className="flex items-center gap-1.5"><Phone className="w-3 h-3 text-slate-400 shrink-0" /><span className="truncate">{prospectoSeleccionado.telefono}{prospectoSeleccionado.telefono2 ? ` Â· ${prospectoSeleccionado.telefono2}` : ''}</span></div>
-                                )}
-                                {prospectoSeleccionado.correo && (
-                                    <div className="flex items-center gap-1.5"><Mail className="w-3 h-3 text-slate-400 shrink-0" /><span className="truncate">{prospectoSeleccionado.correo}</span></div>
-                                )}
-                                {prospectoSeleccionado.empresa && (
-                                    <div className="flex items-center gap-1.5"><Building2 className="w-3 h-3 text-slate-400 shrink-0" /><span className="truncate">{prospectoSeleccionado.empresa}</span></div>
-                                )}
-                                {prospectoSeleccionado.ubicacion && (
-                                    <div className="flex items-center gap-1.5"><span className="text-slate-400 shrink-0">ðŸ“</span><span className="truncate">{prospectoSeleccionado.ubicacion}</span></div>
-                                )}
-                            </div>
-
-                            {/* BOX: Etapa actual + Recordatorio */}
-                            <div className="w-60 border border-slate-200 rounded-lg px-3 py-2.5 bg-slate-50 text-sm space-y-1.5 shrink-0">
-                                <div className="flex items-center gap-1.5">
-                                    <span className={`font-bold px-1.5 py-0.5 rounded text-[9px] uppercase ${getEtapaColor(prospectoSeleccionado.etapaEmbudo)}`}>
-                                        {getEtapaLabel(prospectoSeleccionado.etapaEmbudo)}
-                                    </span>
-                                </div>
-                                {prospectoSeleccionado.proximaLlamada ? (
-                                    <div className="flex items-center gap-1 text-amber-600 font-medium">
-                                        <Bell className="w-3 h-3 shrink-0" />
-                                        <span className="truncate">{new Date(prospectoSeleccionado.proximaLlamada).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                                    </div>
-                                ) : (
-                                    <span className="text-slate-400 italic">Sin Recordatorio</span>
-                                )}
-                                {actividadesContext.find(a => a.tipo === 'cita' && a.resultado === 'pendiente') && (
-                                    <div className="flex items-center gap-1 text-blue-600 font-medium">
-                                        <Calendar className="w-3 h-3 shrink-0" />
-                                        <span className="truncate">Cita Pendiente</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Gear (editar) */}
-                            <button onClick={() => abrirModalEditar(prospectoSeleccionado)} className="p-3 rounded-xl hover:bg-white hover:shadow-md text-slate-400 hover:text-blue-600 transition-all hover:scale-110 active:scale-90 shrink-0 self-center" title="Editar">
-                                <Edit2 className="w-6 h-6" />
-                            </button>
                         </div>
                     </div>
 
-                    {/* â”€â”€ 4 KPIs â”€â”€ */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 shrink-0">
+                    {/* KPI Cards */}
+                    <div className="mx-6 mb-5 grid grid-cols-2 md:grid-cols-4 gap-4">
                         {[
-                            { label: 'Llamadas\nContestadas', value: actividadesContext.filter(a => a.tipo === 'llamada' && a.resultado === 'exitoso').length, color: 'text-indigo-600', glow: 'shadow-indigo-100' },
-                            { label: 'Sin\nRespuesta', value: actividadesContext.filter(a => a.tipo === 'llamada' && a.resultado === 'fallido').length, color: 'text-slate-500', glow: 'shadow-slate-100' },
-                            { label: 'Citas', value: actividadesContext.filter(a => a.tipo === 'cita').length, color: 'text-indigo-800', glow: 'shadow-indigo-200/50' },
-                            { label: 'WhatsApp', value: actividadesContext.filter(a => a.tipo === 'whatsapp').length, color: 'text-emerald-600', glow: 'shadow-emerald-100' },
+                            { label: 'SÍ CONTESTÓ', value: actividadesContext.filter(a => a.tipo === 'llamada' && a.resultado === 'exitoso').length, sub: 'veces', color: 'text-green-500' },
+                            { label: 'NO CONTESTÓ', value: actividadesContext.filter(a => a.tipo === 'llamada' && a.resultado === 'fallido').length, sub: 'veces', color: 'text-red-500' },
+                            { label: 'CITAS', value: actividadesContext.filter(a => a.tipo === 'cita').length, sub: 'agendadas', color: 'text-blue-500' },
+                            { label: 'WHATSAPPS', value: actividadesContext.filter(a => a.tipo === 'whatsapp').length, sub: 'enviados', color: 'text-green-500' },
                         ].map(kpi => (
-                            <div key={kpi.label} className={`bg-white/90 backdrop-blur-sm border border-white rounded-2xl p-5 text-center shadow-lg transition-all hover:scale-105 hover:shadow-xl ${kpi.glow} min-h-[120px] flex flex-col justify-center`}>
-                                <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest leading-tight whitespace-pre-line">{kpi.label}</p>
-                                <p className={`text-4xl font-black mt-2 ${kpi.color}`}>{kpi.value}</p>
+                            <div key={kpi.label} className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
+                                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-3">{kpi.label}</p>
+                                <p className={`text-4xl font-bold ${kpi.color}`}>{kpi.value}</p>
+                                <p className="text-xs text-gray-400 mt-1">{kpi.sub}</p>
                             </div>
                         ))}
                     </div>
 
-                    {/* â”€â”€ AGREGAR ACCIONES + edit â”€â”€ */}
-                    <div className="flex items-center gap-3 shrink-0">
-                        <button onClick={() => setMostrandoAddPreaccion(!mostrandoAddPreaccion)} className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-black uppercase rounded-xl hover:from-indigo-700 hover:to-indigo-800 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-indigo-200 text-lg tracking-wider leading-none">
-                            Agregar acciones
+                    {/* Action Buttons */}
+                    <div className="mx-6 mb-5 grid grid-cols-3 gap-4">
+                        <button
+                            onClick={() => setLlamadaFlow(llamadaFlow ? null : { paso: 'contesto', notas: '', fechaProxima: '' })}
+                            className={`flex flex-col items-center justify-center gap-2 py-5 border-2 rounded-xl font-semibold text-sm transition-all ${llamadaFlow ? 'bg-rose-50 border-rose-300 text-rose-600' : 'bg-white border-slate-200 text-gray-700 hover:border-blue-300 hover:text-blue-700 hover:bg-blue-50'}`}
+                        >
+                            <Phone className="w-6 h-6" />
+                            {llamadaFlow ? 'Cancelar' : 'Llamar'}
                         </button>
-                        <button onClick={() => setModoEdicionPreacciones(!modoEdicionPreacciones)} className={`px-5 py-4 border rounded-xl text-xl font-bold transition-all shadow-sm ${modoEdicionPreacciones ? 'bg-indigo-50 border-indigo-200 text-indigo-700 scale-105 animate-pulse' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 active:scale-95'}`}>
-                            Editar
+                        <button
+                            onClick={() => setLlamadaFlow({ paso: 'whatsapp', notas: '', fechaProxima: '' })}
+                            className="flex flex-col items-center justify-center gap-2 py-5 bg-white border-2 border-slate-200 rounded-xl text-gray-700 font-semibold text-sm hover:border-green-300 hover:text-green-700 hover:bg-green-50 transition-all"
+                        >
+                            <MessageSquare className="w-6 h-6" />
+                            WhatsApp
                         </button>
-                        {mostrandoAddPreaccion && (
-                            <form onSubmit={handleAddPreaccion} className="flex gap-1.5 flex-1">
-                                <input autoFocus type="text" value={nuevaPreaccion} onChange={e => setNuevaPreaccion(e.target.value)} placeholder="Nombre de la Acción..." className="flex-1 text-xs border border-slate-200 rounded px-2 py-1.5 outline-none focus:border-blue-400" />
-                                <button type="submit" disabled={!nuevaPreaccion.trim()} className="bg-blue-600 text-white px-2.5 py-1.5 rounded text-xs font-bold">âœ“</button>
-                                <button type="button" onClick={() => setMostrandoAddPreaccion(false)} className="text-slate-400 px-2 py-1.5 rounded text-xs hover:bg-slate-100">âœ•</button>
-                            </form>
-                        )}
+                        <button
+                            onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })}
+                            className="flex flex-col items-center justify-center gap-2 py-5 bg-white border-2 border-slate-200 rounded-xl text-gray-700 font-semibold text-sm hover:border-indigo-300 hover:text-indigo-700 hover:bg-indigo-50 transition-all"
+                        >
+                            <Calendar className="w-6 h-6" />
+                            Agendar Reunión
+                        </button>
                     </div>
 
-                    {/* â”€â”€ CONTENEDOR DE ACCIONES: AGENDAR + RECORDAR + chips â”€â”€ */}
-                    <div className="bg-white border border-slate-200 rounded-xl px-4 py-4 shadow-sm shrink-0">
-                        <div className="flex items-center gap-3 flex-wrap">
-                            {/* Agendar (fijo) */}
-                            <button onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })} className="flex items-center gap-3 px-8 py-4 bg-indigo-950 text-white rounded-xl text-xl font-black uppercase hover:bg-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-950/20 tracking-wider leading-none">
-                                <Calendar className="w-6 h-6" /> Agendar
-                            </button>
-
-                            {/* Recordar llamada (fijo, toggle del flujo) */}
-                            <button onClick={() => setLlamadaFlow(llamadaFlow ? null : { paso: 'contesto', notas: '', fechaProxima: '' })} className={`flex items-center gap-3 px-8 py-4 rounded-xl font-black uppercase transition-all shadow-lg text-xl tracking-wider leading-none hover:scale-105 active:scale-95 ${llamadaFlow ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-rose-200' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'}`}>
-                                <Phone className="w-6 h-6" /> {llamadaFlow ? 'Cancelar' : 'Recordar llamada'}
-                            </button>
-
-                            {/* Chips personalizados */}
-                            {preacciones.map((tag, i) => (
-                                <div key={i} className="relative group">
-                                    <button onClick={() => !modoEdicionPreacciones && handleQuickAction(tag)} className={`flex items-center gap-1 px-3 py-2 border rounded-lg text-[10px] font-bold transition-all ${modoEdicionPreacciones ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-blue-600 hover:text-white hover:border-blue-600'}`}>
-                                        <Zap className={`w-2.5 h-2.5 ${modoEdicionPreacciones ? 'text-amber-400' : 'text-blue-400 group-hover:text-white'}`} />
-                                        {tag}
-                                    </button>
-                                    {modoEdicionPreacciones && (
-                                        <button onClick={() => handleRemovePreaccion(tag)} className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 z-10">
-                                            <X className="w-2 h-2" />
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* â”€â”€ FLUJO DE LLAMADA (aparece encima del área notas cuando está activo) â”€â”€ */}
+                    {/* Flujo llamada inline */}
                     {llamadaFlow !== null && (
-                        <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-3 shrink-0 space-y-2">
-                            <p className="text-[10px] font-black text-blue-700 uppercase tracking-wider flex items-center gap-1.5"><Phone className="w-3 h-3" /> Registrando llamada</p>
+                        <div className="mx-6 mb-5 bg-blue-50 border-2 border-blue-200 rounded-xl p-4 space-y-3">
+                            <p className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
+                                <Phone className="w-3.5 h-3.5" /> Registrando llamada
+                            </p>
                             {llamadaFlow.paso === 'contesto' && (
                                 <div className="flex gap-2">
-                                    <button onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'opciones_contesto' }))} className="flex-1 py-2 bg-emerald-500 text-white rounded-lg font-bold text-xs hover:bg-emerald-600">✓ Sí Contestó</button>
-                                    <button onClick={async () => { await registrarActividad({ tipo: 'llamada', resultado: 'fallido', notas: 'No Contestó' }); const h = new Date(); h.setDate(h.getDate()+1); setLlamadaFlow({ paso: 'reintento', notas: '', fechaProxima: h.toISOString().slice(0,16) }); }} className="flex-1 py-2 bg-rose-500 text-white rounded-lg font-bold text-xs hover:bg-rose-600">✗ No Contestó</button>
+                                    <button onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'opciones_contesto' }))} className="flex-1 py-2.5 bg-emerald-500 text-white rounded-lg font-bold text-sm hover:bg-emerald-600">✓ Sí Contestó</button>
+                                    <button onClick={async () => { await registrarActividad({ tipo: 'llamada', resultado: 'fallido', notas: 'No Contestó' }); const h = new Date(); h.setDate(h.getDate()+1); setLlamadaFlow({ paso: 'reintento', notas: '', fechaProxima: h.toISOString().slice(0,16) }); }} className="flex-1 py-2.5 bg-rose-500 text-white rounded-lg font-bold text-sm hover:bg-rose-600">✗ No Contestó</button>
                                 </div>
                             )}
                             {llamadaFlow.paso === 'opciones_contesto' && (
-                                <div className="grid grid-cols-4 gap-1.5">
-                                    <button onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })} className="py-2 bg-blue-900 text-white rounded-lg font-bold text-[10px] hover:bg-blue-950">📅 Agendó Reunión</button>
-                                    <button onClick={() => { const h = new Date(); h.setDate(h.getDate()+3); setLlamadaFlow(f => ({ ...f, paso: 'llamarDespues', fechaProxima: h.toISOString().slice(0,16) })); }} className="py-2 bg-blue-500 text-white rounded-lg font-bold text-[10px] hover:bg-blue-600">📞 Llamar Después</button>
-                                    <button onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'whatsapp' }))} className="py-2 bg-green-500 text-white rounded-lg font-bold text-[10px] hover:bg-green-600">ðŸ’¬ WhatsApp</button>
-                                    <button onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'sin_interes' }))} className="py-2 bg-gray-400 text-white rounded-lg font-bold text-[10px] hover:bg-gray-500">✗ Sin Interés</button>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })} className="py-2.5 bg-blue-900 text-white rounded-lg font-bold text-xs hover:bg-blue-950">📅 Agendó Reunión</button>
+                                    <button onClick={() => { const h = new Date(); h.setDate(h.getDate()+3); setLlamadaFlow(f => ({ ...f, paso: 'llamarDespues', fechaProxima: h.toISOString().slice(0,16) })); }} className="py-2.5 bg-blue-500 text-white rounded-lg font-bold text-xs hover:bg-blue-600">📞 Llamar Después</button>
+                                    <button onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'whatsapp' }))} className="py-2.5 bg-green-500 text-white rounded-lg font-bold text-xs hover:bg-green-600">💬 WhatsApp/Correo</button>
+                                    <button onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'sin_interes' }))} className="py-2.5 bg-gray-400 text-white rounded-lg font-bold text-xs hover:bg-gray-500">✗ Sin Interés</button>
                                 </div>
                             )}
                             {llamadaFlow.paso === 'reintento' && (
-                                <div className="space-y-1.5">
-                                    <p className="text-[10px] font-semibold text-rose-700">¿Cuándo reintentas?</p>
+                                <div className="space-y-2">
+                                    <p className="text-xs font-semibold text-rose-700">¿Cuándo reintentas?</p>
                                     <TimeWheelPicker value={llamadaFlow.fechaProxima} onChange={val => setLlamadaFlow(f => ({ ...f, fechaProxima: val }))} />
-                                    <button onClick={async () => { try { if (llamadaFlow.fechaProxima) await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, { proximaLlamada: llamadaFlow.fechaProxima }, { headers: getAuthHeaders() }); toast.success('Reintento Programado'); setLlamadaFlow(null); const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() }); const upd = res.data.find(p => p.id === pid || p._id === pid); if (upd) { setProspectoSeleccionado(upd); setProspectos(res.data); } } catch { toast.error('Error'); } }} className="w-full py-1.5 bg-rose-600 text-white rounded-lg font-bold text-xs hover:bg-rose-700">📅 Programar Reintento</button>
+                                    <button onClick={async () => { try { if (llamadaFlow.fechaProxima) await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, { proximaLlamada: llamadaFlow.fechaProxima }, { headers: getAuthHeaders() }); toast.success('Reintento Programado'); setLlamadaFlow(null); const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() }); const upd = res.data.find(p => p.id === pid || p._id === pid); if (upd) { setProspectoSeleccionado(upd); setProspectos(res.data); } } catch { toast.error('Error'); } }} className="w-full py-2 bg-rose-600 text-white rounded-lg font-bold text-sm hover:bg-rose-700">📅 Programar Reintento</button>
                                 </div>
                             )}
                             {llamadaFlow.paso === 'whatsapp' && (
-                                <div className="space-y-1.5">
-                                    <textarea className="w-full p-2 border rounded text-xs" placeholder="Notas..." rows={2} value={llamadaFlow.notas||''} onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))} />
-                                    <button onClick={async () => { await registrarActividad({ tipo: 'whatsapp', resultado: 'exitoso', notas: llamadaFlow.notas || 'WhatsApp' }); setLlamadaFlow(null); }} className="w-full py-1.5 bg-green-600 text-white rounded-lg font-bold text-xs hover:bg-green-700">Registrar y Cerrar</button>
+                                <div className="space-y-2">
+                                    <textarea className="w-full p-2.5 border border-blue-200 rounded-lg text-sm bg-white resize-none" placeholder="Notas..." rows={2} value={llamadaFlow.notas||''} onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))} />
+                                    <button onClick={async () => { await registrarActividad({ tipo: 'whatsapp', resultado: 'exitoso', notas: llamadaFlow.notas || 'WhatsApp' }); setLlamadaFlow(null); }} className="w-full py-2 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-700">Registrar y Cerrar</button>
                                 </div>
                             )}
                             {llamadaFlow.paso === 'sin_interes' && (
-                                <div className="space-y-1.5">
-                                    <textarea className="w-full p-2 border rounded text-xs" placeholder="Motivo..." rows={2} value={llamadaFlow.notas||''} onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))} />
-                                    <button onClick={async () => { await registrarActividad({ tipo: 'llamada', resultado: 'fallido', notas: llamadaFlow.notas || 'Sin interés' }); setLlamadaFlow(null); }} className="w-full py-1.5 bg-gray-600 text-white rounded-lg font-bold text-xs hover:bg-gray-700">Registrar desinterés</button>
+                                <div className="space-y-2">
+                                    <textarea className="w-full p-2.5 border border-blue-200 rounded-lg text-sm bg-white resize-none" placeholder="Motivo..." rows={2} value={llamadaFlow.notas||''} onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))} />
+                                    <button onClick={async () => { await registrarActividad({ tipo: 'llamada', resultado: 'fallido', notas: llamadaFlow.notas || 'Sin interés' }); setLlamadaFlow(null); }} className="w-full py-2 bg-gray-600 text-white rounded-lg font-bold text-sm hover:bg-gray-700">Registrar desinterés</button>
                                 </div>
                             )}
                             {llamadaFlow.paso === 'llamarDespues' && (
-                                <div className="space-y-1.5">
-                                    <p className="text-[10px] font-semibold text-blue-700">Programar seguimiento</p>
+                                <div className="space-y-2">
+                                    <p className="text-xs font-semibold text-blue-700">Programar seguimiento</p>
                                     <TimeWheelPicker value={llamadaFlow.fechaProxima} onChange={val => setLlamadaFlow(f => ({ ...f, fechaProxima: val }))} />
-                                    <button onClick={async () => { try { await registrarActividad({ tipo: 'llamada', resultado: 'pendiente', notas: 'Interesado, llamar después' }); if (llamadaFlow.fechaProxima) await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, { proximaLlamada: llamadaFlow.fechaProxima }, { headers: getAuthHeaders() }); toast.success('Seguimiento programado'); setLlamadaFlow(null); } catch { toast.error('Error'); } }} className="w-full py-1.5 bg-blue-600 text-white rounded-lg font-bold text-xs hover:bg-blue-700">📅 Guardar</button>
+                                    <button onClick={async () => { try { await registrarActividad({ tipo: 'llamada', resultado: 'pendiente', notas: 'Interesado, llamar después' }); if (llamadaFlow.fechaProxima) await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, { proximaLlamada: llamadaFlow.fechaProxima }, { headers: getAuthHeaders() }); toast.success('Seguimiento programado'); setLlamadaFlow(null); } catch { toast.error('Error'); } }} className="w-full py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700">📅 Guardar</button>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* Notas y recordatorios */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 shrink-0">
-                        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm min-h-[210px]">
-                            <div className="flex items-center justify-between mb-1.5">
-                                <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Notas rápidas</p>
-                                <button
-                                    onClick={handleGuardarNotasRapidas}
-                                    disabled={loadingNotas}
-                                    className="text-[10px] px-2 py-1 rounded bg-blue-900 text-white hover:bg-blue-950 disabled:opacity-50"
-                                >
-                                    {loadingNotas ? 'Guardando...' : 'Guardar'}
-                                </button>
-                            </div>
-                            <textarea
-                                value={notasRapidas}
-                                onChange={(e) => setNotasRapidas(e.target.value)}
-                                rows={3}
-                                placeholder="Notas internas del prospecto..."
-                                className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-blue-400"
-                            />
+                    {/* Notas del prospecto */}
+                    <div className="mx-6 mb-5 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-center justify-between mb-3">
+                            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Notas del Prospecto</p>
+                            <button
+                                onClick={handleGuardarNotasRapidas}
+                                disabled={loadingNotas}
+                                className="flex items-center gap-1.5 px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                            >
+                                ✓ {loadingNotas ? 'Guardando...' : 'Guardar'}
+                            </button>
                         </div>
-
-                        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3 min-h-[210px]">
-                            <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Seguimiento</p>
-
-                            {tareaLlamar ? (
-                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-2">
-                                    <p className="text-[10px] font-semibold text-amber-700 flex items-center gap-1">
-                                        <Bell className="w-3 h-3" /> Próxima llamada
-                                    </p>
-                                    {!editandoFechaSeguimiento ? (
-                                        <div className="mt-1 flex items-center justify-between gap-2">
-                                            <p className="text-[11px] text-amber-800">
-                                                {new Date(tareaLlamar.fecha).toLocaleDateString('es-MX', {
-                                                    weekday: 'short',
-                                                    day: 'numeric',
-                                                    month: 'short',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </p>
-                                            <button
-                                                onClick={() => {
-                                                    setNuevaFechaSeguimiento((prospectoSeleccionado.proximaLlamada || '').slice(0, 16));
-                                                    setEditandoFechaSeguimiento(true);
-                                                }}
-                                                className="text-[10px] px-2 py-1 rounded border border-amber-300 text-amber-700 hover:bg-amber-100"
-                                            >
-                                                Editar
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="mt-1 space-y-1.5">
-                                            <TimeWheelPicker value={nuevaFechaSeguimiento} onChange={setNuevaFechaSeguimiento} />
-                                            <div className="flex gap-1.5">
-                                                <button
-                                                    onClick={() => guardarFechaSeguimiento(pid)}
-                                                    className="flex-1 text-[10px] px-2 py-1 rounded bg-amber-600 text-white hover:bg-amber-700"
-                                                >
-                                                    Guardar
-                                                </button>
-                                                <button
-                                                    onClick={() => setEditandoFechaSeguimiento(false)}
-                                                    className="text-[10px] px-2 py-1 rounded border border-slate-200 text-slate-600 hover:bg-slate-50"
-                                                >
-                                                    Cancelar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <p className="text-[11px] text-slate-400 italic">Sin llamada pendiente</p>
-                            )}
-
-                            {proximaCita && (
-                                <div className="rounded-lg border border-blue-200 bg-blue-50 p-2">
-                                    <p className="text-[10px] font-semibold text-blue-700 flex items-center gap-1">
-                                        <Calendar className="w-3 h-3" /> Cita agendada
-                                    </p>
-                                    <p className="text-[11px] text-blue-700">{proximaCita.descripcion || 'Reunión pendiente'}</p>
-                                </div>
-                            )}
-                        </div>
+                        <textarea
+                            value={notasRapidas}
+                            onChange={(e) => setNotasRapidas(e.target.value)}
+                            rows={5}
+                            placeholder="Escribe notas importantes aquí..."
+                            className="w-full text-sm text-gray-700 placeholder-gray-400 border-none outline-none resize-none bg-transparent"
+                        />
                     </div>
 
-                    {/* â”€â”€ ACCIONES DE CIERRE â”€â”€ */}
-                    <div className="border border-slate-200 rounded-xl overflow-hidden shrink-0 bg-white shadow-sm mt-auto">
-                        <button onClick={() => setAcordeonCierreAbierto(v => !v)} className="w-full flex items-center justify-between px-3 py-2 hover:bg-slate-50 transition-colors">
-                            <span className="text-xs font-semibold text-gray-600">Acciones de Cierre</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" className={`w-3.5 h-3.5 text-slate-400 transition-transform ${acordeonCierreAbierto ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+                    {/* Acciones de cierre */}
+                    <div className="mx-6 mb-6 border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                        <button
+                            onClick={() => setAcordeonCierreAbierto(v => !v)}
+                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
+                        >
+                            <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
+                                <AlertCircle className="w-4 h-4 text-gray-400" />
+                                Acciones de cierre
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 text-slate-400 transition-transform ${acordeonCierreAbierto ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
                         </button>
                         {acordeonCierreAbierto && (
-                            <div className="p-2 border-t border-slate-100 flex gap-2">
-                                <button onClick={() => setModalPasarClienteAbierto(true)} className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg py-2 font-black text-xs uppercase transition-colors">
-                                    <CheckCircle2 className="w-4 h-4" /> Pasar cliente
+                            <div className="p-3 border-t border-slate-100 flex gap-2">
+                                <button onClick={() => setModalPasarClienteAbierto(true)} className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg py-2.5 font-semibold text-sm transition-colors">
+                                    <CheckCircle2 className="w-4 h-4" /> Pasar a cliente
                                 </button>
-                                <button onClick={() => setModalDescartarAbierto(true)} className="flex-1 flex items-center justify-center gap-1.5 bg-white border-2 border-red-300 hover:bg-red-50 text-red-500 rounded-lg py-2 font-black text-xs uppercase transition-all">
+                                <button onClick={() => setModalDescartarAbierto(true)} className="flex-1 flex items-center justify-center gap-2 bg-white border-2 border-red-300 hover:bg-red-50 text-red-500 rounded-lg py-2.5 font-semibold text-sm transition-all">
                                     <XCircle className="w-4 h-4" /> Descartar
                                 </button>
                             </div>

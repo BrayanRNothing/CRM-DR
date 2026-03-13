@@ -17,16 +17,17 @@ const SeguimientoHistorialPanel = ({
     onGuardarInteraccion
 }) => {
     return (
-        <div className="w-[330px] xl:w-[380px] flex flex-col border-l border-slate-200 bg-white/50 backdrop-blur-sm overflow-hidden min-h-0">
-            <div className="px-6 py-6 bg-gradient-to-r from-indigo-950 to-indigo-900 shrink-0 flex justify-center shadow-md">
-                <h3 className="font-black text-white uppercase tracking-widest text-2xl">Historial</h3>
+        <div className="w-[330px] xl:w-[380px] flex flex-col border-l border-slate-200 bg-white overflow-hidden min-h-0">
+            <div className="px-5 py-4 border-b border-slate-200 shrink-0 flex items-center justify-between bg-white">
+                <h3 className="font-semibold text-gray-600 uppercase tracking-widest text-sm">Historial de Interacciones</h3>
+                <span className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-500">{actividadesContext.length}</span>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto bg-white/30">
+            <div className="flex-1 min-h-0 overflow-y-auto bg-white">
                 {actividadesContext.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-slate-300 gap-3 py-10">
-                        <Clock className="w-12 h-12 opacity-50" />
-                        <p className="text-sm font-bold uppercase tracking-widest">Sin interacciones aún</p>
+                    <div className="flex flex-col items-center justify-center h-full text-slate-300 gap-3 py-16">
+                        <Clock className="w-14 h-14 opacity-30" />
+                        <p className="text-sm text-slate-400">Sin interacciones registradas aún.</p>
                     </div>
                 ) : (
                     <div className="py-4">
