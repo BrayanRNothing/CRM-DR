@@ -3,9 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Calendar as CalendarIcon, Clock, User, Phone, CheckCircle2, XCircle, MapPin, ChevronLeft, ChevronRight, LogIn, Video, Briefcase, Mail, AlertCircle, UserPlus, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../services/api';
-import { getToken } from '../../utils/authUtils';
-
-
+import { getToken, getUser } from '../../utils/authUtils';
 
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -26,7 +24,10 @@ const CloserCalendario = () => {
     const [guardandoDirecto, setGuardandoDirecto] = useState(false);
     // null = verificando, true = vinculado, false = no vinculado
     const [googleLinked, setGoogleLinked] = useState(null);
-    const [userInfo, setUserInfo] = useState(null);
+    const [userInfo, setUserInfo] = useState(getUser());
+
+    const isDoctor = userInfo?.rol === 'individual' || userInfo?.rol === 'doctor';
+    const labelCliente = isDoctor ? 'Paciente' : 'Cliente';
 
     const abrirModalRegistrar = async (reunion) => {
         let reunionFinal = { ...reunion };
@@ -118,7 +119,7 @@ const CloserCalendario = () => {
             // Limpiar el state para no reabrir si se recarga
             window.history.replaceState({}, document.title);
         }
-    }, []);
+    }, [location.state]);
 
     const handleAgendarDirecto = async () => {
         if (!agendarDirectoForm.fecha || !agendarDirectoForm.hora) {
@@ -243,7 +244,7 @@ const CloserCalendario = () => {
                         tipo: 'cita',
                         resultado: resultado === 'venta' ? 'convertido' : resultado === 'no_asistio' || resultado === 'no_venta' ? 'fallido' : 'exitoso',
                         descripcion: {
-                            no_asistio: 'Reunión — Cliente no asistió',
+                            no_asistio: `Reunión — ${labelCliente} no asistió`,
                             no_venta: 'Reunión realizada — No le interesó',
                             otra_reunion: 'Reunión realizada — Quiere otra reunión',
                             cotizacion: 'Reunión realizada — Quiere cotización',
@@ -289,7 +290,7 @@ const CloserCalendario = () => {
 
             setReuniones(prev => prev.map(r => r.id === modalRegistrar.id ? { ...r, estado: 'realizada', resultadoExacto: resultado } : r));
             const mensajes = {
-                no_asistio: '❌ Registrado: Cliente no asistió',
+                no_asistio: `❌ Registrado: ${labelCliente} no asistió`,
                 no_venta: '😐 Registrado: No le interesó',
                 cotizacion: '💰 Registrado: Quiere cotización',
                 venta: '🎉 ¡Venta cerrada! Registrado'
@@ -365,90 +366,81 @@ const CloserCalendario = () => {
         }
     };
 
-    useEffect(() => {
-        const fetchEvents = async () => {
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-            const timeMin = new Date(year, month, 1).toISOString();
-            const timeMax = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+    const fetchEvents = async () => {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const timeMin = new Date(year, month, 1).toISOString();
+        const timeMax = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
 
+        try {
+            const token = getToken();
+            const res = await fetch(`${API_URL}/api/google/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`, {
+                headers: { 'x-auth-token': token }
+            });
+
+            if (res.status === 400 || res.status === 404) {
+                setGoogleLinked(false);
+                localStorage.removeItem('google_linked');
+                return;
+            }
+
+            if (!res.ok) throw new Error('Error fetching events');
+
+            setGoogleLinked(true);
+            localStorage.setItem('google_linked', 'true');
+            const googleEvents = await res.json();
+
+            let eventosCompletados = [];
             try {
-                const token = getToken();
-                const res = await fetch(`${API_URL}/api/google/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`, {
+                const completadosRes = await fetch(`${API_URL}/api/closer/google-events-completados`, {
                     headers: { 'x-auth-token': token }
                 });
-
-                if (res.status === 400 || res.status === 404) {
-                    // El backend confirma que no hay tokens guardados para este usuario
-                    setGoogleLinked(false);
-                    localStorage.removeItem('google_linked');
-                    return;
+                if (completadosRes.ok) {
+                    eventosCompletados = await completadosRes.json();
                 }
-
-                if (!res.ok) throw new Error('Error fetching events');
-
-                // El backend confirmó tokens válidos — marcar como vinculado
-                setGoogleLinked(true);
-                localStorage.setItem('google_linked', 'true');
-                const googleEvents = await res.json();
-
-                // Traer lista de eventos completados
-                let eventosCompletados = [];
-                try {
-                    const completadosRes = await fetch(`${API_URL}/api/closer/google-events-completados`, {
-                        headers: { 'x-auth-token': token }
-                    });
-                    if (completadosRes.ok) {
-                        eventosCompletados = await completadosRes.json();
-                        console.log(`📋 Eventos completados cargados: ${eventosCompletados.length}`);
-                    }
-                } catch (err) {
-                    console.warn('⚠️ No se pudieron cargar eventos completados:', err);
-                }
-
-                const mappedEvents = googleEvents.map(event => {
-                    // Parse description for details
-                    const desc = event.description || '';
-                    const agendadoPorMatch = desc.match(/Agendado por:? (.*?)(\n|$)/i);
-                    const agendadoPor = agendadoPorMatch ? agendadoPorMatch[1].trim() : 'Google Calendar';
-                    const notasMatch = desc.match(/Notas: (.*?)(\n|$)/s);
-                    const notas = notasMatch ? notasMatch[1].trim() : desc;
-
-                    const telefonoMatch = desc.match(/Cliente: (.*?) -/);
-                    const telefono = telefonoMatch ? telefonoMatch[1].trim() : '';
-
-                    // Verificar si fue completado
-                    const completadoGuardado = eventosCompletados.find(e => e.googleEventId === event.id || e === event.id);
-                    const estadoEvento = completadoGuardado ? 'realizada' : 'pendiente';
-                    const resultadoExacto = typeof completadoGuardado === 'object' ? completadoGuardado.resultado : null;
-
-                    return {
-                        id: event.id,
-                        fecha: event.start.dateTime || event.start.date,
-                        cliente: {
-                            nombres: event.summary || 'Sin Título',
-                            apellidoPaterno: '',
-                            empresa: '',
-                            telefono: telefono,
-                            correo: event.attendees?.find(a => !a.self)?.email || ''
-                        },
-                        prospector: agendadoPor,
-                        notas: notas,
-                        meetLink: event.hangoutLink,
-                        estado: estadoEvento,
-                        resultadoExacto
-                    };
-                });
-                setReuniones(mappedEvents);
-            } catch (error) {
-                console.error("Error fetching events:", error);
-                // En caso de error de red, no cambiar el estado de vinculación
-                if (googleLinked === null) setGoogleLinked(false);
+            } catch (err) {
+                console.warn('⚠️ No se pudieron cargar eventos completados:', err);
             }
-        };
 
-        // Siempre intentar verificar con el backend al montar o cambiar mes
-        // No depender de localStorage — el backend es la fuente de verdad
+            const mappedEvents = googleEvents.map(event => {
+                const desc = event.description || '';
+                const agendadoPorMatch = desc.match(/Agendado por:? (.*?)(\n|$)/i);
+                const agendadoPor = agendadoPorMatch ? agendadoPorMatch[1].trim() : 'Google Calendar';
+                const notasMatch = desc.match(/Notas: (.*?)(\n|$)/s);
+                const notas = notasMatch ? notasMatch[1].trim() : desc;
+
+                const telefonoMatch = desc.match(/Cliente: (.*?) -/);
+                const telefono = telefonoMatch ? telefonoMatch[1].trim() : '';
+
+                const completadoGuardado = eventosCompletados.find(e => e.googleEventId === event.id || e === event.id);
+                const estadoEvento = completadoGuardado ? 'realizada' : 'pendiente';
+                const resultadoExacto = typeof completadoGuardado === 'object' ? completadoGuardado.resultado : null;
+
+                return {
+                    id: event.id,
+                    fecha: event.start.dateTime || event.start.date,
+                    cliente: {
+                        nombres: event.summary || 'Sin Título',
+                        apellidoPaterno: '',
+                        empresa: '',
+                        telefono: telefono,
+                        correo: event.attendees?.find(a => !a.self)?.email || ''
+                    },
+                    prospector: agendadoPor,
+                    notas: notas,
+                    meetLink: event.hangoutLink,
+                    estado: estadoEvento,
+                    resultadoExacto
+                };
+            });
+            setReuniones(mappedEvents);
+        } catch (error) {
+            console.error("Error fetching events:", error);
+            if (googleLinked === null) setGoogleLinked(false);
+        }
+    };
+
+    useEffect(() => {
         fetchEvents();
     }, [currentDate]);
 
@@ -483,17 +475,12 @@ const CloserCalendario = () => {
         const startingDayOfWeek = firstDay.getDay();
 
         const days = [];
-
-        // Add empty cells for days before month starts
         for (let i = 0; i < startingDayOfWeek; i++) {
             days.push(null);
         }
-
-        // Add days of the month
         for (let day = 1; day <= daysInMonth; day++) {
             days.push(new Date(year, month, day));
         }
-
         return days;
     }, [currentDate]);
 
@@ -504,8 +491,6 @@ const CloserCalendario = () => {
             minute: '2-digit'
         });
     };
-
-
 
     const isSameDay = (date1, date2) => {
         if (!date1 || !date2) return false;
@@ -532,7 +517,7 @@ const CloserCalendario = () => {
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
                     {/* Calendar - Left Side (2/3) */}
                     <div className="lg:col-span-2 flex flex-col min-h-0">
-                        <div className="flex-1 p-8 flex flex-col min-h-0">
+                        <div className="flex-1 p-8 flex flex-col min-h-0 overflow-y-auto">
                             {/* Calendar Header */}
                             <div className="flex items-center justify-between mb-6">
                                 <button
@@ -712,7 +697,7 @@ const CloserCalendario = () => {
                                                 <div className="mb-3 bg-white/80 rounded border border-gray-200 p-2">
                                                     <p className="text-xs text-gray-600 font-medium mb-1 flex items-center gap-1">
                                                         <User className="w-3 h-3" />
-                                                        Cliente:
+                                                        {labelCliente}:
                                                     </p>
                                                     <h3 className="font-bold text-gray-900 mb-1 pl-1">
                                                         {reunion.cliente.nombres} {reunion.cliente.apellidoPaterno}
@@ -798,228 +783,103 @@ const CloserCalendario = () => {
                                 <div className="flex items-center justify-between mb-1">
                                     <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                                         <CheckCircle2 className="w-5 h-5 text-[#8bc34a]" />
-                                        Registrar Reunión
+                                        Registrar Resultado
                                     </h2>
-                                    <button onClick={cerrarModal} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
+                                    <button onClick={cerrarModal} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                                         <XCircle className="w-5 h-5 text-gray-400" />
                                     </button>
                                 </div>
                                 <p className="text-sm text-gray-500">
-                                    {new Date(modalRegistrar.fecha).toLocaleString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                    {' · '}<span className="font-semibold text-gray-700">{modalRegistrar.cliente.nombres} {modalRegistrar.cliente.apellidoPaterno}</span>
+                                    {modalRegistrar.cliente.nombres} {modalRegistrar.cliente.apellidoPaterno}
                                 </p>
-                                {modalRegistrar.cliente.empresa && (
-                                    <p className="text-xs text-gray-400 mt-0.5">{modalRegistrar.cliente.empresa}</p>
-                                )}
-
-                                {/* Indicador de paso */}
-                                <div className="flex items-center gap-2 mt-3">
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${pasoModal === 'asistencia' ? 'bg-[#8bc34a] text-white' : 'bg-green-500 text-white'
-                                        }`}>1</div>
-                                    <div className={`flex-1 h-1 rounded-full transition-colors ${pasoModal !== 'asistencia' ? 'bg-[#8bc34a]' : 'bg-gray-200'
-                                        }`} />
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${pasoModal === 'resultado' ? 'bg-[#8bc34a] text-white' :
-                                        pasoModal === 'agendar' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'
-                                        }`}>2</div>
-                                    <div className={`flex-1 h-1 rounded-full transition-colors ${pasoModal === 'agendar' ? 'bg-[#8bc34a]' : 'bg-gray-200'
-                                        }`} />
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${pasoModal === 'agendar' ? 'bg-[#8bc34a] text-white' : 'bg-gray-200 text-gray-400'
-                                        }`}>3</div>
-                                </div>
                             </div>
 
-                            <div className="p-6 space-y-3">
-                                {pasoModal === 'asistencia' ? (
-                                    <>
-                                        <p className="text-sm font-semibold text-gray-700 text-center mb-4">¿El cliente asistió a la reunión?</p>
-
-                                        <button
-                                            onClick={() => setPasoModal('resultado')}
-                                            className="w-full px-4 py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all flex items-center justify-center gap-3 font-semibold shadow-sm hover:shadow-md"
-                                        >
-                                            <CheckCircle2 className="w-5 h-5" />
-                                            ✅ Sí asistió
-                                        </button>
-
-                                        <button
-                                            onClick={() => handleRegistrarReunion('no_asistio')}
-                                            disabled={guardando}
-                                            className="w-full px-4 py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all flex items-center justify-center gap-3 font-semibold shadow-sm hover:shadow-md disabled:opacity-60"
-                                        >
-                                            <XCircle className="w-5 h-5" />
-                                            ❌ No asistió
-                                        </button>
-                                    </>
-                                ) : pasoModal === 'resultado' ? (
-                                    <>
-                                        <p className="text-sm font-semibold text-gray-700 text-center mb-1">¿Cuál fue el resultado?</p>
-                                        <p className="text-xs text-gray-400 text-center mb-4">El cliente asistió a la reunión</p>
-
-                                        <button
-                                            onClick={() => handleRegistrarReunion('venta')}
-                                            disabled={guardando}
-                                            className="w-full px-4 py-3.5 bg-[#8bc34a] hover:bg-lime-600 text-white rounded-xl transition-all flex items-center gap-3 font-semibold shadow-sm hover:shadow-md disabled:opacity-60"
-                                        >
-                                            <span className="text-xl">🎉</span>
-                                            <div className="text-left">
-                                                <p className="text-sm font-bold">¡Venta cerrada!</p>
-                                                <p className="text-xs opacity-80">Convertir a cliente</p>
-                                            </div>
-                                        </button>
-
-                                        <button
-                                            onClick={() => handleRegistrarReunion('cotizacion')}
-                                            disabled={guardando}
-                                            className="w-full px-4 py-3.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all flex items-center gap-3 font-semibold shadow-sm hover:shadow-md disabled:opacity-60"
-                                        >
-                                            <span className="text-xl">💰</span>
-                                            <div className="text-left">
-                                                <p className="text-sm font-bold">Quiere cotización</p>
-                                                <p className="text-xs opacity-80">Pasa a negociación</p>
-                                            </div>
-                                        </button>
-
-                                        <button
-                                            onClick={() => handleRegistrarReunion('otra_reunion')}
-                                            disabled={guardando}
-                                            className="w-full px-4 py-3.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl transition-all flex items-center gap-3 font-semibold shadow-sm hover:shadow-md disabled:opacity-60"
-                                        >
-                                            <span className="text-xl">📅</span>
-                                            <div className="text-left">
-                                                <p className="text-sm font-bold">Quiere otra reunión</p>
-                                                <p className="text-xs opacity-80">Agendar siguiente cita</p>
-                                            </div>
-                                        </button>
-
-                                        <button
-                                            onClick={() => handleRegistrarReunion('no_venta')}
-                                            disabled={guardando}
-                                            className="w-full px-4 py-3.5 bg-gray-500 hover:bg-gray-600 text-white rounded-xl transition-all flex items-center gap-3 font-semibold shadow-sm hover:shadow-md disabled:opacity-60"
-                                        >
-                                            <span className="text-xl">😐</span>
-                                            <div className="text-left">
-                                                <p className="text-sm font-bold">No le interesó</p>
-                                                <p className="text-xs opacity-80">Marcar como perdido</p>
-                                            </div>
-                                        </button>
-
-                                        {/* Campo de notas */}
-                                        <div className="pt-2">
-                                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Notas (opcional)</label>
-                                            <textarea
-                                                value={notasModal}
-                                                onChange={e => setNotasModal(e.target.value)}
-                                                placeholder="Agrega notas sobre la reunión..."
-                                                rows={2}
-                                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] resize-none text-gray-700 placeholder-gray-400"
-                                            />
-                                        </div>
-
-                                        <button
-                                            onClick={() => setPasoModal('asistencia')}
-                                            className="w-full px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                                        >
-                                            ← Volver
-                                        </button>
-                                    </>
-                                ) : (
-                                    /* PASO 3 — Agendar próxima reunión */
-                                    <>
-                                        <div className="flex items-center gap-2 mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
-                                            <span className="text-2xl">📅</span>
-                                            <div>
-                                                <p className="text-sm font-bold text-yellow-800">Resultado guardado: Quiere otra reunión</p>
-                                                <p className="text-xs text-yellow-600">Ahora agenda la próxima cita en tu calendario</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Fecha *</label>
-                                                    <input
-                                                        type="date"
-                                                        value={nuevaReunionForm.fecha}
-                                                        min={new Date().toISOString().split('T')[0]}
-                                                        onChange={e => setNuevaReunionForm(f => ({ ...f, fecha: e.target.value }))}
-                                                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] text-gray-700"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Hora *</label>
-                                                    <input
-                                                        type="time"
-                                                        value={nuevaReunionForm.hora}
-                                                        onChange={e => setNuevaReunionForm(f => ({ ...f, hora: e.target.value }))}
-                                                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] text-gray-700"
-                                                    />
+                            {/* Content */}
+                            <div className="p-6 space-y-6">
+                                {pasoModal === 'asistencia' && (
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <button onClick={() => handleRegistrarReunion('no_asistio')} disabled={guardando}
+                                            className="w-full p-4 flex items-center justify-between border-2 border-red-100 bg-red-50/50 rounded-xl hover:bg-red-50 hover:border-red-500 text-red-700 transition-all group">
+                                            <div className="flex items-center gap-3">
+                                                <XCircle className="w-6 h-6" />
+                                                <div className="text-left">
+                                                    <p className="font-bold">{labelCliente} No Asistió</p>
+                                                    <p className="text-xs text-red-600/70">Marcar como cita fallida</p>
                                                 </div>
                                             </div>
+                                            <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all" />
+                                        </button>
 
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Duración</label>
-                                                <select
-                                                    value={nuevaReunionForm.duracion}
-                                                    onChange={e => setNuevaReunionForm(f => ({ ...f, duracion: e.target.value }))}
-                                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] text-gray-700"
-                                                >
-                                                    <option value="30">30 minutos</option>
-                                                    <option value="45">45 minutos</option>
-                                                    <option value="60">1 hora</option>
-                                                    <option value="90">1.5 horas</option>
-                                                    <option value="120">2 horas</option>
-                                                </select>
+                                        <button onClick={() => setPasoModal('resultado')} disabled={guardando}
+                                            className="w-full p-4 flex items-center justify-between border-2 border-green-100 bg-green-50/50 rounded-xl hover:bg-green-50 hover:border-green-500 text-green-700 transition-all group">
+                                            <div className="flex items-center gap-3">
+                                                <CheckCircle2 className="w-6 h-6" />
+                                                <div className="text-left">
+                                                    <p className="font-bold">Reunión Realizada</p>
+                                                    <p className="text-xs text-green-600/70">Registrar el desenlace</p>
+                                                </div>
                                             </div>
+                                            <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all" />
+                                        </button>
+                                    </div>
+                                )}
 
+                                {pasoModal === 'resultado' && (
+                                    <div className="space-y-4">
+                                        <label className="block text-sm font-bold text-gray-700">¿Qué sucedió en la reunión?</label>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            <button onClick={() => handleRegistrarReunion('no_venta')} className="w-full p-3 text-left text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">😐 No le interesó</button>
+                                            <button onClick={() => handleRegistrarReunion('otra_reunion')} className="w-full p-3 text-left text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">📅 Quiere otra reunión</button>
+                                            <button onClick={() => handleRegistrarReunion('cotizacion')} className="w-full p-3 text-left text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">💰 Quiere cotización</button>
+                                            <button onClick={() => handleRegistrarReunion('venta')} className="w-full p-4 text-left text-sm border-2 border-green-100 bg-green-50 text-green-700 rounded-xl hover:border-green-500 transition-all font-bold flex items-center justify-between">
+                                                <span>🎉 ¡VENTA CERRADA!</span>
+                                                <CheckCircle2 className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                        <textarea value={notasModal} onChange={e => setNotasModal(e.target.value)} placeholder="Notas adicionales..." rows={3} className="w-full p-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#8bc34a] resize-none" />
+                                    </div>
+                                )}
+
+                                {pasoModal === 'agendar' && (
+                                    <div className="space-y-4 animate-in slide-in-from-right-4">
+                                        <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-3">
+                                            <Calendar className="w-5 h-5 text-blue-600" />
+                                            <p className="text-xs text-blue-600 font-medium">Agenda la próxima reunión de seguimiento con el {labelCliente.toLowerCase()}.</p>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
                                             <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Notas de la próxima reunión</label>
-                                                <textarea
-                                                    value={nuevaReunionForm.notas}
-                                                    onChange={e => setNuevaReunionForm(f => ({ ...f, notas: e.target.value }))}
-                                                    placeholder="Temas a tratar, contexto..."
-                                                    rows={2}
-                                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] resize-none text-gray-700 placeholder-gray-400"
-                                                />
+                                                <label className="block text-xs font-bold text-gray-500 mb-1">Fecha</label>
+                                                <input type="date" value={nuevaReunionForm.fecha} onChange={e => setNuevaReunionForm({ ...nuevaReunionForm, fecha: e.target.value })} className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a]" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 mb-1">Hora</label>
+                                                <input type="time" value={nuevaReunionForm.hora} onChange={e => setNuevaReunionForm({ ...nuevaReunionForm, hora: e.target.value })} className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a]" />
                                             </div>
                                         </div>
-
-                                        <button
-                                            onClick={handleAgendarNuevaReunion}
-                                            disabled={guardando || !nuevaReunionForm.fecha || !nuevaReunionForm.hora}
-                                            className="w-full px-4 py-3.5 bg-[#8bc34a] hover:bg-lime-600 text-white rounded-xl transition-all flex items-center justify-center gap-2 font-bold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {guardando ? (
-                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            ) : (
-                                                <Calendar className="w-4 h-4" />
-                                            )}
-                                            {guardando ? 'Agendando...' : 'Agendar en Google Calendar'}
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 mb-1">Notas para la cita</label>
+                                            <textarea value={nuevaReunionForm.notas} onChange={e => setNuevaReunionForm({ ...nuevaReunionForm, notas: e.target.value })} placeholder="Ej: Presentación de propuesta técnica..." rows={2} className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] resize-none" />
+                                        </div>
+                                        <button onClick={handleAgendarNuevaReunion} disabled={guardando} className="w-full py-3 bg-[#8bc34a] text-white rounded-xl font-bold hover:bg-lime-600 transition-all flex items-center justify-center gap-2">
+                                            {guardando ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Calendar className="w-4 h-4" />}
+                                            Agendar Nueva Reunión
                                         </button>
-
-                                        <button
-                                            onClick={cerrarModal}
-                                            className="w-full px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                                        >
-                                            Saltar (¿ya no quiere?)
-                                        </button>
-                                    </>
+                                        <button onClick={cerrarModal} className="w-full py-2 text-sm text-gray-400 font-medium">No agendar por ahora</button>
+                                    </div>
                                 )}
                             </div>
                         </div>
                     </div>
                 )}
-                {/* Modal Agendar Directo — desde Seguimiento */}
+
+                {/* Modal Agendar Directo (Seguimiento) */}
                 {modalAgendarDirecto && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <div className="bg-white border border-gray-200 rounded-2xl max-w-md w-full shadow-2xl animate-in zoom-in">
-                            {/* Header */}
-                            <div className="p-5 border-b border-gray-100">
-                                <div className="flex items-center justify-between mb-1">
-                                    <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                        <Calendar className="w-5 h-5 text-[#8bc34a]" />
-                                        Agendar Reunión
-                                    </h2>
-                                    <button onClick={() => setModalAgendarDirecto(null)} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
+                        <div className="bg-white border border-gray-200 rounded-2xl max-w-sm w-full shadow-2xl animate-in zoom-in overflow-hidden">
+                            <div className="p-5 border-b border-gray-100 bg-gray-50/50">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest">Agendar Cita</h2>
+                                    <button onClick={() => setModalAgendarDirecto(null)} className="p-1.5 hover:bg-gray-200 rounded-full transition-colors">
                                         <XCircle className="w-4 h-4 text-gray-400" />
                                     </button>
                                 </div>

@@ -26,6 +26,9 @@ const AppLayout = () => {
     const logoEmpresa = usuario.logoEmpresa || defaultLogo;
     const nombreEmpresa = usuario.nombreEmpresa || 'Mi Empresa CRM';
 
+    const isProspector = usuario.rol === 'prospector';
+    const isAdmin = usuario.rol === 'admin';
+
     // Construcción dinámica del menú según el rol y modo
     const menuItems = [
         {
@@ -38,16 +41,6 @@ const AppLayout = () => {
             )
         },
         {
-            name: 'Estadísticas',
-            path: '/app/estadisticas',
-            icon: (
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-                </svg>
-            ),
-            // rolesPermitidos: ['admin', 'closer', 'doctor', 'prospector'] // Todos pueden ver sus propias estadísticas
-        },
-        {
             name: 'Calendario',
             path: '/app/calendario',
             icon: (
@@ -55,32 +48,50 @@ const AppLayout = () => {
                     <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                 </svg>
             )
-        },
-        {
-            name: 'Contactos',
-            path: '/app/contactos',
-            icon: (
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                </svg>
-            )
-        },
-        {
-            name: 'Directorio',
-            path: '/app/directorio',
-            icon: (
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                </svg>
-            )
         }
     ];
 
-    // Módulo de usuarios (Solo para admin o modos cooperativos con permisos)
-    if (usuario.rol === 'admin' || usuario.modo_crm === 'cooperativo') {
+    // Estadísticas: No sale para prospector
+    if (!isProspector) {
+        menuItems.push({
+            name: 'Estadísticas',
+            path: '/app/estadisticas',
+            icon: (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                </svg>
+            )
+        });
+    }
+
+    // Prospectos/Contactos
+    menuItems.push({
+        name: isProspector ? 'Prospectos' : 'Contactos',
+        path: '/app/contactos',
+        icon: (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+            </svg>
+        )
+    });
+
+    // Clientes/Directorio
+    menuItems.push({
+        name: isProspector ? 'Clientes' : 'Directorio',
+        path: '/app/directorio',
+        icon: (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+            </svg>
+        )
+    });
+
+    // Usuarios (Admin o Prospector según requerimiento específico)
+    if (isAdmin || isProspector) {
         menuItems.push({
             name: 'Usuarios',
             path: '/app/usuarios',
+            isBottom: isProspector, // Forzar al fondo solo para prospector si hay muchos ítems, o manejarlo abajo
             icon: (
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
@@ -89,9 +100,9 @@ const AppLayout = () => {
         });
     }
 
-    // Botón de Configuración/Ajustes siempre al final
+    // Botón de Ajustes (Ajustes para prospector, Configuración para otros)
     menuItems.push({
-        name: 'Configuración',
+        name: isProspector ? 'Ajustes' : 'Configuración',
         path: '/app/ajustes',
         isBottom: true,
         icon: (

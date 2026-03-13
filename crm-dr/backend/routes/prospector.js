@@ -180,7 +180,7 @@ router.get('/prospectos', [auth, esProspector], async (req, res) => {
         const { etapa, busqueda } = req.query;
 
         let sql = `SELECT c.*, u.nombre as closerNombre
-            FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE c.prospectorAsignado = ? AND c.etapaEmbudo NOT IN (?, ?)`;
+            FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE (c.prospectorAsignado = ? OR c.prospectorAsignado IS NULL) AND c.etapaEmbudo NOT IN (?, ?)`;
         const params = [prospectorId, 'venta_ganada', 'perdido'];
 
         if (etapa && etapa !== 'todos') {
@@ -237,7 +237,7 @@ router.get('/clientes-ganados', [auth, esProspector], async (req, res) => {
         const prospectorId = parseInt(req.usuario.id);
         const { busqueda } = req.query;
 
-        let sql = 'SELECT c.*, u.nombre as closerNombre FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE c.prospectorAsignado = ? AND c.etapaEmbudo = ?';
+        let sql = 'SELECT c.*, u.nombre as closerNombre FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE (c.prospectorAsignado = ? OR c.prospectorAsignado IS NULL) AND c.etapaEmbudo = ?';
         const params = [prospectorId, 'venta_ganada'];
 
         if (busqueda) {
@@ -318,7 +318,7 @@ router.post('/crear-prospecto', [auth, esProspector], async (req, res) => {
 router.post('/registrar-actividad', [auth, esProspector], async (req, res) => {
     try {
         const { clienteId, tipo, resultado, descripcion, notas, fechaCita, etapaEmbudo, proximaLlamada, interes } = req.body;
-        const tiposValidos = ['llamada', 'mensaje', 'correo', 'whatsapp', 'cita', 'prospecto'];
+        const tiposValidos = ['llamada', 'mensaje', 'correo', 'whatsapp', 'cita', 'prospecto', 'personalizado', 'nota'];
         const resultadosValidos = ['exitoso', 'pendiente', 'fallido'];
 
         if (!clienteId || !tipo) {

@@ -306,7 +306,7 @@ const CloserDashboard = () => {
                                     tareasPendientes.map((t) => {
                                         const prospectoId = t.cliente || t.clienteId;
                                         const irAProspecto = prospectoId
-                                            ? () => navigate('/closer/prospectos', { state: { selectedId: prospectoId } })
+                                            ? () => navigate('/app/contactos', { state: { selectedId: prospectoId } })
                                             : null;
 
                                         return (

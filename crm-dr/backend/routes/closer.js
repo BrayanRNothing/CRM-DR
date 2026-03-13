@@ -353,7 +353,7 @@ router.post('/crear-prospecto', [auth, esCloser], async (req, res) => {
 router.post('/registrar-actividad', [auth, esCloser], async (req, res) => {
     try {
         const { clienteId, tipo, resultado, descripcion, notas, fechaCita, etapaEmbudo, proximaLlamada, interes } = req.body;
-        const tiposValidos = ['llamada', 'mensaje', 'correo', 'whatsapp', 'cita', 'cliente', 'descartado'];
+        const tiposValidos = ['llamada', 'mensaje', 'correo', 'whatsapp', 'cita', 'cliente', 'descartado', 'personalizado', 'nota'];
         const resultadosValidos = ['exitoso', 'pendiente', 'fallido', 'convertido', 'descartado', 'enviado'];
 
         if (!clienteId || !tipo) {

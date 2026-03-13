@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Phone, MessageSquare, User, CheckCircle2, AlertCircle, Zap, Trash2 } from 'lucide-react';
+import { Calendar, Phone, MessageSquare, User, CheckCircle2, AlertCircle, Zap, Trash2, FileText } from 'lucide-react';
 
 /**
  * COMPONENTE MEJORADO: HistorialInteracciones
@@ -44,6 +44,10 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
                 return <MessageSquare className="w-5 h-5 text-emerald-500" />;
             case 'correo':
                 return <AlertCircle className="w-5 h-5 text-purple-500" />;
+            case 'personalizado':
+                return <MessageSquare className="w-5 h-5 text-blue-600" />;
+            case 'nota':
+                return <FileText className="w-5 h-5 text-slate-500" />;
             default:
                 return <CheckCircle2 className="w-5 h-5 text-slate-500" />;
         }
@@ -86,6 +90,8 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
             whatsapp: 'WhatsApp',
             mensaje: 'Mensaje',
             correo: 'Correo',
+            personalizado: 'Interacción',
+            nota: 'Nota',
             cliente: 'Convertido a Cliente',
             prospecto: 'Prospecto'
         };

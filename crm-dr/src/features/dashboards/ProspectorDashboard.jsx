@@ -316,7 +316,7 @@ const ProspectorDashboard = () => {
                                     tareasPendientes.map((t) => {
                                         const prospectoId = t.cliente || t.clienteId;
                                         const irAProspecto = prospectoId
-                                            ? () => navigate('/prospector/prospectos', { state: { selectedId: prospectoId } })
+                                            ? () => navigate('/app/contactos', { state: { selectedId: prospectoId } })
                                             : null;
                                         return (
                                             <div

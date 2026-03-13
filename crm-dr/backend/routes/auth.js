@@ -73,7 +73,7 @@ router.post('/register', async (req, res) => {
         console.log('📝 Intento de registro recibido:', { ...req.body, contraseña: '***' });
         let { usuario, contraseña, nombre, email, telefono, rol, modo_crm } = req.body;
 
-        if (!rol) rol = 'admin';
+        if (!rol) rol = 'individual';
         if (!modo_crm) modo_crm = 'individual';
 
         if (!usuario || !contraseña || !nombre) {

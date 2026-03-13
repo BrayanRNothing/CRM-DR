@@ -17,8 +17,8 @@ const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 
 // FEATURES (Ahora importamos desde features)
 const SeguimientoContactos = lazy(() => import('./features/prospects/SeguimientoProspectos.jsx'));
-const CalendarioCompleto = lazy(() => import('./features/calendarios/UserFullCalendar.jsx'));
-const DashboardMain = lazy(() => import('./features/dashboards/CloserDashboard.jsx'));
+const CalendarioCompleto = lazy(() => import('./features/calendarios/CalendarSwitcher.jsx'));
+const DashboardMain = lazy(() => import('./features/dashboards/DashboardSwitcher.jsx'));
 
 // Otras paginas
 const Estadisticas = lazy(() => import('./features/dashboards/Estadisticas.jsx'));

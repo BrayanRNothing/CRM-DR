@@ -22,6 +22,7 @@ const Register = () => {
     const [showConfirm, setShowConfirm] = useState(false);
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [modoCrm, setModoCrm] = useState('individual');
+    const [rol, setRol] = useState('prospector');
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -82,7 +83,8 @@ const Register = () => {
                     nombre: name,
                     telefono: phone,
                     email,
-                    modo_crm: modoCrm
+                    modo_crm: modoCrm,
+                    rol: modoCrm === 'individual' ? 'individual' : rol
                 }),
             });
 
@@ -226,10 +228,43 @@ const Register = () => {
                                                 </div>
                                                 <span className={`text-sm font-bold ${modoCrm === 'cooperativo' ? 'text-blue-700' : 'text-slate-600'}`}>Uso Cooperativo</span>
                                             </button>
-                                        </div>
                                     </div>
+                                </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Sub-role Selection (Visible only in Team Mode) */}
+                                    {modoCrm === 'cooperativo' && (
+                                        <div className="space-y-1.5 mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">Tu rol en el equipo</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setRol('prospector')}
+                                                    className={`flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all ${
+                                                        rol === 'prospector'
+                                                            ? 'border-blue-600 bg-blue-50/50'
+                                                            : 'border-slate-200 hover:border-blue-300'
+                                                    }`}
+                                                >
+                                                    <User className={`w-5 h-5 mb-1 ${rol === 'prospector' ? 'text-blue-600' : 'text-slate-400'}`} />
+                                                    <span className={`text-[10px] font-bold uppercase ${rol === 'prospector' ? 'text-blue-700' : 'text-slate-600'}`}>Prospector</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setRol('closer')}
+                                                    className={`flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all ${
+                                                        rol === 'closer'
+                                                            ? 'border-blue-600 bg-blue-50/50'
+                                                            : 'border-slate-200 hover:border-blue-300'
+                                                    }`}
+                                                >
+                                                    <Check className={`w-5 h-5 mb-1 ${rol === 'closer' ? 'text-blue-600' : 'text-slate-400'}`} />
+                                                    <span className={`text-[10px] font-bold uppercase ${rol === 'closer' ? 'text-blue-700' : 'text-slate-600'}`}>Closer</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                                         {/* Left Column Fields */}
                                         <div className="space-y-3 xl:space-y-5">
