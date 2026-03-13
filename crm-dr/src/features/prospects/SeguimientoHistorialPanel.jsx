@@ -17,51 +17,53 @@ const SeguimientoHistorialPanel = ({
     onGuardarInteraccion
 }) => {
     return (
-        <div className="w-[330px] xl:w-[360px] flex flex-col border-l border-slate-200 bg-white overflow-hidden min-h-0">
-            <div className="px-6 py-4 bg-blue-900 shrink-0 flex justify-center">
-                <h3 className="font-black text-white uppercase tracking-wide text-2xl">Historial</h3>
+        <div className="w-[330px] xl:w-[380px] flex flex-col border-l border-slate-200 bg-white/50 backdrop-blur-sm overflow-hidden min-h-0">
+            <div className="px-6 py-6 bg-gradient-to-r from-indigo-950 to-indigo-900 shrink-0 flex justify-center shadow-md">
+                <h3 className="font-black text-white uppercase tracking-widest text-2xl">Historial</h3>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto bg-white/30">
                 {actividadesContext.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-slate-300 gap-2 py-8">
-                        <Clock className="w-10 h-10" />
-                        <p className="text-sm">Sin interacciones aún</p>
+                    <div className="flex flex-col items-center justify-center h-full text-slate-300 gap-3 py-10">
+                        <Clock className="w-12 h-12 opacity-50" />
+                        <p className="text-sm font-bold uppercase tracking-widest">Sin interacciones aún</p>
                     </div>
                 ) : (
-                    <div className="py-3">
+                    <div className="py-4">
                         {[...actividadesContext].reverse().map((act, idx) => {
                             const tipoInfo = {
                                 llamada: {
                                     dot: act.resultado === 'exitoso' ? 'bg-emerald-400' : 'bg-rose-400',
-                                    label: act.resultado === 'exitoso' ? '📞 Llamada contestada' : '📞 Sin respuesta',
-                                    icon: <Phone className="w-3 h-3" />
+                                    label: act.resultado === 'exitoso' ? '📞 Llamada Contestada' : '📞 Sin Respuesta',
+                                    icon: <Phone className="w-3 h-3 text-white" />
                                 },
-                                cita: { dot: 'bg-blue-400', label: '📅 Cita', icon: <Calendar className="w-3 h-3" /> },
-                                whatsapp: { dot: 'bg-green-400', label: '💬 WhatsApp', icon: <MessageSquare className="w-3 h-3" /> },
-                                personalizado: { dot: 'bg-blue-300', label: '⚡ Acción', icon: <Zap className="w-3 h-3" /> },
-                                nota: { dot: 'bg-slate-300', label: '📝 Nota', icon: <FileText className="w-3 h-3" /> }
+                                cita: { dot: 'bg-blue-500', label: '📅 Cita', icon: <Calendar className="w-3 h-3 text-white" /> },
+                                whatsapp: { dot: 'bg-green-500', label: '💬 WhatsApp', icon: <MessageSquare className="w-3 h-3 text-white" /> },
+                                personalizado: { dot: 'bg-indigo-400', label: '⚡ Acción', icon: <Zap className="w-3 h-3 text-white" /> },
+                                nota: { dot: 'bg-slate-400', label: '📝 Nota', icon: <FileText className="w-3 h-3 text-white" /> }
                             }[act.tipo] || {
-                                dot: 'bg-slate-200',
+                                dot: 'bg-slate-300',
                                 label: act.tipo || 'Interacción',
-                                icon: <CheckCircle2 className="w-3 h-3" />
+                                icon: <CheckCircle2 className="w-3 h-3 text-white" />
                             };
 
                             return (
-                                <div key={idx} className="flex items-start gap-2 px-4 py-2.5 hover:bg-slate-50 border-b border-slate-100 last:border-0">
-                                    <div className={`w-2 h-2 rounded-full ${tipoInfo.dot} mt-2 shrink-0`} />
+                                <div key={idx} className="flex items-start gap-3 px-6 py-4 hover:bg-white/80 transition-all border-b border-slate-100 last:border-0 group">
+                                    <div className={`w-3 h-3 rounded-full ${tipoInfo.dot} mt-1.5 shrink-0 shadow-sm transition-transform group-hover:scale-125`} />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold text-slate-700 truncate">{tipoInfo.label}</p>
-                                        {act.notas && <p className="text-xs text-slate-500 truncate">{act.notas}</p>}
-                                        {act.descripcion && !act.notas && <p className="text-xs text-slate-500 truncate">{act.descripcion}</p>}
-                                        <p className="text-[11px] text-slate-400 mt-0.5">
-                                            {new Date(act.fecha || act.createdAt).toLocaleDateString('es-MX', {
-                                                day: 'numeric',
-                                                month: 'short',
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            })}
-                                        </p>
+                                        <p className="text-sm font-bold text-slate-800 tracking-tight">{tipoInfo.label}</p>
+                                        {act.notas && <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{act.notas}</p>}
+                                        {act.descripcion && !act.notas && <p className="text-xs text-slate-600 mt-0.5 leading-relaxed italic">{act.descripcion}</p>}
+                                        <div className="flex items-center gap-1.5 mt-2">
+                                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                                                {new Date(act.fecha || act.createdAt).toLocaleDateString('es-MX', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -70,8 +72,8 @@ const SeguimientoHistorialPanel = ({
                 )}
             </div>
 
-            <div className="p-4 border-t border-slate-200 shrink-0 bg-white">
-                <div className="flex gap-2 items-center border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
+            <div className="p-5 border-t border-slate-200 shrink-0 bg-white/80 backdrop-blur-md">
+                <div className="flex gap-2 items-center border-2 border-slate-100 rounded-2xl px-4 py-3 bg-white shadow-inner focus-within:border-blue-400 transition-all group">
                     <input
                         type="text"
                         value={notaInteraccion}
@@ -81,15 +83,15 @@ const SeguimientoHistorialPanel = ({
                                 await onGuardarInteraccion();
                             }
                         }}
-                        placeholder="texto libre..."
-                        className="flex-1 bg-transparent text-2xl outline-none placeholder:text-slate-400 placeholder:font-semibold"
+                        placeholder="Escribe una nota..."
+                        className="flex-1 bg-transparent text-xl font-medium outline-none placeholder:text-slate-300 placeholder:font-bold"
                     />
                     <button
                         onClick={onGuardarInteraccion}
                         disabled={registrandoInteraccion || !notaInteraccion.trim()}
-                        className="px-2 py-1 text-slate-400 hover:text-slate-700 transition-colors disabled:opacity-40 text-xl font-bold"
+                        className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition-all shadow-md shadow-blue-200 disabled:opacity-30 disabled:shadow-none hover:scale-110 active:scale-90"
                     >
-                        →
+                        <Zap className="w-5 h-5 fill-current" />
                     </button>
                 </div>
             </div>

@@ -66,7 +66,7 @@ function parseCsvRow(row) {
 
 function csvToProspectos(text) {
     const lines = text.split(/\r?\n/).filter(l => l.trim());
-    if (lines.length < 2) return { data: [], errors: ['El CSV estÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â vacÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Âo o solo tiene encabezados.'] };
+    if (lines.length < 2) return { data: [], errors: ['El CSV está vacío o solo tiene encabezados.'] };
     const header = parseCsvRow(lines[0]).map(h => h.toLowerCase().replace(/\s+/g, ''));
     const colMap = {
         nombres: ['nombres', 'nombre'], apellidoPaterno: ['apellidopaterno', 'apellido'],
@@ -98,7 +98,7 @@ const TIPOS_ACTIVIDAD = [
 const RESULTADOS = [
     { value: 'exitoso', label: 'Exitoso', icon: CheckCircle2 },
     { value: 'pendiente', label: 'Pendiente', icon: Clock },
-    { value: 'fallido', label: 'No contestÃƒÆ’Ã‚Â³', icon: XCircle }
+    { value: 'fallido', label: 'No contestó', icon: XCircle }
 ];
 
 const getTipoLabel = (tipo) => TIPOS_ACTIVIDAD.find(t => t.value === tipo)?.label || tipo;
@@ -110,7 +110,7 @@ const ETAPAS_EMBUDO = {
     'en_contacto': { label: 'En contacto', color: 'bg-blue-100 text-blue-600' },
     'reunion_agendada': { label: 'Cita agendada', color: 'bg-blue-100 text-blue-900' },
     'reunion_realizada': { label: 'Cita realizada', color: 'bg-indigo-100 text-indigo-600' },
-    'en_negociacion': { label: 'NegociaciÃƒÆ’Ã‚Â³n', color: 'bg-amber-100 text-amber-600' },
+    'en_negociacion': { label: 'Negociación', color: 'bg-amber-100 text-amber-600' },
     'venta_ganada': { label: 'Venta ganada', color: 'bg-emerald-100 text-emerald-600' },
     'perdido': { label: 'Perdido', color: 'bg-rose-100 text-rose-600' }
 };
@@ -149,12 +149,12 @@ const SeguimientoContactos = () => {
         notas: ''
     });
 
-    // Estado para la ediciÃƒÆ’Ã‚Â³n de prospectos
+    // Estado para la edición de prospectos
     const [modalEditarAbierto, setModalEditarAbierto] = useState(false);
     const [prospectoAEditar, setProspectoAEditar] = useState({});
     const [loadingEditar, setLoadingEditar] = useState(false);
 
-    // Estados para modales de conversiÃƒÆ’Ã‚Â³n y descarte
+    // Estados para modales de conversión y descarte
     const [modalPasarClienteAbierto, setModalPasarClienteAbierto] = useState(false);
     const [modalDescartarAbierto, setModalDescartarAbierto] = useState(false);
     const [notaConversion, setNotaConversion] = useState('');
@@ -171,10 +171,10 @@ const SeguimientoContactos = () => {
     const [importResult, setImportResult] = useState(null);
     const fileInputRef = useRef(null);
 
-    // Estado para el acordeÃƒÆ’Ã‚Â³n de acciones de cierre
+    // Estado para el acordeón de acciones de cierre
     const [acordeonCierreAbierto, setAcordeonCierreAbierto] = useState(false);
 
-    // Estado para ediciÃƒÆ’Ã‚Â³n rÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Âpida de fecha de seguimiento
+    // Estado para edición rápida de fecha de seguimiento
     const [editandoFechaSeguimiento, setEditandoFechaSeguimiento] = useState(false);
     const [nuevaFechaSeguimiento, setNuevaFechaSeguimiento] = useState('');
 
@@ -223,7 +223,7 @@ const SeguimientoContactos = () => {
             });
             toast.success('Prospecto actualizado');
             setModalEditarAbierto(false);
-            // Recargar datos y actualizar el panel de detalle si estÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â abierto
+            // Recargar datos y actualizar el panel de detalle si está abierto
             const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
             setProspectos(res.data);
             if (prospectoSeleccionado && (prospectoSeleccionado.id === prospectoAEditar.id || prospectoSeleccionado._id === prospectoAEditar.id)) {
@@ -248,7 +248,7 @@ const SeguimientoContactos = () => {
     const [notasRapidas, setNotasRapidas] = useState('');
     const [loadingNotas, setLoadingNotas] = useState(false);
 
-    // Nuevo: Estados para interacciÃƒÆ’Ã‚Â³n personalizada
+    // Nuevo: Estados para interacción personalizada
     const [notaInteraccion, setNotaInteraccion] = useState('');
     const [registrandoInteraccion, setRegistrandoInteraccion] = useState(false);
 
@@ -292,7 +292,7 @@ const SeguimientoContactos = () => {
         try {
             const pid = prospectoSeleccionado.id || prospectoSeleccionado._id;
             await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}/editar`, {
-                // Solo enviamos los campos editables mÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Ânimos para no sobreescribir datos enriquecidos
+                // Solo enviamos los campos editables mínimos para no sobreescribir datos enriquecidos
                 nombres: prospectoSeleccionado.nombres || '',
                 apellidoPaterno: prospectoSeleccionado.apellidoPaterno || '',
                 apellidoMaterno: prospectoSeleccionado.apellidoMaterno || '',
@@ -337,7 +337,7 @@ const SeguimientoContactos = () => {
     useEffect(() => {
         const init = async () => {
             await cargarDatos();
-            // Si venimos de otra pÃƒÆ’Ã‚Â¡gina con un ID seleccionado
+            // Si venimos de otra página con un ID seleccionado
             if (location.state?.selectedId) {
                 const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
                 // eslint-disable-next-line eqeqeq
@@ -362,27 +362,16 @@ const SeguimientoContactos = () => {
         };
     }, []);
 
-    // Cargar actividades cuando se selecciona un prospecto
+    // Reiniciar notas cuando cambia el prospecto
     useEffect(() => {
-        if (!prospectoSeleccionado) {
+        if (prospectoSeleccionado) {
+            setNotasRapidas(prospectoSeleccionado.notas || '');
+        } else {
             setActividadesContext([]);
-            return;
         }
-        const pid = prospectoSeleccionado.id || prospectoSeleccionado._id;
-        const cargarActividades = async () => {
-            try {
-                const res = await axios.get(`${API_URL}/api/${rolePath}/actividades?prospectoId=${pid}`, { headers: getAuthHeaders() });
-                setActividadesContext(Array.isArray(res.data) ? res.data : []);
-            } catch {
-                // Si falla, intentar leer del objeto prospecto directamente
-                setActividadesContext(prospectoSeleccionado.actividades || []);
-            }
-        };
-        cargarActividades();
-        setNotasRapidas(prospectoSeleccionado.notas || '');
     }, [prospectoSeleccionado?.id, prospectoSeleccionado?._id]);
 
-    // Orden de prioridad de etapas (mÃƒÆ’Ã‚Â¡s avanzadas primero, perdido al fondo)
+    // Orden de prioridad de etapas (más avanzadas primero, perdido al fondo)
     const ORDEN_ETAPA = {
         'reunion_agendada': 1,
         'reunion_realizada': 2,
@@ -396,7 +385,7 @@ const SeguimientoContactos = () => {
     const prospectosFiltrados = useMemo(() => {
         let filtrados = prospectos;
 
-        // BÃƒÆ’Ã‚Âºsqueda...
+        // Búsqueda...
         if (busquedaProspecto.trim()) {
             const termino = busquedaProspecto.toLowerCase();
             filtrados = filtrados.filter(p =>
@@ -410,13 +399,13 @@ const SeguimientoContactos = () => {
 
         // Etapa (filtros agrupados)...
         if (filtroEtapa === 'en_contacto') {
-            // RespondiÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â: etapa avanzÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â mÃƒÆ’Ã‚Â¡s allÃƒÆ’Ã‚Â¡ de prospecto_nuevo
+            // Respondió: etapa avanzó más allá de prospecto_nuevo
             filtrados = filtrados.filter(p => p.etapaEmbudo !== 'prospecto_nuevo');
         } else if (filtroEtapa === 'sin_respuesta') {
-            // Intentaron contactar (hay actividades) pero sigue en prospecto_nuevo ? no contestÃƒÆ’Ã‚Â³
+            // Intentaron contactar (hay actividades) pero sigue en prospecto_nuevo ? no contestó
             filtrados = filtrados.filter(p => p.etapaEmbudo === 'prospecto_nuevo' && !!p.ultimaActTipo);
         } else if (filtroEtapa === 'no_contactado') {
-            // Sin ninguna actividad registrada = nuevo prospecto sin interacciÃƒÆ’Ã‚Â³n
+            // Sin ninguna actividad registrada = nuevo prospecto sin interacción
             filtrados = filtrados.filter(p => p.etapaEmbudo === 'prospecto_nuevo' && !p.ultimaActTipo);
         } else if (filtroEtapa === 'con_cita') {
             // Tiene cita agendada o realizada
@@ -453,7 +442,7 @@ const SeguimientoContactos = () => {
                 if (filtroFecha === 'personalizado' && fechaDesde && fechaHasta) {
                     const dDesde = new Date(fechaDesde);
                     dDesde.setHours(0, 0, 0, 0);
-                    // Aumentamos 1 dÃƒÆ’Ã‚Â­a a la fechaHasta local para que sea inclusivo el dÃƒÆ’Ã‚Â­a entero
+                    // Aumentamos 1 día a la fechaHasta local para que sea inclusivo el día entero
                     const dHasta = new Date(fechaHasta);
                     dHasta.setHours(23, 59, 59, 999);
                     return fechaCreacion >= dDesde && fechaCreacion <= dHasta;
@@ -467,7 +456,7 @@ const SeguimientoContactos = () => {
             const ahora = new Date();
             filtrados = filtrados.filter(p => {
                 if (!p.proximaLlamada) return false;
-                // 'vencido': ya pasÃƒÆ’Ã‚Â­ la fecha. 'futuro': aÃƒÆ’Ã‚Âºn no. Ambos se muestran, vencidos primero.
+                // 'vencido': ya pasí la fecha. 'futuro': aún no. Ambos se muestran, vencidos primero.
                 return true;
             });
         }
@@ -479,7 +468,7 @@ const SeguimientoContactos = () => {
         const esPerdidoB = b.etapaEmbudo === 'perdido';
         if (esPerdidoA !== esPerdidoB) return esPerdidoA ? 1 : -1;
 
-        // Con prÃƒÆ’Ã‚Â³xima llamada urgente primero (vencidas aÃƒÆ’Ã‚Âºn antes que futuras)
+        // Con próxima llamada urgente primero (vencidas aún antes que futuras)
         const tieneRecordA = !!a.proximaLlamada;
         const tieneRecordB = !!b.proximaLlamada;
         if (tieneRecordA !== tieneRecordB) return tieneRecordA ? -1 : 1;
@@ -491,12 +480,12 @@ const SeguimientoContactos = () => {
             return new Date(a.proximaLlamada) - new Date(b.proximaLlamada);
         }
 
-        // Mayor interÃƒÆ’Ã‚Â©s primero
+        // Mayor interés primero
         const interesA = a.interes || 0;
         const interesB = b.interes || 0;
         if (interesB !== interesA) return interesB - interesA;
 
-        // Etapa mÃƒÆ’Ã‚Â¡s avanzada primero
+        // Etapa más avanzada primero
         const orA = ORDEN_ETAPA[a.etapaEmbudo] ?? 10;
         const orB = ORDEN_ETAPA[b.etapaEmbudo] ?? 10;
         return orA - orB;
@@ -522,13 +511,13 @@ const SeguimientoContactos = () => {
     };
 
     const handleImportCsv = async () => {
-        if (!csvPreview || csvPreview.data.length === 0) { toast.error('No hay datos vÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Âlidos para importar.'); return; }
+        if (!csvPreview || csvPreview.data.length === 0) { toast.error('No hay datos válidos para importar.'); return; }
         try {
             setImportando(true);
             const response = await axios.post(`${API_URL}/api/${rolePath}/importar-csv`, { prospectos: csvPreview.data }, { headers: getAuthHeaders() });
             setImportResult(response.data);
             cargarDatos();
-            toast.success(`ImportaciÃƒÆ’Ã‚Â³n completada: ${response.data.insertados} nuevos.`);
+            toast.success(`Importación completada: ${response.data.insertados} nuevos.`);
         } catch (error) {
             toast.error(error.response?.data?.msg || 'Error al importar el CSV.');
         } finally { setImportando(false); }
@@ -575,9 +564,9 @@ const SeguimientoContactos = () => {
 
     const handleSeleccionarProspecto = async (p) => {
         setProspectoSeleccionado(p);
-        setNotasRapidas(p.notas || ''); // Inicializar notas rÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Âpidas
-        setEditandoFechaSeguimiento(false); // Resetear ediciÃƒÆ’Ã‚Â³n inline de fecha
-        setAcordeonCierreAbierto(false);    // Colapsar acordeÃƒÆ’Ã‚Â³n de cierre
+        setNotasRapidas(p.notas || ''); // Inicializar notas rápidas
+        setEditandoFechaSeguimiento(false); // Resetear edición inline de fecha
+        setAcordeonCierreAbierto(false);    // Colapsar acordeón de cierre
         setLoadingContext(true);
         try {
             // MEJORADO: Usar endpoint de historial completo para ver actividades de AMBOS (prospector y closer)
@@ -602,7 +591,7 @@ const SeguimientoContactos = () => {
                     }));
                 setActividadesContext(actividades);
             } else {
-                // Fallback a endpoint antiguo si la respuesta no tiene timeline
+                // Fallback a endpoint de actividades estándar
                 const fallbackRes = await axios.get(`${API_URL}/api/${rolePath}/prospectos/${p.id || p._id}/actividades`, { headers: getAuthHeaders() });
                 setActividadesContext(fallbackRes.data);
             }
@@ -616,7 +605,7 @@ const SeguimientoContactos = () => {
     };
 
     const handleDeleteActividadContext = async (actividadId) => {
-        if (!window.confirm('ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬ÂEliminar esta actividad? Esta acciÃƒÆ’Ã‚Â³n no se puede deshacer.')) return;
+        if (!window.confirm('¿Eliminar esta actividad? Esta acción no se puede deshacer.')) return;
         try {
             await axios.delete(`${API_URL}/api/actividades/${actividadId}`, { headers: getAuthHeaders() });
             setActividadesContext(prev => prev.filter(a => a.id !== actividadId));
@@ -629,13 +618,13 @@ const SeguimientoContactos = () => {
     const actualizarInteres = async (id, nuevoInteres) => {
         try {
             await axios.put(`${API_URL}/api/${rolePath}/prospectos/${id}`, { interes: nuevoInteres }, { headers: getAuthHeaders() });
-            toast.success('InterÃƒÆ’Ã‚Â©s actualizado');
+            toast.success('Interés actualizado');
             setProspectos(prev => prev.map(p => (p.id === id || p._id === id) ? { ...p, interes: nuevoInteres } : p));
             if (prospectoSeleccionado && (prospectoSeleccionado.id === id || prospectoSeleccionado._id === id)) {
                 setProspectoSeleccionado({ ...prospectoSeleccionado, interes: nuevoInteres });
             }
         } catch (error) {
-            toast.error('Error al actualizar interÃƒÆ’Ã‚Â©s');
+            toast.error('Error al actualizar interés');
         }
     };
 
@@ -668,7 +657,7 @@ const SeguimientoContactos = () => {
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-lg max-w-sm w-full">
                         <div className="p-4 border-b border-slate-100">
-                            <h2 className="text-lg font-bold text-gray-900">+ Nuevo prospecto</h2>
+                            <h2 className="text-lg font-bold text-gray-900">+ Nuevo Prospecto</h2>
                         </div>
                         <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
                             <div className="grid grid-cols-2 gap-3">
@@ -689,12 +678,12 @@ const SeguimientoContactos = () => {
                                         value={formCrear.apellidoPaterno}
                                         onChange={(e) => setFormCrear((f) => ({ ...f, apellidoPaterno: e.target.value }))}
                                         className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                        placeholder="GarcÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Âa"
+                                        placeholder="García"
                                     />
                                 </div>
                                 <div className="col-span-2">
                                     <div className="flex items-center justify-between mb-1">
-                                        <label className="block text-xs font-medium text-gray-700">TelÃƒÆ’Ã‚Â©fonos</label>
+                                        <label className="block text-xs font-medium text-gray-700">Teléfonos</label>
                                         <button
                                             type="button"
                                             onClick={() => setFormCrear((f) => ({ ...f, telefonos: [...f.telefonos, ''] }))}
@@ -757,13 +746,13 @@ const SeguimientoContactos = () => {
                                     />
                                 </div>
                                 <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">UbicaciÃƒÆ’Ã‚Â³n</label>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Ubicación</label>
                                     <input
                                         type="text"
                                         value={formCrear.ubicacion}
                                         onChange={(e) => setFormCrear((f) => ({ ...f, ubicacion: e.target.value }))}
                                         className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                        placeholder="Ciudad, Estado, PaÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Âs"
+                                        placeholder="Ciudad, Estado, País"
                                     />
                                 </div>
                                 <div className="col-span-2">
@@ -773,7 +762,7 @@ const SeguimientoContactos = () => {
                                         value={formCrear.notas}
                                         onChange={(e) => setFormCrear((f) => ({ ...f, notas: e.target.value }))}
                                         className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm resize-none"
-                                        placeholder="InformaciÃƒÆ’Ã‚Â³n relevante sobre el primer contacto..."
+                                        placeholder="Información relevante sobre el primer contacto..."
                                     />
                                 </div>
                             </div>
@@ -804,7 +793,7 @@ const SeguimientoContactos = () => {
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-lg max-w-sm w-full">
                         <div className="p-4 border-b border-slate-100">
-                            <h2 className="text-lg font-bold text-gray-900">?? Editar prospecto</h2>
+                            <h2 className="text-lg font-bold text-gray-900">✏️ Editar Prospecto</h2>
                         </div>
                         <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
                             <div className="grid grid-cols-2 gap-3">
@@ -828,7 +817,7 @@ const SeguimientoContactos = () => {
                                 </div>
                                 <div className="col-span-2">
                                     <div className="flex items-center justify-between mb-1">
-                                        <label className="block text-xs font-medium text-gray-700">TelÃƒÆ’Ã‚Â©fonos</label>
+                                        <label className="block text-xs font-medium text-gray-700">Teléfonos</label>
                                         <button
                                             type="button"
                                             onClick={() => setProspectoAEditar((f) => ({ ...f, telefonos: [...(f.telefonos || ['']), ''] }))}
@@ -889,13 +878,13 @@ const SeguimientoContactos = () => {
                                     />
                                 </div>
                                 <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">UbicaciÃƒÆ’Ã‚Â³n</label>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Ubicación</label>
                                     <input
                                         type="text"
                                         value={prospectoAEditar.ubicacion || ''}
                                         onChange={(e) => setProspectoAEditar((f) => ({ ...f, ubicacion: e.target.value }))}
                                         className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                        placeholder="Ciudad, Estado, PaÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Âs"
+                                        placeholder="Ciudad, Estado, País"
                                     />
                                 </div>
                                 <div className="col-span-2">
@@ -921,7 +910,7 @@ const SeguimientoContactos = () => {
                                     </select>
                                 </div>
                                 <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Recordatorio (PrÃƒÆ’Ã‚Â³xima Llamada)</label>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Recordatorio (Próxima Llamada)</label>
                                     <TimeWheelPicker
                                         value={prospectoAEditar.proximaLlamada || ''}
                                         onChange={(val) => setProspectoAEditar((f) => ({ ...f, proximaLlamada: val }))}
@@ -953,11 +942,11 @@ const SeguimientoContactos = () => {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-lg max-w-sm w-full">
                         <div className="p-4 border-b border-slate-100 bg-emerald-50">
-                            <h2 className="text-lg font-bold text-emerald-900">?? Pasar a cliente</h2>
+                            <h2 className="text-lg font-bold text-emerald-900">✅ Pasar a Cliente</h2>
                         </div>
                         <div className="p-4 space-y-3">
                             <p className="text-gray-600 text-sm">
-                                ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬ÂConfirmas que <span className="font-semibold">{prospectoSeleccionado?.nombres} {prospectoSeleccionado?.apellidoPaterno}</span> se convierte en cliente?
+                                ¿Confirmas que <span className="font-semibold">{prospectoSeleccionado?.nombres} {prospectoSeleccionado?.apellidoPaterno}</span> se convierte en cliente?
                             </p>
                             <textarea
                                 rows={2}
@@ -991,11 +980,11 @@ const SeguimientoContactos = () => {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-lg max-w-sm w-full">
                         <div className="p-4 border-b border-slate-100 bg-red-50">
-                            <h2 className="text-lg font-bold text-red-900">??? Descartar prospecto</h2>
+                            <h2 className="text-lg font-bold text-red-900">❌ Descartar Prospecto</h2>
                         </div>
                         <div className="p-4 space-y-3">
                             <p className="text-gray-600 text-sm">
-                                ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬ÂDescartar a <span className="font-semibold">{prospectoSeleccionado?.nombres} {prospectoSeleccionado?.apellidoPaterno}</span>? Se registrarÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â en el historial.
+                                ¿Descartar a <span className="font-semibold">{prospectoSeleccionado?.nombres} {prospectoSeleccionado?.apellidoPaterno}</span>? Se registrará en el historial.
                             </p>
                             <textarea
                                 rows={2}
@@ -1034,8 +1023,8 @@ const SeguimientoContactos = () => {
                         </div>
                         <div className="p-4">
                             <p className="text-gray-600 text-sm">
-                                ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬ÂEstÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Âs seguro de eliminar a <strong>{prospectoAEliminar.nombres} {prospectoAEliminar.apellidoPaterno}</strong>?
-                                Esta acciÃƒÆ’Ã‚Â³n no se puede deshacer.
+                                ¿Estás seguro de eliminar a <strong>{prospectoAEliminar.nombres} {prospectoAEliminar.apellidoPaterno}</strong>?
+                                Esta acción no se puede deshacer.
                             </p>
                         </div>
                         <div className="flex gap-2 p-4 border-t border-slate-100">
@@ -1051,7 +1040,7 @@ const SeguimientoContactos = () => {
                                 className="flex-1 px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 font-medium disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 <Trash2 className="w-4 h-4" />
-                                {eliminando ? 'Eliminando...' : 'SÃƒÆ’Ã‚Â­, eliminar'}
+                                {eliminando ? 'Eliminando...' : 'Sí, eliminar'}
                             </button>
                         </div>
                     </div>
@@ -1085,7 +1074,7 @@ const SeguimientoContactos = () => {
                                         {csvFile ? (
                                             <p className="font-semibold text-slate-700 text-sm">{csvFile.name}</p>
                                         ) : (
-                                            <p className="text-slate-500 text-sm">Arrastra un CSV aquÃƒÆ’Ã‚Â­ o haz clic para seleccionar</p>
+                                            <p className="text-slate-500 text-sm">Arrastra un CSV aquí o haz clic para seleccionar</p>
                                         )}
                                     </div>
                                     {csvPreview && (
@@ -1112,8 +1101,8 @@ const SeguimientoContactos = () => {
                             ) : (
                                 <div className="space-y-3">
                                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-800">
-                                        <p className="font-semibold">? ImportaciÃƒÆ’Ã‚Â³n completada</p>
-                                        <p>Insertados: {importResult.insertados} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Duplicados: {importResult.duplicados} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Errores: {importResult.errores}</p>
+                                        <p className="font-semibold">? Importación completada</p>
+                                        <p>Insertados: {importResult.insertados} — Duplicados: {importResult.duplicados} — Errores: {importResult.errores}</p>
                                     </div>
                                     <button onClick={resetImportModal} className="w-full px-3 py-2 bg-blue-900 text-white rounded text-sm hover:bg-blue-950 font-medium">Cerrar</button>
                                 </div>
@@ -1134,11 +1123,11 @@ const SeguimientoContactos = () => {
                 { notas: notaConversion || 'Prospecto convertido a cliente' },
                 { headers: getAuthHeaders() }
             );
-            toast.success('ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬ÂProspecto convertido a cliente!');
+            toast.success('¡Prospecto convertido a cliente!');
             setModalPasarClienteAbierto(false);
             setNotaConversion('');
             setProspectoSeleccionado(null);
-            // Redirigir a la pÃƒÆ’Ã‚Â¡gina de clientes
+            // Redirigir a la página de clientes
             setTimeout(() => {
                 navigate(`/${rolePath}/clientes`);
             }, 800);
@@ -1180,9 +1169,9 @@ const SeguimientoContactos = () => {
             // Evaluamos primero notas para las opciones personalizables de llamadas
             if (act.tipo === 'llamada') {
                 if (act.notas?.includes('WhatsApp')) return { icon: '??', color: 'bg-green-500', label: 'WhatsApp / Correo' };
-                if (act.notas?.includes('llamar despuÃƒÆ’Ã‚Â©s')) return { icon: '??', color: 'bg-indigo-500', label: 'Llamar despuÃƒÆ’Ã‚Â©s' };
-                if (act.notas?.toLowerCase().includes('sin interÃƒÆ’Ã‚Â©s')) return { icon: '??', color: 'bg-gray-500', label: 'Sin interÃƒÆ’Ã‚Â©s' };
-                if (act.notas?.includes('AgendÃƒÆ’Ã‚Â³ reuniÃƒÆ’Ã‚Â³n')) return { icon: '??', color: 'bg-blue-800', label: 'Cita Agendada' };
+                if (act.notas?.includes('llamar después')) return { icon: '??', color: 'bg-indigo-500', label: 'Llamar después' };
+                if (act.notas?.toLowerCase().includes('sin interés')) return { icon: '??', color: 'bg-gray-500', label: 'Sin interés' };
+                if (act.notas?.includes('Agendó reunión')) return { icon: '??', color: 'bg-blue-800', label: 'Cita Agendada' };
 
                 if (act.resultado === 'exitoso') return { icon: '??', color: 'bg-emerald-500', label: 'Llamada exitosa' };
                 if (act.resultado === 'fallido') return { icon: '??', color: 'bg-rose-500', label: 'Sin respuesta' };
@@ -1191,27 +1180,27 @@ const SeguimientoContactos = () => {
             if (act.tipo === 'cita') {
                 const desc = act.descripcion || '';
                 if (act.resultado === 'pendiente') return { icon: '??', color: 'bg-blue-500', label: 'Cita Agendada' };
-                if (desc.includes('no asistiÃƒÆ’Ã‚Â³') || desc.includes('No asistiÃƒÆ’Ã‚Â³')) return { icon: '?', color: 'bg-red-500', label: desc };
-                if (desc.includes('Venta cerrada') || desc.includes('ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬ÂVenta')) return { icon: '??', color: 'bg-green-500', label: desc };
-                if (desc.includes('cotizaciÃƒÆ’Ã‚Â³n') || desc.includes('CotizaciÃƒÆ’Ã‚Â³n')) return { icon: '??', color: 'bg-blue-600', label: desc };
-                if (desc.includes('otra reuniÃƒÆ’Ã‚Â³n') || desc.includes('Otra reuniÃƒÆ’Ã‚Â³n')) return { icon: '??', color: 'bg-yellow-500', label: desc };
-                if (desc.includes('No le interesÃƒÆ’Ã‚Â­') || desc.includes('no le interesÃƒÆ’Ã‚Â­')) return { icon: '??', color: 'bg-gray-500', label: desc };
-                return { icon: '??', color: 'bg-blue-500', label: desc || 'ReuniÃƒÆ’Ã‚Â³n' };
+                if (desc.includes('no asistió') || desc.includes('No asistió')) return { icon: '?', color: 'bg-red-500', label: desc };
+                if (desc.includes('Venta cerrada') || desc.includes('— Venta')) return { icon: '??', color: 'bg-green-500', label: desc };
+                if (desc.includes('cotización') || desc.includes('Cotización')) return { icon: '??', color: 'bg-blue-600', label: desc };
+                if (desc.includes('otra reunión') || desc.includes('Otra reunión')) return { icon: '??', color: 'bg-yellow-500', label: desc };
+                if (desc.includes('No le interesí') || desc.includes('no le interesí')) return { icon: '??', color: 'bg-gray-500', label: desc };
+                return { icon: '??', color: 'bg-blue-500', label: desc || 'Reunión' };
             }
             if (act.tipo === 'whatsapp') return { icon: '??', color: 'bg-green-500', label: 'WhatsApp' };
-            if (act.tipo === 'personalizado') return { icon: '??', color: 'bg-blue-600', label: 'InteracciÃƒÆ’Ã‚Â³n' };
+            if (act.tipo === 'personalizado') return { icon: '??', color: 'bg-blue-600', label: 'Interacción' };
             if (act.tipo === 'nota') return { icon: '??', color: 'bg-slate-500', label: 'Nota' };
             if (act.tipo === 'cliente') return { icon: '??', color: 'bg-yellow-500', label: 'Convertido a cliente' };
             if (act.tipo === 'descartado') return { icon: '???', color: 'bg-gray-400', label: 'Descartado' };
-            return { icon: '??', color: 'bg-slate-400', label: act.tipo || 'InteracciÃƒÆ’Ã‚Â³n' };
+            return { icon: '??', color: 'bg-slate-400', label: act.tipo || 'Interacción' };
         };
         const getResultadoTexto = (act) => {
-            if (act.tipo === 'llamada' && act.resultado === 'exitoso') return 'ContestÃƒÆ’Ã‚Â³ ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“';
-            if (act.tipo === 'llamada' && act.resultado === 'fallido') return 'No contestÃƒÆ’Ã‚Â³ ÃƒÂ¢Ã…â€œÃ¢â‚¬â€';
+            if (act.tipo === 'llamada' && act.resultado === 'exitoso') return 'Contestó ✓';
+            if (act.tipo === 'llamada' && act.resultado === 'fallido') return 'No contestó ✗';
             if (act.tipo === 'cita') {
                 if (act.resultado === 'pendiente') return 'Cita programada';
                 if (act.descripcion) return act.descripcion;
-                const mapa = { exitoso: 'ReuniÃƒÆ’Ã‚Â³n realizada', fallido: 'No asistiÃƒÆ’Ã‚Â³ / Cancelada', convertido: 'Venta cerrada' };
+                const mapa = { exitoso: 'Reunión realizada', fallido: 'No asistió / Cancelada', convertido: 'Venta cerrada' };
                 return mapa[act.resultado] || act.resultado;
             }
             if (act.tipo === 'whatsapp') return 'Mensaje enviado';
@@ -1220,13 +1209,13 @@ const SeguimientoContactos = () => {
             return '';
         };
 
-        // Tarea pendiente: mostrar si hay una prÃƒÆ’Ã‚Â³xima llamada agendada o cita
+        // Tarea pendiente: mostrar si hay una próxima llamada agendada o cita
         const tareaLlamar = prospectoSeleccionado.proximaLlamada ? { fecha: prospectoSeleccionado.proximaLlamada, tipo: 'llamada' } : null;
         const proximaCita = actividadesContext.find(a => a.tipo === 'cita' && a.resultado === 'pendiente' && new Date(a.fechaCita || a.fecha) >= new Date());
 
         const registrarActividad = async (payload) => {
             try {
-                // Promover etapa automÃƒÆ’Ã‚Â¡ticamente si corresponde
+                // Promover etapa automáticamente si corresponde
                 const payloadFinal = { ...payload };
                 if (
                     payload.tipo === 'llamada' &&
@@ -1237,7 +1226,7 @@ const SeguimientoContactos = () => {
                 }
 
                 // Al registrar cualquier llamada, limpiar el seguimiento pendiente
-                // (si se agenda nueva fecha, el flujo "Llamar despuÃƒÆ’Ã‚Â©s" la sobreescribe)
+                // (si se agenda nueva fecha, el flujo "Llamar después" la sobreescribe)
                 if (payload.tipo === 'llamada' && prospectoSeleccionado.proximaLlamada) {
                     await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, {
                         proximaLlamada: null
@@ -1245,7 +1234,7 @@ const SeguimientoContactos = () => {
                 }
 
                 await axios.post(`${API_URL}/api/${rolePath}/registrar-actividad`, { clienteId: pid, ...payloadFinal }, { headers: getAuthHeaders() });
-                toast.success('InteracciÃƒÆ’Ã‚Â³n registrada');
+                toast.success('Interacción registrada');
 
                 // Recargar prospecto fresco desde el servidor (evitar estado obsoleto)
                 const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
@@ -1261,7 +1250,7 @@ const SeguimientoContactos = () => {
 
         const handleGuardarInteraccion = async () => {
             if (!notaInteraccion.trim()) {
-                toast.error('Escribe una nota para registrar la interacciÃƒÆ’Ã‚Â³n');
+                toast.error('Escribe una nota para registrar la interacción');
                 return;
             }
             setRegistrandoInteraccion(true);
@@ -1279,10 +1268,9 @@ const SeguimientoContactos = () => {
             }
         };
         return (
-            <div className="flex h-[calc(100vh-6.5rem)] min-h-[700px] bg-slate-100 overflow-hidden rounded-2xl border border-slate-200">
-
+            <div className="flex h-[calc(100vh-6.5rem)] min-h-[700px] bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden rounded-2xl border border-slate-200 shadow-2xl shadow-slate-200/50">
                 {/* ============ COLUMNA IZQUIERDA ============ */}
-                <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-5 gap-4">
+                <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-6 gap-6">
 
                     {/* â”€â”€ HEADER ROW â”€â”€ */}
                     <div className="bg-white border border-slate-200 rounded-xl shadow-sm shrink-0 px-4 py-3">
@@ -1290,14 +1278,14 @@ const SeguimientoContactos = () => {
 
                             {/* Avatar + regresar */}
                             <div className="flex flex-col items-center gap-1 shrink-0">
-                                <button onClick={() => setProspectoSeleccionado(null)} className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center hover:bg-slate-300 transition-colors">
+                                <button onClick={() => setProspectoSeleccionado(null)} className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 hover:scale-105 active:scale-95 transition-all shadow-inner">
                                     <User className="w-5 h-5 text-slate-500" />
                                 </button>
                             </div>
 
                             {/* Nombre + Estrellas */}
                             <div className="flex flex-col shrink-0">
-                                <span className="px-4 py-2 bg-blue-900 text-white text-sm font-black rounded-lg uppercase tracking-wide cursor-pointer hover:bg-blue-950" onClick={() => setProspectoSeleccionado(null)}>
+                                <span className="px-5 py-2.5 bg-indigo-950 text-white text-base font-black rounded-xl uppercase tracking-wider cursor-pointer hover:bg-black hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-indigo-950/20" onClick={() => setProspectoSeleccionado(null)}>
                                     {prospectoSeleccionado.nombres} {prospectoSeleccionado.apellidoPaterno}
                                 </span>
                                 <div className="flex items-center gap-1 mt-2">
@@ -1338,18 +1326,18 @@ const SeguimientoContactos = () => {
                                         <span className="truncate">{new Date(prospectoSeleccionado.proximaLlamada).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                 ) : (
-                                    <span className="text-slate-400 italic">Sin recordatorio</span>
+                                    <span className="text-slate-400 italic">Sin Recordatorio</span>
                                 )}
                                 {actividadesContext.find(a => a.tipo === 'cita' && a.resultado === 'pendiente') && (
                                     <div className="flex items-center gap-1 text-blue-600 font-medium">
                                         <Calendar className="w-3 h-3 shrink-0" />
-                                        <span className="truncate">Cita pendiente</span>
+                                        <span className="truncate">Cita Pendiente</span>
                                     </div>
                                 )}
                             </div>
 
                             {/* Gear (editar) */}
-                            <button onClick={() => abrirModalEditar(prospectoSeleccionado)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 shrink-0 mt-0.5" title="Editar">
+                            <button onClick={() => abrirModalEditar(prospectoSeleccionado)} className="p-3 rounded-xl hover:bg-white hover:shadow-md text-slate-400 hover:text-blue-600 transition-all hover:scale-110 active:scale-90 shrink-0 self-center" title="Editar">
                                 <Edit2 className="w-6 h-6" />
                             </button>
                         </div>
@@ -1358,29 +1346,29 @@ const SeguimientoContactos = () => {
                     {/* â”€â”€ 4 KPIs â”€â”€ */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 shrink-0">
                         {[
-                            { label: 'Llamadas\ncontestadas', value: actividadesContext.filter(a => a.tipo === 'llamada' && a.resultado === 'exitoso').length, color: 'text-emerald-500' },
-                            { label: 'Sin\nrespuesta', value: actividadesContext.filter(a => a.tipo === 'llamada' && a.resultado === 'fallido').length, color: 'text-rose-500' },
-                            { label: 'Citas', value: actividadesContext.filter(a => a.tipo === 'cita').length, color: 'text-blue-600' },
-                            { label: 'WhatsApp', value: actividadesContext.filter(a => a.tipo === 'whatsapp').length, color: 'text-green-500' },
+                            { label: 'Llamadas\nContestadas', value: actividadesContext.filter(a => a.tipo === 'llamada' && a.resultado === 'exitoso').length, color: 'text-indigo-600', glow: 'shadow-indigo-100' },
+                            { label: 'Sin\nRespuesta', value: actividadesContext.filter(a => a.tipo === 'llamada' && a.resultado === 'fallido').length, color: 'text-slate-500', glow: 'shadow-slate-100' },
+                            { label: 'Citas', value: actividadesContext.filter(a => a.tipo === 'cita').length, color: 'text-indigo-800', glow: 'shadow-indigo-200/50' },
+                            { label: 'WhatsApp', value: actividadesContext.filter(a => a.tipo === 'whatsapp').length, color: 'text-emerald-600', glow: 'shadow-emerald-100' },
                         ].map(kpi => (
-                            <div key={kpi.label} className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm min-h-[110px] flex flex-col justify-center">
-                                <p className="text-[11px] font-black text-slate-400 uppercase tracking-wide leading-tight whitespace-pre-line">{kpi.label}</p>
-                                <p className={`text-3xl font-black mt-1 ${kpi.color}`}>{kpi.value}</p>
+                            <div key={kpi.label} className={`bg-white/90 backdrop-blur-sm border border-white rounded-2xl p-5 text-center shadow-lg transition-all hover:scale-105 hover:shadow-xl ${kpi.glow} min-h-[120px] flex flex-col justify-center`}>
+                                <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest leading-tight whitespace-pre-line">{kpi.label}</p>
+                                <p className={`text-4xl font-black mt-2 ${kpi.color}`}>{kpi.value}</p>
                             </div>
                         ))}
                     </div>
 
                     {/* â”€â”€ AGREGAR ACCIONES + edit â”€â”€ */}
                     <div className="flex items-center gap-3 shrink-0">
-                        <button onClick={() => setMostrandoAddPreaccion(!mostrandoAddPreaccion)} className="px-6 py-3 bg-orange-500 text-white font-black uppercase rounded-lg hover:bg-orange-600 transition-colors text-lg leading-none">
+                        <button onClick={() => setMostrandoAddPreaccion(!mostrandoAddPreaccion)} className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-black uppercase rounded-xl hover:from-indigo-700 hover:to-indigo-800 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-indigo-200 text-lg tracking-wider leading-none">
                             Agregar acciones
                         </button>
-                        <button onClick={() => setModoEdicionPreacciones(!modoEdicionPreacciones)} className={`px-4 py-3 border rounded-lg text-xl font-semibold transition-all ${modoEdicionPreacciones ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
-                            edit
+                        <button onClick={() => setModoEdicionPreacciones(!modoEdicionPreacciones)} className={`px-5 py-4 border rounded-xl text-xl font-bold transition-all shadow-sm ${modoEdicionPreacciones ? 'bg-indigo-50 border-indigo-200 text-indigo-700 scale-105 animate-pulse' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 active:scale-95'}`}>
+                            Editar
                         </button>
                         {mostrandoAddPreaccion && (
                             <form onSubmit={handleAddPreaccion} className="flex gap-1.5 flex-1">
-                                <input autoFocus type="text" value={nuevaPreaccion} onChange={e => setNuevaPreaccion(e.target.value)} placeholder="Nombre de la acciÃ³n..." className="flex-1 text-xs border border-slate-200 rounded px-2 py-1.5 outline-none focus:border-blue-400" />
+                                <input autoFocus type="text" value={nuevaPreaccion} onChange={e => setNuevaPreaccion(e.target.value)} placeholder="Nombre de la Acción..." className="flex-1 text-xs border border-slate-200 rounded px-2 py-1.5 outline-none focus:border-blue-400" />
                                 <button type="submit" disabled={!nuevaPreaccion.trim()} className="bg-blue-600 text-white px-2.5 py-1.5 rounded text-xs font-bold">âœ“</button>
                                 <button type="button" onClick={() => setMostrandoAddPreaccion(false)} className="text-slate-400 px-2 py-1.5 rounded text-xs hover:bg-slate-100">âœ•</button>
                             </form>
@@ -1391,13 +1379,13 @@ const SeguimientoContactos = () => {
                     <div className="bg-white border border-slate-200 rounded-xl px-4 py-4 shadow-sm shrink-0">
                         <div className="flex items-center gap-3 flex-wrap">
                             {/* Agendar (fijo) */}
-                            <button onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })} className="flex items-center gap-2 px-6 py-3 bg-blue-900 text-white rounded-lg text-lg font-black uppercase hover:bg-blue-950 transition-colors shadow-sm leading-none">
-                                <Calendar className="w-5 h-5" /> Agendar
+                            <button onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })} className="flex items-center gap-3 px-8 py-4 bg-indigo-950 text-white rounded-xl text-xl font-black uppercase hover:bg-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-950/20 tracking-wider leading-none">
+                                <Calendar className="w-6 h-6" /> Agendar
                             </button>
 
                             {/* Recordar llamada (fijo, toggle del flujo) */}
-                            <button onClick={() => setLlamadaFlow(llamadaFlow ? null : { paso: 'contesto', notas: '', fechaProxima: '' })} className={`flex items-center gap-2 px-6 py-3 rounded-lg font-black uppercase transition-colors shadow-sm text-lg leading-none ${llamadaFlow ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
-                                <Phone className="w-5 h-5" /> {llamadaFlow ? 'Cancelar' : 'Recordar llamada'}
+                            <button onClick={() => setLlamadaFlow(llamadaFlow ? null : { paso: 'contesto', notas: '', fechaProxima: '' })} className={`flex items-center gap-3 px-8 py-4 rounded-xl font-black uppercase transition-all shadow-lg text-xl tracking-wider leading-none hover:scale-105 active:scale-95 ${llamadaFlow ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-rose-200' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'}`}>
+                                <Phone className="w-6 h-6" /> {llamadaFlow ? 'Cancelar' : 'Recordar llamada'}
                             </button>
 
                             {/* Chips personalizados */}
@@ -1417,48 +1405,48 @@ const SeguimientoContactos = () => {
                         </div>
                     </div>
 
-                    {/* â”€â”€ FLUJO DE LLAMADA (aparece encima del Ã¡rea notas cuando estÃ¡ activo) â”€â”€ */}
+                    {/* â”€â”€ FLUJO DE LLAMADA (aparece encima del área notas cuando está activo) â”€â”€ */}
                     {llamadaFlow !== null && (
                         <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-3 shrink-0 space-y-2">
                             <p className="text-[10px] font-black text-blue-700 uppercase tracking-wider flex items-center gap-1.5"><Phone className="w-3 h-3" /> Registrando llamada</p>
                             {llamadaFlow.paso === 'contesto' && (
                                 <div className="flex gap-2">
-                                    <button onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'opciones_contesto' }))} className="flex-1 py-2 bg-emerald-500 text-white rounded-lg font-bold text-xs hover:bg-emerald-600">âœ” SÃ­ contestÃ³</button>
-                                    <button onClick={async () => { await registrarActividad({ tipo: 'llamada', resultado: 'fallido', notas: 'No contestÃ³' }); const h = new Date(); h.setDate(h.getDate()+1); setLlamadaFlow({ paso: 'reintento', notas: '', fechaProxima: h.toISOString().slice(0,16) }); }} className="flex-1 py-2 bg-rose-500 text-white rounded-lg font-bold text-xs hover:bg-rose-600">âœ— No contestÃ³</button>
+                                    <button onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'opciones_contesto' }))} className="flex-1 py-2 bg-emerald-500 text-white rounded-lg font-bold text-xs hover:bg-emerald-600">✓ Sí Contestó</button>
+                                    <button onClick={async () => { await registrarActividad({ tipo: 'llamada', resultado: 'fallido', notas: 'No Contestó' }); const h = new Date(); h.setDate(h.getDate()+1); setLlamadaFlow({ paso: 'reintento', notas: '', fechaProxima: h.toISOString().slice(0,16) }); }} className="flex-1 py-2 bg-rose-500 text-white rounded-lg font-bold text-xs hover:bg-rose-600">✗ No Contestó</button>
                                 </div>
                             )}
                             {llamadaFlow.paso === 'opciones_contesto' && (
                                 <div className="grid grid-cols-4 gap-1.5">
-                                    <button onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })} className="py-2 bg-blue-900 text-white rounded-lg font-bold text-[10px] hover:bg-blue-950">ðŸ“… AgendÃ³ reuniÃ³n</button>
-                                    <button onClick={() => { const h = new Date(); h.setDate(h.getDate()+3); setLlamadaFlow(f => ({ ...f, paso: 'llamarDespues', fechaProxima: h.toISOString().slice(0,16) })); }} className="py-2 bg-blue-500 text-white rounded-lg font-bold text-[10px] hover:bg-blue-600">ðŸ“ž Llamar despuÃ©s</button>
+                                    <button onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })} className="py-2 bg-blue-900 text-white rounded-lg font-bold text-[10px] hover:bg-blue-950">📅 Agendó Reunión</button>
+                                    <button onClick={() => { const h = new Date(); h.setDate(h.getDate()+3); setLlamadaFlow(f => ({ ...f, paso: 'llamarDespues', fechaProxima: h.toISOString().slice(0,16) })); }} className="py-2 bg-blue-500 text-white rounded-lg font-bold text-[10px] hover:bg-blue-600">📞 Llamar Después</button>
                                     <button onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'whatsapp' }))} className="py-2 bg-green-500 text-white rounded-lg font-bold text-[10px] hover:bg-green-600">ðŸ’¬ WhatsApp</button>
-                                    <button onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'sin_interes' }))} className="py-2 bg-gray-400 text-white rounded-lg font-bold text-[10px] hover:bg-gray-500">âœ— Sin interÃ©s</button>
+                                    <button onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'sin_interes' }))} className="py-2 bg-gray-400 text-white rounded-lg font-bold text-[10px] hover:bg-gray-500">✗ Sin Interés</button>
                                 </div>
                             )}
                             {llamadaFlow.paso === 'reintento' && (
                                 <div className="space-y-1.5">
-                                    <p className="text-[10px] font-semibold text-rose-700">Â¿CuÃ¡ndo reintentas?</p>
+                                    <p className="text-[10px] font-semibold text-rose-700">¿Cuándo reintentas?</p>
                                     <TimeWheelPicker value={llamadaFlow.fechaProxima} onChange={val => setLlamadaFlow(f => ({ ...f, fechaProxima: val }))} />
-                                    <button onClick={async () => { try { if (llamadaFlow.fechaProxima) await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, { proximaLlamada: llamadaFlow.fechaProxima }, { headers: getAuthHeaders() }); toast.success('Reintento programado'); setLlamadaFlow(null); const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() }); const upd = res.data.find(p => p.id === pid || p._id === pid); if (upd) { setProspectoSeleccionado(upd); setProspectos(res.data); } } catch { toast.error('Error'); } }} className="w-full py-1.5 bg-rose-600 text-white rounded-lg font-bold text-xs hover:bg-rose-700">ðŸ“… Programar reintento</button>
+                                    <button onClick={async () => { try { if (llamadaFlow.fechaProxima) await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, { proximaLlamada: llamadaFlow.fechaProxima }, { headers: getAuthHeaders() }); toast.success('Reintento Programado'); setLlamadaFlow(null); const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() }); const upd = res.data.find(p => p.id === pid || p._id === pid); if (upd) { setProspectoSeleccionado(upd); setProspectos(res.data); } } catch { toast.error('Error'); } }} className="w-full py-1.5 bg-rose-600 text-white rounded-lg font-bold text-xs hover:bg-rose-700">📅 Programar Reintento</button>
                                 </div>
                             )}
                             {llamadaFlow.paso === 'whatsapp' && (
                                 <div className="space-y-1.5">
                                     <textarea className="w-full p-2 border rounded text-xs" placeholder="Notas..." rows={2} value={llamadaFlow.notas||''} onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))} />
-                                    <button onClick={async () => { await registrarActividad({ tipo: 'whatsapp', resultado: 'exitoso', notas: llamadaFlow.notas || 'WhatsApp' }); setLlamadaFlow(null); }} className="w-full py-1.5 bg-green-600 text-white rounded-lg font-bold text-xs hover:bg-green-700">Registrar y cerrar</button>
+                                    <button onClick={async () => { await registrarActividad({ tipo: 'whatsapp', resultado: 'exitoso', notas: llamadaFlow.notas || 'WhatsApp' }); setLlamadaFlow(null); }} className="w-full py-1.5 bg-green-600 text-white rounded-lg font-bold text-xs hover:bg-green-700">Registrar y Cerrar</button>
                                 </div>
                             )}
                             {llamadaFlow.paso === 'sin_interes' && (
                                 <div className="space-y-1.5">
                                     <textarea className="w-full p-2 border rounded text-xs" placeholder="Motivo..." rows={2} value={llamadaFlow.notas||''} onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))} />
-                                    <button onClick={async () => { await registrarActividad({ tipo: 'llamada', resultado: 'fallido', notas: llamadaFlow.notas || 'Sin interÃ©s' }); setLlamadaFlow(null); }} className="w-full py-1.5 bg-gray-600 text-white rounded-lg font-bold text-xs hover:bg-gray-700">Registrar desinterÃ©s</button>
+                                    <button onClick={async () => { await registrarActividad({ tipo: 'llamada', resultado: 'fallido', notas: llamadaFlow.notas || 'Sin interés' }); setLlamadaFlow(null); }} className="w-full py-1.5 bg-gray-600 text-white rounded-lg font-bold text-xs hover:bg-gray-700">Registrar desinterés</button>
                                 </div>
                             )}
                             {llamadaFlow.paso === 'llamarDespues' && (
                                 <div className="space-y-1.5">
                                     <p className="text-[10px] font-semibold text-blue-700">Programar seguimiento</p>
                                     <TimeWheelPicker value={llamadaFlow.fechaProxima} onChange={val => setLlamadaFlow(f => ({ ...f, fechaProxima: val }))} />
-                                    <button onClick={async () => { try { await registrarActividad({ tipo: 'llamada', resultado: 'pendiente', notas: 'Interesado, llamar despuÃ©s' }); if (llamadaFlow.fechaProxima) await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, { proximaLlamada: llamadaFlow.fechaProxima }, { headers: getAuthHeaders() }); toast.success('Seguimiento programado'); setLlamadaFlow(null); } catch { toast.error('Error'); } }} className="w-full py-1.5 bg-blue-600 text-white rounded-lg font-bold text-xs hover:bg-blue-700">ðŸ“… Guardar</button>
+                                    <button onClick={async () => { try { await registrarActividad({ tipo: 'llamada', resultado: 'pendiente', notas: 'Interesado, llamar después' }); if (llamadaFlow.fechaProxima) await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, { proximaLlamada: llamadaFlow.fechaProxima }, { headers: getAuthHeaders() }); toast.success('Seguimiento programado'); setLlamadaFlow(null); } catch { toast.error('Error'); } }} className="w-full py-1.5 bg-blue-600 text-white rounded-lg font-bold text-xs hover:bg-blue-700">📅 Guardar</button>
                                 </div>
                             )}
                         </div>
@@ -1628,7 +1616,7 @@ const SeguimientoContactos = () => {
                 {/* Buscador + Filtros 30/70 */}
                 <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
                     <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-4 items-center">
-                        {/* 30% BÃƒÆ’Ã‚Âºsqueda */}
+                        {/* 30% Búsqueda */}
                         <div className="relative w-full">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
@@ -1637,20 +1625,20 @@ const SeguimientoContactos = () => {
                                 value={busquedaProspecto}
                                 onChange={(e) => setBusquedaProspecto(e.target.value)}
                                 className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-800 focus:border-blue-800 bg-slate-50 text-sm h-[42px]"
-                                title="Buscar por nombre, empresa, correo o telÃƒÆ’Ã‚Â©fono"
+                                title="Buscar por nombre, empresa, correo o teléfono"
                             />
                         </div>
                         {/* 70% Filtros */}
                         <div className="flex flex-wrap gap-2 items-center w-full">
                             <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-                            {/* Filtros rÃƒÆ’Ã‚Â¡pidos por contacto */}
+                            {/* Filtros rápidos por contacto */}
                             <div className="flex flex-wrap gap-1.5">
                                 {[
                                     { value: 'todos', label: 'Todos' },
-                                    { value: 'en_contacto', label: 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ En contacto' },
-                                    { value: 'sin_respuesta', label: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Âµ Sin respuesta' },
-                                    { value: 'no_contactado', label: 'ÃƒÂ¢Ã‚Â­Ã¢â‚¬Â¢ No contactado' },
-                                    { value: 'con_cita', label: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦ Con cita' },
+                                    { value: 'en_contacto', label: '✅ En contacto' },
+                                    { value: 'sin_respuesta', label: '📵 Sin respuesta' },
+                                    { value: 'no_contactado', label: '⚪ No contactado' },
+                                    { value: 'con_cita', label: '📅 Con cita' },
                                 ].map(btn => (
                                     <button
                                         key={btn.value}
@@ -1697,8 +1685,8 @@ const SeguimientoContactos = () => {
                 {prospectosFiltrados.length === 0 ? (
                     <div className="rounded-xl p-12 text-center">
                         <User className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                        <p className="text-gray-500 font-medium">No se encontraron prospectos.</p>
-                        <p className="text-gray-400 text-sm mt-1">Intenta con otra bÃƒÆ’Ã‚Âºsqueda o crea uno nuevo.</p>
+                        <p className="text-gray-500 font-medium">No se encontraron Prospectos.</p>
+                        <p className="text-gray-400 text-sm mt-1">Intenta con otra búsqueda o crea uno nuevo.</p>
                     </div>
                 ) : (
                     <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
@@ -1710,7 +1698,7 @@ const SeguimientoContactos = () => {
                                         <th className="px-4 py-3 text-left font-semibold">Empresa</th>
                                         <th className="px-4 py-3 text-left font-semibold">Contacto</th>
                                         <th className="px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider">Etapa</th>
-                                        <th className="px-4 py-3 text-left font-semibold">ÃƒÆ’Ã…Â¡ltima interacciÃƒÆ’Ã‚Â³n</th>
+                                        <th className="px-4 py-3 text-left font-semibold">Última Interacción</th>
                                         <th className="px-4 py-3 text-left font-semibold">Recordatorio</th>
                                         <th className="px-4 py-3 text-center font-semibold">Acciones</th>
                                     </tr>
@@ -1730,7 +1718,7 @@ const SeguimientoContactos = () => {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-gray-600 text-sm">{p.empresa || 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}</td>
+                                            <td className="px-4 py-3 text-gray-600 text-sm">{p.empresa || '—'}</td>
                                             <td className="px-4 py-3">
                                                 <div className="space-y-0.5">
                                                     {p.telefono ? (
@@ -1744,14 +1732,14 @@ const SeguimientoContactos = () => {
                                                             <span>{p.correo}</span>
                                                         </p>
                                                     ) : (
-                                                        <span className="text-xs text-slate-400 italic">Sin contacto</span>
+                                                        <span className="text-xs text-slate-400 italic">Sin Contacto</span>
                                                     )}
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 {p.etapaEmbudo === 'prospecto_nuevo' && !p.ultimaActTipo ? (
                                                     <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500">
-                                                        No contactado
+                                                        No Contactado
                                                     </span>
                                                 ) : (
                                                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEtapaColor(p.etapaEmbudo)}`}>
@@ -1771,7 +1759,7 @@ const SeguimientoContactos = () => {
                                                         </div>
                                                         <p className="text-[11px] text-slate-600 leading-snug" title={p.ultimaActNotas || ''}>
                                                             {p.ultimaActNotas
-                                                                ? (p.ultimaActNotas.length > 50 ? p.ultimaActNotas.slice(0, 50) + 'ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦' : p.ultimaActNotas)
+                                                                ? (p.ultimaActNotas.length > 50 ? p.ultimaActNotas.slice(0, 50) + '…' : p.ultimaActNotas)
                                                                 : <span className="italic text-slate-400">{getTipoLabel(p.ultimaActTipo)}</span>}
                                                         </p>
                                                     </div>

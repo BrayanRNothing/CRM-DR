@@ -336,7 +336,7 @@ router.post('/registrar-actividad', [auth, esProspector], async (req, res) => {
         const prospectorId = parseInt(req.usuario.id);
 
         // UNIFICADO: Cualquier prospector o closer puede registrar actividades (acceso compartido)
-        const rolesPermitidos = ['prospector', 'closer', 'individual'];
+        const rolesPermitidos = ['prospector', 'closer', 'individual', 'admin'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             console.log(`🚫 Bloqueado registro de actividad por rol: ${req.usuario.rol}`);
             return res.status(403).json({ msg: 'No tienes permisos de rol para registrar actividades' });
@@ -435,7 +435,7 @@ router.get('/prospecto/:id/historial-completo', auth, async (req, res) => {
         }
 
         // UNIFICADO: Cualquier prospector o closer puede ver el historial (acceso compartido)
-        const rolesPermitidos = ['prospector', 'closer', 'individual'];
+        const rolesPermitidos = ['prospector', 'closer', 'individual', 'admin'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permisos de rol para ver esto' });
         }
@@ -679,7 +679,7 @@ router.post('/agendar-reunion', [auth, esProspector], async (req, res) => {
         const prospectorId = parseInt(req.usuario.id);
 
         // UNIFICADO: Acceso por rol
-        const rolesPermitidos = ['prospector', 'closer', 'individual'];
+        const rolesPermitidos = ['prospector', 'closer', 'individual', 'admin'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permiso para agendar reunión' });
         }
@@ -797,7 +797,7 @@ router.post('/pasar-a-cliente/:id', [auth, esProspector], async (req, res) => {
         }
 
         // UNIFICADO: Acceso por rol
-        const rolesPermitidos = ['prospector', 'closer', 'individual'];
+        const rolesPermitidos = ['prospector', 'closer', 'individual', 'admin'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permiso para modificar este prospecto' });
         }
@@ -837,7 +837,7 @@ router.post('/descartar-prospecto/:id', [auth, esProspector], async (req, res) =
         }
 
         // UNIFICADO: Acceso por rol
-        const rolesPermitidos = ['prospector', 'closer', 'individual'];
+        const rolesPermitidos = ['prospector', 'closer', 'individual', 'admin'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permiso para modificar este prospecto' });
         }

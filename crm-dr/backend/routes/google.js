@@ -79,7 +79,7 @@ router.get('/freebusy/:closerId', auth, async (req, res) => {
 
         if (!closer) return res.status(404).json({ msg: 'Closer no encontrado' });
         if (!closer.googleRefreshToken && !closer.googleAccessToken) {
-            return res.status(400).json({ msg: 'Closer no ha vinculado Google Calendar', notLinked: true });
+            return res.status(200).json({ msg: 'Closer no ha vinculado Google Calendar', notLinked: true });
         }
 
         // Configurar cliente con credenciales actuales
@@ -168,7 +168,7 @@ router.get('/events', auth, async (req, res) => {
         const user = await db.prepare('SELECT googleRefreshToken, googleAccessToken, googleTokenExpiry FROM usuarios WHERE id = ?').get(userId);
 
         if (!user || (!user.googleRefreshToken && !user.googleAccessToken)) {
-            return res.status(400).json({ msg: 'No se ha vinculado Google Calendar', notLinked: true });
+            return res.status(200).json({ msg: 'No se ha vinculado Google Calendar', notLinked: true, items: [] });
         }
 
         const client = new OAuth2Client(
@@ -224,7 +224,7 @@ router.get('/events', auth, async (req, res) => {
 
     } catch (error) {
         console.error('❌ Error fetching Google events:', error.response ? error.response.data : error.message);
-        const status = error.code || 500;
+        const status = (typeof error.code === 'number' && error.code >= 100 && error.code < 600) ? error.code : 500;
         res.status(status === 401 ? 401 : 500).json({
             msg: 'Error al consultar eventos',
             error: error.message,

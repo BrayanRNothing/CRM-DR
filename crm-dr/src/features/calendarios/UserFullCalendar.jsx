@@ -134,9 +134,11 @@ const CalendarioCompleto = ({ forceModo }) => {
                 headers: { 'x-auth-token': token }
             });
             if (r.status === 400 || r.status === 404) { setGoogleLinked(false); return; }
+            const data = await r.json();
+            if (data.notLinked) { setGoogleLinked(false); return; }
             if (!r.ok) throw new Error();
             setGoogleLinked(true);
-            const events = await r.json();
+            const events = data;
 
             let completados = [];
             try {

@@ -43,6 +43,7 @@ app.use('/api/metricas', require('./routes/metricas'));
 app.use('/api/embudo', require('./routes/embudo'));
 app.use('/api/prospector', require('./routes/prospector'));
 app.use('/api/closer', require('./routes/closer'));
+app.use('/api/doctor', require('./routes/doctor'));
 app.use('/api/closer/prospectors', require('./routes/prospector-monitoring'));
 app.use('/api/google', require('./routes/google'));
 

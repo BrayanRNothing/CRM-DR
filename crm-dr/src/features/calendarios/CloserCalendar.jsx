@@ -384,11 +384,19 @@ const CloserCalendario = () => {
                 return;
             }
 
+            const data = await res.json();
+
+            if (data.notLinked) {
+                setGoogleLinked(false);
+                localStorage.removeItem('google_linked');
+                return;
+            }
+
             if (!res.ok) throw new Error('Error fetching events');
 
             setGoogleLinked(true);
             localStorage.setItem('google_linked', 'true');
-            const googleEvents = await res.json();
+            const googleEvents = data;
 
             let eventosCompletados = [];
             try {
