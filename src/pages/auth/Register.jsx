@@ -96,10 +96,8 @@ const Register = () => {
                 switch (rol) {
                     case 'prospector': navigate('/prospector'); break;
                     case 'closer': navigate('/closer'); break;
-                    case 'tecnico': navigate('/tecnico'); break;
-                    case 'distribuidor': navigate('/distribuidor'); break;
                     case 'usuario': navigate('/usuario'); break;
-                    default: navigate('/'); // Por seguridad
+                    default: navigate('/'); break;
                 }
             } else {
                 setError(data.mensaje || data.message || 'Error al registrar usuario');

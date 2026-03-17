@@ -1,6 +1,41 @@
 @import "tailwindcss";
 @import "react-day-picker/dist/style.css";
 
+@theme {
+  /* 
+   * CUSTOM GREEN THEME OVERRIDE
+   * Base: #8bc34a (Light Green)
+   * Highlight: #bfff75 (Lime)
+   * Replacing 'emerald' and 'teal' to unify the app in green.
+   */
+  
+  /* Emerald override */
+  --color-emerald-50: #f4fce3;
+  --color-emerald-100: #e2f7c0;
+  --color-emerald-200: #c7ee8e;
+  --color-emerald-300: #bfff75; /* User's highlight */
+  --color-emerald-400: #a2e04d;
+  --color-emerald-500: #8bc34a; /* User's primary */
+  --color-emerald-600: #6ca82b;
+  --color-emerald-700: #538520;
+  --color-emerald-800: #436a1e;
+  --color-emerald-900: #38591d;
+  --color-emerald-950: #1d330c;
+
+  /* Teal override (mapped to same green family for total consistency) */
+  --color-teal-50: #f4fce3;
+  --color-teal-100: #e2f7c0;
+  --color-teal-200: #c7ee8e;
+  --color-teal-300: #bfff75;
+  --color-teal-400: #a2e04d;
+  --color-teal-500: #8bc34a;
+  --color-teal-600: #7cb342; /* Slightly different for gradients */
+  --color-teal-700: #538520;
+  --color-teal-800: #436a1e;
+  --color-teal-900: #38591d;
+  --color-teal-950: #1d330c;
+}
+
 /* Safe area support para móviles (notch, barras del navegador) */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0);
@@ -49,21 +84,25 @@
   /* Chrome, Safari and Opera */
 }
 
-/* Calendar styling */
-.calendar-with-indicators .rdp {
-  --rdp-cell-size: 70px;
+/* Calendar Styles */
+.rdp {
+  --rdp-cell-size: 40px;
   --rdp-accent-color: #8bc34a;
-  font-size: 16px;
-  margin: 0 auto;
-}
-
-.calendar-with-indicators .rdp-months {
-  justify-content: center;
-  align-items: center;
-}
-
-.calendar-with-indicators .rdp-month {
+  --rdp-background-color: #f0fdf4;
   margin: 0;
+}
+
+.rdp-day_selected:not([disabled]),
+.rdp-day_selected:focus:not([disabled]),
+.rdp-day_selected:active:not([disabled]),
+.rdp-day_selected:hover:not([disabled]) {
+  background-color: #8bc34a;
+  color: white;
+}
+
+.rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: #f1f8e9;
+  color: #8bc34a;
 }
 
 .calendar-with-indicators .rdp-table {

@@ -13,12 +13,19 @@ const Login = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
+    // Mostrar mensaje si fue redirigido por token expirado
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('expired')) {
+      const msg = params.get('msg') || 'Tu sesión ha expirado. Por favor inicia sesión de nuevo.';
+      setError(msg);
+    }
+
     // Auto-login si hay sesión guardada
     const user = getUser();
     if (user) {
@@ -26,9 +33,6 @@ const Login = () => {
       switch (rol) {
         case 'prospector': navigate('/prospector'); break;
         case 'closer': navigate('/closer'); break;
-        case 'tecnico': navigate('/tecnico'); break;
-        case 'distribuidor': navigate('/distribuidor'); break;
-        case 'usuario': navigate('/usuario'); break;
         default: break;
       }
     }
@@ -38,22 +42,6 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
-    // 🔐 USUARIOS DE PRUEBA LOCALES
-    if (username === 'closer' && password === '123') {
-      const localUser = { id: 1, nombre: 'Closer Test', username: 'closer', email: 'closer@test.com', rol: 'closer' };
-      saveUser(localUser, rememberMe);
-      setLoading(false);
-      navigate('/closer');
-      return;
-    }
-    if (username === 'prospector' && password === '123') {
-      const localUser = { id: 2, nombre: 'Prospector Test', username: 'prospector', email: 'prospor@test.com', rol: 'prospector' };
-      saveUser(localUser, rememberMe);
-      setLoading(false);
-      navigate('/prospector');
-      return;
-    }
 
     // Si no es el usuario local, intentar con el backend
     try {
@@ -80,9 +68,6 @@ const Login = () => {
         switch (rol) {
           case 'prospector': navigate('/prospector'); break;
           case 'closer': navigate('/closer'); break;
-          case 'tecnico': navigate('/tecnico'); break;
-          case 'distribuidor': navigate('/distribuidor'); break;
-          case 'usuario': navigate('/usuario'); break;
           default: navigate('/'); // Por seguridad
         }
       } else {
@@ -90,7 +75,7 @@ const Login = () => {
       }
     } catch (err) {
       console.error('Error:', err);
-      setError('No hay conexión con el servidor. Usa admin/123 para acceso local ⚠️');
+      setError('No hay conexión con el servidor. Verifica que el backend esté en ejecución ⚠️');
     } finally {
       setLoading(false);
     }
@@ -103,8 +88,8 @@ const Login = () => {
         style={{ fontFamily: '"Space Grotesk", "Poppins", sans-serif' }}
       >
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-32 right-10 h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl" />
-          <div className="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-teal-400/20 blur-3xl" />
+          <div className="absolute -top-32 right-10 h-72 w-72 rounded-full bg-slate-300/30 blur-3xl" />
+          <div className="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-slate-300/30 blur-3xl" />
         </div>
 
         <div className="relative w-full max-w-5xl">
@@ -135,7 +120,10 @@ const Login = () => {
 
             <div className="p-8">
               <h2 className="text-4xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent drop-shadow-sm">Inicia sesión</h2>
-              <p className="mt-3 text-base text-slate-700 font-semibold">Completa tus datos para continuar.</p>
+              <p className="mt-3 text-base text-slate-700 font-semibold">
+                Completa tus datos para continuar.<br />
+                <span className="text-xs text-emerald-600 font-normal mt-1 block tracking-wide">Acceso de prueba: <strong className="font-bold bg-emerald-100 px-1 rounded">prospector</strong> o <strong className="font-bold bg-emerald-100 px-1 rounded">closer</strong></span>
+              </p>
 
               <form onSubmit={handleLogin} className="mt-10 space-y-8">
                 {error && (

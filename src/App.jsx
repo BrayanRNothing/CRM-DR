@@ -13,8 +13,8 @@ import SkeletonLoader from './components/ui/SkeletonLoader.jsx';
 import React, { Suspense, lazy } from 'react';
 const Login = lazy(() => import('./pages/auth/Login.jsx'));
 const Register = lazy(() => import('./pages/auth/Register.jsx'));
-const VendedorAjustes = lazy(() => import('./pages/vendedor/VendedorAjustes.jsx'));
-const ComponentPreview = lazy(() => import('./pages/ComponentPreview.jsx'));
+const Ajustes = lazy(() => import('./pages/common/Ajustes.jsx'));
+
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 
 // Prospector Pages
@@ -28,9 +28,9 @@ const CloserCalendario = lazy(() => import('./pages/closer/CloserCalendario.jsx'
 const CloserMonitoreoProspectors = lazy(() => import('./pages/closer/CloserMonitoreoProspectors.jsx'));
 
 // Shared Components
-const CRMProspectos = lazy(() => import('./pages/common/CRMProspectos.jsx'));
 const CRMClientes = lazy(() => import('./pages/common/CRMClientes.jsx'));
 const UserManagement = lazy(() => import('./pages/common/UserManagement.jsx'));
+const UserProfile = lazy(() => import('./pages/common/UserProfile.jsx'));
 
 function App() {
   return (
@@ -109,30 +109,31 @@ function App() {
           {/* --- PROSPECTOR --- */}
           <Route path="/prospector" element={<ProspectorLayout />}>
             <Route index element={<ProspectorDashboard />} />
-            <Route path="seguimiento" element={<ProspectorSeguimiento />} />
+            <Route path="prospectos" element={<ProspectorSeguimiento />} />
             <Route path="calendario" element={<ProspectorCalendario />} />
-            <Route path="prospectos" element={<CRMProspectos />} />
             <Route path="clientes" element={<CRMClientes />} />
             <Route path="usuarios/prospectors" element={<UserManagement initialRole="prospector" />} />
             <Route path="usuarios/closers" element={<UserManagement initialRole="closer" />} />
-            <Route path="ajustes" element={<VendedorAjustes />} />
+            <Route path="users/:id" element={<UserProfile />} />
+            <Route path="ajustes" element={<Ajustes />} />
           </Route>
 
           <Route path="/closer" element={<CloserLayout />}>
             <Route index element={<CloserDashboard />} />
             <Route path="calendario" element={<CloserCalendario />} />
-            <Route path="prospectos" element={<CRMProspectos />} />
+            <Route path="prospectos" element={<ProspectorSeguimiento />} />
             <Route path="clientes" element={<CRMClientes />} />
             <Route path="usuarios/prospectors" element={<UserManagement initialRole="prospector" />} />
             <Route path="usuarios/closers" element={<UserManagement initialRole="closer" />} />
+            <Route path="users/:id" element={<UserProfile />} />
             <Route path="monitoreo-prospectors" element={<CloserMonitoreoProspectors />} />
-            <Route path="ajustes" element={<VendedorAjustes />} />
+            <Route path="ajustes" element={<Ajustes />} />
           </Route>
 
 
 
           {/* --- PÁGINA SECRETA DE PREVIEW --- */}
-          <Route path="/prev" element={<ComponentPreview />} />
+
 
           {/* Si escriben una ruta que no existe, los mandamos al Login */}
           <Route path="*" element={<NotFound />} />

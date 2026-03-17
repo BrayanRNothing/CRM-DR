@@ -1,0 +1,8 @@
+[build]
+buildCommand = "npm run build"
+
+[start]
+cmd = "bash start.sh"
+
+
+

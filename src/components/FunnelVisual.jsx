@@ -6,7 +6,7 @@ const FunnelVisual = ({ stages }) => {
     const getGradientClasses = (color) => {
         const colorMap = {
             'bg-gray-500': 'from-gray-400 to-gray-600',
-            'bg-teal-500': 'from-teal-400 to-teal-600',
+            'bg-teal-500': 'from-[#2dd4bf] to-[#0d9488]', // RESTORED ORIGINAL TEAL
             'bg-purple-500': 'from-purple-400 to-purple-600',
             'bg-green-500': 'from-green-400 to-green-600',
             'bg-blue-500': 'from-blue-400 to-blue-600',
@@ -43,7 +43,7 @@ const FunnelVisual = ({ stages }) => {
                                 </div>
 
                                 {/* Contador Hoy */}
-                                {stage.contadorHoy !== undefined && stage.contadorHoy !== null && (
+                                {stage.contadorHoy > 0 && (
                                     <div className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-md rounded-full px-2 py-0.5 mb-3 border border-white/10 self-start">
                                         <TrendingUp className="w-3 h-3 text-white" />
                                         <span className="text-white text-xs font-bold">

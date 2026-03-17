@@ -1,12 +1,34 @@
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-require('./config/database'); // Inicializa PostgreSQL
+const path = require('path');
+
+// Inicializar base de datos
+require('./config/database');
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// ✅ CORS HANDLER - DEBE SER LO PRIMERO
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-auth-token');
+
+    // Preflight
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+
+    next();
+});
+
+// Middleware CORS adicional
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
+    exposedHeaders: ['x-auth-token']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -22,50 +44,103 @@ app.use('/api/embudo', require('./routes/embudo'));
 app.use('/api/prospector', require('./routes/prospector'));
 app.use('/api/closer', require('./routes/closer'));
 app.use('/api/closer/prospectors', require('./routes/prospector-monitoring'));
+app.use('/api/google', require('./routes/google'));
 
-// Ruta de prueba
-app.get('/', (req, res) => {
-    res.json({ mensaje: '🚀 API CRM Infiniguard SYS funcionando correctamente' });
+// Ruta de prueba API
+app.get('/api', (req, res) => {
+    res.json({
+        mensaje: '🚀 API CRM Infiniguard SYS funcionando correctamente',
+        env: process.env.NODE_ENV || 'development',
+        timestamp: new Date().toISOString()
+    });
 });
 
-// Manejo de errores 404
-app.use((req, res) => {
-    res.status(404).json({ mensaje: 'Ruta no encontrada' });
+// Health check para Railway
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', uptime: process.uptime() });
 });
 
-const pool = require('./config/database');
-const bcrypt = require('bcryptjs');
+// ✅ SERVIR ARCHIVOS ESTÁTICOS DEL FRONTEND (React compilado)
+const distPath = path.join(__dirname, '../dist');
+const fs = require('fs');
 
-const autoSeed = async () => {
-    try {
-        const { rows } = await pool.query('SELECT COUNT(*) as total FROM usuarios');
-        if (parseInt(rows[0].total) > 0) return; // Ya hay usuarios, no hace falta
+if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
 
-        const hashProspector = await bcrypt.hash('prospector123', 10);
-        const hashCloser = await bcrypt.hash('closer123', 10);
+    // ✅ FALLBACK PARA SPA REACT - Solo si existe dist
+    app.get('*', (req, res) => {
+        if (req.path.startsWith('/api')) {
+            return res.status(404).json({ mensaje: 'Ruta API no encontrada' });
+        }
+        res.sendFile(path.join(distPath, 'index.html'));
+    });
+} else {
+    // Si no existe dist (entorno desacoplado como Railway + Vercel)
+    // Manejador global para cualquier ruta no encontrada
+    app.use((req, res) => {
+        if (req.path.startsWith('/api')) {
+            return res.status(404).json({ mensaje: `Ruta API no encontrada: ${req.method} ${req.path}` });
+        }
+        res.json({
+            mensaje: '🚀 API CRM Infiniguard SYS - Backend Activo',
+            estado: 'El frontend se sirve por separado (Vercel)',
+            endpoint_api: '/api'
+        });
+    });
+}
 
-        await pool.query(
-            `INSERT INTO usuarios (usuario, "contraseña", rol, nombre, email, telefono) VALUES ($1, $2, $3, $4, $5, $6)`,
-            ['prospector', hashProspector, 'prospector', 'Alex Mendoza', 'prospector@crm.com', '5554444444']
-        );
-        await pool.query(
-            `INSERT INTO usuarios (usuario, "contraseña", rol, nombre, email, telefono) VALUES ($1, $2, $3, $4, $5, $6)`,
-            ['closer', hashCloser, 'closer', 'Fernando Ruiz', 'closer@crm.com', '5555555555']
-        );
-
-        console.log('🌱 Cuentas por defecto creadas:');
-        console.log('   prospector / prospector123');
-        console.log('   closer     / closer123');
-    } catch (err) {
-        console.error('⚠️  Auto-seed error:', err.message);
-    }
-};
+// Manejo de errores global
+app.use((err, req, res, next) => {
+    console.error('❌ Error:', err.message);
+    res.status(500).json({
+        mensaje: 'Error interno del servidor',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
 
 const PORT = process.env.PORT || 4000;
+const HOST = '0.0.0.0'; // Railway requiere escuchar en 0.0.0.0
 
-app.listen(PORT, async () => {
-    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+const server = app.listen(PORT, HOST, () => {
+    console.log(`🚀 Servidor corriendo en ${HOST}:${PORT}`);
     console.log(`📡 Modo: ${process.env.NODE_ENV || 'development'}`);
-    await autoSeed();
+});
+
+// ✅ INICIALIZAR SOCKET.IO
+const { Server } = require('socket.io');
+const io = new Server(server, {
+    cors: {
+        origin: '*', // Permitir desde cualquier frontend
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['x-auth-token']
+    }
+});
+
+// Guardar io en la app para usarlo en las rutas
+app.set('io', io);
+
+io.on('connection', (socket) => {
+    console.log(`⚡ Cliente conectado a WebSockets: ${socket.id}`);
+
+    socket.on('disconnect', () => {
+        console.log(`🔌 Cliente desconectado: ${socket.id}`);
+    });
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('📴 Recibido SIGTERM, cerrando servidor...');
+    server.close(() => {
+        console.log('✅ Servidor cerrado');
+        process.exit(0);
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('📴 Recibido SIGINT, cerrando servidor...');
+    server.close(() => {
+        console.log('✅ Servidor cerrado');
+        process.exit(0);
+    });
 });
 

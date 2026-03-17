@@ -21,9 +21,9 @@ const AnimatedGridBackground = ({
 
     // Configuración de colores según modo
     const isDark = mode === 'dark';
-    const bgColor = isDark ? '#0a0a0a' : '#cbd5e1'; // Slate-300 for light (más oscuro)
+    const bgColor = isDark ? '#0a0a0a' : '#f8fafc'; // Slate-50 for light (mucho más claro y limpio)
     const lineColor = isDark ? 'rgba(255,255,255,0.0)' : 'rgba(0,0,0,0.0)';
-    const particleColor = isDark ? '#5eead4' : '#0d9488'; // Teal-400 (dark) vs Teal-600 (light)
+    const particleColor = isDark ? '#5eead4' : '#cbd5e1'; // Teal-400 (dark) vs Slate-300 (light) - Más sutil
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -48,12 +48,14 @@ const AnimatedGridBackground = ({
             reset() {
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2 + 1;
+                // Más grandes para que parezcan "bokeh" y no "polvo"
+                this.size = Math.random() * 4 + 2;
                 // Movimiento flotante suave en todas direcciones
-                this.speedX = (Math.random() - 0.5) * 0.3;
-                this.speedY = (Math.random() - 0.5) * 0.3;
-                this.opacity = Math.random() * 0.4 + 0.1;
-                this.blinkSpeed = 0.02 * (Math.random() + 0.5); // Velocidad de parpadeo
+                this.speedX = (Math.random() - 0.5) * 0.2; // Más lento
+                this.speedY = (Math.random() - 0.5) * 0.2;
+                // Opacidad mucho más baja para ser sutil
+                this.opacity = Math.random() * 0.3 + 0.1;
+                this.blinkSpeed = 0.01 * (Math.random() + 0.5); // Parpadeo más lento
                 this.blinkPhase = Math.random() * Math.PI * 2;
             }
 
@@ -154,7 +156,7 @@ const AnimatedGridBackground = ({
     }, [particleCount, mode, bgColor, lineColor, particleColor]);
 
     return (
-        <div className="relative w-full h-full bg-slate-300">
+        <div className="relative w-full h-full bg-slate-50">
             {/* Canvas de fondo */}
             <canvas
                 ref={canvasRef}

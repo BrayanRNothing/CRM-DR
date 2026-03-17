@@ -41,6 +41,7 @@ export const isAuthenticated = () => {
 export const logout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('google_access_token'); // Clear Google token too
     sessionStorage.removeItem('user');
     sessionStorage.removeItem('token');
 };

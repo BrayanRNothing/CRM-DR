@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const pool = require('../config/database');
+const { db } = require('../config/database');
 
 /**
  * Middleware para verificar el token JWT
@@ -16,8 +16,7 @@ const auth = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
 
         // Verificar que el usuario exista y esté activo
-        const { rows } = await pool.query('SELECT id, usuario, nombre, rol, email, telefono, activo FROM usuarios WHERE id = $1', [decoded.id]);
-        const row = rows[0];
+        const row = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo FROM usuarios WHERE id = ?').get(decoded.id);
 
         if (!row) {
             return res.status(401).json({ mensaje: 'Token inválido - Usuario no encontrado' });
@@ -32,6 +31,9 @@ const auth = async (req, res, next) => {
         next();
     } catch (error) {
         console.error('Auth error:', error.message);
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ mensaje: 'Sesión expirada. Por favor inicia sesión de nuevo.', code: 'TOKEN_EXPIRED' });
+        }
         res.status(401).json({ mensaje: 'Token inválido' });
     }
 };

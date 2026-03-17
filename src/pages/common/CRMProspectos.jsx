@@ -1,12 +1,13 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { Search, Filter, Star, Plus, X, Phone, MessageSquare, ChevronRight } from 'lucide-react';
+import { Search, Filter, Star, Plus, X, Phone, MessageSquare, ChevronRight, User, Building2, Mail, MapPin, Calendar, FileText, Edit2 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { loadProspectos, saveProspectos } from '../../utils/prospectosStore';
 import { getUser, getToken } from '../../utils/authUtils';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+import API_URL from '../../config/api';
+import socket from '../../config/socket';
 
 const STATUS_OPTIONS = [
     { value: 'no_contactado', label: 'No contactado' },
@@ -22,7 +23,6 @@ const FILTERS = [
     { value: 'transferido', label: 'Transferidos' },
     { value: 'descartado', label: 'Descartados' }
 ];
-
 
 const applyStatusRules = (prospecto) => {
     const next = { ...prospecto };
@@ -73,7 +73,7 @@ const CRMProspectos = () => {
     const esProspector = location.pathname.includes('/prospector/');
     const [prospectos, setProspectos] = useState(() => loadProspectos());
     const [prospectosApi, setProspectosApi] = useState([]);
-    const [loadingApi, setLoadingApi] = useState(esProspector);
+    const [loadingApi, setLoadingApi] = useState(true);
     const [usandoApi, setUsandoApi] = useState(false);
     const [modalCrearApi, setModalCrearApi] = useState(false);
     const [loadingCrearApi, setLoadingCrearApi] = useState(false);
@@ -85,6 +85,11 @@ const CRMProspectos = () => {
         correo: '',
         empresa: '',
         notas: ''
+    });
+    const [modalEditarApi, setModalEditarApi] = useState(false);
+    const [loadingEditarApi, setLoadingEditarApi] = useState(false);
+    const [prospectoAEditar, setProspectoAEditar] = useState({
+        id: null, nombre: '', empresa: '', ubicacion: '', correo: '', telefono: '', notas: ''
     });
     const [busqueda, setBusqueda] = useState('');
     const [filtro, setFiltro] = useState('todos');
@@ -107,15 +112,19 @@ const CRMProspectos = () => {
     }, [prospectos]);
 
     useEffect(() => {
-        if (!esProspector) return;
         const token = getToken();
         if (!token) {
             setLoadingApi(false);
             return;
         }
+
+        const url = esProspector
+            ? `${API_URL}/api/prospector/prospectos`
+            : `${API_URL}/api/closer/prospectos`;
+
         const cargar = async () => {
             try {
-                const res = await axios.get(`${API_URL}/api/prospector/prospectos`, {
+                const res = await axios.get(url, {
                     headers: { 'x-auth-token': token }
                 });
                 setProspectosApi(res.data);
@@ -127,33 +136,122 @@ const CRMProspectos = () => {
             }
         };
         cargar();
+
+        // 🔄 Polling de copia de seguridad cada 5 min (opcional)
+        const interval = setInterval(cargar, 5 * 60 * 1000);
+
+        // 🚀 WEBSOCKETS REFRESH AUTOMÁTICO
+        socket.on('prospectos_actualizados', (obj) => {
+            console.log('socket: prospectos actualizados detectado', obj);
+            cargar();
+        });
+
+        return () => {
+            clearInterval(interval);
+            socket.off('prospectos_actualizados');
+        };
     }, [esProspector]);
 
     const handleCrearProspectoApi = async () => {
-        const { nombres, apellidoPaterno, telefono, correo } = formCrearApi;
-        if (!nombres?.trim() || !apellidoPaterno?.trim() || !telefono?.trim() || !correo?.trim()) {
+        const { nombre, empresa, telefono, correo, ubicacion, fechaRegistro, notas } = nuevoProspecto;
+
+        // We split 'nombre' into nombres and apellidoPaterno for the backend since the UI only asks for "Nombre Completo"
+        const parts = nombre ? nombre.trim().split(' ') : [];
+        const nombres = parts.length > 0 ? parts[0] : '';
+        const apellidoPaterno = parts.length > 1 ? parts.slice(1).join(' ') : '';
+
+        if (!nombres || !telefono) {
+            toast.error('El nombre y el teléfono son obligatorios.');
             return;
         }
+
+        const payload = {
+            nombres,
+            apellidoPaterno,
+            apellidoMaterno: '',
+            telefono,
+            correo: correo || '',
+            empresa: empresa || '',
+            ubicacion: ubicacion || '',
+            notas: notas || ''
+        };
+
         setLoadingCrearApi(true);
         try {
             await axios.post(
                 `${API_URL}/api/prospector/crear-prospecto`,
-        formCrearApi,
-        { headers: { 'x-auth-token': getToken() || '' } }
+                payload,
+                { headers: { 'x-auth-token': getToken() || '' } }
             );
-            setModalCrearApi(false);
-            setFormCrearApi({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefono: '', correo: '', empresa: '', notas: '' });
-            const res = await axios.get(`${API_URL}/api/prospector/prospectos`, {
+
+            const url = esProspector
+                ? `${API_URL}/api/prospector/prospectos`
+                : `${API_URL}/api/closer/prospectos`;
+
+            const res = await axios.get(url, {
                 headers: { 'x-auth-token': getToken() || '' }
             });
             setProspectosApi(res.data);
-            toast.success('Prospecto creado');
+            toast.success('Prospecto creado exitosamente');
         } catch (err) {
-            toast.error(err.response?.data?.msg || 'Error al crear');
+            toast.error(err.response?.data?.msg || 'Error al crear prospecto');
         } finally {
             setLoadingCrearApi(false);
         }
     };
+
+    const abrirModalEditar = (p) => {
+        setProspectoAEditar({
+            id: p._id || p.id,
+            nombre: `${p.nombres || ''} ${p.apellidoPaterno || ''}`.trim(),
+            empresa: p.empresa || '',
+            ubicacion: p.ubicacion || '',
+            correo: p.correo || '',
+            telefono: p.telefono || '',
+            notas: p.notas || ''
+        });
+        setModalEditarApi(true);
+    };
+
+    const handleEditarProspectoApi = async () => {
+        const { id, nombre, empresa, telefono, correo, ubicacion, notas } = prospectoAEditar;
+        const parts = nombre ? nombre.trim().split(' ') : [];
+        const nombres = parts.length > 0 ? parts[0] : '';
+        const apellidoPaterno = parts.length > 1 ? parts.slice(1).join(' ') : '';
+
+        if (!nombres || !telefono) {
+            toast.error('El nombre y el teléfono son obligatorios.');
+            return;
+        }
+
+        const payload = {
+            nombres, apellidoPaterno, apellidoMaterno: '', telefono,
+            correo: correo || '', empresa: empresa || '', ubicacion: ubicacion || '', notas: notas || ''
+        };
+
+        setLoadingEditarApi(true);
+        try {
+            const urlToEdit = esProspector
+                ? `${API_URL}/api/prospector/prospectos/${id}/editar`
+                : `${API_URL}/api/closer/prospectos/${id}/editar`;
+
+            await axios.put(urlToEdit, payload, { headers: { 'x-auth-token': getToken() || '' } });
+
+            const url = esProspector
+                ? `${API_URL}/api/prospector/prospectos`
+                : `${API_URL}/api/closer/prospectos`;
+
+            const res = await axios.get(url, { headers: { 'x-auth-token': getToken() || '' } });
+            setProspectosApi(res.data);
+            toast.success('Prospecto actualizado exitosamente');
+            setModalEditarApi(false);
+        } catch (err) {
+            toast.error(err.response?.data?.msg || 'Error al actualizar prospecto');
+        } finally {
+            setLoadingEditarApi(false);
+        }
+    };
+
 
     const actualizarProspecto = (id, patch) => {
         setProspectos((prev) =>
@@ -265,8 +363,8 @@ const CRMProspectos = () => {
         return nombre.includes(q) || empresa.includes(q) || telefono.includes(q);
     });
 
-    // Vista simplificada sincronizada para prospector (API)
-    if (esProspector && (usandoApi || loadingApi)) {
+    // Vista simplificada sincronizada (API) para ambos roles
+    if (usandoApi || loadingApi) {
         return (
             <div className="min-h-screen bg-slate-50 p-6">
                 <div className="max-w-[1200px] mx-auto">
@@ -279,7 +377,7 @@ const CRMProspectos = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={() => setModalCrearApi(true)}
+                                onClick={() => setModalAbierto(true)}
                                 className="flex items-center gap-2 border border-teal-600 text-teal-600 hover:bg-teal-50 font-medium px-4 py-2 rounded-lg transition-colors"
                             >
                                 <Plus className="w-5 h-5" />
@@ -317,7 +415,7 @@ const CRMProspectos = () => {
                         <div className="bg-white border border-slate-200 rounded-xl p-10 text-center text-gray-500">
                             <p className="mb-4">No tienes prospectos asignados.</p>
                             <button
-                                onClick={() => setModalCrearApi(true)}
+                                onClick={() => setModalAbierto(true)}
                                 className="text-teal-600 hover:text-teal-700 font-medium"
                             >
                                 Crear tu primer prospecto
@@ -334,7 +432,7 @@ const CRMProspectos = () => {
                                             <th className="px-4 py-3 text-left font-semibold">Contacto</th>
                                             <th className="px-4 py-3 text-center font-semibold">Etapa</th>
                                             <th className="px-4 py-3 text-left font-semibold">Última interacción</th>
-                                            <th className="px-4 py-3 text-center font-semibold">Ir a Seguimiento</th>
+                                            <th className="px-4 py-3 text-center font-semibold">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -353,11 +451,10 @@ const CRMProspectos = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                        p.etapaEmbudo === 'reunion_agendada' ? 'bg-teal-100 text-teal-700' :
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${p.etapaEmbudo === 'reunion_agendada' ? 'bg-teal-100 text-teal-700' :
                                                         p.etapaEmbudo === 'en_contacto' ? 'bg-blue-100 text-blue-700' :
-                                                        'bg-slate-100 text-slate-700'
-                                                    }`}>
+                                                            'bg-slate-100 text-slate-700'
+                                                        }`}>
                                                         {ETAPA_LABELS[p.etapaEmbudo] || p.etapaEmbudo}
                                                     </span>
                                                 </td>
@@ -366,17 +463,27 @@ const CRMProspectos = () => {
                                                         ? new Date(p.ultimaInteraccion).toLocaleString('es-MX', {
                                                             dateStyle: 'short',
                                                             timeStyle: 'short'
-                                                          })
+                                                        })
                                                         : '—'}
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <Link
-                                                        to="/prospector/seguimiento"
-                                                        className="inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 font-medium text-sm"
-                                                    >
-                                                        <MessageSquare className="w-4 h-4" />
-                                                        Registrar
-                                                    </Link>
+                                                    <div className="flex items-center justify-center gap-3">
+                                                        <button
+                                                            onClick={() => abrirModalEditar(p)}
+                                                            className="text-gray-400 hover:text-teal-600 transition-colors"
+                                                            title="Editar Prospecto"
+                                                        >
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </button>
+                                                        <Link
+                                                            to="/prospector/seguimiento"
+                                                            className="inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 font-medium text-sm"
+                                                            title="Ir a Seguimiento"
+                                                        >
+                                                            <MessageSquare className="w-4 h-4" />
+                                                            Registrar
+                                                        </Link>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -386,100 +493,147 @@ const CRMProspectos = () => {
                         </div>
                     )}
 
-                    {modalCrearApi && (
-                        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-                                <div className="p-6">
-                                    <h2 className="text-xl font-bold text-gray-900 mb-4">Crear prospecto</h2>
-                                    <p className="text-sm text-gray-500 mb-4">Sincronizado con Seguimiento.</p>
-                                    <div className="space-y-4">
+                    {modalAbierto && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                            <div className="absolute inset-0 bg-black/50 transition-opacity" onClick={cierreModal} />
+                            <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 flex flex-col max-h-[85vh]">
+                                <div className="flex-none bg-linear-to-r from-emerald-500 to-teal-600 p-6 sm:p-8 text-white flex justify-between items-start shadow-lg relative overflow-hidden z-10">
+                                    <div className="relative z-10">
+                                        <h2 className="text-2xl font-black tracking-tight mb-1">Nuevo Prospecto</h2>
+                                        <p className="text-white/90 text-sm font-medium">Ingresa los datos del cliente potencial.</p>
+                                    </div>
+                                    <button onClick={cierreModal} className="relative z-10 p-2 rounded-full hover:bg-white/20 transition-colors text-white/80 hover:text-white">
+                                        <X size={24} strokeWidth={2.5} />
+                                    </button>
+                                </div>
+
+                                {/* Body */}
+                                <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-5 scrollbar-thin">
+                                    <div className="space-y-5">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombres *</label>
-                                            <input
-                                                type="text"
-                                                value={formCrearApi.nombres}
-                                                onChange={(e) => setFormCrearApi((f) => ({ ...f, nombres: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2"
-                                                placeholder="Juan"
-                                            />
+                                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 pl-1">Información Principal</label>
+                                            <div className="grid grid-cols-1 gap-4">
+                                                <div className="group relative">
+                                                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 transition-colors" />
+                                                    <input type="text" value={nuevoProspecto.nombre}
+                                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, nombre: e.target.value })}
+                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
+                                                        placeholder="Nombre y Apellido" />
+                                                </div>
+                                                <div className="group relative">
+                                                    <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 transition-colors" />
+                                                    <input type="text" value={nuevoProspecto.empresa}
+                                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, empresa: e.target.value })}
+                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
+                                                        placeholder="Empresa (Opcional)" />
+                                                </div>
+                                            </div>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Apellido paterno *</label>
-                                            <input
-                                                type="text"
-                                                value={formCrearApi.apellidoPaterno}
-                                                onChange={(e) => setFormCrearApi((f) => ({ ...f, apellidoPaterno: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2"
-                                                placeholder="García"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Apellido materno</label>
-                                            <input
-                                                type="text"
-                                                value={formCrearApi.apellidoMaterno}
-                                                onChange={(e) => setFormCrearApi((f) => ({ ...f, apellidoMaterno: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2"
-                                                placeholder="López"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono *</label>
-                                            <input
-                                                type="tel"
-                                                value={formCrearApi.telefono}
-                                                onChange={(e) => setFormCrearApi((f) => ({ ...f, telefono: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2"
-                                                placeholder="55 1234 5678"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Correo *</label>
-                                            <input
-                                                type="email"
-                                                value={formCrearApi.correo}
-                                                onChange={(e) => setFormCrearApi((f) => ({ ...f, correo: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2"
-                                                placeholder="correo@ejemplo.com"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Empresa</label>
-                                            <input
-                                                type="text"
-                                                value={formCrearApi.empresa}
-                                                onChange={(e) => setFormCrearApi((f) => ({ ...f, empresa: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2"
-                                                placeholder="Mi Empresa SA"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
-                                            <textarea
-                                                value={formCrearApi.notas}
-                                                onChange={(e) => setFormCrearApi((f) => ({ ...f, notas: e.target.value }))}
-                                                rows={2}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2"
-                                                placeholder="Opcional"
-                                            />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="group relative">
+                                                    <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 transition-colors" />
+                                                    <input type="tel" value={nuevoProspecto.telefono}
+                                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, telefono: e.target.value })}
+                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
+                                                        placeholder="Teléfono" />
+                                                </div>
+                                                <div className="group relative">
+                                                    <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 transition-colors" />
+                                                    <input type="email" value={nuevoProspecto.correo}
+                                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, correo: e.target.value })}
+                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
+                                                        placeholder="Correo (Opcional)" />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex gap-3 mt-6">
-                                        <button
-                                            onClick={() => {
-                                                setModalCrearApi(false);
-                                                setFormCrearApi({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefono: '', correo: '', empresa: '', notas: '' });
-                                            }}
-                                            className="flex-1 px-4 py-2 border border-slate-200 text-gray-700 rounded-lg hover:bg-slate-50"
-                                        >
+                                </div>
+
+                                {/* Footer */}
+                                <div className="flex-none p-6 sm:p-8 pt-2 border-t border-gray-100 bg-white">
+                                    <div className="flex gap-3">
+                                        <button onClick={cierreModal}
+                                            className="px-6 py-3.5 rounded-xl border-2 border-slate-100 text-slate-500 font-bold hover:bg-slate-50 hover:text-slate-700 hover:border-slate-200 transition-all active:scale-95">
                                             Cancelar
                                         </button>
-                                        <button
-                                            onClick={handleCrearProspectoApi}
-                                            disabled={loadingCrearApi || !formCrearApi.nombres?.trim() || !formCrearApi.apellidoPaterno?.trim() || !formCrearApi.telefono?.trim() || !formCrearApi.correo?.trim()}
-                                            className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {loadingCrearApi ? 'Creando...' : 'Crear'}
+                                        <button onClick={esProspector || location.pathname.includes('/closer/') ? handleCrearProspectoApi : crearProspecto}
+                                            disabled={loadingCrearApi || !nuevoProspecto.nombre?.trim() || !nuevoProspecto.telefono?.trim()}
+                                            className="flex-1 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all active:scale-95 shadow-lg shadow-emerald-500/30 disabled:opacity-50">
+                                            {loadingCrearApi ? 'Creando...' : 'Crear Prospecto'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {modalEditarApi && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                            <div className="absolute inset-0 bg-black/50 transition-opacity" onClick={() => setModalEditarApi(false)} />
+                            <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 flex flex-col max-h-[85vh]">
+                                <div className="flex-none bg-linear-to-r from-blue-500 to-blue-600 p-6 sm:p-8 text-white flex justify-between items-start shadow-lg relative overflow-hidden z-10">
+                                    <div className="relative z-10">
+                                        <h2 className="text-2xl font-black tracking-tight mb-1">Editar Prospecto</h2>
+                                        <p className="text-white/90 text-sm font-medium">Modifica los datos del prospecto.</p>
+                                    </div>
+                                    <button onClick={() => setModalEditarApi(false)} className="relative z-10 p-2 rounded-full hover:bg-white/20 transition-colors text-white/80 hover:text-white">
+                                        <X size={24} strokeWidth={2.5} />
+                                    </button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-5 scrollbar-thin">
+                                    <div className="space-y-5">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 pl-1">Información Principal</label>
+                                            <div className="grid grid-cols-1 gap-4">
+                                                <div className="group relative">
+                                                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 transition-colors" />
+                                                    <input type="text" value={prospectoAEditar.nombre}
+                                                        onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, nombre: e.target.value })}
+                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
+                                                        placeholder="Nombre y Apellido" />
+                                                </div>
+                                                <div className="group relative">
+                                                    <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 transition-colors" />
+                                                    <input type="text" value={prospectoAEditar.empresa}
+                                                        onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, empresa: e.target.value })}
+                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
+                                                        placeholder="Empresa (Opcional)" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="group relative">
+                                                    <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 transition-colors" />
+                                                    <input type="tel" value={prospectoAEditar.telefono}
+                                                        onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, telefono: e.target.value })}
+                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
+                                                        placeholder="Teléfono" />
+                                                </div>
+                                                <div className="group relative">
+                                                    <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 transition-colors" />
+                                                    <input type="email" value={prospectoAEditar.correo}
+                                                        onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, correo: e.target.value })}
+                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
+                                                        placeholder="Correo (Opcional)" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex-none p-6 sm:p-8 pt-2 border-t border-gray-100 bg-white">
+                                    <div className="flex gap-3">
+                                        <button onClick={() => setModalEditarApi(false)}
+                                            className="px-6 py-3.5 rounded-xl border-2 border-slate-100 text-slate-500 font-bold hover:bg-slate-50 hover:text-slate-700 hover:border-slate-200 transition-all active:scale-95">
+                                            Cancelar
+                                        </button>
+                                        <button onClick={handleEditarProspectoApi}
+                                            disabled={loadingEditarApi || !prospectoAEditar.nombre?.trim() || !prospectoAEditar.telefono?.trim()}
+                                            className="flex-1 py-3.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold transition-all active:scale-95 shadow-lg shadow-blue-500/30 disabled:opacity-50">
+                                            {loadingEditarApi ? 'Guardando...' : 'Guardar Cambios'}
                                         </button>
                                     </div>
                                 </div>
@@ -527,8 +681,8 @@ const CRMProspectos = () => {
                                     key={item.value}
                                     onClick={() => setFiltro(item.value)}
                                     className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${filtro === item.value
-                                            ? 'bg-teal-600 text-white border-teal-600'
-                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                        ? 'bg-teal-600 text-white border-teal-600'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                         }`}
                                 >
                                     {item.label} ({getFilterCount(item.value)})
@@ -550,24 +704,17 @@ const CRMProspectos = () => {
                                     <tr>
                                         <th className="px-3 py-2 text-left">Nombre</th>
                                         <th className="px-3 py-2 text-left">Empresa</th>
-                                        <th className="px-3 py-2 text-left">Número de teléfono</th>
-                                        <th className="px-3 py-2 text-left">Correo electrónico</th>
+                                        <th className="px-3 py-2 text-left">Teléfono</th>
+                                        <th className="px-3 py-2 text-left">Correo</th>
                                         <th className="px-3 py-2 text-left">Ubicación</th>
-                                        <th className="px-3 py-2 text-left">Fecha Reg.</th>
-                                        <th className="px-3 py-2 text-center">Contactado</th>
                                         <th className="px-3 py-2 text-left">Último contacto</th>
-                                        <th className="px-3 py-2 text-left">Medio de contacto</th>
+                                        <th className="px-3 py-2 text-left">Medio</th>
                                         <th className="px-3 py-2 text-center">Interés</th>
                                         <th className="px-3 py-2 text-left">Notas</th>
-                                        <th className="px-3 py-2 text-center">Intentos llamada</th>
-                                        <th className="px-3 py-2 text-center">Mensaje WhatsApp</th>
-                                        <th className="px-3 py-2 text-center">Mensaje Correo</th>
-                                        <th className="px-3 py-2 text-center">Re-llamar</th>
                                         <th className="px-3 py-2 text-left">Próxima llamada</th>
-                                        <th className="px-3 py-2 text-left">Fecha reunión</th>
-                                        <th className="px-3 py-2 text-left">Hora reunión</th>
-                                        <th className="px-3 py-2 text-center">Cita confirmada</th>
                                         <th className="px-3 py-2 text-left">Estado</th>
+                                        <th className="px-3 py-2 text-center">Agendar</th>
+                                        <th className="px-3 py-2 text-center">Cliente</th>
                                         <th className="px-3 py-2 text-center">Eliminar</th>
                                     </tr>
                                 </thead>
@@ -625,26 +772,6 @@ const CRMProspectos = () => {
                                                 />
                                             </td>
                                             <td className="px-3 py-2">
-                                                <input
-                                                    type="date"
-                                                    value={prospecto.fechaRegistro}
-                                                    onChange={(event) =>
-                                                        actualizarProspecto(prospecto.id, { fechaRegistro: event.target.value })
-                                                    }
-                                                    className="w-36 bg-white border border-slate-200 rounded-md px-2 py-1 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                                                />
-                                            </td>
-                                            <td className="px-3 py-2 text-center">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={prospecto.contactado}
-                                                    onChange={(event) =>
-                                                        actualizarProspecto(prospecto.id, { contactado: event.target.checked })
-                                                    }
-                                                    className="h-4 w-4"
-                                                />
-                                            </td>
-                                            <td className="px-3 py-2">
                                                 <div className="flex gap-2">
                                                     <input
                                                         type="date"
@@ -670,19 +797,19 @@ const CRMProspectos = () => {
                                             </td>
                                             <td className="px-3 py-2">
                                                 <select
-                                                    value={prospecto.medioContacto}
+                                                    value={prospecto.medioContacto || ''}
                                                     onChange={(event) =>
                                                         actualizarProspecto(prospecto.id, { medioContacto: event.target.value })
                                                     }
                                                     className="w-28 bg-white border border-slate-200 rounded-md px-2 py-1 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
                                                 >
                                                     <option value="telefono">Teléfono</option>
-                                                    <option value="correo">Correo electrónico</option>
+                                                    <option value="correo">Correo</option>
                                                     <option value="whatsapp">WhatsApp</option>
                                                 </select>
                                             </td>
                                             <td className="px-3 py-2">
-                                                <div className="flex items-center gap-1 text-yellow-500">
+                                                <div className="flex items-center gap-1 text-yellow-500 justify-center">
                                                     {[1, 2, 3, 4, 5].map((value) => (
                                                         <button
                                                             key={value}
@@ -705,53 +832,6 @@ const CRMProspectos = () => {
                                                     }
                                                     rows={2}
                                                     className="w-48 bg-white border border-slate-200 rounded-md px-2 py-1 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                                                />
-                                            </td>
-                                            <td className="px-3 py-2 text-center">
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    value={prospecto.intentosLlamadas}
-                                                    onChange={(event) =>
-                                                        actualizarProspecto(prospecto.id, {
-                                                            intentosLlamadas: Number(event.target.value)
-                                                        })
-                                                    }
-                                                    className="w-16 bg-white border border-slate-200 rounded-md px-2 py-1 text-center focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                                                />
-                                            </td>
-                                            <td className="px-3 py-2 text-center">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={prospecto.mensajeWhatsapp}
-                                                    onChange={(event) =>
-                                                        actualizarProspecto(prospecto.id, {
-                                                            mensajeWhatsapp: event.target.checked
-                                                        })
-                                                    }
-                                                    className="h-4 w-4"
-                                                />
-                                            </td>
-                                            <td className="px-3 py-2 text-center">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={prospecto.mensajeCorreo}
-                                                    onChange={(event) =>
-                                                        actualizarProspecto(prospecto.id, {
-                                                            mensajeCorreo: event.target.checked
-                                                        })
-                                                    }
-                                                    className="h-4 w-4"
-                                                />
-                                            </td>
-                                            <td className="px-3 py-2 text-center">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={prospecto.reLlamar}
-                                                    onChange={(event) =>
-                                                        actualizarProspecto(prospecto.id, { reLlamar: event.target.checked })
-                                                    }
-                                                    className="h-4 w-4"
                                                 />
                                             </td>
                                             <td className="px-3 py-2">
@@ -779,38 +859,6 @@ const CRMProspectos = () => {
                                                 </div>
                                             </td>
                                             <td className="px-3 py-2">
-                                                <input
-                                                    type="date"
-                                                    value={prospecto.citaFecha}
-                                                    onChange={(event) =>
-                                                        actualizarProspecto(prospecto.id, { citaFecha: event.target.value })
-                                                    }
-                                                    className="w-32 bg-white border border-slate-200 rounded-md px-2 py-1 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                                                />
-                                            </td>
-                                            <td className="px-3 py-2">
-                                                <input
-                                                    type="time"
-                                                    value={prospecto.citaHora}
-                                                    onChange={(event) =>
-                                                        actualizarProspecto(prospecto.id, { citaHora: event.target.value })
-                                                    }
-                                                    className="w-24 bg-white border border-slate-200 rounded-md px-2 py-1 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-                                                />
-                                            </td>
-                                            <td className="px-3 py-2 text-center">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={prospecto.citaConfirmada}
-                                                    onChange={(event) =>
-                                                        actualizarProspecto(prospecto.id, {
-                                                            citaConfirmada: event.target.checked
-                                                        })
-                                                    }
-                                                    className="h-4 w-4"
-                                                />
-                                            </td>
-                                            <td className="px-3 py-2">
                                                 <select
                                                     value={prospecto.status === 'transferido' ? 'transferido' : prospecto.status}
                                                     disabled={prospecto.status === 'transferido'}
@@ -834,12 +882,38 @@ const CRMProspectos = () => {
                                             <td className="px-3 py-2 text-center">
                                                 <button
                                                     type="button"
+                                                    onClick={() => alert(`Agendar acción para: ${prospecto.nombre}`)}
+                                                    className="bg-blue-100 text-blue-700 hover:bg-blue-200 hover:text-blue-800 px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-colors"
+                                                >
+                                                    Agendar
+                                                </button>
+                                            </td>
+                                            <td className="px-3 py-2 text-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (confirm(`¿Transferir a ${prospecto.nombre} a clientes?`)) {
+                                                            actualizarProspecto(prospecto.id, {
+                                                                status: 'transferido',
+                                                                reLlamar: false,
+                                                                contactado: true
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 hover:text-emerald-800 px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-colors"
+                                                >
+                                                    Cliente
+                                                </button>
+                                            </td>
+                                            <td className="px-3 py-2 text-center">
+                                                <button
+                                                    type="button"
                                                     onClick={() => {
                                                         if (confirm('¿Eliminar prospecto?')) {
                                                             eliminarProspecto(prospecto.id);
                                                         }
                                                     }}
-                                                    className="text-red-600 hover:text-red-700 text-xs font-semibold"
+                                                    className="text-red-600 hover:text-red-700 text-xs font-semibold transition-colors bg-red-50 hover:bg-red-100 px-2 py-1.5 rounded-md"
                                                 >
                                                     Eliminar
                                                 </button>
@@ -853,110 +927,112 @@ const CRMProspectos = () => {
                 )}
 
                 {modalAbierto && (
-                    <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-50">
-                        <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl border border-slate-200">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-bold text-gray-900">Nuevo Prospecto</h2>
-                                <button
-                                    onClick={cierreModal}
-                                    className="text-gray-400 hover:text-gray-600"
-                                >
-                                    <X className="w-6 h-6" />
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="absolute inset-0 bg-black/50 transition-opacity" onClick={cierreModal} />
+                        <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 flex flex-col max-h-[85vh]">
+
+                            {/* Header */}
+                            <div className="flex-none bg-linear-to-r from-emerald-500 to-teal-600 p-6 sm:p-8 text-white flex justify-between items-start shadow-lg relative overflow-hidden z-10">
+                                <div className="relative z-10">
+                                    <h2 className="text-2xl font-black tracking-tight mb-1">Nuevo Prospecto</h2>
+                                    <p className="text-white/90 text-sm font-medium">Ingresa los datos del cliente potencial.</p>
+                                </div>
+                                <button onClick={cierreModal} className="relative z-10 p-2 rounded-full hover:bg-white/20 transition-colors text-white/80 hover:text-white">
+                                    <X size={24} strokeWidth={2.5} />
                                 </button>
+                                {/* Decorative circles */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
+                                <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
                             </div>
 
-                            <div className="space-y-4 mb-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
-                                    <input
-                                        type="text"
-                                        value={nuevoProspecto.nombre}
-                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, nombre: e.target.value })}
-                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-gray-800"
-                                        placeholder="Nombre completo"
-                                    />
-                                </div>
+                            {/* Body */}
+                            <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-5 scrollbar-thin">
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la empresa</label>
-                                    <input
-                                        type="text"
-                                        value={nuevoProspecto.empresa}
-                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, empresa: e.target.value })}
-                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-gray-800"
-                                        placeholder="Nombre de la empresa"
-                                    />
-                                </div>
+                                {/* Nombre & Empresa */}
+                                <div className="space-y-5">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 pl-1">Información Principal</label>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <div className="group relative">
+                                                <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 transition-colors" />
+                                                <input type="text" value={nuevoProspecto.nombre}
+                                                    onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, nombre: e.target.value })}
+                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
+                                                    placeholder="Nombre Completo" />
+                                            </div>
+                                            <div className="group relative">
+                                                <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 transition-colors" />
+                                                <input type="text" value={nuevoProspecto.empresa}
+                                                    onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, empresa: e.target.value })}
+                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
+                                                    placeholder="Empresa (Opcional)" />
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Número de teléfono</label>
-                                    <input
-                                        type="tel"
-                                        value={nuevoProspecto.telefono}
-                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, telefono: e.target.value })}
-                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-gray-800"
-                                        placeholder="10 dígitos"
-                                    />
-                                </div>
+                                    <div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="group relative">
+                                                <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 transition-colors" />
+                                                <input type="tel" value={nuevoProspecto.telefono}
+                                                    onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, telefono: e.target.value })}
+                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
+                                                    placeholder="Teléfono" />
+                                            </div>
+                                            <div className="group relative">
+                                                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 transition-colors" />
+                                                <input type="email" value={nuevoProspecto.correo}
+                                                    onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, correo: e.target.value })}
+                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
+                                                    placeholder="Correo (Opcional)" />
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-                                    <input
-                                        type="email"
-                                        value={nuevoProspecto.correo}
-                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, correo: e.target.value })}
-                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-gray-800"
-                                        placeholder="correo@example.com"
-                                    />
-                                </div>
+                                    <div className="group relative">
+                                        <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 transition-colors" />
+                                        <input type="text" value={nuevoProspecto.ubicacion}
+                                            onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, ubicacion: e.target.value })}
+                                            className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
+                                            placeholder="Ubicación / Ciudad (Opcional)" />
+                                    </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
-                                    <input
-                                        type="text"
-                                        value={nuevoProspecto.ubicacion}
-                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, ubicacion: e.target.value })}
-                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-gray-800"
-                                        placeholder="Ciudad"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
-                                    <textarea
-                                        rows={3}
-                                        value={nuevoProspecto.notas}
-                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, notas: e.target.value })}
-                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-gray-800"
-                                        placeholder="Notas adicionales"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de registro</label>
-                                    <input
-                                        type="date"
-                                        value={nuevoProspecto.fechaRegistro}
-                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, fechaRegistro: e.target.value })}
-                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-gray-800"
-                                    />
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 pl-1">Detalles Adicionales</label>
+                                        <div className="space-y-4">
+                                            <div className="group relative">
+                                                <FileText size={18} className="absolute left-4 top-3.5 text-emerald-500 transition-colors" />
+                                                <textarea rows={3} value={nuevoProspecto.notas}
+                                                    onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, notas: e.target.value })}
+                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 resize-none"
+                                                    placeholder="Notas o comentarios (Opcional)..." />
+                                            </div>
+                                            <div className="group relative">
+                                                <Calendar size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 transition-colors" />
+                                                <input type="date" value={nuevoProspecto.fechaRegistro}
+                                                    onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, fechaRegistro: e.target.value })}
+                                                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-xl outline-none transition-all font-medium text-gray-700" />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={cierreModal}
-                                    className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={crearProspecto}
-                                    className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-lg transition-colors"
-                                >
-                                    Crear
-                                </button>
+                            {/* Footer */}
+                            <div className="flex-none p-6 sm:p-8 pt-2 border-t border-gray-100 bg-white">
+                                <div className="flex gap-3">
+                                    <button onClick={cierreModal}
+                                        className="px-6 py-3.5 rounded-xl border-2 border-slate-100 text-slate-500 font-bold hover:bg-slate-50 hover:text-slate-700 hover:border-slate-200 transition-all active:scale-95">
+                                        Cancelar
+                                    </button>
+                                    <button onClick={esProspector ? handleCrearProspectoApi : crearProspecto}
+                                        disabled={loadingCrearApi || !nuevoProspecto.nombre?.trim() || !nuevoProspecto.telefono?.trim()}
+                                        className="flex-1 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition-all active:scale-95 shadow-lg shadow-emerald-500/30 disabled:opacity-50">
+                                        {loadingCrearApi ? 'Creando...' : 'Crear Prospecto'}
+                                    </button>
+                                </div>
                             </div>
+
                         </div>
                     </div>
                 )}

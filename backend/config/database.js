@@ -1,168 +1,421 @@
+/**
+ * Configuración de base de datos
+ * Soporta SQLite (desarrollo) y PostgreSQL (producción)
+ */
+
 const { Pool } = require('pg');
+const path = require('path');
 
-const pool = new Pool({
+let internalDb;
+let isPostgres = false;
+
+if (process.env.DATABASE_URL) {
+  console.log('🌐 Conectando a PostgreSQL (Producción)...');
+  internalDb = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
-
-async function initDB() {
-    const client = await pool.connect();
-    try {
-        // Crear tablas (cada una por separado)
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id SERIAL PRIMARY KEY,
-                usuario TEXT UNIQUE NOT NULL,
-                "contraseña" TEXT NOT NULL,
-                rol TEXT NOT NULL CHECK(rol IN ('prospector','closer')),
-                nombre TEXT NOT NULL,
-                email TEXT,
-                telefono TEXT,
-                activo INTEGER DEFAULT 1,
-                "fechaCreacion" TIMESTAMPTZ DEFAULT NOW()
-            )
-        `);
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS clientes (
-                id SERIAL PRIMARY KEY,
-                nombres TEXT NOT NULL,
-                "apellidoPaterno" TEXT NOT NULL,
-                "apellidoMaterno" TEXT,
-                telefono TEXT NOT NULL,
-                correo TEXT NOT NULL,
-                empresa TEXT,
-                estado TEXT DEFAULT 'proceso',
-                "etapaEmbudo" TEXT DEFAULT 'prospecto_nuevo',
-                "prospectorAsignado" INTEGER REFERENCES usuarios(id),
-                "closerAsignado" INTEGER REFERENCES usuarios(id),
-                "fechaTransferencia" TIMESTAMPTZ,
-                "fechaUltimaEtapa" TIMESTAMPTZ DEFAULT NOW(),
-                "historialEmbudo" TEXT,
-                "vendedorAsignado" INTEGER REFERENCES usuarios(id),
-                "fechaRegistro" TIMESTAMPTZ DEFAULT NOW(),
-                "ultimaInteraccion" TIMESTAMPTZ DEFAULT NOW(),
-                notas TEXT
-            )
-        `);
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS actividades (
-                id SERIAL PRIMARY KEY,
-                tipo TEXT NOT NULL,
-                vendedor INTEGER NOT NULL REFERENCES usuarios(id),
-                cliente INTEGER NOT NULL REFERENCES clientes(id),
-                fecha TIMESTAMPTZ DEFAULT NOW(),
-                descripcion TEXT,
-                resultado TEXT DEFAULT 'pendiente',
-                "cambioEtapa" INTEGER DEFAULT 0,
-                "etapaAnterior" TEXT,
-                "etapaNueva" TEXT,
-                notas TEXT
-            )
-        `);
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS tareas (
-                id SERIAL PRIMARY KEY,
-                titulo TEXT NOT NULL,
-                descripcion TEXT,
-                vendedor INTEGER REFERENCES usuarios(id),
-                cliente INTEGER REFERENCES clientes(id),
-                estado TEXT DEFAULT 'pendiente',
-                prioridad TEXT DEFAULT 'media',
-                "fechaLimite" TIMESTAMPTZ,
-                completada INTEGER DEFAULT 0,
-                "fechaCreacion" TIMESTAMPTZ DEFAULT NOW()
-            )
-        `);
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS ventas (
-                id SERIAL PRIMARY KEY,
-                cliente INTEGER NOT NULL REFERENCES clientes(id),
-                vendedor INTEGER NOT NULL REFERENCES usuarios(id),
-                monto NUMERIC NOT NULL,
-                fecha TIMESTAMPTZ DEFAULT NOW(),
-                estado TEXT DEFAULT 'pendiente',
-                notas TEXT
-            )
-        `);
-
-        // Migración: renombrar columnas lowercase → camelCase (si existen en lowercase)
-        await client.query(`
-            DO $$ BEGIN
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='fechacreacion') THEN
-                    ALTER TABLE usuarios RENAME COLUMN fechacreacion TO "fechaCreacion";
-                END IF;
-
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='apellidopaterno') THEN
-                    ALTER TABLE clientes RENAME COLUMN apellidopaterno TO "apellidoPaterno";
-                END IF;
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='apellidomaterno') THEN
-                    ALTER TABLE clientes RENAME COLUMN apellidomaterno TO "apellidoMaterno";
-                END IF;
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='etapaembudo') THEN
-                    ALTER TABLE clientes RENAME COLUMN etapaembudo TO "etapaEmbudo";
-                END IF;
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='prospectorasignado') THEN
-                    ALTER TABLE clientes RENAME COLUMN prospectorasignado TO "prospectorAsignado";
-                END IF;
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='closerasignado') THEN
-                    ALTER TABLE clientes RENAME COLUMN closerasignado TO "closerAsignado";
-                END IF;
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='fechatransferencia') THEN
-                    ALTER TABLE clientes RENAME COLUMN fechatransferencia TO "fechaTransferencia";
-                END IF;
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='fechaultimaetapa') THEN
-                    ALTER TABLE clientes RENAME COLUMN fechaultimaetapa TO "fechaUltimaEtapa";
-                END IF;
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='historialembudo') THEN
-                    ALTER TABLE clientes RENAME COLUMN historialembudo TO "historialEmbudo";
-                END IF;
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='vendedorasignado') THEN
-                    ALTER TABLE clientes RENAME COLUMN vendedorasignado TO "vendedorAsignado";
-                END IF;
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='fecharegristro') THEN
-                    ALTER TABLE clientes RENAME COLUMN fecharegristro TO "fechaRegistro";
-                END IF;
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='fecharegistro') THEN
-                    ALTER TABLE clientes RENAME COLUMN fecharegistro TO "fechaRegistro";
-                END IF;
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='ultimainteraccion') THEN
-                    ALTER TABLE clientes RENAME COLUMN ultimainteraccion TO "ultimaInteraccion";
-                END IF;
-
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='actividades' AND column_name='cambioetapa') THEN
-                    ALTER TABLE actividades RENAME COLUMN cambioetapa TO "cambioEtapa";
-                END IF;
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='actividades' AND column_name='etapaanterior') THEN
-                    ALTER TABLE actividades RENAME COLUMN etapaanterior TO "etapaAnterior";
-                END IF;
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='actividades' AND column_name='etapanueva') THEN
-                    ALTER TABLE actividades RENAME COLUMN etapanueva TO "etapaNueva";
-                END IF;
-
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tareas' AND column_name='fechalimite') THEN
-                    ALTER TABLE tareas RENAME COLUMN fechalimite TO "fechaLimite";
-                END IF;
-                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tareas' AND column_name='fechacreacion') THEN
-                    ALTER TABLE tareas RENAME COLUMN fechacreacion TO "fechaCreacion";
-                END IF;
-            END $$;
-        `);
-
-        // Índices
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_clientes_prospector ON clientes("prospectorAsignado")`);
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_clientes_vendedor ON clientes("vendedorAsignado")`);
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_actividades_vendedor ON actividades(vendedor)`);
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_actividades_fecha ON actividades(fecha)`);
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_actividades_cliente ON actividades(cliente)`);
-
-        console.log('✅ PostgreSQL conectado y tablas listas');
-    } catch (err) {
-        console.error('❌ Error inicializando PostgreSQL:', err.message);
-    } finally {
-        client.release();
+    ssl: {
+      rejectUnauthorized: false
     }
+  });
+  isPostgres = true;
+} else {
+  console.log('🔧 Inicializando base de datos local SQLite...');
+  const Database = require('better-sqlite3');
+  const dbPath = process.env.SQLITE_PATH || path.join(__dirname, '..', 'database.db');
+  internalDb = new Database(dbPath);
+  internalDb.pragma('journal_mode = WAL');
 }
 
-initDB();
+// Lista de columnas camelCase que Postgres almacena en minúsculas
+const CAMEL_COLS = [
+  'apellidoPaterno', 'apellidoMaterno', 'etapaEmbudo', 'prospectorAsignado',
+  'closerAsignado', 'fechaTransferencia', 'fechaUltimaEtapa', 'historialEmbudo',
+  'vendedorAsignado', 'fechaRegistro', 'ultimaInteraccion', 'proximaLlamada',
+  'cambioEtapa', 'etapaAnterior', 'etapaNueva', 'fechaLimite', 'fechaCreacion',
+  'googleRefreshToken', 'googleAccessToken', 'googleTokenExpiry',
+  'vendedorNombre', 'vendedorRol', 'closerNombre', 'sitioWeb'
+];
 
-module.exports = pool;
+// Helper: convierte '?' a '$1', '$2', etc. para Postgres y añade comillas dobles a columnas camelCase
+const convertSql = (sql) => {
+  if (!isPostgres) return sql;
+  let count = 1;
+  let res = sql.replace(/\?/g, () => `$${count++}`);
+  // Las columnas camelCase fueron creadas con comillas dobles en Postgres, por lo que deben
+  // referenciarse con comillas dobles para preservar el case (e.g., "closerAsignado")
+  CAMEL_COLS.forEach(col => {
+    // Reemplaza col exacta que no esté ya entre comillas dobles
+    const reg = new RegExp(`(?<!")\\b${col}\\b(?!")`, 'g');
+    res = res.replace(reg, `"${col}"`);
+  });
+  return res;
+};
+
+// Mapa para restaurar camelCase de postgres que devuelve todo en minúsculas
+const pgMap = {
+  apellidopaterno: 'apellidoPaterno', apellidomaterno: 'apellidoMaterno',
+  etapaembudo: 'etapaEmbudo', prospectorasignado: 'prospectorAsignado',
+  closerasignado: 'closerAsignado', fechatransferencia: 'fechaTransferencia',
+  fechaultimaetapa: 'fechaUltimaEtapa', historialembudo: 'historialEmbudo',
+  vendedorasignado: 'vendedorAsignado', fecharegistro: 'fechaRegistro',
+  ultimainteraccion: 'ultimaInteraccion', proximallamada: 'proximaLlamada',
+  cambioetapa: 'cambioEtapa', etapaanterior: 'etapaAnterior',
+  etapanueva: 'etapaNueva', fechalimite: 'fechaLimite',
+  fechacreacion: 'fechaCreacion', googlerefreshtoken: 'googleRefreshToken',
+  googleaccesstoken: 'googleAccessToken', googletokenexpiry: 'googleTokenExpiry',
+  vendedornombre: 'vendedorNombre', vendedorrol: 'vendedorRol', closernombre: 'closerNombre',
+  sitioweb: 'sitioWeb'
+};
+
+const mapPgRow = (row) => {
+  if (!row) return row;
+  const mapped = {};
+  for (const key in row) {
+    mapped[pgMap[key] || key] = row[key];
+  }
+  return mapped;
+};
+
+// Shim para imitar better-sqlite3 de forma asíncrona
+const db = {
+  pragma: (sql) => {
+    if (isPostgres) return; // No-op en Postgres
+    return internalDb.pragma(sql);
+  },
+  prepare: (sql) => {
+    const finalSql = convertSql(sql);
+    return {
+      get: async (...params) => {
+        if (isPostgres) {
+          const res = await internalDb.query(finalSql, params);
+          return mapPgRow(res.rows[0]);
+        } else {
+          return internalDb.prepare(sql).get(...params);
+        }
+      },
+      all: async (...params) => {
+        if (isPostgres) {
+          const res = await internalDb.query(finalSql, params);
+          return res.rows.map(mapPgRow);
+        } else {
+          return internalDb.prepare(sql).all(...params);
+        }
+      },
+      run: async (...params) => {
+        if (isPostgres) {
+          let query = finalSql;
+          // Si es un INSERT y no tiene RETURNING, lo agregamos para obtener el ID
+          const trimmed = query.trim().toUpperCase();
+          if (trimmed.startsWith('INSERT') && !trimmed.includes('RETURNING')) {
+            query += ' RETURNING id';
+            const res = await internalDb.query(query, params);
+            return {
+              lastInsertRowid: res.rows[0]?.id || null,
+              changes: res.rowCount
+            };
+          }
+          const res = await internalDb.query(query, params);
+          return { lastInsertRowid: null, changes: res.rowCount };
+        } else {
+          return internalDb.prepare(sql).run(...params);
+        }
+      }
+    };
+  },
+  exec: async (sql) => {
+    const finalSql = convertSql(sql);
+    if (isPostgres) {
+      return internalDb.query(finalSql);
+    } else {
+      return internalDb.exec(sql);
+    }
+  }
+};
+
+// Inicializar tablas
+const initDb = async () => {
+  const sql = `
+  CREATE TABLE IF NOT EXISTS usuarios (
+    id SERIAL PRIMARY KEY,
+    usuario TEXT UNIQUE NOT NULL,
+    contraseña TEXT NOT NULL,
+    rol TEXT NOT NULL CHECK(rol IN ('prospector','closer')),
+    nombre TEXT NOT NULL,
+    email TEXT,
+    telefono TEXT,
+    activo INTEGER DEFAULT 1,
+    fechaCreacion TEXT DEFAULT CURRENT_TIMESTAMP,
+    googleRefreshToken TEXT,
+    googleAccessToken TEXT,
+    googleTokenExpiry DOUBLE PRECISION
+  );
+
+  CREATE TABLE IF NOT EXISTS clientes (
+    id SERIAL PRIMARY KEY,
+    nombres TEXT NOT NULL,
+    apellidoPaterno TEXT NOT NULL,
+    apellidoMaterno TEXT,
+    telefono TEXT NOT NULL,
+    telefono2 TEXT,
+    correo TEXT NOT NULL,
+    empresa TEXT,
+    estado TEXT DEFAULT 'proceso' CHECK(estado IN ('ganado','perdido','proceso')),
+    etapaEmbudo TEXT DEFAULT 'prospecto_nuevo',
+    prospectorAsignado INTEGER REFERENCES usuarios(id),
+    closerAsignado INTEGER REFERENCES usuarios(id),
+    fechaTransferencia TEXT,
+    fechaUltimaEtapa TEXT DEFAULT CURRENT_TIMESTAMP,
+    historialEmbudo TEXT,
+    vendedorAsignado INTEGER NOT NULL REFERENCES usuarios(id),
+    fechaRegistro TEXT DEFAULT CURRENT_TIMESTAMP,
+    ultimaInteraccion TEXT DEFAULT CURRENT_TIMESTAMP,
+    notas TEXT,
+    interes INTEGER DEFAULT 0,
+    proximaLlamada TEXT,
+    sitioWeb TEXT,
+    ubicacion TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS actividades (
+    id SERIAL PRIMARY KEY,
+    tipo TEXT NOT NULL CHECK(tipo IN ('llamada','mensaje','correo','whatsapp','cita','prospecto')),
+    vendedor INTEGER NOT NULL REFERENCES usuarios(id),
+    cliente INTEGER NOT NULL REFERENCES clientes(id),
+    fecha TEXT DEFAULT CURRENT_TIMESTAMP,
+    descripcion TEXT,
+    resultado TEXT DEFAULT 'pendiente' CHECK(resultado IN ('exitoso','pendiente','fallido')),
+    cambioEtapa INTEGER DEFAULT 0,
+    etapaAnterior TEXT,
+    etapaNueva TEXT,
+    notas TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS tareas (
+    id SERIAL PRIMARY KEY,
+    titulo TEXT NOT NULL,
+    descripcion TEXT,
+    vendedor INTEGER REFERENCES usuarios(id),
+    cliente INTEGER REFERENCES clientes(id),
+    estado TEXT DEFAULT 'pendiente',
+    prioridad TEXT DEFAULT 'media',
+    fechaLimite TEXT,
+    completada INTEGER DEFAULT 0,
+    fechaCreacion TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS ventas (
+    id SERIAL PRIMARY KEY,
+    cliente INTEGER NOT NULL REFERENCES clientes(id),
+    vendedor INTEGER NOT NULL REFERENCES usuarios(id),
+    monto DOUBLE PRECISION NOT NULL,
+    fecha TEXT DEFAULT CURRENT_TIMESTAMP,
+    estado TEXT DEFAULT 'pendiente',
+    notas TEXT
+  );
+`;
+
+  let finalSql = sql;
+  if (!isPostgres) {
+    finalSql = sql.replace(/SERIAL PRIMARY KEY/g, 'INTEGER PRIMARY KEY AUTOINCREMENT')
+      .replace(/DOUBLE PRECISION/g, 'REAL')
+      .replace(/CURRENT_TIMESTAMP/g, "(datetime('now'))");
+  }
+
+  try {
+    await db.exec(finalSql);
+    console.log('✅ Base de datos inicializada');
+
+    // Verificar si ya hay usuarios; si no, insertar los predeterminados
+    const userCount = await db.prepare('SELECT COUNT(*) as count FROM usuarios').get();
+    if (userCount && parseInt(userCount.count) === 0) {
+      console.log('🌱 Base de datos vacía, insertando usuarios predeterminados...');
+      const bcrypt = require('bcryptjs');
+      const hashProspector = await bcrypt.hash('prospector123', 10);
+      const hashCloser = await bcrypt.hash('closer123', 10);
+
+      await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono) VALUES (?, ?, ?, ?, ?, ?)')
+        .run('prospector', hashProspector, 'prospector', 'Alex Mendoza', 'prospector@crm.com', '5554444444');
+
+      await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono) VALUES (?, ?, ?, ?, ?, ?)')
+        .run('closer', hashCloser, 'closer', 'Fernando Ruiz', 'closer@crm.com', '5555555555');
+
+      console.log('✅ Usuarios predeterminados creados');
+    }
+  } catch (e) {
+    console.error('❌ Error al inicializar o seedear DB:', e.message);
+  }
+
+  // ================================================================
+  // MIGRACIÓN POSTGRESQL: normalizar TODAS las columnas camelCase
+  // Renombra cualquier columna que exista en lowercase a su versión
+  // con comillas dobles, y agrega las columnas que falten.
+  // ================================================================
+  if (isPostgres) {
+    try {
+      await internalDb.query(`
+        DO $$ BEGIN
+          -- usuarios
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='fechacreacion')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='fechaCreacion') THEN
+            ALTER TABLE usuarios RENAME COLUMN fechacreacion TO "fechaCreacion";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='googlerefreshtoken')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='googleRefreshToken') THEN
+            ALTER TABLE usuarios RENAME COLUMN googlerefreshtoken TO "googleRefreshToken";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='googleaccesstoken')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='googleAccessToken') THEN
+            ALTER TABLE usuarios RENAME COLUMN googleaccesstoken TO "googleAccessToken";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='googletokenexpiry')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='googleTokenExpiry') THEN
+            ALTER TABLE usuarios RENAME COLUMN googletokenexpiry TO "googleTokenExpiry";
+          END IF;
+
+          -- clientes
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='apellidopaterno')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='apellidoPaterno') THEN
+            ALTER TABLE clientes RENAME COLUMN apellidopaterno TO "apellidoPaterno";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='apellidomaterno')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='apellidoMaterno') THEN
+            ALTER TABLE clientes RENAME COLUMN apellidomaterno TO "apellidoMaterno";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='etapaembudo')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='etapaEmbudo') THEN
+            ALTER TABLE clientes RENAME COLUMN etapaembudo TO "etapaEmbudo";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='prospectorasignado')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='prospectorAsignado') THEN
+            ALTER TABLE clientes RENAME COLUMN prospectorasignado TO "prospectorAsignado";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='closerasignado')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='closerAsignado') THEN
+            ALTER TABLE clientes RENAME COLUMN closerasignado TO "closerAsignado";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='fechatransferencia')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='fechaTransferencia') THEN
+            ALTER TABLE clientes RENAME COLUMN fechatransferencia TO "fechaTransferencia";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='fechaultimaetapa')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='fechaUltimaEtapa') THEN
+            ALTER TABLE clientes RENAME COLUMN fechaultimaetapa TO "fechaUltimaEtapa";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='historialembudo')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='historialEmbudo') THEN
+            ALTER TABLE clientes RENAME COLUMN historialembudo TO "historialEmbudo";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='vendedorasignado')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='vendedorAsignado') THEN
+            ALTER TABLE clientes RENAME COLUMN vendedorasignado TO "vendedorAsignado";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='fecharegristro')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='fechaRegistro') THEN
+            ALTER TABLE clientes RENAME COLUMN fecharegristro TO "fechaRegistro";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='fecharegistro')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='fechaRegistro') THEN
+            ALTER TABLE clientes RENAME COLUMN fecharegistro TO "fechaRegistro";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='ultimainteraccion')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='ultimaInteraccion') THEN
+            ALTER TABLE clientes RENAME COLUMN ultimainteraccion TO "ultimaInteraccion";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='sitioweb')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='sitioWeb') THEN
+            ALTER TABLE clientes RENAME COLUMN sitioweb TO "sitioWeb";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='proximallamada')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='proximaLlamada') THEN
+            ALTER TABLE clientes RENAME COLUMN proximallamada TO "proximaLlamada";
+          END IF;
+
+          -- actividades
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='actividades' AND column_name='cambioetapa')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='actividades' AND column_name='cambioEtapa') THEN
+            ALTER TABLE actividades RENAME COLUMN cambioetapa TO "cambioEtapa";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='actividades' AND column_name='etapaanterior')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='actividades' AND column_name='etapaAnterior') THEN
+            ALTER TABLE actividades RENAME COLUMN etapaanterior TO "etapaAnterior";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='actividades' AND column_name='etapanueva')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='actividades' AND column_name='etapaNueva') THEN
+            ALTER TABLE actividades RENAME COLUMN etapanueva TO "etapaNueva";
+          END IF;
+
+          -- tareas
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tareas' AND column_name='fechalimite')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tareas' AND column_name='fechaLimite') THEN
+            ALTER TABLE tareas RENAME COLUMN fechalimite TO "fechaLimite";
+          END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tareas' AND column_name='fechacreacion')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tareas' AND column_name='fechaCreacion') THEN
+            ALTER TABLE tareas RENAME COLUMN fechacreacion TO "fechaCreacion";
+          END IF;
+        END $$;
+      `);
+      console.log('✅ Migración: renombrado de columnas a camelCase completado');
+    } catch (e) {
+      console.error('⚠️ Migración renombrado columnas falló:', e.message);
+    }
+
+    // Agregar columnas que pueden faltar en DBs antiguas
+    const colsMissingPg = [
+      ['usuarios',  '"googleRefreshToken"', 'TEXT'],
+      ['usuarios',  '"googleAccessToken"',  'TEXT'],
+      ['usuarios',  '"googleTokenExpiry"',  'TIMESTAMPTZ'],
+      ['clientes',  'ubicacion',            'TEXT'],
+      ['clientes',  '"sitioWeb"',           'TEXT'],
+      ['clientes',  'telefono2',            'TEXT'],
+      ['clientes',  '"proximaLlamada"',     'TIMESTAMPTZ'],
+      ['clientes',  'interes',              'TEXT'],
+    ];
+    for (const [table, col, type] of colsMissingPg) {
+      try {
+        await internalDb.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${col} ${type}`);
+      } catch (e) {
+        if (!e.message.includes('already exists')) {
+          console.error(`⚠️ Error agregando ${col} a ${table}:`, e.message);
+        }
+      }
+    }
+    console.log('✅ Migración: columnas faltantes verificadas');
+
+    // Rellenar etapaEmbudo NULL
+    try {
+      await internalDb.query(`UPDATE clientes SET "etapaEmbudo" = 'prospecto_nuevo' WHERE "etapaEmbudo" IS NULL`);
+    } catch (e) {
+      console.error('⚠️ Migración etapaEmbudo falló:', e.message);
+    }
+  } else {
+    // SQLite: agregar columnas faltantes
+    const colsMissingSqlite = [
+      ['clientes', 'ubicacion TEXT'],
+      ['clientes', 'sitioWeb TEXT'],
+      ['clientes', 'telefono2 TEXT'],
+      ['clientes', 'proximaLlamada TEXT'],
+      ['clientes', 'interes TEXT'],
+      ['usuarios', 'googleRefreshToken TEXT'],
+      ['usuarios', 'googleAccessToken TEXT'],
+      ['usuarios', 'googleTokenExpiry REAL'],
+    ];
+    for (const [table, colDef] of colsMissingSqlite) {
+      try {
+        internalDb.prepare(`ALTER TABLE ${table} ADD COLUMN ${colDef}`).run();
+      } catch (e) {
+        if (!e.message.includes('duplicate') && !e.message.includes('already exists')) {
+          console.error(`⚠️ SQLite: error agregando ${colDef} a ${table}:`, e.message);
+        }
+      }
+    }
+    try {
+      internalDb.prepare(`UPDATE clientes SET etapaEmbudo = 'prospecto_nuevo' WHERE etapaEmbudo IS NULL`).run();
+    } catch (e) { /* ignorar */ }
+  }
+};
+
+initDb();
+
+module.exports = { db, isPostgres };
+

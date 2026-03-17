@@ -8,11 +8,11 @@ const FunnelChart = ({ data }) => {
 
     // Definir las etapas del embudo
     const etapas = [
-        { key: 'contacto_inicial', label: 'Contacto Inicial', count: embudo.contacto_inicial, color: 'from-blue-500 to-blue-600' },
-        { key: 'llamadas', label: 'Llamadas', count: embudo.llamadas, color: 'from-indigo-500 to-indigo-600', tasa: tasasConversion.llamadas },
-        { key: 'citas', label: 'Citas', count: embudo.citas, color: 'from-purple-500 to-purple-600', tasa: tasasConversion.citas },
-        { key: 'negociacion', label: 'Negociación', count: embudo.negociacion, color: 'from-pink-500 to-pink-600', tasa: tasasConversion.negociacion },
-        { key: 'ganado', label: 'Venta Cerrada', count: embudo.ganado, color: 'from-green-500 to-green-600', tasa: tasasConversion.cierre }
+        { key: 'contacto_inicial', label: 'Contacto Inicial', count: embudo.contacto_inicial, color: 'from-[#3b82f6] to-[#2563eb]' }, // Blue
+        { key: 'llamadas', label: 'Llamadas', count: embudo.llamadas, color: 'from-[#6366f1] to-[#4f46e5]', tasa: tasasConversion.llamadas }, // Indigo
+        { key: 'citas', label: 'Citas', count: embudo.citas, color: 'from-[#a855f7] to-[#9333ea]', tasa: tasasConversion.citas }, // Purple
+        { key: 'negociacion', label: 'Negociación', count: embudo.negociacion, color: 'from-[#ec4899] to-[#db2777]', tasa: tasasConversion.negociacion }, // Pink
+        { key: 'ganado', label: 'Venta Cerrada', count: embudo.ganado, color: 'from-[#22c55e] to-[#16a34a]', tasa: tasasConversion.cierre } // Green (Standard)
     ];
 
     // Calcular porcentaje respecto al total

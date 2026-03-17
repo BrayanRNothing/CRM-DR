@@ -1,43 +1,107 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, TrendingUp, Users, RefreshCw, Award, Clock, BarChart3, Target, CheckCircle2 } from 'lucide-react';
+import { Calendar, TrendingUp, Users, RefreshCw, Award, Clock, BarChart3, Target, CheckCircle2, DollarSign, AlertTriangle, TrendingDown, Zap } from 'lucide-react';
 import axios from 'axios';
 import FunnelVisual from '../../components/FunnelVisual';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+import API_URL from '../../config/api';
+import socket from '../../config/socket';
 
-// Mock data con 4 fases
-const MOCK_DATA = {
+// Datos iniciales en 0 cuando no hay conexión
+const INITIAL_DATA = {
     embudo: {
-        reunion_agendada: 10,
-        reunion_realizada: 8,
-        propuesta_enviada: 6,
-        venta_ganada: 4
+        reunion_agendada: 0,
+        reunion_realizada: 0,
+        propuesta_enviada: 0,
+        venta_ganada: 0
     },
     metricas: {
-        reuniones: { hoy: 3, pendientes: 10, realizadas: 8 },
-        ventas: { mes: 4, montoMes: 180000, totales: 4 },
-        negociaciones: { activas: 6 }
+        reuniones: { hoy: 0, pendientes: 0, realizadas: 0 },
+        ventas: { mes: 0, montoMes: 0, totales: 0, montoTotal: 0 },
+        clientes: { totales: 0 },
+        negociaciones: { activas: 0 }
     },
     tasasConversion: {
-        asistencia: 80.0,      // (8/10)*100
-        interes: 75.0,         // (6/8)*100
-        cierre: 66.7,          // (4/6)*100
-        global: 40.0           // (4/10)*100
+        asistencia: 0,
+        interes: 0,
+        cierre: 0,
+        global: 0
+    },
+    analisisPerdidas: {
+        no_asistio: 0,
+        no_interesado: 0
     }
 };
 
 const CloserDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState(null);
+    const [tareas, setTareas] = useState([]);
+    const [loadingTareas, setLoadingTareas] = useState(false);
     const [usandoMock, setUsandoMock] = useState(false);
 
-    const cargarDatos = async () => {
+    // Función para sanitizar datos y evitar NaN
+    const sanitizeData = (rawData) => {
+        if (!rawData) return INITIAL_DATA;
+
+        const getNumero = (val) => {
+            const num = parseFloat(val);
+            return isNaN(num) || num === null ? 0 : num;
+        };
+
+        return {
+            ...rawData,
+            embudo: {
+                reunion_agendada: getNumero(rawData?.embudo?.reunion_agendada),
+                reunion_realizada: getNumero(rawData?.embudo?.reunion_realizada),
+                propuesta_enviada: getNumero(rawData?.embudo?.propuesta_enviada),
+                venta_ganada: getNumero(rawData?.embudo?.venta_ganada)
+            },
+            metricas: {
+                reuniones: {
+                    hoy: getNumero(rawData?.metricas?.reuniones?.hoy),
+                    pendientes: getNumero(rawData?.metricas?.reuniones?.pendientes),
+                    realizadas: getNumero(rawData?.metricas?.reuniones?.realizadas),
+                    realizadasHoy: getNumero(rawData?.metricas?.reuniones?.realizadasHoy),
+                    propuestasHoy: getNumero(rawData?.metricas?.reuniones?.propuestasHoy)
+                },
+                ventas: {
+                    mes: getNumero(rawData?.metricas?.ventas?.mes),
+                    montoMes: getNumero(rawData?.metricas?.ventas?.montoMes),
+                    totales: getNumero(rawData?.metricas?.ventas?.totales),
+                    montoTotal: getNumero(rawData?.metricas?.ventas?.montoTotal),
+                    ventasHoy: getNumero(rawData?.metricas?.ventas?.ventasHoy)
+                },
+                clientes: {
+                    totales: getNumero(rawData?.metricas?.clientes?.totales)
+                },
+                negociaciones: {
+                    activas: getNumero(rawData?.metricas?.negociaciones?.activas)
+                }
+            },
+            tasasConversion: {
+                asistencia: getNumero(rawData?.tasasConversion?.asistencia),
+                interes: getNumero(rawData?.tasasConversion?.interes),
+                cierre: getNumero(rawData?.tasasConversion?.cierre),
+                global: getNumero(rawData?.tasasConversion?.global)
+            },
+            analisisPerdidas: {
+                no_asistio: getNumero(rawData?.analisisPerdidas?.no_asistio),
+                no_interesado: getNumero(rawData?.analisisPerdidas?.no_interesado)
+            }
+        };
+    };
+
+    const getAuthHeaders = () => ({
+        'x-auth-token': localStorage.getItem('token') || ''
+    });
+
+    const cargarDatos = async (silent = false) => {
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
             const token = localStorage.getItem('token');
 
             if (!token) {
-                setData(MOCK_DATA);
+                setData(INITIAL_DATA);
                 setUsandoMock(true);
                 setLoading(false);
                 return;
@@ -47,23 +111,66 @@ const CloserDashboard = () => {
 
             try {
                 const res = await axios.get(`${API_URL}/api/closer/dashboard`, config);
-                setData(res.data);
+                setData(sanitizeData(res.data));
                 setUsandoMock(false);
             } catch (error) {
-                console.log('⚠️ Usando datos mock:', error.message);
-                setData(MOCK_DATA);
+                console.log('⚠️ Usando datos iniciales (sin backend):', error.message);
+                setData(INITIAL_DATA);
                 setUsandoMock(true);
             }
         } catch (error) {
-            setData(MOCK_DATA);
+            setData(INITIAL_DATA);
             setUsandoMock(true);
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
+        }
+    };
+
+    const cargarProximasReuniones = async (silent = false) => {
+        if (!silent) setLoadingTareas(true);
+        try {
+            const response = await axios.get(`${API_URL}/api/closer/calendario`, { headers: getAuthHeaders() });
+
+            const ahora = new Date();
+
+            // 1. Filtrar solo las reuniones que NO han pasado (de ahora en adelante)
+            // 2. Filtrar que sigan pendientes (por si la API trae algo más)
+            const proximas = response.data.filter(r => {
+                const fecha = new Date(r.fecha);
+                const esPendiente = r.resultado === 'pendiente' || !r.resultado;
+                return fecha >= ahora && esPendiente;
+            });
+
+            // 3. Ordenar por fecha (más cercanas primero)
+            proximas.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+            // 4. Tomar solo las top 3
+            setTareas(proximas.slice(0, 3));
+        } catch (error) {
+            console.error('Error al cargar próximas reuniones:', error);
+        } finally {
+            if (!silent) setLoadingTareas(false);
         }
     };
 
     useEffect(() => {
         cargarDatos();
+        cargarProximasReuniones();
+        const interval = setInterval(() => {
+            cargarDatos(true);
+            cargarProximasReuniones(true);
+        }, 5 * 60 * 1000);
+
+        socket.on('prospectos_actualizados', (obj) => {
+            console.log('socket: prospectos actualizados detectado', obj);
+            cargarDatos(true);
+            cargarProximasReuniones(true);
+        });
+
+        return () => {
+            clearInterval(interval);
+            socket.off('prospectos_actualizados');
+        };
     }, []);
 
     if (loading) {
@@ -77,6 +184,8 @@ const CloserDashboard = () => {
         );
     }
 
+    if (!data) return null;
+
     return (
         <div className="h-full flex flex-col p-5 overflow-hidden">
             <div className="flex-1 flex flex-col space-y-4 overflow-hidden min-h-0">
@@ -88,8 +197,8 @@ const CloserDashboard = () => {
                             Embudo de Ventas
                         </h2>
                         {usandoMock && (
-                            <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-md border border-yellow-200 font-semibold">
-                                Datos de demostración
+                            <span className="px-3 py-1 bg-gray-100 text-gray-500 text-xs rounded-md border border-gray-200 font-semibold">
+                                Sin datos
                             </span>
                         )}
                     </div>
@@ -102,9 +211,9 @@ const CloserDashboard = () => {
                                 contadorHoy: data.metricas.reuniones.hoy,
                                 labelContador: 'hoy',
                                 cantidadExito: data.embudo.reunion_realizada,
-                                cantidadPerdida: data.embudo.reunion_agendada - data.embudo.reunion_realizada,
-                                porcentajeExito: data.tasasConversion.asistencia,
-                                porcentajePerdida: (100 - data.tasasConversion.asistencia).toFixed(1),
+                                cantidadPerdida: data.analisisPerdidas.no_asistio,
+                                porcentajeExito: Math.round(data.tasasConversion.asistencia) || 0,
+                                porcentajePerdida: data.embudo.reunion_agendada > 0 ? ((data.analisisPerdidas.no_asistio / data.embudo.reunion_agendada) * 100).toFixed(1) : 0,
                                 labelExito: 'asisten',
                                 labelPerdida: 'no asisten'
                             },
@@ -112,10 +221,12 @@ const CloserDashboard = () => {
                                 etapa: 'Reuniones Realizadas',
                                 cantidad: data.embudo.reunion_realizada,
                                 color: 'bg-cyan-500',
+                                contadorHoy: data.metricas.reuniones.realizadasHoy,
+                                labelContador: 'hoy',
                                 cantidadExito: data.embudo.propuesta_enviada,
-                                cantidadPerdida: data.embudo.reunion_realizada - data.embudo.propuesta_enviada,
-                                porcentajeExito: data.tasasConversion.interes,
-                                porcentajePerdida: (100 - data.tasasConversion.interes).toFixed(1),
+                                cantidadPerdida: data.analisisPerdidas.no_interesado,
+                                porcentajeExito: Math.round(data.tasasConversion.interes) || 0,
+                                porcentajePerdida: data.embudo.reunion_realizada > 0 ? ((data.analisisPerdidas.no_interesado / data.embudo.reunion_realizada) * 100).toFixed(1) : 0,
                                 labelExito: 'piden propuesta',
                                 labelPerdida: 'no interesados'
                             },
@@ -123,17 +234,21 @@ const CloserDashboard = () => {
                                 etapa: 'Propuestas Enviadas',
                                 cantidad: data.embudo.propuesta_enviada,
                                 color: 'bg-orange-500',
+                                contadorHoy: data.metricas.reuniones.propuestasHoy,
+                                labelContador: 'hoy',
                                 cantidadExito: data.embudo.venta_ganada,
                                 cantidadPerdida: data.embudo.propuesta_enviada - data.embudo.venta_ganada,
-                                porcentajeExito: data.tasasConversion.cierre,
-                                porcentajePerdida: (100 - data.tasasConversion.cierre).toFixed(1),
+                                porcentajeExito: Math.round(data.tasasConversion.cierre) || 0,
+                                porcentajePerdida: data.embudo.propuesta_enviada > 0 ? (((data.embudo.propuesta_enviada - data.embudo.venta_ganada) / data.embudo.propuesta_enviada) * 100).toFixed(1) : 0,
                                 labelExito: 'aceptada',
-                                labelPerdida: 'rechazada'
+                                labelPerdida: 'rechazada o en proceso'
                             },
                             {
                                 etapa: 'Ventas Cerradas',
                                 cantidad: data.embudo.venta_ganada,
                                 color: 'bg-green-500',
+                                contadorHoy: data.metricas.ventas.ventasHoy,
+                                labelContador: 'hoy',
                                 cantidadExito: data.embudo.venta_ganada,
                                 porcentajeExito: 100,
                                 labelExito: 'ganadas'
@@ -156,46 +271,36 @@ const CloserDashboard = () => {
                             </div>
 
                             <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-md flex flex-col items-center justify-center">
-                                <Users className="w-8 h-8 text-orange-600 mb-2" />
-                                <span className="text-3xl font-bold text-gray-900 mb-1">{data.embudo.propuesta_enviada}</span>
-                                <p className="text-gray-600 text-xs font-semibold text-center">Propuestas Enviadas</p>
-                            </div>
-
-                            <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-md flex flex-col items-center justify-center">
                                 <CheckCircle2 className="w-8 h-8 text-cyan-600 mb-2" />
-                                <span className="text-3xl font-bold text-gray-900 mb-1">{data.tasasConversion.asistencia}%</span>
+                                <span className="text-3xl font-bold text-gray-900 mb-1">{Math.round(data.tasasConversion.asistencia) || 0}%</span>
                                 <p className="text-gray-600 text-xs font-semibold text-center">Tasa de Asistencia</p>
                             </div>
 
                             {/* Row 2 */}
                             <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-md flex flex-col items-center justify-center">
                                 <TrendingUp className="w-8 h-8 text-green-600 mb-2" />
-                                <span className="text-3xl font-bold text-gray-900 mb-1">{data.tasasConversion.cierre}%</span>
+                                <span className="text-3xl font-bold text-gray-900 mb-1">{Math.round(data.tasasConversion.cierre) || 0}%</span>
                                 <p className="text-gray-600 text-xs font-semibold text-center">Tasa de Cierre</p>
                             </div>
 
-                            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 shadow-md col-span-2">
-                                <h3 className="font-bold text-gray-900 text-sm mb-3 flex items-center gap-2">
-                                    <Calendar className="w-5 h-5 text-blue-600" />
-                                    Próximas Reuniones
-                                </h3>
-                                <div className="grid grid-cols-3 gap-3">
-                                    <div className="border-l-2 border-blue-500 pl-2">
-                                        <p className="text-xs font-semibold text-gray-900">10:00 AM</p>
-                                        <p className="text-xs text-gray-600">Tech Solutions</p>
-                                    </div>
-                                    <div className="border-l-2 border-orange-500 pl-2">
-                                        <p className="text-xs font-semibold text-gray-900">3:00 PM</p>
-                                        <p className="text-xs text-gray-600">Marketing Pro</p>
-                                    </div>
-                                    <div className="border-l-2 border-green-500 pl-2">
-                                        <p className="text-xs font-semibold text-gray-900">5:00 PM</p>
-                                        <p className="text-xs text-gray-600">Innovation Corp</p>
-                                    </div>
-                                </div>
+                            <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-md flex flex-col items-center justify-center">
+                                <DollarSign className="w-8 h-8 text-emerald-600 mb-2" />
+                                <span className="text-2xl font-bold text-gray-900 mb-1">${(data.metricas.ventas.montoMes || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}</span>
+                                <p className="text-gray-600 text-xs font-semibold text-center">Monto del Mes</p>
                             </div>
 
+                            {/* Row 3 */}
+                            <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-md flex flex-col items-center justify-center">
+                                <Award className="w-8 h-8 text-purple-600 mb-2" />
+                                <span className="text-3xl font-bold text-gray-900 mb-1">{Math.round(data.tasasConversion.interes) || 0}%</span>
+                                <p className="text-gray-600 text-xs font-semibold text-center">Tasa de Interés</p>
+                            </div>
 
+                            <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-md flex flex-col items-center justify-center">
+                                <TrendingUp className="w-8 h-8 text-pink-600 mb-2" />
+                                <span className="text-3xl font-bold text-gray-900 mb-1">{data.metricas.ventas.mes}</span>
+                                <p className="text-gray-600 text-xs font-semibold text-center">Ventas del Mes</p>
+                            </div>
                         </div>
                     </div>
 
@@ -203,61 +308,86 @@ const CloserDashboard = () => {
                     <div className="lg:col-span-2 flex flex-col min-h-0">
                         <div className="flex-1 bg-white border border-gray-200 rounded-xl p-6 shadow-md flex flex-col overflow-hidden">
                             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2 flex-shrink-0">
-                                <Target className="w-6 h-6 text-green-600" />
-                                Tareas y Metas
+                                <Calendar className="w-6 h-6 text-blue-600" />
+                                Próximas Reuniones
                             </h2>
 
-                            <div className="flex-1 space-y-4 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin', scrollbarColor: '#8bc34a #f3f4f6' }}>
-                                {/* Meta del Mes */}
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h3 className="font-bold text-gray-900 text-sm">Meta del Mes</h3>
-                                        <Award className="w-5 h-5 text-green-600" />
+                            <div className="flex-1 space-y-4 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin', scrollbarColor: '#3b82f6 #f3f4f6' }}>
+                                {loadingTareas ? (
+                                    <div className="flex justify-center items-center h-20">
+                                        <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
                                     </div>
-                                    <div className="mb-2">
-                                        <div className="flex justify-between text-xs text-gray-600 mb-1">
-                                            <span>{data.metricas.ventas.mes} / 10 ventas</span>
-                                            <span>{(data.metricas.ventas.mes / 10 * 100).toFixed(0)}%</span>
-                                        </div>
-                                        <div className="w-full bg-gray-200 rounded-full h-2">
-                                            <div
-                                                className="bg-green-500 h-2 rounded-full transition-all"
-                                                style={{ width: `${(data.metricas.ventas.mes / 10 * 100)}%` }}
-                                            ></div>
-                                        </div>
+                                ) : tareas.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
+                                        <Calendar className="w-10 h-10 opacity-20" />
+                                        <p className="text-sm">No tienes reuniones próximas programadas.</p>
                                     </div>
-                                    <p className="text-xs text-gray-600">Faltan {10 - data.metricas.ventas.mes} ventas para completar</p>
-                                </div>
+                                ) : (
+                                    tareas.map((t) => {
+                                        // Extraer links de Google Meet o Zoom de las notas
+                                        let meetLink = null;
+                                        if (t.notas) {
+                                            const meetMatch = t.notas.match(/https:\/\/(?:meet\.google\.com|us\d+web\.zoom\.us\/j)\/[^\s]+/i);
+                                            if (meetMatch) meetLink = meetMatch[0];
+                                        }
 
-                                {/* Tareas Pendientes */}
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                                    <h3 className="font-bold text-gray-900 text-sm mb-3 flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-green-600" />
-                                        Tareas de Hoy
-                                    </h3>
-                                    <div className="space-y-2">
-                                        <div className="flex items-start gap-2 text-xs">
-                                            <input type="checkbox" className="mt-0.5 accent-green-600" />
-                                            <span className="text-gray-700">Llamar a 3 clientes con propuestas pendientes</span>
-                                        </div>
-                                        <div className="flex items-start gap-2 text-xs">
-                                            <input type="checkbox" className="mt-0.5 accent-green-600" />
-                                            <span className="text-gray-700">Preparar presentación para reunión de las 3pm</span>
-                                        </div>
-                                        <div className="flex items-start gap-2 text-xs">
-                                            <input type="checkbox" className="mt-0.5 accent-green-600" />
-                                            <span className="text-gray-700">Enviar seguimiento a 2 clientes</span>
-                                        </div>
-                                        <div className="flex items-start gap-2 text-xs">
-                                            <input type="checkbox" defaultChecked className="mt-0.5 accent-green-600" />
-                                            <span className="text-gray-700 line-through">Revisar emails de la mañana</span>
-                                        </div>
-                                    </div>
-                                </div>
+                                        return (
+                                            <div key={t.id || t._id} className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex flex-col group hover:border-blue-300 transition-colors shadow-sm gap-2">
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                                            <h3 className="font-bold text-gray-900 text-sm truncate">
+                                                                {t.cliente?.nombres} {t.cliente?.apellidoPaterno}
+                                                            </h3>
+                                                        </div>
+                                                        {t.cliente?.empresa && (
+                                                            <p className="text-xs text-gray-500 truncate flex items-center gap-1">
+                                                                🏢 {t.cliente.empresa}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div className="bg-blue-100 text-blue-700 font-bold text-xs px-2 py-1 rounded-md shrink-0 border border-blue-200">
+                                                        {new Date(t.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                </div>
 
+                                                <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                                                    {t.cliente?.telefono && (
+                                                        <span className="flex items-center gap-1 truncate text-[10px]">
+                                                            📞 {t.cliente.telefono}
+                                                        </span>
+                                                    )}
+                                                    {t.cliente?.correo && (
+                                                        <span className="flex items-center gap-1 truncate text-[10px]">
+                                                            📧 {t.cliente.correo}
+                                                        </span>
+                                                    )}
+                                                </div>
 
+                                                {t.notas && (
+                                                    <div className="mt-2 text-xs text-gray-600 bg-white p-2 rounded border border-gray-100 italic">
+                                                        {t.notas}
+                                                    </div>
+                                                )}
 
-
+                                                {meetLink && (
+                                                    <a
+                                                        href={meetLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 text-xs transition-colors"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                        </svg>
+                                                        Unirse a la Reunión
+                                                    </a>
+                                                )}
+                                            </div>
+                                        )
+                                    })
+                                )}
                             </div>
                         </div>
                     </div>
