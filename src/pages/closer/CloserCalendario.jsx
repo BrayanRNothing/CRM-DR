@@ -5,78 +5,7 @@ import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
 import { getToken } from '../../utils/authUtils';
 
-const MOCK_REUNIONES = [
-    {
-        id: 1,
-        fecha: '2026-02-16T14:00:00',
-        cliente: {
-            nombres: 'María',
-            apellidoPaterno: 'Hernández',
-            empresa: 'Innovación Digital',
-            telefono: '555-0104',
-            correo: 'maria@innovacion.com'
-        },
-        prospector: 'Alex Mendoza',
-        notas: 'Cliente interesado en solución empresarial',
-        estado: 'pendiente'
-    },
-    {
-        id: 2,
-        fecha: '2026-02-16T16:30:00',
-        cliente: {
-            nombres: 'Pedro',
-            apellidoPaterno: 'Sánchez',
-            empresa: 'Desarrollo Web',
-            telefono: '555-0105',
-            correo: 'pedro@desarrolloweb.com'
-        },
-        prospector: 'Angel Torres',
-        notas: 'Seguimiento de propuesta enviada',
-        estado: 'pendiente'
-    },
-    {
-        id: 3,
-        fecha: '2026-02-17T10:00:00',
-        cliente: {
-            nombres: 'Laura',
-            apellidoPaterno: 'Martínez',
-            empresa: 'Consultoría Estratégica',
-            telefono: '555-0106',
-            correo: 'laura@consultoria.com'
-        },
-        prospector: 'Alex Mendoza',
-        notas: 'Primera reunión - presentación de servicios',
-        estado: 'pendiente'
-    },
-    {
-        id: 4,
-        fecha: '2026-02-15T15:00:00',
-        cliente: {
-            nombres: 'Jorge',
-            apellidoPaterno: 'Ramírez',
-            empresa: 'Tech Innovations',
-            telefono: '555-0107',
-            correo: 'jorge@techinnovations.com'
-        },
-        prospector: 'Angel Torres',
-        notas: 'Reunión completada - cliente interesado',
-        estado: 'realizada'
-    },
-    {
-        id: 5,
-        fecha: '2026-02-18T11:00:00',
-        cliente: {
-            nombres: 'Ana',
-            apellidoPaterno: 'González',
-            empresa: 'Marketing Pro',
-            telefono: '555-0108',
-            correo: 'ana@marketingpro.com'
-        },
-        prospector: 'Alex Mendoza',
-        notas: 'Seguimiento de cotización',
-        estado: 'pendiente'
-    }
-];
+
 
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];

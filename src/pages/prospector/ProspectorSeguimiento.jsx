@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Phone,
@@ -122,7 +122,6 @@ const ProspectorSeguimiento = () => {
     const rolePath = location.pathname.startsWith('/closer') ? 'closer' : 'prospector';
     const [prospectos, setProspectos] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [usandoMock, setUsandoMock] = useState(false);
     // Filtros
     const [busquedaProspecto, setBusquedaProspecto] = useState('');
     const [filtroEtapa, setFiltroEtapa] = useState('todos'); // 'todos', 'prospecto_nuevo', 'reunion_agendada', etc.
@@ -281,10 +280,8 @@ const ProspectorSeguimiento = () => {
         try {
             const resProspectos = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
             setProspectos(resProspectos.data);
-            setUsandoMock(false);
         } catch (error) {
             console.error('Error al cargar:', error);
-            setUsandoMock(true);
             setProspectos([]);
         } finally {
             setLoading(false);
@@ -1705,11 +1702,6 @@ const ProspectorSeguimiento = () => {
                         </p>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
-                        {usandoMock && (
-                            <span className="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-lg">
-                                Datos de demostración
-                            </span>
-                        )}
                         <button
                             onClick={handleExportCsv}
                             className="flex items-center gap-2 px-4 py-2 bg-white border border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors font-medium text-sm"

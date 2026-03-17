@@ -1,36 +1,33 @@
 import React from 'react';
 import { BarChart3, TrendingUp, Calendar, DollarSign, Users, Award, AlertTriangle } from 'lucide-react';
 
-const MOCK_ESTADISTICAS = {
-    totalClientes: 28,
-    totalReuniones: 22,
-    reunionesRealizadas: 18,
-    reunionesNoAsistidas: 4,
-    totalVentas: 7,
-    montoTotal: 285000,
-    valorPromedio: 40714,
-    tasaAsistencia: 81.8,
-    tasaCierre: 38.9,
-    tasaGlobal: 25.0,
+const INITIAL_STATS = {
+    totalClientes: 0,
+    totalReuniones: 0,
+    reunionesRealizadas: 0,
+    reunionesNoAsistidas: 0,
+    totalVentas: 0,
+    montoTotal: 0,
+    valorPromedio: 0,
+    tasaAsistencia: 0,
+    tasaCierre: 0,
+    tasaGlobal: 0,
     distribucion: {
-        reunion_agendada: 8,
-        reunion_realizada: 6,
-        en_negociacion: 5,
-        venta_ganada: 7,
-        perdido: 2
+        reunion_agendada: 0,
+        reunion_realizada: 0,
+        en_negociacion: 0,
+        venta_ganada: 0,
+        perdido: 0
     },
     motivosPerdida: {
-        no_asistio: 4,
-        no_interesado: 2
+        no_asistio: 0,
+        no_interesado: 0
     },
-    rendimientoMensual: [
-        { mes: 'Ene', reuniones: 18, ventas: 5, tasa: 27.8 },
-        { mes: 'Feb', reuniones: 22, ventas: 7, tasa: 31.8 }
-    ]
+    rendimientoMensual: []
 };
 
 const CloserEstadisticas = () => {
-    const stats = MOCK_ESTADISTICAS;
+    const stats = INITIAL_STATS;
 
     return (
         <div className="min-h-screen p-6">
@@ -41,9 +38,6 @@ const CloserEstadisticas = () => {
                         <h1 className="text-3xl font-bold text-white">Estadísticas Detalladas</h1>
                         <p className="text-gray-400 mt-1">Análisis completo de tu rendimiento como closer</p>
                     </div>
-                    <span className="px-3 py-1 bg-yellow-500/20 text-yellow-400 text-sm rounded-md">
-                        Datos de demostración
-                    </span>
                 </div>
 
                 {/* KPIs Principales */}

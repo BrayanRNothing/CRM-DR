@@ -37,7 +37,7 @@ const CloserDashboard = () => {
     const [data, setData] = useState(null);
     const [tareas, setTareas] = useState([]);
     const [loadingTareas, setLoadingTareas] = useState(false);
-    const [usandoMock, setUsandoMock] = useState(false);
+
 
     // Función para sanitizar datos y evitar NaN
     const sanitizeData = (rawData) => {
@@ -102,7 +102,6 @@ const CloserDashboard = () => {
 
             if (!token) {
                 setData(INITIAL_DATA);
-                setUsandoMock(true);
                 setLoading(false);
                 return;
             }
@@ -112,15 +111,12 @@ const CloserDashboard = () => {
             try {
                 const res = await axios.get(`${API_URL}/api/closer/dashboard`, config);
                 setData(sanitizeData(res.data));
-                setUsandoMock(false);
             } catch (error) {
                 console.log('⚠️ Usando datos iniciales (sin backend):', error.message);
                 setData(INITIAL_DATA);
-                setUsandoMock(true);
             }
         } catch (error) {
             setData(INITIAL_DATA);
-            setUsandoMock(true);
         } finally {
             if (!silent) setLoading(false);
         }
@@ -196,11 +192,6 @@ const CloserDashboard = () => {
                             <BarChart3 className="w-6 h-6 text-green-600" />
                             Embudo de Ventas
                         </h2>
-                        {usandoMock && (
-                            <span className="px-3 py-1 bg-gray-100 text-gray-500 text-xs rounded-md border border-gray-200 font-semibold">
-                                Sin datos
-                            </span>
-                        )}
                     </div>
                     <FunnelVisual
                         stages={[

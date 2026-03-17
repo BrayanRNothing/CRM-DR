@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AnimatedGridBackground from '../../components/ui/AnimatedGridBackground';
-import updmLogo from '../../assets/UPDMLOGO4K.png';
+
 
 
 // URL DEL BACKEND (Ajústala si pruebas en local)
@@ -140,11 +140,9 @@ const Register = () => {
                                     Crea tu cuenta
                                 </div>
                                 <div className="mt-8 flex items-center">
-                                    <img
-                                        src={updmLogo}
-                                        alt="UPDM"
-                                        className="h-32 w-auto drop-shadow-xl"
-                                    />
+                                    <div className="text-5xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent drop-shadow-xl py-4">
+                                        Sistema CRM
+                                    </div>
                                 </div>
                                 <p className="mt-6 text-lg text-slate-800 font-medium leading-relaxed drop-shadow-sm">
                                     Registra tus datos y empieza a gestionar clientes y servicios en minutos.

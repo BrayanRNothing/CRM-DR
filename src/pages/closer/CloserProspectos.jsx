@@ -1,44 +1,8 @@
 import React, { useState } from 'react';
 import { Search, User, Phone, Mail, Calendar } from 'lucide-react';
 
-const MOCK_PROSPECTOS = [
-    {
-        id: 1,
-        nombres: 'María',
-        apellidoPaterno: 'Hernández',
-        empresa: 'Innovación Digital',
-        telefono: '555-0104',
-        correo: 'maria@innovacion.com',
-        etapaEmbudo: 'reunion_agendada',
-        prospector: 'Alex Mendoza',
-        fechaTransferencia: '2026-02-10'
-    },
-    {
-        id: 2,
-        nombres: 'Pedro',
-        apellidoPaterno: 'Sánchez',
-        empresa: 'Desarrollo Web',
-        telefono: '555-0105',
-        correo: 'pedro@desarrolloweb.com',
-        etapaEmbudo: 'en_negociacion',
-        prospector: 'Angel Torres',
-        fechaTransferencia: '2026-02-08'
-    },
-    {
-        id: 3,
-        nombres: 'Laura',
-        apellidoPaterno: 'Martínez',
-        empresa: 'Consultoría Estratégica',
-        telefono: '555-0106',
-        correo: 'laura@consultoria.com',
-        etapaEmbudo: 'reunion_realizada',
-        prospector: 'Alex Mendoza',
-        fechaTransferencia: '2026-02-09'
-    }
-];
-
 const CloserProspectos = () => {
-    const [prospectos] = useState(MOCK_PROSPECTOS);
+    const [prospectos] = useState([]);
     const [busqueda, setBusqueda] = useState('');
 
     const prospectosFiltrados = prospectos.filter(p =>
@@ -73,9 +37,6 @@ const CloserProspectos = () => {
                         <h1 className="text-3xl font-bold text-white">Prospectos Asignados</h1>
                         <p className="text-gray-400 mt-1">{prospectos.length} clientes recibidos de prospectores</p>
                     </div>
-                    <span className="px-3 py-1 bg-yellow-500/20 text-yellow-400 text-sm rounded-md">
-                        Datos de demostración
-                    </span>
                 </div>
 
                 <div className="relative">

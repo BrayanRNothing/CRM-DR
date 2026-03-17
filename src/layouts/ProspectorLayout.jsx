@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom';
 import AnimatedGridBackground from '../components/ui/AnimatedGridBackground';
 import FloatingSidebar from '../components/ui/FloatingSidebar';
 import { getUser } from '../utils/authUtils';
-import logoUPDM from '../assets/UPDMLOGO4K.png';
+
 
 const ProspectorLayout = () => {
     const [usuario, setUsuario] = useState(null);
@@ -104,9 +104,8 @@ const ProspectorLayout = () => {
                 <FloatingSidebar
                     menuItems={menuItems}
                     userInfo={{ ...usuario, rol: 'Prospector' }}
-                    title="UPDM"
+                    title="CRM"
                     subtitle="Prospector"
-                    logo={logoUPDM}
                     onCollapseChange={setSidebarCollapsed}
                     mode="light"
                 />

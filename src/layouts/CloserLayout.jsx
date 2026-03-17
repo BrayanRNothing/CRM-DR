@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom';
 import AnimatedGridBackground from '../components/ui/AnimatedGridBackground';
 import FloatingSidebar from '../components/ui/FloatingSidebar';
 import { getUser } from '../utils/authUtils';
-import logoUPDM from '../assets/UPDMLOGO4K.png';
+
 
 const CloserLayout = () => {
     const [usuario, setUsuario] = useState(null);
@@ -113,9 +113,8 @@ const CloserLayout = () => {
                 <FloatingSidebar
                     menuItems={menuItems}
                     userInfo={{ ...usuario, rol: 'Closer' }}
-                    title="UPDM"
+                    title="CRM"
                     subtitle="Closing Manager"
-                    logo={logoUPDM}
                     onCollapseChange={setSidebarCollapsed}
                     mode="light"
                 />

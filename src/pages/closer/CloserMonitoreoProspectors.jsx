@@ -9,7 +9,7 @@ const CloserMonitoreoProspectors = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [periodo, setPeriodo] = useState('diario');
-    const [usandoMock, setUsandoMock] = useState(false);
+
     const [selectedProspectorId, setSelectedProspectorId] = useState(null);
     const [viewMode, setViewMode] = useState('cards');
     const [expandedRows, setExpandedRows] = useState(new Set());
@@ -29,51 +29,6 @@ const CloserMonitoreoProspectors = () => {
         });
     };
 
-    const mockData = {
-        periodo: 'diario',
-        totalProspectors: 3,
-        prospectors: [
-            {
-                prospector: { id: '1', nombre: 'Juan Pérez', correo: 'juan@example.com' },
-                metricas: {
-                    llamadas: { total: 15, exitosas: 8 },
-                    citas: { agendadas: 2, transferidas: 2 },
-                    prospectos: { total: 45, nuevos: 5, revisados: 15 },
-                    tasas: { contacto: 53.3, agendamiento: 25.0 }
-                },
-                distribucion: { prospecto_nuevo: 20, en_contacto: 15, reunion_agendada: 10 },
-                rendimiento: { estado: 'excelente', color: 'green', descripcion: 'Rendimiento excelente - Cumpliendo metas' },
-                detalleHoy: { llamadas: 15, llamadasExitosas: 8, mensajes: 2, citasAgendadas: 2, prospectosRegistrados: 5, estado: 'excelente', color: 'green' },
-                detalleSemana: { llamadas: 65, llamadasExitosas: 30, mensajes: 10, citasAgendadas: 9, prospectosRegistrados: 20, estado: 'excelente', color: 'green' }
-            },
-            {
-                prospector: { id: '2', nombre: 'María García', correo: 'maria@example.com' },
-                metricas: {
-                    llamadas: { total: 10, exitosas: 5 },
-                    citas: { agendadas: 1, transferidas: 1 },
-                    prospectos: { total: 38, nuevos: 3, revisados: 10 },
-                    tasas: { contacto: 50.0, agendamiento: 20.0 }
-                },
-                distribucion: { prospecto_nuevo: 18, en_contacto: 12, reunion_agendada: 8 },
-                rendimiento: { estado: 'bueno', color: 'yellow', descripcion: 'Buen rendimiento - En camino' },
-                detalleHoy: { llamadas: 8, llamadasExitosas: 3, mensajes: 1, citasAgendadas: 1, prospectosRegistrados: 2, estado: 'bueno', color: 'yellow' },
-                detalleSemana: { llamadas: 45, llamadasExitosas: 20, mensajes: 5, citasAgendadas: 5, prospectosRegistrados: 12, estado: 'bueno', color: 'yellow' }
-            },
-            {
-                prospector: { id: '3', nombre: 'Carlos López', correo: 'carlos@example.com' },
-                metricas: {
-                    llamadas: { total: 5, exitosas: 2 },
-                    citas: { agendadas: 0, transferidas: 0 },
-                    prospectos: { total: 30, nuevos: 2, revisados: 5 },
-                    tasas: { contacto: 40.0, agendamiento: 0 }
-                },
-                distribucion: { prospecto_nuevo: 15, en_contacto: 10, reunion_agendada: 5 },
-                rendimiento: { estado: 'bajo', color: 'orange', descripcion: 'Rendimiento bajo - Necesita atención' },
-                detalleHoy: { llamadas: 2, llamadasExitosas: 0, mensajes: 0, citasAgendadas: 0, prospectosRegistrados: 0, estado: 'critico', color: 'red' },
-                detalleSemana: { llamadas: 15, llamadasExitosas: 5, mensajes: 2, citasAgendadas: 1, prospectosRegistrados: 4, estado: 'bajo', color: 'orange' }
-            }
-        ]
-    };
 
     const etapaLabel = (etapa) => {
         const etiquetas = {
@@ -118,11 +73,9 @@ const CloserMonitoreoProspectors = () => {
                 headers: { 'x-auth-token': localStorage.getItem('token') }
             });
             setData(response.data);
-            setUsandoMock(false);
         } catch (error) {
             console.error('Error al cargar monitoreo:', error);
-            setData(mockData);
-            setUsandoMock(true);
+            setData({ totalProspectors: 0, prospectors: [] });
         } finally {
             if (!silent) setLoading(false);
         }
@@ -510,7 +463,6 @@ const CloserMonitoreoProspectors = () => {
                         <h1 className="text-lg font-bold text-gray-900 leading-tight">Monitoreo de Prospectors</h1>
                         <p className="text-xs text-gray-400">
                             {data.totalProspectors} prospectors activos
-                            {usandoMock && <span className="ml-2 px-1.5 py-0.5 bg-amber-100 text-amber-600 rounded text-[10px] font-semibold">Demo</span>}
                         </p>
                     </div>
                 </div>
