@@ -1,7 +1,7 @@
-require('dotenv').config();
+require('dotenv').config({ path: '../.env' });
 const express = require('express');
 const cors = require('cors');
-
+require('./config/database'); // Inicializa PostgreSQL
 
 const app = express();
 
@@ -25,7 +25,7 @@ app.use('/api/closer/prospectors', require('./routes/prospector-monitoring'));
 
 // Ruta de prueba
 app.get('/', (req, res) => {
-    res.json({ mensaje: '🚀 API CRM-DR funcionando correctamente' });
+    res.json({ mensaje: '🚀 API CRM Infiniguard SYS funcionando correctamente' });
 });
 
 // Manejo de errores 404

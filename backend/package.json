@@ -1,22 +1,27 @@
 {
-  "name": "crm-dr-backend",
+  "name": "backend",
   "version": "1.0.0",
-  "description": "Backend API para CRM-DR",
-  "main": "server.js",
+  "description": "",
+  "main": "index.js",
   "engines": {
     "node": ">=20.0.0"
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "seed": "node seed.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "pg": "^8.13.1",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3",
-    "pg": "^8.13.1"
+    "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

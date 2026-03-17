@@ -1,4 +1,4 @@
-# Backend CRM-DR
+# Backend CRM Infiniguard SYS
 
 API REST para el sistema CRM con autenticación JWT y control de roles.
 
