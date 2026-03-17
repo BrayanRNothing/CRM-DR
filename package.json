@@ -1,0 +1,59 @@
+{
+  "name": "crm-dr",
+  "private": true,
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BrayanRNothing/CRM-DR.git"
+  },
+  "bugs": {
+    "url": "https://github.com/BrayanRNothing/CRM-DR/issues"
+  },
+  "homepage": "https://github.com/BrayanRNothing/CRM-DR#readme",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "vercel-build": "vite build"
+  },
+  "dependencies": {
+    "@react-oauth/google": "^0.13.4",
+    "@tailwindcss/vite": "^4.1.17",
+    "axios": "^1.13.5",
+    "clsx": "^2.1.1",
+    "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
+    "express": "^5.2.1",
+    "firebase": "^12.9.0",
+    "framer-motion": "^12.34.0",
+    "gapi-script": "^1.2.0",
+    "jspdf": "^4.0.0",
+    "jspdf-autotable": "^5.0.7",
+    "lucide-react": "^0.561.0",
+    "mongoose": "^9.0.1",
+    "multer": "^2.0.2",
+    "react": "^19.2.0",
+    "react-day-picker": "^9.13.2",
+    "react-dom": "^19.2.0",
+    "react-hot-toast": "^2.6.0",
+    "react-router-dom": "^7.10.1",
+    "recharts": "^3.7.0",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss": "^4.1.17",
+    "three": "^0.181.2",
+    "vanta": "^0.5.24"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "vite": "^7.2.4"
+  }
+}
