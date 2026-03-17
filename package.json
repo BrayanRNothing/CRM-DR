@@ -16,7 +16,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "vercel-build": "vite build"
+    "vercel-build": "vite build",
+    "start": "cd backend && node server.js"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.4",

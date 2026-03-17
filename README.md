@@ -89,6 +89,19 @@ npm run dev
 - 🔒 **Seguridad**: Implementa validaciones y protección de rutas según tus necesidades.
 - 📱 **Responsive**: Todos los layouts están optimizados para móvil y desktop.
 
+## 🚀 Despliegue
+
+### Backend (Railway)
+1. Conecta tu repositorio de GitHub a Railway.
+2. Railway detectará el archivo `railway.json` automáticamente.
+3. Configura las variables de entorno en el dashboard de Railway (`DATABASE_URL`, `JWT_SECRET`, `PORT`).
+4. Genera un dominio público en Railway para tu API.
+
+### Frontend (Vercel)
+1. Conecta tu repositorio de GitHub a Vercel.
+2. Configura la variable `VITE_API_URL` con la URL del backend de Railway.
+3. Configura las variables de Firebase (`VITE_FIREBASE_*`).
+
 ## 🎯 Próximos Pasos Recomendados
 
 1. **Configurar Backend**: Conecta tu API/Backend
