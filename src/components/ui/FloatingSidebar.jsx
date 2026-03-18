@@ -5,7 +5,7 @@ import Avatar from './Avatar';
 
 const SIDEBAR_HINT_KEY = 'crm_sidebar_hint_seen';
 
-const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseChange, mode = 'light' }) => {
+const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', subtitle = 'Workspace', logo, onCollapseChange, mode = 'light' }) => {
     const location = useLocation();
     const [isCollapsed, setIsCollapsed] = useState(true);
     const [openAccordions, setOpenAccordions] = useState({});
@@ -47,6 +47,13 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
         : 'text-gray-500';
 
     const borderClass = isDark ? 'border-gray-800' : 'border-gray-100';
+    const initials = String(title)
+        .split(' ')
+        .filter(Boolean)
+        .map((w) => w[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase();
 
     return (
         <aside
@@ -54,16 +61,17 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                 }`}
         >
             {/* Header */}
-            <div className={`flex items-center p-4 border-b ${borderClass} ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+            <div className={`p-3 border-b ${borderClass}`}>
                 {isCollapsed ? (
                     <button
                         onClick={handleToggle}
                         className="relative flex items-center justify-center w-full group py-1"
                         title="Expandir menú"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-(--theme-500) to-(--theme-700) flex items-center justify-center text-white font-bold text-xl shadow-md transition-opacity duration-300 group-hover:opacity-20 text-center uppercase">
-                            {title.charAt(0)}
+                        <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-(--theme-500) via-(--theme-600) to-(--theme-700) flex items-center justify-center text-white font-black text-sm shadow-lg ring-1 ring-white/20 transition-all duration-300 group-hover:scale-95 group-hover:opacity-20 text-center uppercase">
+                            {logo ? logo : initials}
                         </div>
+                        <span className="absolute -bottom-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white" />
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <ChevronRight size={24} className={`${isDark ? 'text-white' : 'text-gray-800'}`} />
                         </div>
@@ -82,21 +90,34 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                         )}
                     </button>
                 ) : (
-                    <>
+                    <div className="flex items-center gap-2.5">
                         <button
                             onClick={handleToggle}
-                            className={`font-black tracking-tight text-2xl hover:opacity-80 transition-opacity bg-clip-text text-transparent bg-linear-to-r from-(--theme-600) to-(--theme-400) cursor-pointer focus:outline-none`}
+                            className="shrink-0 w-11 h-11 rounded-xl bg-linear-to-br from-(--theme-500) via-(--theme-600) to-(--theme-700) text-white shadow-md ring-1 ring-white/20 flex items-center justify-center font-black text-xs tracking-wide hover:scale-[0.98] transition-transform"
                             title="Contraer/Expandir menú"
                         >
-                            {title}
+                            {logo ? logo : initials}
                         </button>
                         <button
                             onClick={handleToggle}
-                            className={`p-1.5 rounded-lg transition-colors absolute right-4 ${hoverClasses}`}
+                            className="min-w-0 text-left group"
+                            title="Contraer/Expandir menú"
+                        >
+                            <p className="font-black tracking-tight text-lg leading-none bg-clip-text text-transparent bg-linear-to-r from-(--theme-600) to-(--theme-400) truncate">
+                                {title}
+                            </p>
+                            <p className={`text-[11px] font-semibold mt-1 leading-none truncate transition-opacity ${isDark ? 'text-gray-400 group-hover:text-gray-300' : 'text-gray-400 group-hover:text-gray-600'}`}>
+                                {subtitle}
+                            </p>
+                        </button>
+                        <button
+                            onClick={handleToggle}
+                            className={`ml-auto p-1.5 rounded-lg transition-colors ${hoverClasses}`}
+                            title="Contraer menú"
                         >
                             <ChevronLeft size={20} />
                         </button>
-                    </>
+                    </div>
                 )}
             </div>
 
