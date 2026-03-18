@@ -1634,29 +1634,10 @@ const ProspectorSeguimiento = () => {
                         </div>
 
                         {/* ===================== COLUMNA DERECHA: HISTORIAL ===================== */}
-                        <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden sticky top-6" style={{ height: 'calc(100vh - 8rem)' }}>
+                        <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden lg:sticky lg:top-6 h-[62vh] sm:h-[68vh] lg:h-[calc(100vh-9.5rem)] min-h-0">
                             <div className="p-5 border-b border-slate-100 bg-slate-50/50 rounded-t-xl flex items-center justify-between">
                                 <h3 className="font-bold text-gray-900 uppercase tracking-wider text-sm">Historial de interacciones</h3>
                                 <span className="text-xs bg-slate-200 text-slate-600 rounded-full px-2 py-0.5 font-semibold">{actividadesContext.length}</span>
-                            </div>
-                            <div className="p-4 border-b border-slate-100 bg-white space-y-2">
-                                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Registrar en mural</p>
-                                <div className="flex gap-2">
-                                    <textarea
-                                        value={muralTexto}
-                                        onChange={(e) => setMuralTexto(e.target.value)}
-                                        placeholder="Escribe una interacción rápida..."
-                                        className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-(--theme-400) focus:border-transparent outline-none"
-                                        rows={2}
-                                    />
-                                    <button
-                                        onClick={registrarEnMural}
-                                        disabled={guardandoMural || !muralTexto.trim()}
-                                        className="self-end px-3 py-2 bg-(--theme-600) text-white rounded-lg text-xs font-bold hover:bg-(--theme-700) disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {guardandoMural ? 'Guardando...' : 'Registrar'}
-                                    </button>
-                                </div>
                             </div>
                             <div
                                 className="flex-1 overflow-y-auto p-5 space-y-4 scrollbar-hide"
@@ -1717,6 +1698,25 @@ const ProspectorSeguimiento = () => {
                                         );
                                     })
                                 )}
+                            </div>
+                            <div className="p-4 border-t border-slate-100 bg-white space-y-2">
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Registrar en mural</p>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <textarea
+                                        value={muralTexto}
+                                        onChange={(e) => setMuralTexto(e.target.value)}
+                                        placeholder="Escribe una interacción rápida..."
+                                        className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-(--theme-400) focus:border-transparent outline-none"
+                                        rows={2}
+                                    />
+                                    <button
+                                        onClick={registrarEnMural}
+                                        disabled={guardandoMural || !muralTexto.trim()}
+                                        className="sm:self-end px-3 py-2 bg-(--theme-600) text-white rounded-lg text-xs font-bold hover:bg-(--theme-700) disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {guardandoMural ? 'Guardando...' : 'Registrar'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
