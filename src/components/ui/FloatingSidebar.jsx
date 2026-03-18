@@ -69,11 +69,11 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                         </div>
                         {/* Indicador one-time: punto pulsante + tooltip */}
                         {showHint && (
-                            <span className="absolute -top-1 -right-1 flex z-50">
+                            <span className="absolute -top-1 -right-1 flex z-9999">
                                 <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-(--theme-400) opacity-75" />
                                 <span className="relative inline-flex rounded-full h-3 w-3 bg-(--theme-500)" />
                                 <span
-                                    className="absolute left-5 top-0 whitespace-nowrap text-xs font-semibold px-2 py-1 rounded-lg shadow-lg pointer-events-none z-[9999]"
+                                    className="absolute left-5 top-0 whitespace-nowrap text-xs font-semibold px-2 py-1 rounded-lg shadow-lg pointer-events-none z-9999"
                                     style={{ background: isDark ? '#1e293b' : '#0f172a', color: '#5eead4' }}
                                 >
                                     ¡Expande el menú!
@@ -100,26 +100,24 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                 )}
             </div>
 
-            {/* User Greeting */}
-            <div className={`px-4 py-3 border-b ${borderClass}`}>
-                {!isCollapsed ? (
-                    <div className="flex items-center gap-3">
-                        <div className="shrink-0 flex items-center">
+            {/* Content Wrapper with vertical shift animation */}
+            <div className={`flex-1 flex flex-col transition-all duration-500 ease-in-out ${isCollapsed ? 'translate-y-4' : '-translate-y-1'}`}>
+                {/* User Greeting */}
+                <div className={`px-4 py-3 border-b ${borderClass}`}>
+                    <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
+                        <div className="shrink-0 flex items-center justify-center w-8 h-8">
                             <Avatar name={userInfo?.nombre || 'U'} size="sm" />
                         </div>
-                        <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                            Hola, {userInfo?.nombre || 'Usuario'}
-                        </p>
+                        {!isCollapsed && (
+                            <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                                Hola, {userInfo?.nombre || 'Usuario'}
+                            </p>
+                        )}
                     </div>
-                ) : (
-                    <div className="flex justify-center">
-                        <Avatar name={userInfo?.nombre || 'U'} size="sm" />
-                    </div>
-                )}
-            </div>
+                </div>
 
-            {/* Navigation */}
-            <nav className="flex-1 p-3 flex flex-col overflow-y-auto scrollbar-hide">
+                {/* Navigation */}
+                <nav className="flex-1 p-3 flex flex-col overflow-y-auto scrollbar-hide">
                 {/* Regular items */}
                 <div className="space-y-1">
                     {menuItems.filter(i => !i.isBottom).map((item, index) => {
@@ -132,7 +130,7 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                                         className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${inactiveClasses} ${hoverClasses}`}
                                         title={isCollapsed ? item.name : ''}
                                     >
-                                        <div className="flex-shrink-0">{item.icon}</div>
+                                        <div className="shrink-0">{item.icon}</div>
                                         {!isCollapsed && (
                                             <>
                                                 <span className="font-medium truncate flex-1 text-left">{item.name}</span>
@@ -148,7 +146,7 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                                                     <Link key={childIndex} to={child.path}
                                                         className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                                     >
-                                                        <div className="flex-shrink-0">{child.icon}</div>
+                                                        <div className="shrink-0">{child.icon}</div>
                                                         <span className="font-medium truncate">{child.name}</span>
                                                     </Link>
                                                 );
@@ -186,7 +184,7 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                                         className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${inactiveClasses} ${hoverClasses}`}
                                         title={isCollapsed ? item.name : ''}
                                     >
-                                        <div className="flex-shrink-0">{item.icon}</div>
+                                        <div className="shrink-0">{item.icon}</div>
                                         {!isCollapsed && (
                                             <>
                                                 <span className="font-medium truncate flex-1 text-left">{item.name}</span>
@@ -202,7 +200,7 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                                                     <Link key={childIndex} to={child.path}
                                                         className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                                     >
-                                                        <div className="flex-shrink-0">{child.icon}</div>
+                                                        <div className="shrink-0">{child.icon}</div>
                                                         <span className="font-medium truncate">{child.name}</span>
                                                     </Link>
                                                 );
@@ -218,13 +216,14 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                                 className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                 title={isCollapsed ? item.name : ''}
                             >
-                                <div className="flex-shrink-0">{item.icon}</div>
+                                <div className="shrink-0">{item.icon}</div>
                                 {!isCollapsed && <span className="font-medium truncate">{item.name}</span>}
                             </Link>
                         );
                     })}
                 </div>
             </nav>
+            </div>
 
         </aside>
     );
