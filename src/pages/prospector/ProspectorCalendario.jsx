@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Calendar as CalendarIcon, Clock, User, Phone, CheckCircle2, ChevronLeft, ChevronRight, UserPlus, Briefcase, Mail, MapPin, LogIn, Link as LinkIcon, Copy, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
-import { getToken } from '../../utils/authUtils';
+import { getToken, getUser } from '../../utils/authUtils';
 
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -12,6 +12,8 @@ const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 
 
 const ProspectorCalendario = () => {
     const location = useLocation();
+    const currentUser = getUser();
+    const isVendedor = String(currentUser?.rol || '').toLowerCase() === 'vendedor';
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [selectedCloser, setSelectedCloser] = useState('');
@@ -45,9 +47,15 @@ const ProspectorCalendario = () => {
                     const data = await res.json();
                     console.log("All Users Data:", data);
                     const OCULTAR_USERS = ['brayan', '@brayan', 'closer'];
-                    const closersList = data.filter(u => u.rol === 'closer' && !OCULTAR_USERS.includes(u.usuario?.toLowerCase()));
+                    const closersList = data.filter(u => (u.rol === 'closer' || u.rol === 'vendedor') && !OCULTAR_USERS.includes(u.usuario?.toLowerCase()));
                     console.log("Filtered Closers:", closersList);
                     setClosers(closersList);
+
+                    // Si el usuario actual es vendedor, autoasigna sus reuniones a sí mismo.
+                    if (isVendedor && currentUser?.id) {
+                        const yo = closersList.find(u => String(u.id) === String(currentUser.id));
+                        if (yo) setSelectedCloser(String(yo.id));
+                    }
                 } else {
                     console.error("Failed to fetch users");
                     const text = await res.text();
@@ -138,6 +146,13 @@ const ProspectorCalendario = () => {
         fetchAvailability();
     }, [selectedCloser, currentDate, closers]);
 
+    useEffect(() => {
+        // En rol vendedor, mantener asignación por defecto a sí mismo si aún no está elegida.
+        if (!isVendedor || selectedCloser || !currentUser?.id || closers.length === 0) return;
+        const yo = closers.find(u => String(u.id) === String(currentUser.id));
+        if (yo) setSelectedCloser(String(yo.id));
+    }, [isVendedor, selectedCloser, currentUser?.id, closers]);
+
     const generateSlotsForDay = (date) => {
         if (!date) return [];
         if (date.getDay() === 0) return []; // Sunday off
@@ -204,7 +219,7 @@ const ProspectorCalendario = () => {
 
         const closer = closers.find(c => c.id == selectedCloser);
         if (!closer) {
-            toast.error('Selecciona un closer');
+            toast.error(isVendedor ? 'Selecciona a quién asignar la reunión' : 'Selecciona un closer');
             return;
         }
 
@@ -395,7 +410,7 @@ const ProspectorCalendario = () => {
                                     {/* Closer Selection */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Asignar Closer (Virtual)
+                                            {isVendedor ? 'Asignar Responsable de Cierre' : 'Asignar Closer (Virtual)'}
                                         </label>
                                         <select
                                             value={selectedCloser}
@@ -403,11 +418,14 @@ const ProspectorCalendario = () => {
                                             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-transparent"
                                             required
                                         >
-                                            <option value="">Selecciona un closer...</option>
+                                            <option value="">{isVendedor ? 'Selecciona responsable...' : 'Selecciona un closer...'}</option>
                                             {closers.map(c => (
-                                                <option key={c.id} value={c.id}>{c.nombre}</option>
+                                                <option key={c.id} value={c.id}>{c.nombre} ({c.rol})</option>
                                             ))}
                                         </select>
+                                        {isVendedor && currentUser?.id && String(selectedCloser) === String(currentUser.id) && (
+                                            <p className="text-xs text-green-700 mt-1">La reunión se asignará a tu calendario.</p>
+                                        )}
                                     </div>
 
                                     {/* Time Selection */}

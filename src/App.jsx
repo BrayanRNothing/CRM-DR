@@ -153,7 +153,7 @@ function App() {
           {/* --- VENDEDOR --- */}
           <Route path="/vendedor" element={<VendedorLayout />}>
             <Route index element={<VendedorDashboard />} />
-            <Route path="calendario" element={<CloserCalendario />} />
+            <Route path="calendario" element={<ProspectorCalendario />} />
             <Route path="prospectos" element={<ProspectorSeguimiento />} />
             <Route path="clientes" element={<CRMClientes />} />
             <Route path="usuarios/prospectors" element={<UserManagement initialRole="prospector" />} />
