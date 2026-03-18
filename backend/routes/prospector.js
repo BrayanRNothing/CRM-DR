@@ -179,7 +179,25 @@ router.get('/dashboard', [auth, esProspector], async (req, res) => {
         res.json({ embudo, metricas, tasasConversion, periodos });
     } catch (error) {
         console.error('Error en dashboard prospector:', error);
-        res.status(500).json({ msg: 'Error del servidor', error: error.message });
+        // Fallback para no romper la UI del dashboard si hay datos históricos corruptos.
+        return res.json({
+            embudo: { total: 0, prospecto_nuevo: 0, en_contacto: 0, reunion_agendada: 0, transferidos: 0 },
+            metricas: {
+                llamadas: { hoy: 0, totales: 0 },
+                contactosExitosos: { hoy: 0, totales: 0 },
+                reunionesAgendadas: { hoy: 0, totales: 0, semana: 0 },
+                prospectosHoy: 0,
+                correosEnviados: 0
+            },
+            tasasConversion: { contacto: 0, agendamiento: 0 },
+            periodos: {
+                dia: { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: 0 },
+                semana: { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: 0 },
+                mes: { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: 0 },
+                total: { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: 0 }
+            },
+            degraded: true
+        });
     }
 });
 
