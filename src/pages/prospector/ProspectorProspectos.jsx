@@ -242,7 +242,7 @@ const ProspectorProspectos = () => {
       <div className="flex-1 flex flex-col">
         <ProspectorNavbar />
         <main className="p-4 lg:p-8">
-          <div className="max-w-7xl mx-auto">
+          <div className="w-full">
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
               <div>
