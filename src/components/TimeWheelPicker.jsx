@@ -1,64 +1,5 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
-
-const ITEM_H = 32;
-const VISIBLE = 3;
-
-function to12h(h24) {
-    const ampm = h24 < 12 ? 'AM' : 'PM';
-    const h12  = h24 % 12 === 0 ? 12 : h24 % 12;
-    return { h12, ampm };
-}
-function to24h(h12, ampm) {
-    if (ampm === 'AM') return h12 === 12 ? 0 : h12;
-    return h12 === 12 ? 12 : h12 + 12;
-}
-
-function WheelColumn({ items, selected, onChange, display }) {
-    const ref = useRef(null);
-    const isUserScrolling = useRef(false);
-    const scrollTimer = useRef(null);
-
-    useEffect(() => {
-        if (ref.current && !isUserScrolling.current) {
-            ref.current.scrollTo({ top: selected * ITEM_H, behavior: 'smooth' });
-        }
-    }, [selected]);
-
-    const handleScroll = useCallback(() => {
-        if (!ref.current) return;
-        isUserScrolling.current = true;
-        clearTimeout(scrollTimer.current);
-        const idx = Math.round(ref.current.scrollTop / ITEM_H);
-        const clamped = Math.max(0, Math.min(items.length - 1, idx));
-        if (clamped !== selected) onChange(clamped);
-        scrollTimer.current = setTimeout(() => {
-            if (ref.current) ref.current.scrollTo({ top: clamped * ITEM_H, behavior: 'smooth' });
-            isUserScrolling.current = false;
-        }, 120);
-    }, [items.length, selected, onChange]);
-
-    return (
-        <div className="relative" style={{ width: 44, height: ITEM_H * VISIBLE }}>
-            <div className="absolute inset-x-0 pointer-events-none z-10 bg-(--theme-100) border-y border-(--theme-400) rounded"
-                style={{ top: ITEM_H, height: ITEM_H }} />
-            <div className="absolute inset-x-0 top-0 pointer-events-none z-10 bg-linear-to-b from-white to-transparent" style={{ height: ITEM_H }} />
-            <div className="absolute inset-x-0 bottom-0 pointer-events-none z-10 bg-linear-to-t from-white to-transparent" style={{ height: ITEM_H }} />
-            <div ref={ref} onScroll={handleScroll} className="h-full overflow-y-scroll"
-                style={{ scrollSnapType: 'y mandatory', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                <div style={{ height: ITEM_H }} />
-                {items.map((item, i) => (
-                    <div key={i}
-                        onClick={() => { onChange(i); ref.current?.scrollTo({ top: i * ITEM_H, behavior: 'smooth' }); }}
-                        className={`flex items-center justify-center cursor-pointer select-none transition-all duration-150 ${i === selected ? 'text-(--theme-700) text-base font-black' : 'text-gray-400 text-xs font-medium'}`}
-                        style={{ height: ITEM_H, scrollSnapAlign: 'center' }}>
-                        {display ? display(item) : String(item).padStart(2, '0')}
-                    </div>
-                ))}
-                <div style={{ height: ITEM_H }} />
-            </div>
-        </div>
-    );
-}
+import { useState } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 
 export default function TimeWheelPicker({ value, onChange, dateClassName = '', dateLabel }) {
     const datePart = value ? value.slice(0, 10) : '';
@@ -66,14 +7,9 @@ export default function TimeWheelPicker({ value, onChange, dateClassName = '', d
     const [hStr, mStr] = (timePart || '09:00').split(':');
     const hour24 = Math.min(23, Math.max(0, parseInt(hStr || '9', 10)));
     const minute = Math.min(59, Math.max(0, parseInt(mStr || '0', 10)));
-    const { h12, ampm } = to12h(hour24);
 
-    // Raw keyboard input state for display fields
-    const [hInput, setHInput] = useState(null); // null = not editing
-    const [mInput, setMInput] = useState(null);
-
-    const hours12 = Array.from({ length: 12 }, (_, i) => i + 1);
-    const minutes = Array.from({ length: 60 }, (_, i) => i);
+    const h12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+    const ampm = hour24 < 12 ? 'AM' : 'PM';
 
     const updateTime = (newH24, newMin) => {
         const hh = String(newH24).padStart(2, '0');
@@ -82,119 +18,148 @@ export default function TimeWheelPicker({ value, onChange, dateClassName = '', d
         onChange(`${date}T${hh}:${mm}`);
     };
 
-    const handleHourChange   = (idx) => updateTime(to24h(hours12[idx], ampm), minute);
-    const handleMinuteChange = (idx) => updateTime(hour24, minutes[idx]);
-    const toggleAmPm         = () => updateTime(to24h(h12, ampm === 'AM' ? 'PM' : 'AM'), minute);
-    const handleDateChange   = (e) => onChange(`${e.target.value}T${String(hour24).padStart(2,'0')}:${String(minute).padStart(2,'0')}`);
-
-    // Keyboard handlers for the display inputs
-    const commitHour = (raw) => {
-        const parsed = parseInt(raw, 10);
+    const handleHourChange = (input) => {
+        const parsed = parseInt(input, 10);
         if (!isNaN(parsed) && parsed >= 1 && parsed <= 12) {
-            updateTime(to24h(parsed, ampm), minute);
+            const h24 = ampm === 'AM' 
+                ? (parsed === 12 ? 0 : parsed)
+                : (parsed === 12 ? 12 : parsed + 12);
+            updateTime(h24, minute);
         }
-        setHInput(null);
     };
-    const commitMinute = (raw) => {
-        const parsed = parseInt(raw, 10);
+
+    const handleMinuteChange = (input) => {
+        const parsed = parseInt(input, 10);
         if (!isNaN(parsed) && parsed >= 0 && parsed <= 59) {
             updateTime(hour24, parsed);
         }
-        setMInput(null);
-    };
-    const handleHourInput = (val) => {
-        const digits = val.replace(/\D/g, '').slice(0, 2);
-        setHInput(digits);
-        const parsed = parseInt(digits, 10);
-        if (digits.length === 2) {
-            if (!isNaN(parsed) && parsed >= 1 && parsed <= 12) updateTime(to24h(parsed, ampm), minute);
-            setHInput(null);
-            setMInput('');
-        } else if (digits.length === 1 && parsed >= 2) {
-            // digit 2-9: only valid as single-digit hour, jump to minutes
-            updateTime(to24h(parsed, ampm), minute);
-            setHInput(null);
-            setMInput('');
-        }
-    };
-    const handleMinuteInput = (val) => {
-        const digits = val.replace(/\D/g, '').slice(0, 2);
-        setMInput(digits);
-        if (digits.length === 2) {
-            const parsed = parseInt(digits, 10);
-            if (!isNaN(parsed) && parsed >= 0 && parsed <= 59) updateTime(hour24, parsed);
-            setMInput(null);
-        }
     };
 
-    const inputClass = "bg-transparent outline-none text-(--theme-600) font-black tabular-nums text-center leading-none";
+    const incrementHour = () => {
+        const newH24 = (hour24 + 1) % 24;
+        updateTime(newH24, minute);
+    };
+
+    const decrementHour = () => {
+        const newH24 = hour24 === 0 ? 23 : hour24 - 1;
+        updateTime(newH24, minute);
+    };
+
+    const incrementMinute = () => {
+        const newMin = minute === 59 ? 0 : minute + 1;
+        updateTime(hour24, newMin);
+    };
+
+    const decrementMinute = () => {
+        const newMin = minute === 0 ? 59 : minute - 1;
+        updateTime(hour24, newMin);
+    };
+
+    const toggleAmPm = () => {
+        const newH24 = (hour24 + 12) % 24;
+        updateTime(newH24, minute);
+    };
+
+    const handleDateChange = (e) => {
+        onChange(`${e.target.value}T${String(hour24).padStart(2,'0')}:${String(minute).padStart(2,'0')}`);
+    };
 
     return (
-        <div className="space-y-2">
-            {dateLabel && <label className="block text-xs font-medium text-gray-700 mb-1">{dateLabel}</label>}
-            <input type="date" value={datePart} onChange={handleDateChange}
-                className={`w-full border border-slate-200 rounded px-3 py-1.5 text-sm ${dateClassName}`} />
+        <div className="space-y-3">
+            {dateLabel && <label className="block text-xs font-medium text-gray-700">{dateLabel}</label>}
+            <input 
+                type="date" 
+                value={datePart} 
+                onChange={handleDateChange}
+                className={`w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent outline-none ${dateClassName}`} 
+            />
 
-            <div className="flex items-center gap-3 border border-slate-200 rounded-xl bg-white px-3 py-2">
-                {/* Live display � editable with keyboard */}
-                <div className="flex flex-col items-center justify-center min-w-[72px]">
-                    <div className="flex items-center text-3xl font-black text-(--theme-600) tabular-nums leading-none">
-                        {/* Hour */}
-                        {hInput !== null ? (
-                            <input
-                                autoFocus
-                                type="text" inputMode="numeric"
-                                value={hInput}
-                                placeholder={String(h12).padStart(2, '0')}
-                                onChange={e => handleHourInput(e.target.value)}
-                                onBlur={() => commitHour(hInput)}
-                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitHour(hInput); } if (e.key === 'Escape') setHInput(null); }}
-                                className={`${inputClass} w-[2ch] text-3xl`}
-                            />
-                        ) : (
-                            <span className="cursor-text hover:bg-(--theme-50) rounded px-0.5 transition-colors"
-                                title="Clic para editar hora"
-                                onClick={() => setHInput('')}>
-                                {String(h12).padStart(2, '0')}
-                            </span>
-                        )}
-                        <span className="animate-pulse mx-0.5">:</span>
-                        {/* Minute */}
-                        {mInput !== null ? (
-                            <input
-                                autoFocus
-                                type="text" inputMode="numeric"
-                                value={mInput}
-                                placeholder={String(minute).padStart(2, '0')}
-                                onChange={e => handleMinuteInput(e.target.value)}
-                                onBlur={() => commitMinute(mInput)}
-                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitMinute(mInput); } if (e.key === 'Escape') setMInput(null); }}
-                                className={`${inputClass} w-[2ch] text-3xl`}
-                            />
-                        ) : (
-                            <span className="cursor-text hover:bg-(--theme-50) rounded px-0.5 transition-colors"
-                                title="Clic para editar minutos"
-                                onClick={() => setMInput('')}>
-                                {String(minute).padStart(2, '0')}
-                            </span>
-                        )}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center justify-center gap-4">
+                    {/* Horas */}
+                    <div className="flex flex-col items-center gap-2">
+                        <button
+                            onClick={incrementHour}
+                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-(--theme-600)"
+                            title="Incrementar hora"
+                        >
+                            <ChevronUp className="w-5 h-5" />
+                        </button>
+                        <input
+                            type="number"
+                            min="1"
+                            max="12"
+                            value={String(h12).padStart(2, '0')}
+                            onChange={(e) => handleHourChange(e.target.value)}
+                            className="w-16 text-center text-2xl font-black text-gray-900 border border-slate-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-(--theme-400) focus:border-transparent outline-none"
+                        />
+                        <button
+                            onClick={decrementHour}
+                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-(--theme-600)"
+                            title="Decrementar hora"
+                        >
+                            <ChevronDown className="w-5 h-5" />
+                        </button>
                     </div>
-                    <span className={`text-xs font-black mt-0.5 ${ampm === 'AM' ? 'text-sky-500' : 'text-orange-500'}`}>{ampm}</span>
+
+                    {/* Separador */}
+                    <div className="text-3xl font-black text-gray-300 flex items-center h-20">:</div>
+
+                    {/* Minutos */}
+                    <div className="flex flex-col items-center gap-2">
+                        <button
+                            onClick={incrementMinute}
+                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-(--theme-600)"
+                            title="Incrementar minutos"
+                        >
+                            <ChevronUp className="w-5 h-5" />
+                        </button>
+                        <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            value={String(minute).padStart(2, '0')}
+                            onChange={(e) => handleMinuteChange(e.target.value)}
+                            className="w-16 text-center text-2xl font-black text-gray-900 border border-slate-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-(--theme-400) focus:border-transparent outline-none"
+                        />
+                        <button
+                            onClick={decrementMinute}
+                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-(--theme-600)"
+                            title="Decrementar minutos"
+                        >
+                            <ChevronDown className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* AM/PM */}
+                    <div className="flex flex-col gap-2 ml-2">
+                        <button
+                            onClick={toggleAmPm}
+                            className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                                ampm === 'AM'
+                                    ? 'bg-sky-500 text-white shadow-md'
+                                    : 'bg-slate-100 text-gray-600 hover:bg-slate-200'
+                            }`}
+                        >
+                            AM
+                        </button>
+                        <button
+                            onClick={toggleAmPm}
+                            className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                                ampm === 'PM'
+                                    ? 'bg-orange-500 text-white shadow-md'
+                                    : 'bg-slate-100 text-gray-600 hover:bg-slate-200'
+                            }`}
+                        >
+                            PM
+                        </button>
+                    </div>
                 </div>
 
-                <div className="w-px bg-slate-200 self-stretch" />
-
-                {/* Wheels + AM/PM */}
-                <div className="flex items-center gap-1 flex-1 justify-center">
-                    <WheelColumn items={hours12} selected={hours12.indexOf(h12)} onChange={handleHourChange} display={v => String(v).padStart(2,'0')} />
-                    <div className="text-lg font-black text-gray-300 select-none">:</div>
-                    <WheelColumn items={minutes} selected={minute} onChange={handleMinuteChange} />
-                    <div className="flex flex-col gap-1 ml-1">
-                        <button onClick={toggleAmPm}
-                            className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${ampm === 'AM' ? 'bg-sky-500 text-white shadow-md' : 'bg-slate-100 text-gray-600 hover:bg-slate-200'}`}>AM</button>
-                        <button onClick={toggleAmPm}
-                            className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${ampm === 'PM' ? 'bg-orange-500 text-white shadow-md' : 'bg-slate-100 text-gray-600 hover:bg-slate-200'}`}>PM</button>
-                    </div>
+                <div className="text-center pt-2 border-t border-slate-200">
+                    <p className="text-xs text-gray-500">
+                        Hora 24h: <span className="font-mono font-bold text-gray-900">{String(hour24).padStart(2, '0')}:{String(minute).padStart(2, '0')}</span>
+                    </p>
                 </div>
             </div>
         </div>
