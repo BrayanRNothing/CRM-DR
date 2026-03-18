@@ -1216,11 +1216,53 @@ const ProspectorSeguimiento = () => {
         };
 
         const abrirRecordatorioLlamadaDirecto = () => {
+            if (tareaLlamar) {
+                toast.error('Ya existe un recordatorio pendiente. Descártalo o complétalo antes de crear otro.');
+                return;
+            }
             const fechaDefault = new Date();
             fechaDefault.setDate(fechaDefault.getDate() + 3);
             const isoDefault = fechaDefault.toISOString().slice(0, 16);
             setRecordatorio({ fechaProxima: isoDefault, notas: '' });
             setModalRecordatorioAbierto(true);
+        };
+
+        const descartarRecordatorioLlamada = async () => {
+            try {
+                // Limpiar recordatorio activo del prospecto
+                await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, {
+                    proximaLlamada: null
+                }, { headers: getAuthHeaders() });
+
+                // Mejor esfuerzo: marcar como completada la última tarea pendiente de llamada
+                try {
+                    const tareasRes = await axios.get(`${API_URL}/api/tareas`, { headers: getAuthHeaders() });
+                    const tareaPendienteLlamada = (tareasRes.data || [])
+                        .filter(t => String(t.cliente) === String(pid) && t.estado === 'pendiente' && (t.titulo || '').toLowerCase().includes('llamada de seguimiento'))
+                        .sort((a, b) => new Date(b.fechaLimite || b.createdAt || 0) - new Date(a.fechaLimite || a.createdAt || 0))[0];
+
+                    if (tareaPendienteLlamada?.id || tareaPendienteLlamada?._id) {
+                        const taskId = tareaPendienteLlamada.id || tareaPendienteLlamada._id;
+                        await axios.put(`${API_URL}/api/tareas/${taskId}`, {
+                            estado: 'completada'
+                        }, { headers: getAuthHeaders() });
+                    }
+                } catch (taskErr) {
+                    console.warn('No se pudo completar tarea de recordatorio:', taskErr);
+                }
+
+                const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
+                const updated = res.data.find(p => p.id === pid || p._id === pid);
+                if (updated) {
+                    setProspectoSeleccionado(updated);
+                    setProspectos(res.data);
+                }
+
+                toast.success('Recordatorio descartado');
+            } catch (err) {
+                console.error(err);
+                toast.error('No se pudo descartar el recordatorio');
+            }
         };
 
         return (
@@ -1593,14 +1635,14 @@ const ProspectorSeguimiento = () => {
 
                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                                     {/* ========= NOTIFICACIONES ========= */}
-                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                                    <div className="bg-sky-50 border border-sky-200 rounded-xl p-4 space-y-3">
                                         <div className="flex items-center gap-2">
-                                            <Bell className="w-4 h-4 text-amber-600" />
-                                            <p className="text-xs font-bold text-amber-700 uppercase tracking-wider">Notificaciones</p>
+                                            <Bell className="w-4 h-4 text-sky-700" />
+                                            <p className="text-xs font-bold text-sky-800 uppercase tracking-wider">Notificaciones</p>
                                         </div>
 
                                         {proximaCita && (
-                                            <div className="bg-white border border-amber-200 rounded-lg p-3 text-sm text-gray-700">
+                                            <div className="bg-white border border-sky-200 rounded-lg p-3 text-sm text-gray-700">
                                                 <p className="font-semibold text-gray-800">Ya hay reunión agendada</p>
                                                 <p className="text-gray-500 mt-1">
                                                     {new Date(fechaProximaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
@@ -1609,24 +1651,35 @@ const ProspectorSeguimiento = () => {
                                         )}
 
                                         {tareaLlamar && (
-                                            <div className="bg-white border border-amber-200 rounded-lg p-3 text-sm text-gray-700">
+                                            <div className="bg-white border border-sky-200 rounded-lg p-3 text-sm text-gray-700 space-y-2">
                                                 <p className="font-semibold text-gray-800">Recordatorio de llamada pendiente</p>
                                                 <p className="text-gray-500 mt-1">
                                                     {new Date(tareaLlamar.fecha).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
                                                 </p>
+                                                <button
+                                                    onClick={descartarRecordatorioLlamada}
+                                                    className="w-full flex items-center justify-center gap-2 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 hover:text-rose-700 rounded-lg py-2 text-xs font-bold transition-colors"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                    Descartar recordatorio
+                                                </button>
                                             </div>
                                         )}
 
                                         {!proximaCita && !tareaLlamar && (
-                                            <p className="text-sm text-amber-700">Sin alertas por ahora. Puedes programar una llamada para no perder seguimiento.</p>
+                                            <p className="text-sm text-sky-800">Sin alertas por ahora. Puedes programar una llamada para no perder seguimiento.</p>
                                         )}
 
                                         <button
                                             onClick={abrirRecordatorioLlamadaDirecto}
-                                            className="w-full flex items-center justify-center gap-2 bg-white border border-amber-300 hover:border-amber-400 rounded-lg py-2 text-sm font-bold text-amber-700"
+                                            disabled={!!tareaLlamar}
+                                            className={`w-full flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-colors ${tareaLlamar
+                                                ? 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed'
+                                                : 'bg-white border border-sky-300 hover:border-sky-400 text-sky-700'
+                                                }`}
                                         >
                                             <Clock className="w-4 h-4" />
-                                            Programar recordatorio de llamada
+                                            {tareaLlamar ? 'Ya existe recordatorio activo' : 'Programar recordatorio de llamada'}
                                         </button>
                                     </div>
 
@@ -1819,15 +1872,11 @@ const ProspectorSeguimiento = () => {
                                             const pid = prospectoSeleccionado.id || prospectoSeleccionado._id;
                                             const notasFin = recordatorio.notas || 'Recordatorio de llamada programado';
 
-                                            // 1. Registrar Actividad
-                                            await registrarActividad({
-                                                tipo: 'llamada',
-                                                resultado: 'exitoso',
-                                                notas: notasFin
-                                            });
+                                            // Solo crear tarea y actualizar proximaLlamada
+                                            // NO registrar como actividad tipo 'llamada' (eso contaría como llamada realizada)
 
                                             if (recordatorio.fechaProxima) {
-                                                // 2. Crear Tarea de seguimiento
+                                                // 1. Crear Tarea de seguimiento
                                                 await axios.post(`${API_URL}/api/tareas`, {
                                                     titulo: `Llamada de seguimiento: ${prospectoSeleccionado.nombres}`,
                                                     descripcion: notasFin,
@@ -1836,7 +1885,7 @@ const ProspectorSeguimiento = () => {
                                                     prioridad: 'media'
                                                 }, { headers: getAuthHeaders() });
 
-                                                // 3. Actualizar proximaLlamada
+                                                // 2. Actualizar proximaLlamada
                                                 await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, {
                                                     proximaLlamada: recordatorio.fechaProxima
                                                 }, { headers: getAuthHeaders() });
@@ -1845,6 +1894,14 @@ const ProspectorSeguimiento = () => {
                                             toast.success('📞 Recordatorio programado correctamente');
                                             setModalRecordatorioAbierto(false);
                                             setRecordatorio({ fechaProxima: '', notas: '' });
+                                            
+                                            // Recargar prospecto para actualizar UI
+                                            const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
+                                            const updated = res.data.find(p => p.id === pid || p._id === pid);
+                                            if (updated) {
+                                                setProspectoSeleccionado(updated);
+                                                setProspectos(res.data);
+                                            }
                                         } catch (err) {
                                             console.error(err);
                                             toast.error('Error al programar el recordatorio');
