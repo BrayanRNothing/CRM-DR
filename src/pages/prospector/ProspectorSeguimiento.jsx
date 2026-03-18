@@ -243,6 +243,8 @@ const ProspectorSeguimiento = () => {
     const [loadingNotas, setLoadingNotas] = useState(false);
     const [muralTexto, setMuralTexto] = useState('');
     const [guardandoMural, setGuardandoMural] = useState(false);
+    const [modalRecordatorioAbierto, setModalRecordatorioAbierto] = useState(false);
+    const [recordatorio, setRecordatorio] = useState({ fechaProxima: '', notas: '' });
 
     const handleGuardarNotasRapidas = async () => {
         if (!prospectoSeleccionado) return;
@@ -1217,7 +1219,8 @@ const ProspectorSeguimiento = () => {
             const fechaDefault = new Date();
             fechaDefault.setDate(fechaDefault.getDate() + 3);
             const isoDefault = fechaDefault.toISOString().slice(0, 16);
-            setLlamadaFlow({ paso: 'llamarDespues', interesado: true, fechaProxima: isoDefault, notas: '' });
+            setRecordatorio({ fechaProxima: isoDefault, notas: '' });
+            setModalRecordatorioAbierto(true);
         };
 
         return (
@@ -1380,13 +1383,6 @@ const ProspectorSeguimiento = () => {
                                                 Agendar Reunión
                                             </button>
                                         </div>
-                                        <button
-                                            onClick={abrirRecordatorioLlamadaDirecto}
-                                            className="w-full flex items-center justify-center gap-2 bg-amber-50 border border-amber-200 hover:border-amber-300 rounded-xl py-2.5 text-amber-700 hover:text-amber-800 font-bold text-sm transition-colors"
-                                        >
-                                            <Bell className="w-4 h-4" />
-                                            Recordatorio de llamada (rápido)
-                                        </button>
                                     </div>
                                 ) : (
                                     /* ===== FLUJO DE LLAMADA ===== */
@@ -1779,6 +1775,89 @@ const ProspectorSeguimiento = () => {
                     </div>
                 </div>
                 {renderModales()}
+
+                {/* MODAL RECORDATORIO DE LLAMADA */}
+                {modalRecordatorioAbierto && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+                            <div className="p-6 border-b border-slate-100 bg-(--theme-50)">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Clock className="w-6 h-6 text-(--theme-600)" />
+                                    <h2 className="text-xl font-bold text-gray-900">Recordatorio de llamada</h2>
+                                </div>
+                                <p className="text-sm text-gray-600">Programa cuándo quieres llamar a {prospectoSeleccionado.nombres}</p>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-3">¿Cuándo lo llamamos?</label>
+                                    <TimeWheelPicker
+                                        value={recordatorio.fechaProxima}
+                                        onChange={(val) => setRecordatorio(r => ({ ...r, fechaProxima: val }))}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Notas (opcional)</label>
+                                    <textarea
+                                        rows={3}
+                                        value={recordatorio.notas}
+                                        onChange={(e) => setRecordatorio(r => ({ ...r, notas: e.target.value }))}
+                                        placeholder="Ej: Preguntar por referencias, presupuesto pendiente..."
+                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent outline-none resize-none"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex gap-3 p-6 border-t border-slate-100 bg-slate-50/50">
+                                <button
+                                    onClick={() => setModalRecordatorioAbierto(false)}
+                                    className="flex-1 px-4 py-2.5 border border-slate-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const pid = prospectoSeleccionado.id || prospectoSeleccionado._id;
+                                            const notasFin = recordatorio.notas || 'Recordatorio de llamada programado';
+
+                                            // 1. Registrar Actividad
+                                            await registrarActividad({
+                                                tipo: 'llamada',
+                                                resultado: 'exitoso',
+                                                notas: notasFin
+                                            });
+
+                                            if (recordatorio.fechaProxima) {
+                                                // 2. Crear Tarea de seguimiento
+                                                await axios.post(`${API_URL}/api/tareas`, {
+                                                    titulo: `Llamada de seguimiento: ${prospectoSeleccionado.nombres}`,
+                                                    descripcion: notasFin,
+                                                    cliente: pid,
+                                                    fechaLimite: recordatorio.fechaProxima,
+                                                    prioridad: 'media'
+                                                }, { headers: getAuthHeaders() });
+
+                                                // 3. Actualizar proximaLlamada
+                                                await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, {
+                                                    proximaLlamada: recordatorio.fechaProxima
+                                                }, { headers: getAuthHeaders() });
+                                            }
+
+                                            toast.success('📞 Recordatorio programado correctamente');
+                                            setModalRecordatorioAbierto(false);
+                                            setRecordatorio({ fechaProxima: '', notas: '' });
+                                        } catch (err) {
+                                            console.error(err);
+                                            toast.error('Error al programar el recordatorio');
+                                        }
+                                    }}
+                                    className="flex-1 px-4 py-2.5 bg-(--theme-600) text-white rounded-lg text-sm font-semibold hover:bg-(--theme-700) transition-colors"
+                                >
+                                    ✓ Guardar recordatorio
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
