@@ -43,6 +43,8 @@ app.use('/api/metricas', require('./routes/metricas'));
 app.use('/api/embudo', require('./routes/embudo'));
 app.use('/api/prospector', require('./routes/prospector'));
 app.use('/api/closer', require('./routes/closer'));
+// Compatibilidad temporal: algunas builds de frontend aún consumen /api/vendedor/*.
+app.use('/api/vendedor', require('./routes/prospector'));
 app.use('/api/closer/prospectors', require('./routes/prospector-monitoring'));
 app.use('/api/google', require('./routes/google'));
 

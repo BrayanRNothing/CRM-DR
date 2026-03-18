@@ -12,6 +12,15 @@ const esProspector = (req, res, next) => {
     next();
 };
 
+const parseHistorialSeguro = (value) => {
+    if (!value) return [];
+    try {
+        return JSON.parse(value);
+    } catch (error) {
+        return [];
+    }
+};
+
 // Helper: calcula métricas para un período dado por filtro SQL en campo fecha (actividades) y fechaRegistro (clientes)
 async function calcularPeriodoActividades(db, prospectorId, filtroFecha) {
     const where = filtroFecha ? `AND ${filtroFecha}` : '';
@@ -95,7 +104,7 @@ router.get('/dashboard', [auth, esProspector], async (req, res) => {
             }
 
             // Historial por si fue regresado a alguna etapa
-            const hist = c.historialEmbudo ? JSON.parse(c.historialEmbudo) : [];
+            const hist = parseHistorialSeguro(c.historialEmbudo);
             const etapasHist = hist.map(h => h.etapa);
             if (etapasHist.some(e => etapasContacto.includes(e))) contactado = true;
             if (etapasHist.some(e => etapasAgendado.includes(e))) {
