@@ -15,7 +15,8 @@ const esProspector = (req, res, next) => {
 const parseHistorialSeguro = (value) => {
     if (!value) return [];
     try {
-        return JSON.parse(value);
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
     } catch (error) {
         return [];
     }
