@@ -103,7 +103,7 @@ const FunnelChart = ({ data }) => {
             )}
 
             {/* Conversión global */}
-            <div className="mt-4 p-4 bg-gradient-to-r from-green-500/20 to-blue-500/20 border border-green-500/30 rounded-lg">
+            <div className="mt-4 p-4 bg-gradient-to-r from-green-500/20 to-(--theme-500)/20 border border-green-500/30 rounded-lg">
                 <div className="flex items-center justify-between">
                     <div>
                         <h4 className="text-gray-300 text-sm">Conversión Global</h4>

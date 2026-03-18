@@ -38,10 +38,10 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
                     ? <Phone className="w-5 h-5 text-green-500" />
                     : <Phone className="w-5 h-5 text-red-500" />;
             case 'cita':
-                return <Calendar className="w-5 h-5 text-blue-500" />;
+                return <Calendar className="w-5 h-5 text-(--theme-500)" />;
             case 'whatsapp':
             case 'mensaje':
-                return <MessageSquare className="w-5 h-5 text-emerald-500" />;
+                return <MessageSquare className="w-5 h-5 text-(--theme-500)" />;
             case 'correo':
                 return <AlertCircle className="w-5 h-5 text-purple-500" />;
             default:
@@ -112,9 +112,9 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
         const esProspectorActividad = item.vendedorRol === 'prospector';
 
         return esProspectorActividad ? (
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-semibold">🎯 Prospector</span>
+            <span className="text-xs bg-(--theme-100) text-(--theme-800) px-2 py-0.5 rounded-full font-semibold">🎯 Prospector</span>
         ) : (
-            <span className="text-xs bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full font-semibold">🏁 Closer</span>
+            <span className="text-xs bg-(--theme-100) text-(--theme-800) px-2 py-0.5 rounded-full font-semibold">🏁 Closer</span>
         );
     };
 
@@ -179,8 +179,8 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
                 <button
                     onClick={() => setFiltroTipo('prospector')}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${filtroTipo === 'prospector'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                            ? 'bg-(--theme-500) text-white'
+                            : 'bg-(--theme-100) text-(--theme-700) hover:bg-(--theme-200)'
                         }`}
                 >
                     🎯 Prospector
@@ -188,8 +188,8 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
                 <button
                     onClick={() => setFiltroTipo('closer')}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${filtroTipo === 'closer'
-                            ? 'bg-teal-500 text-white'
-                            : 'bg-teal-100 text-teal-700 hover:bg-teal-200'
+                            ? 'bg-(--theme-500) text-white'
+                            : 'bg-(--theme-100) text-(--theme-700) hover:bg-(--theme-200)'
                         }`}
                 >
                     🏁 Closer
@@ -197,8 +197,8 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
                 <button
                     onClick={() => setFiltroTipo('reuniones')}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${filtroTipo === 'reuniones'
-                            ? 'bg-indigo-500 text-white'
-                            : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                            ? 'bg-(--theme-500) text-white'
+                            : 'bg-(--theme-100) text-(--theme-700) hover:bg-(--theme-200)'
                         }`}
                 >
                     📅 Reuniones ({totalReuniones})
@@ -235,15 +235,15 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
                                             : item.descripcion?.includes('Venta cerrada') || item.descripcion?.includes('¡Venta')
                                                 ? 'border-green-200 bg-green-50'
                                                 : item.descripcion?.includes('cotización')
-                                                    ? 'border-indigo-200 bg-indigo-50'
+                                                    ? 'border-(--theme-200) bg-(--theme-50)'
                                                     : item.descripcion?.includes('otra reunión')
                                                         ? 'border-yellow-200 bg-yellow-50'
                                                         : item.descripcion?.includes('No le interesó')
                                                             ? 'border-gray-200 bg-gray-50'
-                                                            : 'border-teal-200 bg-teal-50'
+                                                            : 'border-(--theme-200) bg-(--theme-50)'
                                         : item.vendedorRol === 'prospector'
-                                            ? 'border-blue-200 bg-blue-50'
-                                            : 'border-teal-200 bg-teal-50'
+                                            ? 'border-(--theme-200) bg-(--theme-50)'
+                                            : 'border-(--theme-200) bg-(--theme-50)'
                                 }`}>
                                 {/* Encabezado */}
                                 <div className="flex items-start justify-between gap-3 mb-2">
@@ -294,7 +294,7 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
                                                     ? 'bg-green-100 text-green-700'
                                                     : item.resultado === 'fallido'
                                                         ? 'bg-red-100 text-red-700'
-                                                        : 'bg-blue-100 text-blue-700'
+                                                        : 'bg-(--theme-100) text-(--theme-700)'
                                                 }`}>
                                                 {getResultadoLegible(item)}
                                             </span>
@@ -323,21 +323,21 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
             {/* Resumen */}
             <div className="pt-4 border-t border-slate-200">
                 <div className="grid grid-cols-4 gap-3 text-sm">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                        <p className="text-xs text-blue-600 font-semibold mb-1">Del Prospector</p>
-                        <p className="text-xl font-bold text-blue-700">
+                    <div className="bg-(--theme-50) border border-(--theme-200) rounded-lg p-3 text-center">
+                        <p className="text-xs text-(--theme-600) font-semibold mb-1">Del Prospector</p>
+                        <p className="text-xl font-bold text-(--theme-700)">
                             {timeline.filter(i => i.vendedorRol === 'prospector').length}
                         </p>
                     </div>
-                    <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 text-center">
-                        <p className="text-xs text-teal-600 font-semibold mb-1">Del Closer</p>
-                        <p className="text-xl font-bold text-teal-700">
+                    <div className="bg-(--theme-50) border border-(--theme-200) rounded-lg p-3 text-center">
+                        <p className="text-xs text-(--theme-600) font-semibold mb-1">Del Closer</p>
+                        <p className="text-xl font-bold text-(--theme-700)">
                             {timeline.filter(i => i.vendedorRol === 'closer').length}
                         </p>
                     </div>
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-center">
-                        <p className="text-xs text-indigo-600 font-semibold mb-1">Reuniones</p>
-                        <p className="text-xl font-bold text-indigo-700">
+                    <div className="bg-(--theme-50) border border-(--theme-200) rounded-lg p-3 text-center">
+                        <p className="text-xs text-(--theme-600) font-semibold mb-1">Reuniones</p>
+                        <p className="text-xl font-bold text-(--theme-700)">
                             {totalReuniones}
                         </p>
                     </div>

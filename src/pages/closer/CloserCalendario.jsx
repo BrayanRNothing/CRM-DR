@@ -660,14 +660,14 @@ const CloserCalendario = () => {
                                             <div
                                                 key={reunion.id}
                                                 className={`border rounded-lg p-4 transition-all hover:shadow-md animate-in fade-in relative mt-2 ${reunion.estado === 'pendiente'
-                                                    ? 'border-blue-200 bg-blue-50/50 hover:border-blue-300'
+                                                    ? 'border-(--theme-200) bg-(--theme-50)/50 hover:border-(--theme-300)'
                                                     : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                                                     }`}
                                             >
                                                 {/* Etiqueta de Resultado para Completadas */}
                                                 {reunion.estado === 'realizada' && reunion.resultadoExacto && (
                                                     <div className={`absolute -top-3 right-4 px-3 py-1 rounded-full text-xs font-bold shadow-sm border ${reunion.resultadoExacto === 'venta' ? 'bg-[#8bc34a] text-white border-lime-600' :
-                                                            reunion.resultadoExacto === 'cotizacion' ? 'bg-blue-500 text-white border-blue-600' :
+                                                            reunion.resultadoExacto === 'cotizacion' ? 'bg-(--theme-500) text-white border-(--theme-600)' :
                                                                 reunion.resultadoExacto === 'otra_reunion' ? 'bg-yellow-500 text-white border-yellow-600' :
                                                                     reunion.resultadoExacto === 'no_asistio' ? 'bg-red-500 text-white border-red-600' :
                                                                         'bg-gray-500 text-white border-gray-600'
@@ -691,7 +691,7 @@ const CloserCalendario = () => {
                                                     </div>
                                                     <span
                                                         className={`px-2 py-1 rounded-full text-xs font-semibold ${reunion.estado === 'pendiente'
-                                                            ? 'bg-blue-500 text-white'
+                                                            ? 'bg-(--theme-500) text-white'
                                                             : 'bg-green-600 text-white'
                                                             }`}
                                                     >
@@ -870,7 +870,7 @@ const CloserCalendario = () => {
                                         <button
                                             onClick={() => handleRegistrarReunion('cotizacion')}
                                             disabled={guardando}
-                                            className="w-full px-4 py-3.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all flex items-center gap-3 font-semibold shadow-sm hover:shadow-md disabled:opacity-60"
+                                            className="w-full px-4 py-3.5 bg-(--theme-500) hover:bg-(--theme-600) text-white rounded-xl transition-all flex items-center gap-3 font-semibold shadow-sm hover:shadow-md disabled:opacity-60"
                                         >
                                             <span className="text-xl">💰</span>
                                             <div className="text-left">

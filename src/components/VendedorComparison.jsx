@@ -18,7 +18,7 @@ const VendedorComparison = ({ comparativa }) => {
         <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Users className="w-6 h-6 text-blue-400" />
+                    <Users className="w-6 h-6 text-(--theme-400)" />
                     Comparativa de Vendedores
                 </h3>
                 <span className="text-sm text-gray-400">

@@ -3,7 +3,7 @@ import React from 'react';
 function StatCard({ title, value, icon, color }) {
   // Mapa de colores para fondos suaves
   const colorMap = {
-    blue: 'bg-blue-100 text-blue-600',
+    blue: 'bg-(--theme-100) text-(--theme-600)',
     green: 'bg-green-100 text-green-600',
     yellow: 'bg-yellow-100 text-yellow-600',
     purple: 'bg-purple-100 text-purple-600',

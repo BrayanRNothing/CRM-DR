@@ -39,7 +39,7 @@ function WheelColumn({ items, selected, onChange, display }) {
 
     return (
         <div className="relative" style={{ width: 44, height: ITEM_H * VISIBLE }}>
-            <div className="absolute inset-x-0 pointer-events-none z-10 bg-blue-100 border-y border-blue-400 rounded"
+            <div className="absolute inset-x-0 pointer-events-none z-10 bg-(--theme-100) border-y border-(--theme-400) rounded"
                 style={{ top: ITEM_H, height: ITEM_H }} />
             <div className="absolute inset-x-0 top-0 pointer-events-none z-10 bg-gradient-to-b from-white to-transparent" style={{ height: ITEM_H }} />
             <div className="absolute inset-x-0 bottom-0 pointer-events-none z-10 bg-gradient-to-t from-white to-transparent" style={{ height: ITEM_H }} />
@@ -49,7 +49,7 @@ function WheelColumn({ items, selected, onChange, display }) {
                 {items.map((item, i) => (
                     <div key={i}
                         onClick={() => { onChange(i); ref.current?.scrollTo({ top: i * ITEM_H, behavior: 'smooth' }); }}
-                        className={`flex items-center justify-center cursor-pointer select-none transition-all duration-150 ${i === selected ? 'text-blue-700 text-base font-black' : 'text-gray-400 text-xs font-medium'}`}
+                        className={`flex items-center justify-center cursor-pointer select-none transition-all duration-150 ${i === selected ? 'text-(--theme-700) text-base font-black' : 'text-gray-400 text-xs font-medium'}`}
                         style={{ height: ITEM_H, scrollSnapAlign: 'center' }}>
                         {display ? display(item) : String(item).padStart(2, '0')}
                     </div>
@@ -127,7 +127,7 @@ export default function TimeWheelPicker({ value, onChange, dateClassName = '', d
         }
     };
 
-    const inputClass = "bg-transparent outline-none text-blue-600 font-black tabular-nums text-center leading-none";
+    const inputClass = "bg-transparent outline-none text-(--theme-600) font-black tabular-nums text-center leading-none";
 
     return (
         <div className="space-y-2">
@@ -138,7 +138,7 @@ export default function TimeWheelPicker({ value, onChange, dateClassName = '', d
             <div className="flex items-center gap-3 border border-slate-200 rounded-xl bg-white px-3 py-2">
                 {/* Live display — editable with keyboard */}
                 <div className="flex flex-col items-center justify-center min-w-[72px]">
-                    <div className="flex items-center text-3xl font-black text-blue-600 tabular-nums leading-none">
+                    <div className="flex items-center text-3xl font-black text-(--theme-600) tabular-nums leading-none">
                         {/* Hour */}
                         {hInput !== null ? (
                             <input
@@ -152,7 +152,7 @@ export default function TimeWheelPicker({ value, onChange, dateClassName = '', d
                                 className={`${inputClass} w-[2ch] text-3xl`}
                             />
                         ) : (
-                            <span className="cursor-text hover:bg-blue-50 rounded px-0.5 transition-colors"
+                            <span className="cursor-text hover:bg-(--theme-50) rounded px-0.5 transition-colors"
                                 title="Clic para editar hora"
                                 onClick={() => setHInput('')}>
                                 {String(h12).padStart(2, '0')}
@@ -172,7 +172,7 @@ export default function TimeWheelPicker({ value, onChange, dateClassName = '', d
                                 className={`${inputClass} w-[2ch] text-3xl`}
                             />
                         ) : (
-                            <span className="cursor-text hover:bg-blue-50 rounded px-0.5 transition-colors"
+                            <span className="cursor-text hover:bg-(--theme-50) rounded px-0.5 transition-colors"
                                 title="Clic para editar minutos"
                                 onClick={() => setMInput('')}>
                                 {String(minute).padStart(2, '0')}

@@ -47,7 +47,7 @@ const ProspectorEstadisticas = () => {
         return (
             <div className="min-h-screen bg-gray-900 p-6 flex items-center justify-center">
                 <div className="text-center">
-                    <RefreshCw className="w-12 h-12 text-blue-400 animate-spin mx-auto mb-4" />
+                    <RefreshCw className="w-12 h-12 text-(--theme-400) animate-spin mx-auto mb-4" />
                     <p className="text-gray-400">Cargando estadísticas...</p>
                 </div>
             </div>
@@ -62,7 +62,7 @@ const ProspectorEstadisticas = () => {
                     <p className="text-red-400">{error || 'No hay datos disponibles'}</p>
                     <button
                         onClick={cargarEstadisticas}
-                        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                        className="mt-4 px-4 py-2 bg-(--theme-500) text-white rounded-lg hover:bg-(--theme-600) transition-colors"
                     >
                         Reintentar
                     </button>
@@ -78,14 +78,14 @@ const ProspectorEstadisticas = () => {
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h1 className="text-4xl font-bold text-white flex items-center gap-3">
-                            <BarChart3 className="w-10 h-10 text-blue-400" />
+                            <BarChart3 className="w-10 h-10 text-(--theme-400)" />
                             Mis Estadísticas
                         </h1>
                         <p className="text-gray-400 mt-2">Análisis detallado de tu rendimiento como prospector</p>
                     </div>
                     <button
                         onClick={cargarEstadisticas}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2 shadow-lg"
+                        className="px-4 py-2 bg-(--theme-500) text-white rounded-lg hover:bg-(--theme-600) transition-colors flex items-center gap-2 shadow-lg"
                     >
                         <RefreshCw className="w-4 h-4" />
                         Actualizar
@@ -94,12 +94,12 @@ const ProspectorEstadisticas = () => {
 
                 {/* Resumen Rápido */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 shadow-lg border border-blue-400/20">
+                    <div className="bg-gradient-to-br from-(--theme-500) to-(--theme-600) rounded-xl p-6 shadow-lg border border-(--theme-400)/20">
                         <div className="flex items-center justify-between mb-2">
-                            <Phone className="w-6 h-6 text-blue-200" />
+                            <Phone className="w-6 h-6 text-(--theme-200)" />
                             <span className="text-3xl font-bold text-white">{stats.metricas.mes.llamadas}</span>
                         </div>
-                        <p className="text-blue-100 text-sm mb-3">Llamadas este mes</p>
+                        <p className="text-(--theme-100) text-sm mb-3">Llamadas este mes</p>
                         <div className={`flex items-center gap-1 ${getTrendColor(stats.variacion.llamadas)}`}>
                             {getTrendIcon(stats.variacion.llamadas)}
                             <span className="text-sm font-semibold">{Math.abs(stats.variacion.llamadas)}% vs mes anterior</span>
@@ -165,17 +165,17 @@ const ProspectorEstadisticas = () => {
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <span className="text-gray-400 text-sm">Exitosas</span>
-                                <span className="text-blue-400 font-bold">{stats.metricas.semana.exitosas}</span>
+                                <span className="text-(--theme-400) font-bold">{stats.metricas.semana.exitosas}</span>
                             </div>
                             <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full"
+                                    className="h-full bg-gradient-to-r from-(--theme-500) to-(--theme-400) rounded-full"
                                     style={{ width: `${Math.min(100, stats.metricas.semana.tasaContacto)}%` }}
                                 />
                             </div>
                             <div className="flex items-center justify-between pt-2 border-t border-gray-700">
                                 <span className="text-gray-400 text-xs">Tasa</span>
-                                <span className="text-blue-400 font-bold">{stats.metricas.semana.tasaContacto}%</span>
+                                <span className="text-(--theme-400) font-bold">{stats.metricas.semana.tasaContacto}%</span>
                             </div>
                         </div>
                     </div>
@@ -210,7 +210,7 @@ const ProspectorEstadisticas = () => {
                     {/* Tasa de Contacto */}
                     <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
                         <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                            <Phone className="w-6 h-6 text-teal-400" />
+                            <Phone className="w-6 h-6 text-(--theme-400)" />
                             Tasa de Contacto
                         </h3>
                         <div className="space-y-4">
@@ -226,17 +226,17 @@ const ProspectorEstadisticas = () => {
                             <div>
                                 <div className="flex justify-between mb-2">
                                     <span className="text-gray-400 text-sm">Contactos exitosos</span>
-                                    <span className="text-teal-400 font-semibold">{stats.metricas.mes.exitosas}</span>
+                                    <span className="text-(--theme-400) font-semibold">{stats.metricas.mes.exitosas}</span>
                                 </div>
                                 <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-gradient-to-r from-teal-500 to-teal-400 rounded-full"
+                                        className="h-full bg-gradient-to-r from-(--theme-500) to-(--theme-400) rounded-full"
                                         style={{ width: `${stats.metricas.mes.tasaContacto}%` }}
                                     />
                                 </div>
                             </div>
                             <div className="pt-4 border-t border-gray-700">
-                                <p className="text-center text-5xl font-bold text-teal-400 mb-1">{stats.metricas.mes.tasaContacto}%</p>
+                                <p className="text-center text-5xl font-bold text-(--theme-400) mb-1">{stats.metricas.mes.tasaContacto}%</p>
                                 <p className="text-center text-gray-400 text-sm">Tasa de éxito en contacto</p>
                             </div>
                         </div>
@@ -283,14 +283,14 @@ const ProspectorEstadisticas = () => {
                     <h3 className="text-xl font-bold text-white mb-6">Distribución de Tus Prospectos</h3>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="text-center p-6 bg-gray-700/30 rounded-lg border border-gray-600">
-                            <p className="text-5xl font-bold text-blue-400 mb-2">{stats.distribucion.prospecto_nuevo}</p>
+                            <p className="text-5xl font-bold text-(--theme-400) mb-2">{stats.distribucion.prospecto_nuevo}</p>
                             <p className="text-gray-400 text-sm">Nuevos</p>
                             <p className="text-gray-500 text-xs mt-2">{stats.resumen.totalClientes > 0 ? ((stats.distribucion.prospecto_nuevo / stats.resumen.totalClientes) * 100).toFixed(1) : 0}%</p>
                         </div>
-                        <div className="text-center p-6 bg-teal-500/10 rounded-lg border border-teal-500/30">
-                            <p className="text-5xl font-bold text-teal-400 mb-2">{stats.distribucion.en_contacto}</p>
+                        <div className="text-center p-6 bg-(--theme-500)/10 rounded-lg border border-(--theme-500)/30">
+                            <p className="text-5xl font-bold text-(--theme-400) mb-2">{stats.distribucion.en_contacto}</p>
                             <p className="text-gray-400 text-sm">En Contacto</p>
-                            <p className="text-teal-300 text-xs mt-2">{stats.resumen.totalClientes > 0 ? ((stats.distribucion.en_contacto / stats.resumen.totalClientes) * 100).toFixed(1) : 0}%</p>
+                            <p className="text-(--theme-300) text-xs mt-2">{stats.resumen.totalClientes > 0 ? ((stats.distribucion.en_contacto / stats.resumen.totalClientes) * 100).toFixed(1) : 0}%</p>
                         </div>
                         <div className="text-center p-6 bg-purple-500/10 rounded-lg border border-purple-500/30">
                             <p className="text-5xl font-bold text-purple-400 mb-2">{stats.distribucion.reunion_agendada}</p>
@@ -325,7 +325,7 @@ const ProspectorEstadisticas = () => {
                                     <tr key={index} className="border-b border-gray-800 hover:bg-gray-700/30 transition-colors">
                                         <td className="p-4 text-white font-semibold text-sm">{semana.semana}</td>
                                         <td className="p-4 text-center text-gray-300 text-sm">{semana.llamadas}</td>
-                                        <td className="p-4 text-center text-teal-400 font-semibold text-sm">{semana.contactos}</td>
+                                        <td className="p-4 text-center text-(--theme-400) font-semibold text-sm">{semana.contactos}</td>
                                         <td className="p-4 text-center text-purple-400 font-semibold text-sm">{semana.agendadas}</td>
                                         <td className="p-4 text-center">
                                             <span className={`font-bold text-sm ${parseFloat(semana.tasaContacto) >= 60 ? 'text-green-400' : parseFloat(semana.tasaContacto) >= 40 ? 'text-yellow-400' : 'text-orange-400'}`}>

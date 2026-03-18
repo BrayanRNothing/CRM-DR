@@ -13,7 +13,7 @@ const CloserProspectos = () => {
 
     const getEtapaColor = (etapa) => {
         switch (etapa) {
-            case 'reunion_agendada': return 'bg-blue-500/20 text-blue-400';
+            case 'reunion_agendada': return 'bg-(--theme-500)/20 text-(--theme-400)';
             case 'reunion_realizada': return 'bg-cyan-500/20 text-cyan-400';
             case 'en_negociacion': return 'bg-orange-500/20 text-orange-400';
             default: return 'bg-gray-500/20 text-gray-400';

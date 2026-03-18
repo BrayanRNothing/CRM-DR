@@ -87,10 +87,10 @@ function csvToProspectos(text) {
 }
 
 const TIPOS_ACTIVIDAD = [
-    { value: 'llamada', label: 'Llamada', icon: Phone, color: 'bg-blue-500' },
+    { value: 'llamada', label: 'Llamada', icon: Phone, color: 'bg-(--theme-500)' },
     { value: 'whatsapp', label: 'WhatsApp', icon: MessageSquare, color: 'bg-green-500' },
     { value: 'correo', label: 'Correo', icon: Mail, color: 'bg-purple-500' },
-    { value: 'cita', label: 'Cita agendada', icon: Calendar, color: 'bg-teal-500' }
+    { value: 'cita', label: 'Cita agendada', icon: Calendar, color: 'bg-(--theme-500)' }
 ];
 
 const RESULTADOS = [
@@ -105,11 +105,11 @@ const getResultadoLabel = (r) => RESULTADOS.find(x => x.value === r)?.label || r
 
 const ETAPAS_EMBUDO = {
     'prospecto_nuevo': { label: 'Sin contacto', color: 'bg-red-100 text-red-600' },
-    'en_contacto': { label: 'En contacto', color: 'bg-blue-100 text-blue-600' },
-    'reunion_agendada': { label: 'Cita agendada', color: 'bg-teal-100 text-teal-600' },
-    'reunion_realizada': { label: 'Cita realizada', color: 'bg-indigo-100 text-indigo-600' },
+    'en_contacto': { label: 'En contacto', color: 'bg-(--theme-100) text-(--theme-600)' },
+    'reunion_agendada': { label: 'Cita agendada', color: 'bg-(--theme-100) text-(--theme-600)' },
+    'reunion_realizada': { label: 'Cita realizada', color: 'bg-(--theme-100) text-(--theme-600)' },
     'en_negociacion': { label: 'Negociación', color: 'bg-amber-100 text-amber-600' },
-    'venta_ganada': { label: 'Venta ganada', color: 'bg-emerald-100 text-emerald-600' },
+    'venta_ganada': { label: 'Venta ganada', color: 'bg-(--theme-100) text-(--theme-600)' },
     'perdido': { label: 'Perdido', color: 'bg-rose-100 text-rose-600' }
 };
 
@@ -586,7 +586,7 @@ const ProspectorSeguimiento = () => {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
-                    <RefreshCw className="w-12 h-12 text-teal-500 animate-spin mx-auto mb-4" />
+                    <RefreshCw className="w-12 h-12 text-(--theme-500) animate-spin mx-auto mb-4" />
                     <p className="text-gray-600">Cargando seguimiento...</p>
                 </div>
             </div>
@@ -631,7 +631,7 @@ const ProspectorSeguimiento = () => {
                                         <button
                                             type="button"
                                             onClick={() => setFormCrear((f) => ({ ...f, telefonos: [...f.telefonos, ''] }))}
-                                            className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 font-medium"
+                                            className="flex items-center gap-1 text-xs text-(--theme-600) hover:text-(--theme-700) font-medium"
                                         >
                                             <Plus className="w-3.5 h-3.5" /> Agregar
                                         </button>
@@ -724,7 +724,7 @@ const ProspectorSeguimiento = () => {
                             <button
                                 onClick={handleCrearProspecto}
                                 disabled={loadingCrear}
-                                className="flex-1 px-3 py-2 bg-teal-600 text-white rounded text-sm hover:bg-teal-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 px-3 py-2 bg-(--theme-600) text-white rounded text-sm hover:bg-(--theme-700) font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loadingCrear ? 'Creando...' : '+ Crear'}
                             </button>
@@ -765,7 +765,7 @@ const ProspectorSeguimiento = () => {
                                         <button
                                             type="button"
                                             onClick={() => setProspectoAEditar((f) => ({ ...f, telefonos: [...(f.telefonos || ['']), ''] }))}
-                                            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                            className="flex items-center gap-1 text-xs text-(--theme-600) hover:text-(--theme-700) font-medium"
                                         >
                                             <Plus className="w-3.5 h-3.5" /> Agregar
                                         </button>
@@ -872,7 +872,7 @@ const ProspectorSeguimiento = () => {
                             <button
                                 onClick={handleEditarProspecto}
                                 disabled={loadingEditar}
-                                className="flex-1 px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 px-3 py-2 bg-(--theme-600) text-white rounded text-sm hover:bg-(--theme-700) font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loadingEditar ? 'Guardando...' : 'Guardar'}
                             </button>
@@ -885,8 +885,8 @@ const ProspectorSeguimiento = () => {
             {modalPasarClienteAbierto && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-lg max-w-sm w-full">
-                        <div className="p-4 border-b border-slate-100 bg-emerald-50">
-                            <h2 className="text-lg font-bold text-emerald-900">🏆 Pasar a cliente</h2>
+                        <div className="p-4 border-b border-slate-100 bg-(--theme-50)">
+                            <h2 className="text-lg font-bold text-(--theme-900)">🏆 Pasar a cliente</h2>
                         </div>
                         <div className="p-4 space-y-3">
                             <p className="text-gray-600 text-sm">
@@ -897,7 +897,7 @@ const ProspectorSeguimiento = () => {
                                 value={notaConversion}
                                 onChange={e => setNotaConversion(e.target.value)}
                                 placeholder="Notas (opcional)..."
-                                className="w-full border border-slate-200 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-400"
+                                className="w-full border border-slate-200 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-400)"
                             />
                         </div>
                         <div className="flex gap-2 p-4 border-t border-slate-100">
@@ -910,7 +910,7 @@ const ProspectorSeguimiento = () => {
                             <button
                                 onClick={handlePasarACliente}
                                 disabled={loadingConversion}
-                                className="flex-1 px-3 py-2 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 px-3 py-2 bg-(--theme-600) text-white rounded text-sm hover:bg-(--theme-700) font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {loadingConversion ? 'Procesando...' : '✓ Confirmar'}
                             </button>
@@ -1008,7 +1008,7 @@ const ProspectorSeguimiento = () => {
                             {!importResult ? (
                                 <>
                                     <div
-                                        className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50/30 transition-all"
+                                        className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:border-(--theme-400) hover:bg-(--theme-50)/30 transition-all"
                                         onClick={() => fileInputRef.current?.click()}
                                         onDragOver={(e) => e.preventDefault()}
                                         onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFileChange({ target: { files: [f] } }); }}
@@ -1036,7 +1036,7 @@ const ProspectorSeguimiento = () => {
                                         <button
                                             onClick={handleImportCsv}
                                             disabled={importando || !csvPreview || csvPreview.data.length === 0}
-                                            className="flex-1 px-3 py-2 bg-teal-600 text-white rounded text-sm hover:bg-teal-700 font-medium disabled:opacity-50"
+                                            className="flex-1 px-3 py-2 bg-(--theme-600) text-white rounded text-sm hover:bg-(--theme-700) font-medium disabled:opacity-50"
                                         >
                                             {importando ? 'Importando...' : `Importar ${csvPreview?.data.length || 0} prospectos`}
                                         </button>
@@ -1044,11 +1044,11 @@ const ProspectorSeguimiento = () => {
                                 </>
                             ) : (
                                 <div className="space-y-3">
-                                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-800">
+                                    <div className="bg-(--theme-50) border border-(--theme-200) rounded-lg p-3 text-sm text-(--theme-800)">
                                         <p className="font-semibold">✓ Importación completada</p>
                                         <p>Insertados: {importResult.insertados} · Duplicados: {importResult.duplicados} · Errores: {importResult.errores}</p>
                                     </div>
-                                    <button onClick={resetImportModal} className="w-full px-3 py-2 bg-teal-600 text-white rounded text-sm hover:bg-teal-700 font-medium">Cerrar</button>
+                                    <button onClick={resetImportModal} className="w-full px-3 py-2 bg-(--theme-600) text-white rounded text-sm hover:bg-(--theme-700) font-medium">Cerrar</button>
                                 </div>
                             )}
                         </div>
@@ -1113,23 +1113,23 @@ const ProspectorSeguimiento = () => {
             // Evaluamos primero notas para las opciones personalizables de llamadas
             if (act.tipo === 'llamada') {
                 if (act.notas?.includes('WhatsApp')) return { icon: '💬', color: 'bg-green-500', label: 'WhatsApp / Correo' };
-                if (act.notas?.includes('llamar después')) return { icon: '📅', color: 'bg-indigo-500', label: 'Llamar después' };
+                if (act.notas?.includes('llamar después')) return { icon: '📅', color: 'bg-(--theme-500)', label: 'Llamar después' };
                 if (act.notas?.toLowerCase().includes('sin interés')) return { icon: '👎', color: 'bg-gray-500', label: 'Sin interés' };
-                if (act.notas?.includes('Agendó reunión')) return { icon: '🤝', color: 'bg-teal-500', label: 'Cita Agendada' };
+                if (act.notas?.includes('Agendó reunión')) return { icon: '🤝', color: 'bg-(--theme-500)', label: 'Cita Agendada' };
 
-                if (act.resultado === 'exitoso') return { icon: '📞', color: 'bg-emerald-500', label: 'Llamada exitosa' };
+                if (act.resultado === 'exitoso') return { icon: '📞', color: 'bg-(--theme-500)', label: 'Llamada exitosa' };
                 if (act.resultado === 'fallido') return { icon: '📵', color: 'bg-rose-500', label: 'Sin respuesta' };
             }
 
             if (act.tipo === 'cita') {
                 const desc = act.descripcion || '';
-                if (act.resultado === 'pendiente') return { icon: '📅', color: 'bg-blue-500', label: 'Cita Agendada' };
+                if (act.resultado === 'pendiente') return { icon: '📅', color: 'bg-(--theme-500)', label: 'Cita Agendada' };
                 if (desc.includes('no asistió') || desc.includes('No asistió')) return { icon: '❌', color: 'bg-red-500', label: desc };
                 if (desc.includes('Venta cerrada') || desc.includes('¡Venta')) return { icon: '🎉', color: 'bg-green-500', label: desc };
-                if (desc.includes('cotización') || desc.includes('Cotización')) return { icon: '💰', color: 'bg-blue-600', label: desc };
+                if (desc.includes('cotización') || desc.includes('Cotización')) return { icon: '💰', color: 'bg-(--theme-600)', label: desc };
                 if (desc.includes('otra reunión') || desc.includes('Otra reunión')) return { icon: '📅', color: 'bg-yellow-500', label: desc };
                 if (desc.includes('No le interesó') || desc.includes('no le interesó')) return { icon: '😐', color: 'bg-gray-500', label: desc };
-                return { icon: '📅', color: 'bg-blue-500', label: desc || 'Reunión' };
+                return { icon: '📅', color: 'bg-(--theme-500)', label: desc || 'Reunión' };
             }
             if (act.tipo === 'whatsapp') return { icon: '💬', color: 'bg-green-500', label: 'WhatsApp' };
             if (act.tipo === 'cliente') return { icon: '🏆', color: 'bg-yellow-500', label: 'Convertido a cliente' };
@@ -1245,21 +1245,21 @@ const ProspectorSeguimiento = () => {
 
                                 {/* Recordatorio de próxima acción */}
                                 {tareaLlamar && !editandoFechaSeguimiento && (
-                                    <div className="mt-4 flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700 font-medium">
+                                    <div className="mt-4 flex items-center gap-2 px-3 py-2 bg-(--theme-50) border border-(--theme-200) rounded-lg text-sm text-(--theme-700) font-medium">
                                         <Clock className="w-4 h-4 shrink-0" />
                                         <span className="flex-1">Próximo seguimiento: {new Date(tareaLlamar.fecha).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</span>
                                         <button
                                             title="Editar fecha de seguimiento"
                                             onClick={() => { setNuevaFechaSeguimiento(prospectoSeleccionado.proximaLlamada ? prospectoSeleccionado.proximaLlamada.slice(0, 16) : ''); setEditandoFechaSeguimiento(true); }}
-                                            className="ml-1 p-1 rounded hover:bg-blue-100 transition-colors text-blue-500"
+                                            className="ml-1 p-1 rounded hover:bg-(--theme-100) transition-colors text-(--theme-500)"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                         </button>
                                     </div>
                                 )}
                                 {editandoFechaSeguimiento && (
-                                    <div className="mt-4 px-3 py-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                        <div className="flex items-center gap-2 mb-3 text-sm text-blue-700 font-medium">
+                                    <div className="mt-4 px-3 py-3 bg-(--theme-50) border border-(--theme-200) rounded-lg">
+                                        <div className="flex items-center gap-2 mb-3 text-sm text-(--theme-700) font-medium">
                                             <Clock className="w-4 h-4 shrink-0" />
                                             <span>Editar fecha de seguimiento</span>
                                         </div>
@@ -1270,7 +1270,7 @@ const ProspectorSeguimiento = () => {
                                         <div className="flex gap-2 mt-1">
                                         <button
                                             onClick={() => guardarFechaSeguimiento(pid)}
-                                            className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
+                                            className="flex-1 px-3 py-2 bg-(--theme-600) text-white rounded-lg text-sm font-semibold hover:bg-(--theme-700)"
                                         >Guardar</button>
                                         <button
                                             onClick={() => setEditandoFechaSeguimiento(false)}
@@ -1285,7 +1285,7 @@ const ProspectorSeguimiento = () => {
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
                                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Sí contestó</p>
-                                    <p className="text-3xl font-black text-emerald-500">{llamadasExitosas}</p>
+                                    <p className="text-3xl font-black text-(--theme-500)">{llamadasExitosas}</p>
                                     <p className="text-xs text-gray-400 mt-1">veces</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
@@ -1295,7 +1295,7 @@ const ProspectorSeguimiento = () => {
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
                                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Citas</p>
-                                    <p className="text-3xl font-black text-blue-500">{actividadesContext.filter(a => a.tipo === 'cita').length}</p>
+                                    <p className="text-3xl font-black text-(--theme-500)">{actividadesContext.filter(a => a.tipo === 'cita').length}</p>
                                     <p className="text-xs text-gray-400 mt-1">agendadas</p>
                                 </div>
                                 <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
@@ -1307,10 +1307,10 @@ const ProspectorSeguimiento = () => {
 
                             {/* Próxima cita */}
                             {proximaCita && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
-                                    <Calendar className="w-8 h-8 text-blue-500 shrink-0" />
+                                <div className="bg-(--theme-50) border border-(--theme-200) rounded-xl p-4 flex items-center gap-3 shadow-sm">
+                                    <Calendar className="w-8 h-8 text-(--theme-500) shrink-0" />
                                     <div>
-                                        <p className="text-xs font-bold text-blue-500 uppercase tracking-wider">Próxima Reunión</p>
+                                        <p className="text-xs font-bold text-(--theme-500) uppercase tracking-wider">Próxima Reunión</p>
                                         <p className="font-bold text-gray-900">{new Date(proximaCita.fecha).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
                                         <p className="text-sm text-gray-500">{formatHora(proximaCita.fecha)}</p>
                                     </div>
@@ -1324,7 +1324,7 @@ const ProspectorSeguimiento = () => {
                                         {/* Llamar */}
                                         <button
                                             onClick={() => setLlamadaFlow({ paso: 'contesto', notas: '', fechaProxima: '', interesado: null })}
-                                            className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-blue-500 rounded-xl p-4 text-gray-700 hover:text-blue-600 transition-all shadow-sm font-bold text-sm"
+                                            className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm"
                                         >
                                             <Phone className="w-6 h-6" />
                                             Llamar
@@ -1342,7 +1342,7 @@ const ProspectorSeguimiento = () => {
                                         {/* Agendar reunión */}
                                         <button
                                             onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })}
-                                            className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-teal-500 rounded-xl p-4 text-gray-700 hover:text-teal-600 transition-all shadow-sm font-bold text-sm text-center leading-tight"
+                                            className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm text-center leading-tight"
                                         >
                                             <Calendar className="w-6 h-6" />
                                             Agendar Reunión
@@ -1350,9 +1350,9 @@ const ProspectorSeguimiento = () => {
                                     </div>
                                 ) : (
                                     /* ===== FLUJO DE LLAMADA ===== */
-                                    <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-5 space-y-4">
+                                    <div className="bg-(--theme-50) border-2 border-(--theme-200) rounded-xl p-5 space-y-4">
                                         <div className="flex items-center justify-between">
-                                            <span className="font-bold text-blue-700 flex items-center gap-2"><Phone className="w-4 h-4" /> Registrando llamada...</span>
+                                            <span className="font-bold text-(--theme-700) flex items-center gap-2"><Phone className="w-4 h-4" /> Registrando llamada...</span>
                                             <button onClick={() => setLlamadaFlow(null)} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-white/60">✕ Cancelar</button>
                                         </div>
 
@@ -1363,7 +1363,7 @@ const ProspectorSeguimiento = () => {
                                                 <div className="flex gap-3">
                                                     <button
                                                         onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'opciones_contesto', contesto: true }))}
-                                                        className="flex-1 py-2.5 bg-emerald-500 text-white rounded-lg font-bold hover:bg-emerald-600 transition-colors"
+                                                        className="flex-1 py-2.5 bg-(--theme-500) text-white rounded-lg font-bold hover:bg-(--theme-600) transition-colors"
                                                     >✓ Sí, contestó</button>
                                                     <button
                                                         onClick={async () => {
@@ -1391,7 +1391,7 @@ const ProspectorSeguimiento = () => {
                                                             setLlamadaFlow(null);
                                                             navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } });
                                                         }}
-                                                        className="py-2.5 bg-teal-500 text-white rounded-lg font-bold hover:bg-teal-600 transition-colors text-sm"
+                                                        className="py-2.5 bg-(--theme-500) text-white rounded-lg font-bold hover:bg-(--theme-600) transition-colors text-sm"
                                                     >📅 Agendó reunión</button>
 
                                                     <button
@@ -1401,7 +1401,7 @@ const ProspectorSeguimiento = () => {
                                                             const defaultDate = hoy.toISOString().slice(0, 16);
                                                             setLlamadaFlow(f => ({ ...f, paso: 'llamarDespues', interesado: true, fechaProxima: defaultDate }));
                                                         }}
-                                                        className="py-2.5 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition-colors text-sm"
+                                                        className="py-2.5 bg-(--theme-500) text-white rounded-lg font-bold hover:bg-(--theme-600) transition-colors text-sm"
                                                     >📞 Llamar después</button>
 
                                                     <button
@@ -1500,7 +1500,7 @@ const ProspectorSeguimiento = () => {
                                         {/* 3d: Llamar después — marcar fecha */}
                                         {llamadaFlow.paso === 'llamarDespues' && (
                                             <div className="space-y-3">
-                                                <p className="font-semibold text-blue-700">📅 ¿Cuándo le llamamos?</p>
+                                                <p className="font-semibold text-(--theme-700)">📅 ¿Cuándo le llamamos?</p>
                                                 <TimeWheelPicker
                                                     value={llamadaFlow.fechaProxima}
                                                     onChange={val => setLlamadaFlow(f => ({ ...f, fechaProxima: val }))}
@@ -1510,7 +1510,7 @@ const ProspectorSeguimiento = () => {
                                                     value={llamadaFlow.notas || ''}
                                                     onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))}
                                                     placeholder="Notas de la llamada..."
-                                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
+                                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-400)"
                                                 />
                                                 <button
                                                     onClick={async () => {
@@ -1548,7 +1548,7 @@ const ProspectorSeguimiento = () => {
                                                             toast.error('Error al guardar el seguimiento completo');
                                                         }
                                                     }}
-                                                    className="w-full py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700"
+                                                    className="w-full py-2 bg-(--theme-600) text-white rounded-lg font-bold hover:bg-(--theme-700)"
                                                 >✓ Guardar seguimiento</button>
                                             </div>
                                         )}
@@ -1562,7 +1562,7 @@ const ProspectorSeguimiento = () => {
                                         <button
                                             onClick={handleGuardarNotasRapidas}
                                             disabled={loadingNotas}
-                                            className="text-[10px] bg-teal-600 text-white px-2 py-1 rounded font-bold hover:bg-teal-700 transition-colors disabled:opacity-50"
+                                            className="text-[10px] bg-(--theme-600) text-white px-2 py-1 rounded font-bold hover:bg-(--theme-700) transition-colors disabled:opacity-50"
                                         >
                                             {loadingNotas ? 'Guardando...' : '✓ Guardar'}
                                         </button>
@@ -1571,7 +1571,7 @@ const ProspectorSeguimiento = () => {
                                         value={notasRapidas}
                                         onChange={(e) => setNotasRapidas(e.target.value)}
                                         placeholder="Escribe notas importantes aquí..."
-                                        className="w-full bg-white border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-teal-400 focus:border-transparent outline-none min-h-[100px] resize-none scrollbar-hide"
+                                        className="w-full bg-white border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent outline-none min-h-[100px] resize-none scrollbar-hide"
                                     />
                                 </div>
 
@@ -1592,7 +1592,7 @@ const ProspectorSeguimiento = () => {
                                             <p className="text-xs text-slate-400 text-center mb-2">Estas acciones son irreversibles. Confirma antes de continuar.</p>
                                             <button
                                                 onClick={() => setModalPasarClienteAbierto(true)}
-                                                className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg py-2 font-bold text-sm transition-colors"
+                                                className="w-full flex items-center justify-center gap-2 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded-lg py-2 font-bold text-sm transition-colors"
                                             >
                                                 <CheckCircle2 className="w-4 h-4" />
                                                 Pasar a cliente
@@ -1622,7 +1622,7 @@ const ProspectorSeguimiento = () => {
                             >
                                 {loadingContext ? (
                                     <div className="flex justify-center items-center h-32">
-                                        <RefreshCw className="w-8 h-8 text-teal-500 animate-spin" />
+                                        <RefreshCw className="w-8 h-8 text-(--theme-500) animate-spin" />
                                     </div>
                                 ) : actividadesContext.length === 0 ? (
                                     <div className="text-center text-gray-400 mt-10">
@@ -1666,7 +1666,7 @@ const ProspectorSeguimiento = () => {
                                                         </p>
                                                     )}
                                                     {act.fechaCita && (
-                                                        <p className="text-xs text-blue-600 mt-1.5 font-medium">
+                                                        <p className="text-xs text-(--theme-600) mt-1.5 font-medium">
                                                             📅 {new Date(act.fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
                                                         </p>
                                                     )}
@@ -1704,7 +1704,7 @@ const ProspectorSeguimiento = () => {
                     <div className="flex items-center gap-2 flex-wrap">
                         <button
                             onClick={handleExportCsv}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors font-medium text-sm"
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-(--theme-300) text-(--theme-700) rounded-lg hover:bg-(--theme-50) transition-colors font-medium text-sm"
                             title="Exportar lista actual a CSV"
                         >
                             <Upload className="w-4 h-4" />
@@ -1720,7 +1720,7 @@ const ProspectorSeguimiento = () => {
                         </button>
                         <button
                             onClick={() => setModalCrearAbierto(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+                            className="flex items-center gap-2 px-4 py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors font-medium"
                         >
                             <UserPlus className="w-5 h-5" />
                             Crear prospecto
@@ -1739,7 +1739,7 @@ const ProspectorSeguimiento = () => {
                                 placeholder="Buscar prospectos..."
                                 value={busquedaProspecto}
                                 onChange={(e) => setBusquedaProspecto(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-slate-50 text-sm h-[42px]"
+                                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-slate-50 text-sm h-[42px]"
                                 title="Buscar por nombre, empresa, correo o teléfono"
                             />
                         </div>
@@ -1760,8 +1760,8 @@ const ProspectorSeguimiento = () => {
                                         onClick={() => setFiltroEtapa(btn.value)}
                                         className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${
                                             filtroEtapa === btn.value
-                                                ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
-                                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-teal-400 hover:text-teal-700'
+                                                ? 'bg-(--theme-600) text-white border-(--theme-600) shadow-sm'
+                                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-(--theme-400) hover:text-(--theme-700)'
                                         }`}
                                     >
                                         {btn.label}
@@ -1772,7 +1772,7 @@ const ProspectorSeguimiento = () => {
                             <button
                                 onClick={() => setFiltroRecordatorio(v => !v)}
                                 className={`flex items-center justify-center w-8 h-8 rounded-lg border text-sm transition-all ${filtroRecordatorio
-                                    ? 'bg-blue-50 border-blue-400 text-blue-700'
+                                    ? 'bg-(--theme-50) border-(--theme-400) text-(--theme-700)'
                                     : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'
                                     }`}
                                 title="Solo con recordatorio de llamada"
@@ -1867,10 +1867,10 @@ const ProspectorSeguimiento = () => {
                                                 {p.ultimaActTipo ? (
                                                     <div className="flex items-start gap-1.5">
                                                         <div className="mt-0.5 shrink-0">
-                                                            {p.ultimaActTipo === 'llamada' && <Phone className="w-3 h-3 text-blue-500" />}
+                                                            {p.ultimaActTipo === 'llamada' && <Phone className="w-3 h-3 text-(--theme-500)" />}
                                                             {p.ultimaActTipo === 'whatsapp' && <MessageSquare className="w-3 h-3 text-green-500" />}
                                                             {p.ultimaActTipo === 'correo' && <Mail className="w-3 h-3 text-purple-500" />}
-                                                            {p.ultimaActTipo === 'cita' && <Calendar className="w-3 h-3 text-teal-500" />}
+                                                            {p.ultimaActTipo === 'cita' && <Calendar className="w-3 h-3 text-(--theme-500)" />}
                                                             {!['llamada','whatsapp','correo','cita'].includes(p.ultimaActTipo) && <Clock className="w-3 h-3 text-slate-400" />}
                                                         </div>
                                                         <p className="text-[11px] text-slate-600 leading-snug" title={p.ultimaActNotas || ''}>
@@ -1887,8 +1887,8 @@ const ProspectorSeguimiento = () => {
                                                 {p.proximaLlamada ? (() => {
                                                     const esVencido = new Date(p.proximaLlamada) < new Date();
                                                     return (
-                                                        <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-blue-600'}`}>
-                                                            <div className={`w-2 h-2 rounded-full animate-pulse ${esVencido ? 'bg-red-500' : 'bg-blue-500'}`}></div>
+                                                        <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-(--theme-600)'}`}>
+                                                            <div className={`w-2 h-2 rounded-full animate-pulse ${esVencido ? 'bg-red-500' : 'bg-(--theme-500)'}`}></div>
                                                             <span className="text-xs font-semibold">
                                                                 {new Date(p.proximaLlamada).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
                                                                 {esVencido && ' ⚠'}
@@ -1904,7 +1904,7 @@ const ProspectorSeguimiento = () => {
                                                 <div className="flex items-center justify-center gap-3">
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); abrirModalEditar(p); }}
-                                                        className="text-gray-400 hover:text-blue-600 transition-colors p-2 rounded-full hover:bg-blue-50"
+                                                        className="text-gray-400 hover:text-(--theme-600) transition-colors p-2 rounded-full hover:bg-(--theme-50)"
                                                         title="Editar Prospecto"
                                                     >
                                                         <Edit2 className="w-4 h-4" />

@@ -223,8 +223,8 @@ const CloserMonitoreoProspectors = () => {
                         <div className="grid grid-cols-4 gap-3 flex-shrink-0">
                             {[
                                 { icon: <Users className="w-4 h-4 text-green-600" />, bg: 'bg-green-50', val: statsHoy.prospectosActivos || 0, label: 'Activos', sub: `+${statsHoy.prospectosRegistrados || 0} hoy` },
-                                { icon: <Calendar className="w-4 h-4 text-emerald-600" />, bg: 'bg-emerald-50', val: statsHoy.prospectosTransferidos || statsHoy.citasAgendadas || 0, label: 'Citas Agend.', sub: `${((statsHoy.citasAgendadas / (statsHoy.prospectosRegistrados || 1)) * 100).toFixed(0)}% efic.` },
-                                { icon: <Phone className="w-4 h-4 text-blue-600" />, bg: 'bg-blue-50', val: statsHoy.llamadas || 0, label: 'Llamadas', sub: `${statsHoy.llamadasExitosas || 0} exitosas` },
+                                { icon: <Calendar className="w-4 h-4 text-(--theme-600)" />, bg: 'bg-(--theme-50)', val: statsHoy.prospectosTransferidos || statsHoy.citasAgendadas || 0, label: 'Citas Agend.', sub: `${((statsHoy.citasAgendadas / (statsHoy.prospectosRegistrados || 1)) * 100).toFixed(0)}% efic.` },
+                                { icon: <Phone className="w-4 h-4 text-(--theme-600)" />, bg: 'bg-(--theme-50)', val: statsHoy.llamadas || 0, label: 'Llamadas', sub: `${statsHoy.llamadasExitosas || 0} exitosas` },
                                 { icon: <AlertCircle className="w-4 h-4 text-red-500" />, bg: 'bg-red-50', val: statsHoy.prospectosDescartados || 0, label: 'Descartados', sub: `${((statsHoy.prospectosDescartados / (statsHoy.prospectosRegistrados || 1)) * 100).toFixed(0)}% desc.` },
                             ].map((k, i) => (
                                 <div key={i} className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl p-3 shadow-sm">
@@ -371,8 +371,8 @@ const CloserMonitoreoProspectors = () => {
                                                 detail = evt.nombre || null;
                                             } else if (evt.subTipo === 'llamada') {
                                                 const exitosa = evt.resultado === 'exitoso';
-                                                icon = <Phone className={`w-3 h-3 ${exitosa ? 'text-blue-600' : 'text-gray-400'}`} />;
-                                                iconBg = exitosa ? 'bg-blue-100' : 'bg-gray-100';
+                                                icon = <Phone className={`w-3 h-3 ${exitosa ? 'text-(--theme-600)' : 'text-gray-400'}`} />;
+                                                iconBg = exitosa ? 'bg-(--theme-100)' : 'bg-gray-100';
                                                 label = exitosa ? 'Llamada exitosa' : 'Llamada sin respuesta';
                                                 detail = evt.notas || null;
                                             } else if (['whatsapp', 'mensaje', 'correo'].includes(evt.subTipo)) {
@@ -381,8 +381,8 @@ const CloserMonitoreoProspectors = () => {
                                                 label = evt.subTipo === 'correo' ? 'Correo enviado' : evt.subTipo === 'whatsapp' ? 'WhatsApp enviado' : 'Mensaje enviado';
                                                 detail = evt.notas || null;
                                             } else if (evt.subTipo === 'cita') {
-                                                icon = <Calendar className="w-3 h-3 text-emerald-600" />;
-                                                iconBg = 'bg-emerald-100';
+                                                icon = <Calendar className="w-3 h-3 text-(--theme-600)" />;
+                                                iconBg = 'bg-(--theme-100)';
                                                 label = 'Cita agendada';
                                                 detail = evt.notas || null;
                                             } else {

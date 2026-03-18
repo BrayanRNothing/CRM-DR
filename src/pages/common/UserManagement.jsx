@@ -22,11 +22,11 @@ function ModalUsuario({ modoEdicion, formData, setFormData, handleSubmit, cerrar
 
     // Theme configuration based on role
     const theme = isCloser ? {
-        gradient: 'from-blue-600 to-indigo-600',
-        lightBg: 'bg-blue-50/50',
-        iconColor: 'text-blue-500',
-        ring: 'focus:ring-blue-500',
-        button: 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/30'
+        gradient: 'from-(--theme-600) to-(--theme-600)',
+        lightBg: 'bg-(--theme-50)/50',
+        iconColor: 'text-(--theme-500)',
+        ring: 'focus:ring-(--theme-500)',
+        button: 'bg-(--theme-600) hover:bg-(--theme-700) shadow-(--theme-600)/30'
     } : {
         gradient: 'from-[#8bc34a] to-[#4caf50]',
         lightBg: 'bg-green-50/50',
@@ -84,16 +84,16 @@ function ModalUsuario({ modoEdicion, formData, setFormData, handleSubmit, cerrar
                                 <button type="button"
                                     onClick={() => setFormData(p => ({ ...p, rol: 'closer' }))}
                                     className={`relative flex flex-col items-center justify-center p-4 border-2 rounded-2xl transition-all duration-300 group ${isCloser
-                                        ? 'border-blue-600 bg-blue-50 shadow-md shadow-blue-100 scale-[1.02]'
+                                        ? 'border-(--theme-600) bg-(--theme-50) shadow-md shadow-(--theme-100) scale-[1.02]'
                                         : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50 opacity-60 hover:opacity-100'
                                         }`}>
                                     {formData.rol === 'closer' && (
-                                        <div className="absolute top-3 right-3 text-blue-600"><CheckCircle2 size={18} fill="#2563eb" className="text-white" /></div>
+                                        <div className="absolute top-3 right-3 text-(--theme-600)"><CheckCircle2 size={18} fill="#2563eb" className="text-white" /></div>
                                     )}
-                                    <div className={`p-3 rounded-2xl mb-3 transition-colors ${isCloser ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
+                                    <div className={`p-3 rounded-2xl mb-3 transition-colors ${isCloser ? 'bg-(--theme-600) text-white shadow-lg shadow-(--theme-200)' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
                                         <Target size={24} strokeWidth={2.5} />
                                     </div>
-                                    <span className={`font-black text-sm tracking-wide ${isCloser ? 'text-blue-600' : 'text-slate-500'}`}>CLOSER</span>
+                                    <span className={`font-black text-sm tracking-wide ${isCloser ? 'text-(--theme-600)' : 'text-slate-500'}`}>CLOSER</span>
                                 </button>
                             </div>
                         </div>
@@ -316,8 +316,8 @@ function UserManagement({ initialRole }) {
     const myGoogleToken = localStorage.getItem('google_access_token');
 
     const getRoleStyle = (role) => role === 'closer'
-        ? { bar: 'from-blue-500 to-indigo-600', badge: 'bg-blue-50 text-blue-700 border-blue-200', label: '🎯 Closer' }
-        : { bar: 'from-teal-500 to-emerald-600', badge: 'bg-teal-50 text-teal-700 border-teal-200', label: '🔍 Prospector' };
+        ? { bar: 'from-(--theme-500) to-(--theme-600)', badge: 'bg-(--theme-50) text-(--theme-700) border-(--theme-200)', label: '🎯 Closer' }
+        : { bar: 'from-(--theme-500) to-(--theme-600)', badge: 'bg-(--theme-50) text-(--theme-700) border-(--theme-200)', label: '🔍 Prospector' };
 
     return (
         <div className="w-full min-h-full bg-slate-50 p-6 md:p-8">
@@ -380,7 +380,7 @@ function UserManagement({ initialRole }) {
                                             </div>
                                             <div className="flex flex-col gap-1.5 flex-shrink-0">
                                                 <button onClick={() => abrirModalEditar(user)}
-                                                    className="p-1.5 text-blue-500 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                                                    className="p-1.5 text-(--theme-500) bg-(--theme-50) hover:bg-(--theme-100) rounded-lg transition-colors"
                                                     title="Editar">
                                                     <Edit2 size={15} />
                                                 </button>

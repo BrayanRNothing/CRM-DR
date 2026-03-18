@@ -198,7 +198,7 @@ const CloserDashboard = () => {
                             {
                                 etapa: 'Reuniones Agendadas',
                                 cantidad: data.embudo.reunion_agendada,
-                                color: 'bg-blue-500',
+                                color: 'bg-(--theme-500)',
                                 contadorHoy: data.metricas.reuniones.hoy,
                                 labelContador: 'hoy',
                                 cantidadExito: data.embudo.reunion_realizada,
@@ -256,7 +256,7 @@ const CloserDashboard = () => {
                         <div className="grid grid-cols-2 grid-rows-3 gap-4 flex-1">
                             {/* Row 1 */}
                             <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-md flex flex-col items-center justify-center">
-                                <Calendar className="w-8 h-8 text-blue-600 mb-2" />
+                                <Calendar className="w-8 h-8 text-(--theme-600) mb-2" />
                                 <span className="text-3xl font-bold text-gray-900 mb-1">{data.metricas.reuniones.hoy}</span>
                                 <p className="text-gray-600 text-xs font-semibold text-center">Reuniones Hoy</p>
                             </div>
@@ -275,7 +275,7 @@ const CloserDashboard = () => {
                             </div>
 
                             <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-md flex flex-col items-center justify-center">
-                                <DollarSign className="w-8 h-8 text-emerald-600 mb-2" />
+                                <DollarSign className="w-8 h-8 text-(--theme-600) mb-2" />
                                 <span className="text-2xl font-bold text-gray-900 mb-1">${(data.metricas.ventas.montoMes || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}</span>
                                 <p className="text-gray-600 text-xs font-semibold text-center">Monto del Mes</p>
                             </div>
@@ -299,14 +299,14 @@ const CloserDashboard = () => {
                     <div className="lg:col-span-2 flex flex-col min-h-0">
                         <div className="flex-1 bg-white border border-gray-200 rounded-xl p-6 shadow-md flex flex-col overflow-hidden">
                             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2 flex-shrink-0">
-                                <Calendar className="w-6 h-6 text-blue-600" />
+                                <Calendar className="w-6 h-6 text-(--theme-600)" />
                                 Próximas Reuniones
                             </h2>
 
                             <div className="flex-1 space-y-4 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin', scrollbarColor: '#3b82f6 #f3f4f6' }}>
                                 {loadingTareas ? (
                                     <div className="flex justify-center items-center h-20">
-                                        <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
+                                        <RefreshCw className="w-6 h-6 animate-spin text-(--theme-500)" />
                                     </div>
                                 ) : tareas.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
@@ -323,11 +323,11 @@ const CloserDashboard = () => {
                                         }
 
                                         return (
-                                            <div key={t.id || t._id} className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex flex-col group hover:border-blue-300 transition-colors shadow-sm gap-2">
+                                            <div key={t.id || t._id} className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex flex-col group hover:border-(--theme-300) transition-colors shadow-sm gap-2">
                                                 <div className="flex items-start justify-between gap-4">
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 mb-1">
-                                                            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                                            <span className="w-2 h-2 rounded-full bg-(--theme-500)"></span>
                                                             <h3 className="font-bold text-gray-900 text-sm truncate">
                                                                 {t.cliente?.nombres} {t.cliente?.apellidoPaterno}
                                                             </h3>
@@ -338,7 +338,7 @@ const CloserDashboard = () => {
                                                             </p>
                                                         )}
                                                     </div>
-                                                    <div className="bg-blue-100 text-blue-700 font-bold text-xs px-2 py-1 rounded-md shrink-0 border border-blue-200">
+                                                    <div className="bg-(--theme-100) text-(--theme-700) font-bold text-xs px-2 py-1 rounded-md shrink-0 border border-(--theme-200)">
                                                         {new Date(t.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
                                                     </div>
                                                 </div>
@@ -367,7 +367,7 @@ const CloserDashboard = () => {
                                                         href={meetLink}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 text-xs transition-colors"
+                                                        className="mt-2 w-full bg-(--theme-600) hover:bg-(--theme-700) text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 text-xs transition-colors"
                                                     >
                                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />

@@ -36,11 +36,11 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
 
     const hoverClasses = isDark
         ? 'hover:bg-gray-800 hover:text-white'
-        : 'hover:bg-teal-50 hover:text-teal-700';
+        : 'hover:bg-(--theme-50) hover:text-(--theme-700)';
 
     const activeClasses = isDark
-        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-        : 'bg-teal-500 text-white shadow-lg shadow-teal-500/30';
+        ? 'bg-(--theme-600) text-white shadow-lg shadow-(--theme-600)/30'
+        : 'bg-(--theme-500) text-white shadow-lg shadow-(--theme-500)/30';
 
     const inactiveClasses = isDark
         ? 'text-gray-400'
@@ -58,22 +58,20 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                 {isCollapsed ? (
                     <button
                         onClick={handleToggle}
-                        className="relative flex items-center justify-center w-full group"
+                        className="relative flex items-center justify-center w-full group py-1"
                         title="Expandir menú"
                     >
-                        <img
-                            src={logo}
-                            alt={title}
-                            className="h-8 w-8 object-contain transition-opacity duration-300 group-hover:opacity-20"
-                        />
+                        <div className="w-10 h-10 rounded-xl bg-linear-to-br from-(--theme-500) to-(--theme-700) flex items-center justify-center text-white font-bold text-xl shadow-md transition-opacity duration-300 group-hover:opacity-20 text-center uppercase">
+                            {title.charAt(0)}
+                        </div>
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <ChevronRight size={24} className={`${isDark ? 'text-white' : 'text-gray-800'}`} />
                         </div>
                         {/* Indicador one-time: punto pulsante + tooltip */}
                         {showHint && (
                             <span className="absolute -top-1 -right-1 flex z-50">
-                                <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-teal-400 opacity-75" />
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-teal-500" />
+                                <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-(--theme-400) opacity-75" />
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-(--theme-500)" />
                                 <span
                                     className="absolute left-5 top-0 whitespace-nowrap text-xs font-semibold px-2 py-1 rounded-lg shadow-lg pointer-events-none z-[9999]"
                                     style={{ background: isDark ? '#1e293b' : '#0f172a', color: '#5eead4' }}
@@ -85,27 +83,13 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                     </button>
                 ) : (
                     <>
-                        {logo ? (
-                            <button
-                                onClick={handleToggle}
-                                className="flex-1 flex justify-center hover:opacity-80 transition-opacity cursor-pointer focus:outline-none"
-                                title="Contraer/Expandir menú"
-                            >
-                                <img
-                                    src={logo}
-                                    alt={title}
-                                    className="h-10 w-auto object-contain"
-                                />
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleToggle}
-                                className={`font-bold text-xl hover:opacity-80 transition-opacity cursor-pointer focus:outline-none ${isDark ? 'text-white' : 'text-gray-800'}`}
-                                title="Contraer/Expandir menú"
-                            >
-                                {title}
-                            </button>
-                        )}
+                        <button
+                            onClick={handleToggle}
+                            className={`font-black tracking-tight text-2xl hover:opacity-80 transition-opacity bg-clip-text text-transparent bg-linear-to-r from-(--theme-600) to-(--theme-400) cursor-pointer focus:outline-none`}
+                            title="Contraer/Expandir menú"
+                        >
+                            {title}
+                        </button>
                         <button
                             onClick={handleToggle}
                             className={`p-1.5 rounded-lg transition-colors absolute right-4 ${hoverClasses}`}
@@ -120,7 +104,9 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
             <div className={`px-4 py-3 border-b ${borderClass}`}>
                 {!isCollapsed ? (
                     <div className="flex items-center gap-3">
-                        <Avatar name={userInfo?.nombre || 'U'} size="sm" />
+                        <div className="shrink-0 flex items-center">
+                            <Avatar name={userInfo?.nombre || 'U'} size="sm" />
+                        </div>
                         <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>
                             Hola, {userInfo?.nombre || 'Usuario'}
                         </p>

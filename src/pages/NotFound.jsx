@@ -22,7 +22,7 @@ function NotFound() {
 
           <Link
             to="/"
-            className="inline-block bg-gradient-to-r from-purple-500 to-blue-500 text-white px-8 py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition transform hover:scale-105 shadow-lg"
+            className="inline-block bg-gradient-to-r from-purple-500 to-(--theme-500) text-white px-8 py-3 rounded-lg font-semibold hover:from-purple-600 hover:to-(--theme-600) transition transform hover:scale-105 shadow-lg"
           >
             🏠 Volver al Inicio
           </Link>

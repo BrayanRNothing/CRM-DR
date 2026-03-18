@@ -221,10 +221,10 @@ const ProspectorProspectos = () => {
 
   const getEtapaColor = (etapa) => {
     switch (etapa) {
-      case 'prospecto_nuevo': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'prospecto_nuevo': return 'bg-(--theme-100) text-(--theme-700) border-(--theme-200)';
       case 'en_contacto': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
       case 'reunion_agendada': return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'reunion_realizada': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
+      case 'reunion_realizada': return 'bg-(--theme-100) text-(--theme-700) border-(--theme-200)';
       case 'en_negociacion': return 'bg-orange-100 text-orange-700 border-orange-200';
       default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
@@ -250,7 +250,7 @@ const ProspectorProspectos = () => {
                 <p className="text-slate-500 mt-1">Administra y da seguimiento a tus prospectos activos</p>
               </div>
               <div className="flex items-center gap-3 flex-wrap">
-                <button onClick={handleExportCsv} className="flex items-center gap-2 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2.5 rounded-xl font-medium shadow-sm transition-all" title="Exportar lista actual a CSV">
+                <button onClick={handleExportCsv} className="flex items-center gap-2 bg-white hover:bg-(--theme-50) text-(--theme-700) border border-(--theme-200) px-4 py-2.5 rounded-xl font-medium shadow-sm transition-all" title="Exportar lista actual a CSV">
                   <Download className="w-4 h-4" />
                   <span>Exportar CSV</span>
                 </button>
@@ -258,7 +258,7 @@ const ProspectorProspectos = () => {
                   <Upload className="w-4 h-4" />
                   <span>Importar CSV</span>
                 </button>
-                <button onClick={() => setIsModalAbierto(true)} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-medium shadow-sm transition-all">
+                <button onClick={() => setIsModalAbierto(true)} className="flex items-center gap-2 bg-(--theme-600) hover:bg-(--theme-700) text-white px-4 py-2.5 rounded-xl font-medium shadow-sm transition-all">
                   <UserPlus className="w-5 h-5" />
                   <span>Nuevo Prospecto</span>
                 </button>
@@ -271,7 +271,7 @@ const ProspectorProspectos = () => {
                 {/* 30% Búsqueda */}
                 <div className="relative w-full">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input type="text" placeholder="Buscar prospectos..." className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none bg-slate-50 text-sm h-[42px]" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} title="Buscar por nombre, empresa o telefono" />
+                  <input type="text" placeholder="Buscar prospectos..." className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) transition-all outline-none bg-slate-50 text-sm h-[42px]" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} title="Buscar por nombre, empresa o telefono" />
                 </div>
 
                 {/* 70% Filtros */}
@@ -279,7 +279,7 @@ const ProspectorProspectos = () => {
                   {/* Filtro Etapa (Chips) */}
                   <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl p-0.5 overflow-x-auto shrink-0">
                     {[{ key: 'todos', label: 'Todos' }, { key: 'prospecto_nuevo', label: 'Nuevos' }, { key: 'en_contacto', label: 'Contacto' }, { key: 'reunion_agendada', label: 'Agendados' }].map(f => (
-                      <button key={f.key} onClick={() => setFiltroEtapa(f.key)} className={`px-2 py-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${filtroEtapa === f.key ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{f.label}</button>
+                      <button key={f.key} onClick={() => setFiltroEtapa(f.key)} className={`px-2 py-1 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${filtroEtapa === f.key ? 'bg-white text-(--theme-600) shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{f.label}</button>
                     ))}
                   </div>
 
@@ -288,7 +288,7 @@ const ProspectorProspectos = () => {
                     <select
                       value={filtroFecha}
                       onChange={(e) => setFiltroFecha(e.target.value)}
-                      className="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-slate-50 text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer h-full"
+                      className="border border-slate-200 rounded-xl px-3 py-2 text-sm bg-slate-50 text-gray-700 focus:ring-2 focus:ring-(--theme-500) focus:outline-none cursor-pointer h-full"
                     >
                       <option value="todos">📅 Cualquier fecha</option>
                       <option value="hoy">Hoy</option>
@@ -318,7 +318,7 @@ const ProspectorProspectos = () => {
                     )}
                   </div>
 
-                  <button onClick={() => fetchProspectos()} className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border border-slate-200 shrink-0 h-[42px] px-3 flex items-center justify-center ml-auto" title="Actualizar lista">
+                  <button onClick={() => fetchProspectos()} className="p-2 text-slate-500 hover:text-(--theme-600) hover:bg-(--theme-50) rounded-xl transition-all border border-slate-200 shrink-0 h-[42px] px-3 flex items-center justify-center ml-auto" title="Actualizar lista">
                     <RefreshCcw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                   </button>
                 </div>
@@ -391,12 +391,12 @@ const ProspectorProspectos = () => {
                         <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${getEtapaColor(prospecto.etapaEmbudo)}`}>{(prospecto.etapaEmbudo || 'prospecto_nuevo').replace('_', ' ').toUpperCase()}</span>
                         <div className="flex items-center gap-1 text-yellow-500"><Star className={`w-4 h-4 ${prospecto.interes >= 3 ? 'fill-current' : ''}`} /><span className="text-sm font-bold text-slate-700">{prospecto.interes || 0}</span></div>
                       </div>
-                      <h3 className="text-lg font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">{prospecto.nombres} {prospecto.apellidoPaterno}</h3>
+                      <h3 className="text-lg font-bold text-slate-800 group-hover:text-(--theme-600) transition-colors">{prospecto.nombres} {prospecto.apellidoPaterno}</h3>
                       {prospecto.empresa && (<div className="flex items-center gap-1.5 text-slate-500 mt-1 text-sm font-medium"><Building className="w-4 h-4" /><span>{prospecto.empresa}</span></div>)}
                     </div>
                     <div className="p-5 space-y-3 bg-slate-50/50">
-                      <div className="flex items-center gap-3 text-slate-600"><div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center"><Phone className="w-4 h-4 text-indigo-500" /></div><span className="text-sm font-medium">{prospecto.telefono}</span></div>
-                      {prospecto.correo && (<div className="flex items-center gap-3 text-slate-600"><div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center"><Mail className="w-4 h-4 text-indigo-500" /></div><span className="text-sm truncate font-medium">{prospecto.correo}</span></div>)}
+                      <div className="flex items-center gap-3 text-slate-600"><div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center"><Phone className="w-4 h-4 text-(--theme-500)" /></div><span className="text-sm font-medium">{prospecto.telefono}</span></div>
+                      {prospecto.correo && (<div className="flex items-center gap-3 text-slate-600"><div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center"><Mail className="w-4 h-4 text-(--theme-500)" /></div><span className="text-sm truncate font-medium">{prospecto.correo}</span></div>)}
                       <div className="flex items-center gap-3 text-slate-500 pt-2 border-t border-slate-100 italic text-xs"><Clock className="w-4 h-4" /><span>Actualizado: {formatearFecha(prospecto.updated_at || prospecto.fechaUltimaEtapa)}</span></div>
                     </div>
                     <div className="px-5 py-4 flex items-center justify-between bg-white">
@@ -407,7 +407,7 @@ const ProspectorProspectos = () => {
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                      <a href={`/prospector/prospecto/${prospecto.id}`} className="flex items-center gap-2 text-indigo-600 font-bold text-sm hover:underline">Gestionar<ChevronRight className="w-4 h-4" /></a>
+                      <a href={`/prospector/prospecto/${prospecto.id}`} className="flex items-center gap-2 text-(--theme-600) font-bold text-sm hover:underline">Gestionar<ChevronRight className="w-4 h-4" /></a>
                     </div>
                   </div>
                 ))
@@ -456,16 +456,16 @@ const ProspectorProspectos = () => {
         <Modal isOpen={isModalAbierto} onClose={() => setIsModalAbierto(false)} title="Agregar Nuevo Prospecto">
           <form onSubmit={handleCrearProspecto} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className="block text-sm font-semibold text-slate-700 mb-1">Nombres</label><input type="text" className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" value={nuevoProspecto.nombres} onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, nombres: e.target.value })} /></div>
-              <div><label className="block text-sm font-semibold text-slate-700 mb-1">Apellido Paterno</label><input type="text" className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" value={nuevoProspecto.apellidoPaterno} onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, apellidoPaterno: e.target.value })} /></div>
-              <div><label className="block text-sm font-semibold text-slate-700 mb-1">Telefono</label><input type="tel" className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" value={nuevoProspecto.telefono} onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, telefono: e.target.value })} /></div>
-              <div><label className="block text-sm font-semibold text-slate-700 mb-1">Correo Electronico</label><input type="email" className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" value={nuevoProspecto.correo} onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, correo: e.target.value })} /></div>
-              <div className="md:col-span-2"><label className="block text-sm font-semibold text-slate-700 mb-1">Empresa</label><input type="text" className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" value={nuevoProspecto.empresa} onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, empresa: e.target.value })} /></div>
-              <div className="md:col-span-2"><label className="block text-sm font-semibold text-slate-700 mb-1">Notas Iniciales</label><textarea className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none min-h-[100px]" value={nuevoProspecto.notas} onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, notas: e.target.value })} placeholder="Informacion relevante sobre el primer contacto..." /></div>
+              <div><label className="block text-sm font-semibold text-slate-700 mb-1">Nombres</label><input type="text" className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500) outline-none" value={nuevoProspecto.nombres} onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, nombres: e.target.value })} /></div>
+              <div><label className="block text-sm font-semibold text-slate-700 mb-1">Apellido Paterno</label><input type="text" className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500) outline-none" value={nuevoProspecto.apellidoPaterno} onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, apellidoPaterno: e.target.value })} /></div>
+              <div><label className="block text-sm font-semibold text-slate-700 mb-1">Telefono</label><input type="tel" className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500) outline-none" value={nuevoProspecto.telefono} onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, telefono: e.target.value })} /></div>
+              <div><label className="block text-sm font-semibold text-slate-700 mb-1">Correo Electronico</label><input type="email" className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500) outline-none" value={nuevoProspecto.correo} onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, correo: e.target.value })} /></div>
+              <div className="md:col-span-2"><label className="block text-sm font-semibold text-slate-700 mb-1">Empresa</label><input type="text" className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500) outline-none" value={nuevoProspecto.empresa} onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, empresa: e.target.value })} /></div>
+              <div className="md:col-span-2"><label className="block text-sm font-semibold text-slate-700 mb-1">Notas Iniciales</label><textarea className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500) outline-none min-h-[100px]" value={nuevoProspecto.notas} onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, notas: e.target.value })} placeholder="Informacion relevante sobre el primer contacto..." /></div>
             </div>
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
               <button type="button" onClick={() => setIsModalAbierto(false)} className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-xl transition-all">Cancelar</button>
-              <button type="submit" disabled={isCargandoModal} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-xl font-bold shadow-md disabled:opacity-50 flex items-center gap-2">{isCargandoModal ? 'Creando...' : 'Guardar Prospecto'}</button>
+              <button type="submit" disabled={isCargandoModal} className="bg-(--theme-600) hover:bg-(--theme-700) text-white px-6 py-2 rounded-xl font-bold shadow-md disabled:opacity-50 flex items-center gap-2">{isCargandoModal ? 'Creando...' : 'Guardar Prospecto'}</button>
             </div>
           </form>
         </Modal>
@@ -479,7 +479,7 @@ const ProspectorProspectos = () => {
             </div>
 
             {!importResult && (
-              <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all" onClick={() => fileInputRef.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFileChange({ target: { files: [f] } }); }}>
+              <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center cursor-pointer hover:border-(--theme-400) hover:bg-(--theme-50)/30 transition-all" onClick={() => fileInputRef.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFileChange({ target: { files: [f] } }); }}>
                 <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleFileChange} />
                 <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                 {csvFile ? (
@@ -523,10 +523,10 @@ const ProspectorProspectos = () => {
             )}
 
             {importResult && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-3"><CheckCircle className="w-5 h-5 text-emerald-600" /><span className="font-semibold text-emerald-700">Importacion completada</span></div>
+              <div className="bg-(--theme-50) border border-(--theme-200) rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3"><CheckCircle className="w-5 h-5 text-(--theme-600)" /><span className="font-semibold text-(--theme-700)">Importacion completada</span></div>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-white rounded-lg p-3 text-center border border-emerald-100"><p className="text-2xl font-bold text-emerald-600">{importResult.insertados}</p><p className="text-xs text-slate-500 mt-1">Insertados</p></div>
+                  <div className="bg-white rounded-lg p-3 text-center border border-(--theme-100)"><p className="text-2xl font-bold text-(--theme-600)">{importResult.insertados}</p><p className="text-xs text-slate-500 mt-1">Insertados</p></div>
                   <div className="bg-white rounded-lg p-3 text-center border border-slate-100"><p className="text-2xl font-bold text-amber-500">{importResult.duplicados}</p><p className="text-xs text-slate-500 mt-1">Duplicados</p></div>
                   <div className="bg-white rounded-lg p-3 text-center border border-slate-100"><p className="text-2xl font-bold text-red-400">{importResult.errores}</p><p className="text-xs text-slate-500 mt-1">Errores</p></div>
                 </div>

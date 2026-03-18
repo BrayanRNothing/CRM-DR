@@ -38,12 +38,12 @@ const SharedUserList = ({ role, title }) => {
     }, [role]);
 
     const roleGradient = role === 'closer'
-        ? 'from-blue-500 to-indigo-600'
-        : 'from-teal-500 to-emerald-600';
+        ? 'from-(--theme-500) to-(--theme-600)'
+        : 'from-(--theme-500) to-(--theme-600)';
 
     const roleBadge = role === 'closer'
-        ? 'bg-blue-50 text-blue-700 border-blue-200'
-        : 'bg-teal-50 text-teal-700 border-teal-200';
+        ? 'bg-(--theme-50) text-(--theme-700) border-(--theme-200)'
+        : 'bg-(--theme-50) text-(--theme-700) border-(--theme-200)';
 
     return (
         <div className="p-6 min-h-screen bg-slate-50">
@@ -56,7 +56,7 @@ const SharedUserList = ({ role, title }) => {
 
                 {cargando ? (
                     <div className="flex justify-center items-center h-64">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-teal-500 border-opacity-50" />
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-(--theme-500) border-opacity-50" />
                     </div>
                 ) : usuarios.length === 0 ? (
                     <div className="bg-white rounded-2xl p-10 text-center border border-slate-200">

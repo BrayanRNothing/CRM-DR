@@ -167,7 +167,7 @@ const ProspectorDashboard = () => {
                                 {
                                     etapa: 'Prospectos',
                                     cantidad: data.embudo.total,
-                                    color: 'bg-blue-500',
+                                    color: 'bg-(--theme-500)',
                                     contadorHoy: data.periodos?.[periodo]?.prospectos ?? 0,
                                     labelContador: `recibidos ${PERIODOS.find(p => p.key === periodo)?.suffix || 'hoy'}`,
                                     cantidadExito: data.embudo.en_contacto,
@@ -180,7 +180,7 @@ const ProspectorDashboard = () => {
                                 {
                                     etapa: 'Llamadas/Contacto',
                                     cantidad: data.embudo.en_contacto,
-                                    color: 'bg-teal-500',
+                                    color: 'bg-(--theme-500)',
                                     contadorHoy: data.periodos?.[periodo]?.calls ?? data.periodos?.[periodo]?.llamadas ?? 0,
                                     labelContador: `llamadas ${PERIODOS.find(p => p.key === periodo)?.suffix || 'hoy'}`,
                                     cantidadExito: data.embudo.reunion_agendada,
@@ -222,7 +222,7 @@ const ProspectorDashboard = () => {
 
                             {/* Prospectos Nuevos */}
                             <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-md flex flex-col items-center justify-center">
-                                <UserPlus className="w-8 h-8 text-blue-600 mb-2" />
+                                <UserPlus className="w-8 h-8 text-(--theme-600) mb-2" />
                                 <span className="text-3xl font-bold text-gray-900 mb-1">{m.prospectos}</span>
                                 <p className="text-gray-600 text-xs font-semibold text-center">Prospectos Nuevos</p>
                             </div>
@@ -243,7 +243,7 @@ const ProspectorDashboard = () => {
 
                             {/* Tasa de Contacto */}
                             <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-md flex flex-col items-center justify-center">
-                                <CheckCircle2 className="w-8 h-8 text-indigo-600 mb-2" />
+                                <CheckCircle2 className="w-8 h-8 text-(--theme-600) mb-2" />
                                 <span className="text-3xl font-bold text-gray-900 mb-1">{data.tasasConversion.contacto}%</span>
                                 <p className="text-gray-600 text-xs font-semibold text-center">Tasa de Contacto</p>
                             </div>
@@ -269,48 +269,48 @@ const ProspectorDashboard = () => {
                                 {/* METAS EN MODO STACK */}
                                 <div className="space-y-3 mb-6">
                                     {/* Meta 12 llamadas diarias */}
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
-                                        <div className="flex justify-between items-center text-xs font-bold text-blue-900 mb-2">
-                                            <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-blue-600" /> 12 Llamadas Diarias</span>
-                                            <span className={data.periodos?.dia?.llamadas >= 12 ? 'text-green-600' : 'text-blue-500'}>
+                                    <div className="bg-(--theme-50) border border-(--theme-200) rounded-lg p-3 shadow-sm">
+                                        <div className="flex justify-between items-center text-xs font-bold text-(--theme-900) mb-2">
+                                            <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-(--theme-600)" /> 12 Llamadas Diarias</span>
+                                            <span className={data.periodos?.dia?.llamadas >= 12 ? 'text-green-600' : 'text-(--theme-500)'}>
                                                 {data.periodos?.dia?.llamadas || 0} / 12
                                             </span>
                                         </div>
-                                        <div className="w-full bg-blue-100/50 rounded-full h-1.5">
-                                            <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${Math.min(((data.periodos?.dia?.llamadas || 0) / 12) * 100, 100)}%` }}></div>
+                                        <div className="w-full bg-(--theme-100)/50 rounded-full h-1.5">
+                                            <div className="bg-(--theme-500) h-1.5 rounded-full transition-all duration-500" style={{ width: `${Math.min(((data.periodos?.dia?.llamadas || 0) / 12) * 100, 100)}%` }}></div>
                                         </div>
                                     </div>
 
                                     {/* Meta 1 prospecto diario */}
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
-                                        <div className="flex justify-between items-center text-xs font-bold text-blue-900 mb-2">
-                                            <span className="flex items-center gap-1.5"><UserPlus className="w-3.5 h-3.5 text-blue-600" /> 1 Prospecto Diario</span>
-                                            <span className={data.periodos?.dia?.prospectos >= 1 ? 'text-green-600' : 'text-blue-500'}>
+                                    <div className="bg-(--theme-50) border border-(--theme-200) rounded-lg p-3 shadow-sm">
+                                        <div className="flex justify-between items-center text-xs font-bold text-(--theme-900) mb-2">
+                                            <span className="flex items-center gap-1.5"><UserPlus className="w-3.5 h-3.5 text-(--theme-600)" /> 1 Prospecto Diario</span>
+                                            <span className={data.periodos?.dia?.prospectos >= 1 ? 'text-green-600' : 'text-(--theme-500)'}>
                                                 {data.periodos?.dia?.prospectos || 0} / 1
                                             </span>
                                         </div>
-                                        <div className="w-full bg-blue-100/50 rounded-full h-1.5">
-                                            <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${Math.min(((data.periodos?.dia?.prospectos || 0) / 1) * 100, 100)}%` }}></div>
+                                        <div className="w-full bg-(--theme-100)/50 rounded-full h-1.5">
+                                            <div className="bg-(--theme-500) h-1.5 rounded-full transition-all duration-500" style={{ width: `${Math.min(((data.periodos?.dia?.prospectos || 0) / 1) * 100, 100)}%` }}></div>
                                         </div>
                                     </div>
 
                                     {/* Meta 1 reunión semanal */}
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
-                                        <div className="flex justify-between items-center text-xs font-bold text-blue-900 mb-2">
-                                            <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-blue-600" /> 1 Cita Semanal</span>
-                                            <span className={data.periodos?.semana?.reuniones >= 1 ? 'text-green-600' : 'text-blue-500'}>
+                                    <div className="bg-(--theme-50) border border-(--theme-200) rounded-lg p-3 shadow-sm">
+                                        <div className="flex justify-between items-center text-xs font-bold text-(--theme-900) mb-2">
+                                            <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-(--theme-600)" /> 1 Cita Semanal</span>
+                                            <span className={data.periodos?.semana?.reuniones >= 1 ? 'text-green-600' : 'text-(--theme-500)'}>
                                                 {data.periodos?.semana?.reuniones || 0} / 1
                                             </span>
                                         </div>
-                                        <div className="w-full bg-blue-100/50 rounded-full h-1.5">
-                                            <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${Math.min(((data.periodos?.semana?.reuniones || 0) / 1) * 100, 100)}%` }}></div>
+                                        <div className="w-full bg-(--theme-100)/50 rounded-full h-1.5">
+                                            <div className="bg-(--theme-500) h-1.5 rounded-full transition-all duration-500" style={{ width: `${Math.min(((data.periodos?.semana?.reuniones || 0) / 1) * 100, 100)}%` }}></div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {loadingTareas ? (
                                     <div className="flex justify-center items-center h-20">
-                                        <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
+                                        <RefreshCw className="w-6 h-6 animate-spin text-(--theme-500)" />
                                     </div>
                                 ) : (
                                     tareasPendientes.map((t) => {
@@ -328,31 +328,31 @@ const ProspectorDashboard = () => {
                                         return (
                                             <div
                                                 key={t.id || t._id}
-                                                className={`bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-center justify-between group hover:border-blue-400 transition-colors shadow-sm ${irAProspecto ? 'cursor-pointer' : ''}`}
+                                                className={`bg-(--theme-50) border border-(--theme-100) rounded-lg p-4 flex items-center justify-between group hover:border-(--theme-400) transition-colors shadow-sm ${irAProspecto ? 'cursor-pointer' : ''}`}
                                                 onClick={irAProspecto || undefined}
                                             >
                                                 <div className="flex-1 min-w-0 pr-4">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className={`w-2 h-2 rounded-full ${t.prioridad === 'alta' ? 'bg-red-500' : 'bg-blue-500'}`}></span>
-                                                        <h3 className="font-bold text-blue-900 text-sm truncate">{t.titulo}</h3>
+                                                        <span className={`w-2 h-2 rounded-full ${t.prioridad === 'alta' ? 'bg-red-500' : 'bg-(--theme-500)'}`}></span>
+                                                        <h3 className="font-bold text-(--theme-900) text-sm truncate">{t.titulo}</h3>
                                                     </div>
-                                                    <p className="text-xs text-blue-700/70 line-clamp-1">{t.descripcion}</p>
+                                                    <p className="text-xs text-(--theme-700)/70 line-clamp-1">{t.descripcion}</p>
                                                     {(t.clienteNombre || irAProspecto) && (
-                                                        <p className="flex items-center gap-1 text-[10px] text-blue-600 font-bold mt-1 uppercase tracking-wider">
+                                                        <p className="flex items-center gap-1 text-[10px] text-(--theme-600) font-bold mt-1 uppercase tracking-wider">
                                                             👤 {t.clienteNombre ? `${t.clienteNombre} ${t.clienteApellido || ''}` : 'Ver prospecto'}
                                                             <ExternalLink className="w-2.5 h-2.5" />
                                                         </p>
                                                     )}
                                                     <div className="flex items-center gap-2 mt-2">
-                                                        <Clock className="w-3 h-3 text-blue-400" />
-                                                        <span className="text-[10px] text-blue-400 font-medium">
+                                                        <Clock className="w-3 h-3 text-(--theme-400)" />
+                                                        <span className="text-[10px] text-(--theme-400) font-medium">
                                                             {t.fechaLimite ? new Date(t.fechaLimite).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin fecha'}
                                                         </span>
                                                     </div>
                                                 </div>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); completarTarea(t.id || t._id); }}
-                                                    className="bg-white border-2 border-blue-500 text-blue-600 h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-blue-500 hover:text-white transition-all shrink-0"
+                                                    className="bg-white border-2 border-(--theme-500) text-(--theme-600) h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-(--theme-500) hover:text-white transition-all shrink-0"
                                                 >
                                                     <CheckCircle2 className="w-4 h-4" />
                                                     Cerrar

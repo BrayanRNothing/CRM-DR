@@ -136,7 +136,7 @@ const CRMClientes = () => {
                     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                         <div className="flex items-start justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center text-teal-600">
+                                <div className="w-16 h-16 bg-(--theme-100) rounded-full flex items-center justify-center text-(--theme-600)">
                                     <User className="w-8 h-8" />
                                 </div>
                                 <div>
@@ -151,7 +151,7 @@ const CRMClientes = () => {
                                 </div>
                             </div>
                             <div className="text-right">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-emerald-100 text-emerald-800">
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-(--theme-100) text-(--theme-800)">
                                     ✓ Cliente Ganado
                                 </span>
                                 <p className="text-xs text-slate-400 mt-2">
@@ -164,10 +164,10 @@ const CRMClientes = () => {
                     <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                <History className="w-5 h-5 text-teal-500" /> Historial de Acciones
+                                <History className="w-5 h-5 text-(--theme-500)" /> Historial de Acciones
                             </h2>
                             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRole() === 'prospector'
-                                    ? 'bg-blue-100 text-blue-700'
+                                    ? 'bg-(--theme-100) text-(--theme-700)'
                                     : 'bg-purple-100 text-purple-700'
                                 }`}>
                                 {getRole() === 'prospector' ? '🎯 Vista Prospector' : '🏁 Vista Closer'}
@@ -176,7 +176,7 @@ const CRMClientes = () => {
                         <div className="p-6">
                             {loadingTimeline ? (
                                 <div className="text-center py-10">
-                                    <RefreshCw className="w-8 h-8 text-teal-500 animate-spin mx-auto mb-2" />
+                                    <RefreshCw className="w-8 h-8 text-(--theme-500) animate-spin mx-auto mb-2" />
                                     <p className="text-slate-500">Cargando historial...</p>
                                 </div>
                             ) : (
@@ -205,7 +205,7 @@ const CRMClientes = () => {
                     <button
                         onClick={cargarClientes}
                         disabled={loading}
-                        className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) disabled:opacity-50 transition-colors"
                     >
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         Actualizar
@@ -220,14 +220,14 @@ const CRMClientes = () => {
                             placeholder="Buscar clientes por nombre, empresa, teléfono..."
                             value={busqueda}
                             onChange={(event) => setBusqueda(event.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                            className="w-full bg-white border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
                         />
                     </div>
                 </div>
 
                 {loading ? (
                     <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center">
-                        <RefreshCw className="w-8 h-8 text-teal-500 animate-spin mx-auto mb-4" />
+                        <RefreshCw className="w-8 h-8 text-(--theme-500) animate-spin mx-auto mb-4" />
                         <p className="text-gray-500">Cargando clientes...</p>
                     </div>
                 ) : clientesFiltrados.length === 0 ? (
@@ -256,7 +256,7 @@ const CRMClientes = () => {
                                             </td>
                                             <td className="px-4 py-3 text-gray-600">{cliente.empresa || '—'}</td>
                                             <td className="px-4 py-3 text-gray-600">{cliente.telefono || '—'}</td>
-                                            <td className="px-4 py-3 text-teal-600">{cliente.correo || '—'}</td>
+                                            <td className="px-4 py-3 text-(--theme-600)">{cliente.correo || '—'}</td>
                                             <td className="px-4 py-3 text-gray-600">
                                                 {cliente.fechaUltimaEtapa
                                                     ? new Date(cliente.fechaUltimaEtapa).toLocaleDateString('es-MX')

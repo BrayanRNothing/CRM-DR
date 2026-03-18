@@ -56,7 +56,7 @@ const UserProfile = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center p-10 h-full">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-(--theme-500)"></div>
             </div>
         );
     }
@@ -65,7 +65,7 @@ const UserProfile = () => {
         return (
             <div className="p-8 text-center text-gray-500">
                 <p>Usuario no encontrado o no disponible.</p>
-                <button onClick={() => navigate(-1)} className="mt-4 text-blue-500 underline">Volver</button>
+                <button onClick={() => navigate(-1)} className="mt-4 text-(--theme-500) underline">Volver</button>
             </div>
         );
     }
@@ -82,9 +82,9 @@ const UserProfile = () => {
 
             <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
                 {/* Header Banner */}
-                <div className="h-32 bg-gradient-to-r from-teal-500 to-blue-600 relative">
+                <div className="h-32 bg-gradient-to-r from-(--theme-500) to-(--theme-600) relative">
                     <div className="absolute -bottom-12 left-8">
-                        <div className="w-24 h-24 rounded-2xl bg-white p-1 shadow-lg flex items-center justify-center text-4xl font-bold text-teal-600">
+                        <div className="w-24 h-24 rounded-2xl bg-white p-1 shadow-lg flex items-center justify-center text-4xl font-bold text-(--theme-600)">
                             {userProfile.nombre.charAt(0)}
                         </div>
                     </div>
@@ -95,7 +95,7 @@ const UserProfile = () => {
                         <div>
                             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
                                 {userProfile.nombre}
-                                {userProfile.activo && <BadgeCheck className="text-white bg-blue-500 rounded-full p-0.5 w-6 h-6" />}
+                                {userProfile.activo && <BadgeCheck className="text-white bg-(--theme-500) rounded-full p-0.5 w-6 h-6" />}
                             </h1>
                             <p className="text-gray-500 text-lg flex items-center gap-2 mt-1">
                                 <Shield className="w-4 h-4" />
@@ -124,7 +124,7 @@ const UserProfile = () => {
 
                         <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:shadow-md transition-shadow">
                             <div className="flex items-center gap-4 mb-4">
-                                <div className="p-3 bg-white rounded-xl shadow-sm text-blue-600">
+                                <div className="p-3 bg-white rounded-xl shadow-sm text-(--theme-600)">
                                     <Mail className="w-6 h-6" />
                                 </div>
                                 <div>

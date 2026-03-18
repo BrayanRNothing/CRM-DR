@@ -25,7 +25,7 @@ const Toggle = ({ value, onChange }) => (
     <button
         type="button"
         onClick={() => onChange(!value)}
-        className={`relative flex-shrink-0 w-12 h-6 rounded-full transition-all duration-300 focus:outline-none ${value ? 'bg-gradient-to-r from-teal-500 to-emerald-400 shadow-lg shadow-teal-500/30' : 'bg-slate-200'}`}
+        className={`relative flex-shrink-0 w-12 h-6 rounded-full transition-all duration-300 focus:outline-none ${value ? 'bg-gradient-to-r from-(--theme-500) to-(--theme-400) shadow-lg shadow-(--theme-500)/30' : 'bg-slate-200'}`}
     >
         <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full shadow-md transition-transform duration-300 ${value ? 'translate-x-6' : ''}`} />
     </button>
@@ -142,12 +142,12 @@ export default function VendedorAjustes() {
     };
 
     const roleColors = {
-        closer: 'from-blue-500 to-indigo-600',
-        prospector: 'from-teal-500 to-emerald-600',
+        closer: 'from-(--theme-500) to-(--theme-600)',
+        prospector: 'from-(--theme-500) to-(--theme-600)',
     };
     const roleBg = roleColors[user?.rol] || 'from-slate-500 to-slate-600';
 
-    const inp = "w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 outline-none transition-all text-sm shadow-sm";
+    const inp = "w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-(--theme-500)/30 focus:border-(--theme-500) outline-none transition-all text-sm shadow-sm";
 
     const tabs = [
         { id: 'perfil', label: 'Perfil', icon: User },
@@ -290,7 +290,7 @@ export default function VendedorAjustes() {
                                 <div className="" />
                                 <div className="p-6 sm:p-8">
                                     <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
-                                        <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600">
+                                        <div className="p-2 rounded-xl bg-gradient-to-br from-(--theme-500) to-purple-600">
                                             <Shield className="text-white" size={16} />
                                         </div>
                                         Cambiar Contraseña
@@ -337,7 +337,7 @@ export default function VendedorAjustes() {
                                         )}
 
                                         <button type="submit" disabled={savingPass}
-                                            className="flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50">
+                                            className="flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-gradient-to-r from-(--theme-500) to-purple-600 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50">
                                             <KeyRound size={16} />
                                             {savingPass ? 'Actualizando...' : 'Actualizar Contraseña'}
                                         </button>
@@ -361,7 +361,7 @@ export default function VendedorAjustes() {
 
                                 {googleConnected ? (
                                     <div className="space-y-4 max-w-md">
-                                        <div className="relative p-5 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl overflow-hidden">
+                                        <div className="relative p-5 bg-gradient-to-br from-green-50 to-(--theme-50) border border-green-200 rounded-2xl overflow-hidden">
                                             <div className="absolute top-0 right-0 w-24 h-24 bg-green-200/30 rounded-full -translate-y-8 translate-x-8" />
                                             <div className="flex items-center gap-4">
                                                 {user?.nombre ? (
@@ -383,7 +383,7 @@ export default function VendedorAjustes() {
                                             </div>
                                         </div>
 
-                                        <div className="flex items-start gap-2.5 p-3 bg-blue-50 rounded-xl text-sm text-blue-700">
+                                        <div className="flex items-start gap-2.5 p-3 bg-(--theme-50) rounded-xl text-sm text-(--theme-700)">
                                             <span className="mt-0.5">ℹ️</span>
                                             <span>Tu cuenta está vinculada. Puedes acceder a tu Calendario desde el menú principal.</span>
                                         </div>
@@ -403,7 +403,7 @@ export default function VendedorAjustes() {
                                             <h3 className="font-bold text-slate-700 text-lg mb-1">Ninguna cuenta vinculada</h3>
                                             <p className="text-slate-400 text-sm mb-6">Vincula tu Google para usar el Calendario integrado</p>
                                             <button onClick={() => loginGoogle()}
-                                                className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-2xl hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/10 active:scale-95 transition-all text-sm">
+                                                className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-2xl hover:border-(--theme-400) hover:shadow-lg hover:shadow-(--theme-500)/10 active:scale-95 transition-all text-sm">
                                                 <GoogleIcon size={20} />
                                                 Vincular con Google
                                             </button>

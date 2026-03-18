@@ -2,12 +2,12 @@ import React from 'react';
 
 const colorStyles = {
     blue: {
-        bg: 'from-blue-500/20 to-blue-600/20',
-        border: 'border-blue-500/30',
-        iconBg: 'bg-blue-500/20',
-        iconColor: 'text-blue-400',
-        titleColor: 'text-blue-300',
-        subtextColor: 'text-blue-200'
+        bg: 'from-(--theme-500)/20 to-(--theme-600)/20',
+        border: 'border-(--theme-500)/30',
+        iconBg: 'bg-(--theme-500)/20',
+        iconColor: 'text-(--theme-400)',
+        titleColor: 'text-(--theme-300)',
+        subtextColor: 'text-(--theme-200)'
     },
     purple: {
         bg: 'from-purple-500/20 to-purple-600/20',

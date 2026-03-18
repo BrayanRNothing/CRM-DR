@@ -472,8 +472,8 @@ const ProspectorCalendario = () => {
                                 </button>
 
                                 {createdEventLink && (
-                                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex flex-col items-center animate-in fade-in zoom-in slide-in-from-bottom-2">
-                                        <div className="flex items-center gap-2 text-blue-800 mb-3">
+                                    <div className="mt-6 p-4 bg-(--theme-50) border border-(--theme-200) rounded-xl flex flex-col items-center animate-in fade-in zoom-in slide-in-from-bottom-2">
+                                        <div className="flex items-center gap-2 text-(--theme-800) mb-3">
                                             <LinkIcon className="w-5 h-5" />
                                             <p className="font-bold">Google Meet Creado</p>
                                         </div>
@@ -483,7 +483,7 @@ const ProspectorCalendario = () => {
                                                 navigator.clipboard.writeText(createdEventLink);
                                                 toast.success('Enlace copiado al portapapeles');
                                             }}
-                                            className="w-full py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm flex items-center justify-center gap-2 transition-colors active:scale-95 shadow border border-blue-700"
+                                            className="w-full py-2.5 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) font-medium text-sm flex items-center justify-center gap-2 transition-colors active:scale-95 shadow border border-(--theme-700)"
                                         >
                                             <Copy className="w-4 h-4" />
                                             Copiar Enlace de Invitación
