@@ -6,7 +6,6 @@ const FunnelVisual = ({ stages }) => {
     const getGradientClasses = (color) => {
         const colorMap = {
             'bg-gray-500': 'from-gray-400 to-gray-600',
-            'bg-(--theme-500)': 'from-[#2dd4bf] to-[#0d9488]', // RESTORED ORIGINAL TEAL
             'bg-purple-500': 'from-purple-400 to-purple-600',
             'bg-green-500': 'from-green-400 to-green-600',
             'bg-(--theme-500)': 'from-(--theme-400) to-(--theme-600)',

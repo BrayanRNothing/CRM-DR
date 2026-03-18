@@ -22,7 +22,7 @@ const auth = async (req, res, next) => {
             return res.status(401).json({ mensaje: 'Token inválido - Usuario no encontrado' });
         }
 
-        if (!row.activo) {
+        if (row.activo === 0 || row.activo === false) {
             return res.status(401).json({ mensaje: 'Usuario desactivado' });
         }
 
