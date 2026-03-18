@@ -35,6 +35,7 @@ const Login = () => {
       switch (rol) {
         case 'prospector': navigate('/prospector'); break;
         case 'closer': navigate('/closer'); break;
+        case 'vendedor': navigate('/vendedor'); break;
         default: break;
       }
     }
@@ -70,6 +71,7 @@ const Login = () => {
         switch (rol) {
           case 'prospector': navigate('/prospector'); break;
           case 'closer': navigate('/closer'); break;
+          case 'vendedor': navigate('/vendedor'); break;
           default: navigate('/'); // Por seguridad
         }
       } else {

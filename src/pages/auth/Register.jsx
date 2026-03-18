@@ -22,6 +22,7 @@ const Register = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [acceptTerms, setAcceptTerms] = useState(false);
+    const [rol, setRol] = useState('prospector');
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -81,7 +82,8 @@ const Register = () => {
                     contraseña: password,
                     nombre: name,
                     telefono: phone,
-                    email
+                    email,
+                    rol
                 }),
             });
 
@@ -97,6 +99,7 @@ const Register = () => {
                 switch (rol) {
                     case 'prospector': navigate('/prospector'); break;
                     case 'closer': navigate('/closer'); break;
+                    case 'vendedor': navigate('/vendedor'); break;
                     case 'usuario': navigate('/usuario'); break;
                     default: navigate('/'); break;
                 }
@@ -198,6 +201,34 @@ const Register = () => {
                         )}
 
                         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                            {/* Role Selection */}
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 ml-1">
+                                    Selecciona tu Rol *
+                                </label>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {[
+                                        { id: 'prospector', label: 'Prospector', icon: '🔍' },
+                                        { id: 'closer', label: 'Closer', icon: '🎯' },
+                                        { id: 'vendedor', label: 'Vendedor', icon: '🛡️' }
+                                    ].map((role) => (
+                                        <button
+                                            key={role.id}
+                                            type="button"
+                                            onClick={() => setRol(role.id)}
+                                            className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all ${
+                                                rol === role.id 
+                                                ? 'border-(--theme-500) bg-(--theme-50) text-(--theme-700) shadow-sm' 
+                                                : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200'
+                                            }`}
+                                        >
+                                            <span className="text-xl mb-1">{role.icon}</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-tight">{role.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             {/* COLUMNA IZQUIERDA: Datos Personales */}
                             <div className="space-y-5">
                                 <div className="relative group">

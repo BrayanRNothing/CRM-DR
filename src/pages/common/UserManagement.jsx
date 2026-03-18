@@ -18,6 +18,7 @@ const inp = 'w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gr
 
 function ModalUsuario({ modoEdicion, formData, setFormData, handleSubmit, cerrarModal }) {
     const isCloser = formData.rol === 'closer';
+    const isVendedor = formData.rol === 'vendedor';
     const [showPassword, setShowPassword] = useState(false);
 
     // Theme configuration based on role
@@ -27,6 +28,12 @@ function ModalUsuario({ modoEdicion, formData, setFormData, handleSubmit, cerrar
         iconColor: 'text-(--theme-500)',
         ring: 'focus:ring-(--theme-500)',
         button: 'bg-(--theme-600) hover:bg-(--theme-700) shadow-(--theme-600)/30'
+    } : isVendedor ? {
+        gradient: 'from-amber-500 to-orange-500',
+        lightBg: 'bg-amber-50/50',
+        iconColor: 'text-amber-500',
+        ring: 'focus:ring-amber-500',
+        button: 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/30'
     } : {
         gradient: 'from-[#8bc34a] to-[#4caf50]',
         lightBg: 'bg-green-50/50',
@@ -65,35 +72,50 @@ function ModalUsuario({ modoEdicion, formData, setFormData, handleSubmit, cerrar
                         {/* Role Selection Cards */}
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 pl-1">Seleccionar Rol</label>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <button type="button"
                                     onClick={() => setFormData(p => ({ ...p, rol: 'prospector' }))}
-                                    className={`relative flex flex-col items-center justify-center p-4 border-2 rounded-2xl transition-all duration-300 group ${!isCloser
+                                    className={`relative flex flex-col items-center justify-center p-4 border-2 rounded-2xl transition-all duration-300 group ${(!isCloser && !isVendedor)
                                         ? 'border-[#8bc34a] bg-green-50 shadow-md shadow-green-100 scale-[1.02]'
                                         : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50 opacity-60 hover:opacity-100'
                                         }`}>
                                     {formData.rol === 'prospector' && (
                                         <div className="absolute top-3 right-3 text-[#8bc34a]"><CheckCircle2 size={18} fill="#8bc34a" className="text-white" /></div>
                                     )}
-                                    <div className={`p-3 rounded-2xl mb-3 transition-colors ${!isCloser ? 'bg-[#8bc34a] text-white shadow-lg shadow-green-200' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
+                                    <div className={`p-3 rounded-2xl mb-3 transition-colors ${(!isCloser && !isVendedor) ? 'bg-[#8bc34a] text-white shadow-lg shadow-green-200' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
                                         <Search size={24} strokeWidth={2.5} />
                                     </div>
-                                    <span className={`font-black text-sm tracking-wide ${!isCloser ? 'text-[#8bc34a]' : 'text-slate-500'}`}>PROSPECTOR</span>
+                                    <span className={`font-black text-sm tracking-wide ${(!isCloser && !isVendedor) ? 'text-[#8bc34a]' : 'text-slate-500'}`}>PROSPECTOR</span>
                                 </button>
 
                                 <button type="button"
                                     onClick={() => setFormData(p => ({ ...p, rol: 'closer' }))}
                                     className={`relative flex flex-col items-center justify-center p-4 border-2 rounded-2xl transition-all duration-300 group ${isCloser
-                                        ? 'border-(--theme-600) bg-(--theme-50) shadow-md shadow-(--theme-100) scale-[1.02]'
+                                        ? 'border-(--theme-600) bg-(--theme-50) shadow-(--theme-100) scale-[1.02]'
                                         : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50 opacity-60 hover:opacity-100'
                                         }`}>
                                     {formData.rol === 'closer' && (
                                         <div className="absolute top-3 right-3 text-(--theme-600)"><CheckCircle2 size={18} fill="#2563eb" className="text-white" /></div>
                                     )}
-                                    <div className={`p-3 rounded-2xl mb-3 transition-colors ${isCloser ? 'bg-(--theme-600) text-white shadow-lg shadow-(--theme-200)' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
+                                    <div className={`p-3 rounded-2xl mb-3 transition-colors ${isCloser ? 'bg-(--theme-600) text-white shadow-(--theme-200)' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
                                         <Target size={24} strokeWidth={2.5} />
                                     </div>
                                     <span className={`font-black text-sm tracking-wide ${isCloser ? 'text-(--theme-600)' : 'text-slate-500'}`}>CLOSER</span>
+                                </button>
+
+                                <button type="button"
+                                    onClick={() => setFormData(p => ({ ...p, rol: 'vendedor' }))}
+                                    className={`relative flex flex-col items-center justify-center p-4 border-2 rounded-2xl transition-all duration-300 group ${isVendedor
+                                        ? 'border-amber-500 bg-amber-50 shadow-amber-100 scale-[1.02]'
+                                        : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50 opacity-60 hover:opacity-100'
+                                        }`}>
+                                    {formData.rol === 'vendedor' && (
+                                        <div className="absolute top-3 right-3 text-amber-500"><CheckCircle2 size={18} fill="#f59e0b" className="text-white" /></div>
+                                    )}
+                                    <div className={`p-3 rounded-2xl mb-3 transition-colors ${isVendedor ? 'bg-amber-500 text-white shadow-amber-200' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
+                                        <Shield size={24} strokeWidth={2.5} />
+                                    </div>
+                                    <span className={`font-black text-sm tracking-wide ${isVendedor ? 'text-amber-500' : 'text-slate-500'}`}>VENDEDOR</span>
                                 </button>
                             </div>
                         </div>
@@ -315,9 +337,31 @@ function UserManagement({ initialRole }) {
     const me = (() => { try { return JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user')); } catch { return null; } })();
     const myGoogleToken = localStorage.getItem('google_access_token');
 
-    const getRoleStyle = (role) => role === 'closer'
-        ? { bar: 'from-(--theme-500) to-(--theme-600)', badge: 'bg-(--theme-50) text-(--theme-700) border-(--theme-200)', label: '🎯 Closer' }
-        : { bar: 'from-(--theme-500) to-(--theme-600)', badge: 'bg-(--theme-50) text-(--theme-700) border-(--theme-200)', label: '🔍 Prospector' };
+    const getRoleTheme = (role) => {
+        if (role === 'closer') return { 
+            bar: 'from-(--theme-500) to-(--theme-600)', 
+            badge: 'bg-(--theme-50) text-(--theme-700) border-(--theme-200)', 
+            label: '🎯 Closer',
+            button: 'bg-(--theme-600) hover:bg-(--theme-700) shadow-(--theme-600)/30',
+            ring: 'focus:ring-(--theme-500) focus:border-(--theme-500)'
+        };
+        if (role === 'vendedor') return { 
+            bar: 'from-amber-500 to-amber-600', 
+            badge: 'bg-amber-50 text-amber-700 border-amber-200', 
+            label: '🛡️ Vendedor',
+            button: 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/30',
+            ring: 'focus:ring-amber-500 focus:border-amber-500'
+        };
+        return { 
+            bar: 'from-green-500 to-green-600', 
+            badge: 'bg-green-50 text-green-700 border-green-200', 
+            label: '🔍 Prospector',
+            button: 'bg-[#8bc34a] hover:bg-[#7cb342] shadow-[#8bc34a]/30',
+            ring: 'focus:ring-[#8bc34a] focus:border-[#8bc34a]'
+        };
+    };
+
+    const currentTheme = getRoleTheme(initialRole || 'prospector');
 
     return (
         <div className="w-full min-h-full bg-slate-50 p-6 md:p-8">
@@ -333,10 +377,10 @@ function UserManagement({ initialRole }) {
                             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                             <input type="text" placeholder="Buscar..." value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#8bc34a]/20 focus:border-[#8bc34a] shadow-sm w-full sm:w-56 text-sm transition-all" />
+                                className={`pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 shadow-sm w-full sm:w-56 text-sm transition-all ${currentTheme.ring}`} />
                         </div>
                         <button onClick={abrirModal}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-[#8bc34a] hover:bg-[#7cb342] text-white font-bold rounded-xl shadow-lg shadow-[#8bc34a]/30 active:scale-95 transition-all text-sm whitespace-nowrap">
+                            className={`flex items-center gap-2 px-4 py-2.5 text-white font-bold rounded-xl active:scale-95 transition-all text-sm whitespace-nowrap ${currentTheme.button}`}>
                             <Plus size={18} /> Nuevo Usuario
                         </button>
                     </div>
@@ -352,14 +396,14 @@ function UserManagement({ initialRole }) {
                         <div className="text-5xl mb-4">👥</div>
                         <h3 className="text-lg font-bold text-gray-700">Sin usuarios</h3>
                         <p className="text-gray-400 text-sm mt-1">No se encontraron usuarios con estos filtros.</p>
-                        <button onClick={abrirModal} className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-[#8bc34a] text-white font-bold rounded-xl text-sm hover:bg-[#7cb342] transition-colors">
+                        <button onClick={abrirModal} className={`mt-5 inline-flex items-center gap-2 px-5 py-2.5 text-white font-bold rounded-xl text-sm transition-colors ${currentTheme.button}`}>
                             <Plus size={16} /> Crear primer usuario
                         </button>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filtered.map(user => {
-                            const role = getRoleStyle(user.rol);
+                            const role = getRoleTheme(user.rol);
                             // Ahora el backend nos manda si tiene Google vinculado (ya sea prospector o closer si lo implementaran, pero enfocado en closer)
                             const hasGoogle = typeof user.googleLinked === 'boolean' ? user.googleLinked : null;
                             return (

@@ -29,6 +29,10 @@ const CloserDashboard = lazy(() => import('./pages/closer/CloserDashboard.jsx'))
 const CloserCalendario = lazy(() => import('./pages/closer/CloserCalendario.jsx'));
 const CloserMonitoreoProspectors = lazy(() => import('./pages/closer/CloserMonitoreoProspectors.jsx'));
 
+// Vendedor Pages
+const VendedorLayout = lazy(() => import('./layouts/VendedorLayout.jsx'));
+const VendedorDashboard = lazy(() => import('./pages/vendedor/VendedorDashboard.jsx'));
+
 // Shared Components
 const CRMClientes = lazy(() => import('./pages/common/CRMClientes.jsx'));
 const UserManagement = lazy(() => import('./pages/common/UserManagement.jsx'));
@@ -128,6 +132,7 @@ function App() {
             <Route path="clientes" element={<CRMClientes />} />
             <Route path="usuarios/prospectors" element={<UserManagement initialRole="prospector" />} />
             <Route path="usuarios/closers" element={<UserManagement initialRole="closer" />} />
+            <Route path="usuarios/vendedores" element={<UserManagement initialRole="vendedor" />} />
             <Route path="users/:id" element={<UserProfile />} />
             <Route path="ajustes" element={<Ajustes />} />
           </Route>
@@ -139,8 +144,22 @@ function App() {
             <Route path="clientes" element={<CRMClientes />} />
             <Route path="usuarios/prospectors" element={<UserManagement initialRole="prospector" />} />
             <Route path="usuarios/closers" element={<UserManagement initialRole="closer" />} />
+            <Route path="usuarios/vendedores" element={<UserManagement initialRole="vendedor" />} />
             <Route path="users/:id" element={<UserProfile />} />
             <Route path="monitoreo-prospectors" element={<CloserMonitoreoProspectors />} />
+            <Route path="ajustes" element={<Ajustes />} />
+          </Route>
+
+          {/* --- VENDEDOR --- */}
+          <Route path="/vendedor" element={<VendedorLayout />}>
+            <Route index element={<VendedorDashboard />} />
+            <Route path="calendario" element={<CloserCalendario />} />
+            <Route path="prospectos" element={<ProspectorSeguimiento />} />
+            <Route path="clientes" element={<CRMClientes />} />
+            <Route path="usuarios/prospectors" element={<UserManagement initialRole="prospector" />} />
+            <Route path="usuarios/closers" element={<UserManagement initialRole="closer" />} />
+            <Route path="usuarios/vendedores" element={<UserManagement initialRole="vendedor" />} />
+            <Route path="users/:id" element={<UserProfile />} />
             <Route path="ajustes" element={<Ajustes />} />
           </Route>
 
