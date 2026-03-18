@@ -318,9 +318,9 @@ const ProspectorCalendario = () => {
                                                     relative rounded-lg transition-all border flex items-center justify-center p-2 min-h-[72px]
                                                     ${!date ? 'bg-gray-50/50 border-gray-100 cursor-default select-none' : ''}
                                                     ${date && !selectedCloser ? 'opacity-40 cursor-not-allowed bg-gray-50 border-gray-100' : ''}
-                                                    ${date && selectedCloser && !isSelected ? 'bg-white border-gray-200 hover:border-[#8bc34a]/50 text-gray-700' : ''}
-                                                    ${isSelected ? 'bg-[#8bc34a] text-white shadow-lg scale-105 border-[#8bc34a] z-20' : ''}
-                                                    ${isTodayDate && !isSelected ? 'bg-lime-50 border-2 border-[#8bc34a] text-[#558b2f]' : ''}
+                                                    ${date && selectedCloser && !isSelected ? 'bg-white border-gray-200 hover:border-(--theme-500)/50 text-gray-700' : ''}
+                                                    ${isSelected ? 'bg-(--theme-500) text-white shadow-lg scale-105 border-(--theme-500) z-20' : ''}
+                                                    ${isTodayDate && !isSelected ? 'bg-(--theme-50) border-2 border-(--theme-500) text-(--theme-700)' : ''}
                                                 `}
                                             >
                                                 <span className={`text-2xl font-bold leading-none select-none ${isSelected ? 'text-white' : ''}`}>
@@ -380,7 +380,7 @@ const ProspectorCalendario = () => {
                                         <select
                                             value={selectedProspect}
                                             onChange={(e) => setSelectedProspect(e.target.value)}
-                                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8bc34a] focus:border-transparent"
+                                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-transparent"
                                             required
                                         >
                                             <option value="">Selecciona un prospecto...</option>
@@ -400,7 +400,7 @@ const ProspectorCalendario = () => {
                                         <select
                                             value={selectedCloser}
                                             onChange={(e) => setSelectedCloser(e.target.value)}
-                                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8bc34a] focus:border-transparent"
+                                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-transparent"
                                             required
                                         >
                                             <option value="">Selecciona un closer...</option>
@@ -431,7 +431,7 @@ const ProspectorCalendario = () => {
                                                                     ${slot.isBusy
                                                                         ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60'
                                                                         : isSelected
-                                                                            ? 'bg-[#8bc34a] border-[#8bc34a] text-white font-bold'
+                                                                            ? 'bg-(--theme-500) border-(--theme-500) text-white font-bold'
                                                                             : 'bg-white border-gray-300 hover:bg-green-50 text-gray-700'
                                                                     }`}
                                                             >
@@ -457,7 +457,7 @@ const ProspectorCalendario = () => {
                                             value={formData.notas}
                                             onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
                                             rows="3"
-                                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8bc34a]"
+                                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-(--theme-500)"
                                             placeholder="Detalles importantes para el closer..."
                                         />
                                     </div>
@@ -466,7 +466,7 @@ const ProspectorCalendario = () => {
                                 <button
                                     type="submit"
                                     disabled={!selectedTimeSlot}
-                                    className="w-full py-3 px-4 bg-[#8bc34a] text-white rounded-xl font-bold hover:bg-[#7cb342] shadow-lg shadow-[#8bc34a]/30 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                    className="w-full py-3 px-4 bg-(--theme-500) text-white rounded-xl font-bold hover:bg-[#7cb342] shadow-lg shadow-(--theme-500)/30 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                                 >
                                     Agendar Cita
                                 </button>

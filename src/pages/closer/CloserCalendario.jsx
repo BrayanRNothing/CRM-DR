@@ -601,9 +601,9 @@ const CloserCalendario = () => {
                                                 className={`
                                                     relative rounded-lg transition-all font-medium border flex items-center justify-center p-2 min-h-[72px]
                                                     ${!date ? 'bg-gray-50/50 border-gray-100 cursor-default select-none' : ''}
-                                                    ${date && !isSelected ? 'bg-white border-gray-200 hover:border-[#8bc34a]/50 text-gray-700' : ''}
-                                                    ${isSelected ? 'bg-[#8bc34a] text-white shadow-lg scale-105 border-[#8bc34a] z-20' : ''}
-                                                    ${isTodayDate && !isSelected ? 'bg-lime-50 border-2 border-[#8bc34a] text-[#558b2f]' : ''}
+                                                    ${date && !isSelected ? 'bg-white border-gray-200 hover:border-(--theme-500)/50 text-gray-700' : ''}
+                                                    ${isSelected ? 'bg-(--theme-500) text-white shadow-lg scale-105 border-(--theme-500) z-20' : ''}
+                                                    ${isTodayDate && !isSelected ? 'bg-(--theme-50) border-2 border-(--theme-500) text-(--theme-700)' : ''}
                                                 `}
                                             >
                                                 <span className={`text-2xl font-bold leading-none select-none ${isSelected ? 'text-white' : ''}`}>
@@ -611,7 +611,7 @@ const CloserCalendario = () => {
                                                 </span>
                                                 {date && appointmentCount > 0 && (
                                                     <div className="absolute bottom-2 w-full flex flex-col items-center pointer-events-none">
-                                                        <span className={`text-[10px] leading-tight font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${isSelected ? 'bg-white text-[#8bc34a]' : 'bg-orange-50 text-orange-600 border border-orange-100'}`}>
+                                                        <span className={`text-[10px] leading-tight font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${isSelected ? 'bg-white text-(--theme-500)' : 'bg-orange-50 text-orange-600 border border-orange-100'}`}>
                                                             {appointmentCount} {appointmentCount === 1 ? 'reunión' : 'reuniones'}
                                                         </span>
                                                     </div>
@@ -629,7 +629,7 @@ const CloserCalendario = () => {
                         <div className="flex-1 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col min-h-0 overflow-hidden">
                             <div className="mb-4 shrink-0">
                                 <div className="flex items-center gap-2 mb-2">
-                                    <CalendarIcon className="w-5 h-5 text-[#8bc34a]" />
+                                    <CalendarIcon className="w-5 h-5 text-(--theme-500)" />
                                     <h2 className="text-lg font-bold text-gray-900">Reuniones Agendadas</h2>
                                 </div>
                                 <p className="text-sm text-gray-600">
@@ -666,7 +666,7 @@ const CloserCalendario = () => {
                                             >
                                                 {/* Etiqueta de Resultado para Completadas */}
                                                 {reunion.estado === 'realizada' && reunion.resultadoExacto && (
-                                                    <div className={`absolute -top-3 right-4 px-3 py-1 rounded-full text-xs font-bold shadow-sm border ${reunion.resultadoExacto === 'venta' ? 'bg-[#8bc34a] text-white border-lime-600' :
+                                                    <div className={`absolute -top-3 right-4 px-3 py-1 rounded-full text-xs font-bold shadow-sm border ${reunion.resultadoExacto === 'venta' ? 'bg-(--theme-500) text-white border-(--theme-600)' :
                                                             reunion.resultadoExacto === 'cotizacion' ? 'bg-(--theme-500) text-white border-(--theme-600)' :
                                                                 reunion.resultadoExacto === 'otra_reunion' ? 'bg-yellow-500 text-white border-yellow-600' :
                                                                     reunion.resultadoExacto === 'no_asistio' ? 'bg-red-500 text-white border-red-600' :
@@ -702,7 +702,7 @@ const CloserCalendario = () => {
                                                 {/* Agendado Por (Prospector) */}
                                                 <div className="mb-3 p-2 bg-white/80 rounded border border-gray-200">
                                                     <p className="text-xs text-gray-600 font-medium mb-1 flex items-center gap-1">
-                                                        <UserPlus className="w-3 h-3 text-[#8bc34a]" />
+                                                        <UserPlus className="w-3 h-3 text-(--theme-500)" />
                                                         Agendado Por:
                                                     </p>
                                                     <p className="text-sm font-bold text-gray-900 pl-1">{reunion.prospector}</p>
@@ -756,7 +756,7 @@ const CloserCalendario = () => {
                                                             href={reunion.meetLink}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="flex-1 px-3 py-2 bg-[#8bc34a] text-white text-xs rounded-lg hover:bg-lime-600 transition-colors flex items-center justify-center gap-1 font-bold shadow-sm"
+                                                            className="flex-1 px-3 py-2 bg-(--theme-500) text-white text-xs rounded-lg hover:bg-(--theme-600) transition-colors flex items-center justify-center gap-1 font-bold shadow-sm"
                                                         >
                                                             <Video className="w-3 h-3" />
                                                             Unirse a Meet
@@ -797,7 +797,7 @@ const CloserCalendario = () => {
                             <div className="p-6 border-b border-gray-100">
                                 <div className="flex items-center justify-between mb-1">
                                     <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5 text-[#8bc34a]" />
+                                        <CheckCircle2 className="w-5 h-5 text-(--theme-500)" />
                                         Registrar Reunión
                                     </h2>
                                     <button onClick={cerrarModal} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
@@ -814,16 +814,16 @@ const CloserCalendario = () => {
 
                                 {/* Indicador de paso */}
                                 <div className="flex items-center gap-2 mt-3">
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${pasoModal === 'asistencia' ? 'bg-[#8bc34a] text-white' : 'bg-green-500 text-white'
+                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${pasoModal === 'asistencia' ? 'bg-(--theme-500) text-white' : 'bg-green-500 text-white'
                                         }`}>1</div>
-                                    <div className={`flex-1 h-1 rounded-full transition-colors ${pasoModal !== 'asistencia' ? 'bg-[#8bc34a]' : 'bg-gray-200'
+                                    <div className={`flex-1 h-1 rounded-full transition-colors ${pasoModal !== 'asistencia' ? 'bg-(--theme-500)' : 'bg-gray-200'
                                         }`} />
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${pasoModal === 'resultado' ? 'bg-[#8bc34a] text-white' :
+                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${pasoModal === 'resultado' ? 'bg-(--theme-500) text-white' :
                                         pasoModal === 'agendar' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'
                                         }`}>2</div>
-                                    <div className={`flex-1 h-1 rounded-full transition-colors ${pasoModal === 'agendar' ? 'bg-[#8bc34a]' : 'bg-gray-200'
+                                    <div className={`flex-1 h-1 rounded-full transition-colors ${pasoModal === 'agendar' ? 'bg-(--theme-500)' : 'bg-gray-200'
                                         }`} />
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${pasoModal === 'agendar' ? 'bg-[#8bc34a] text-white' : 'bg-gray-200 text-gray-400'
+                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${pasoModal === 'agendar' ? 'bg-(--theme-500) text-white' : 'bg-gray-200 text-gray-400'
                                         }`}>3</div>
                                 </div>
                             </div>
@@ -858,7 +858,7 @@ const CloserCalendario = () => {
                                         <button
                                             onClick={() => handleRegistrarReunion('venta')}
                                             disabled={guardando}
-                                            className="w-full px-4 py-3.5 bg-[#8bc34a] hover:bg-lime-600 text-white rounded-xl transition-all flex items-center gap-3 font-semibold shadow-sm hover:shadow-md disabled:opacity-60"
+                                            className="w-full px-4 py-3.5 bg-(--theme-500) hover:bg-(--theme-600) text-white rounded-xl transition-all flex items-center gap-3 font-semibold shadow-sm hover:shadow-md disabled:opacity-60"
                                         >
                                             <span className="text-xl">🎉</span>
                                             <div className="text-left">
@@ -911,7 +911,7 @@ const CloserCalendario = () => {
                                                 onChange={e => setNotasModal(e.target.value)}
                                                 placeholder="Agrega notas sobre la reunión..."
                                                 rows={2}
-                                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] resize-none text-gray-700 placeholder-gray-400"
+                                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-(--theme-500) resize-none text-gray-700 placeholder-gray-400"
                                             />
                                         </div>
 
@@ -942,7 +942,7 @@ const CloserCalendario = () => {
                                                         value={nuevaReunionForm.fecha}
                                                         min={new Date().toISOString().split('T')[0]}
                                                         onChange={e => setNuevaReunionForm(f => ({ ...f, fecha: e.target.value }))}
-                                                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] text-gray-700"
+                                                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-(--theme-500) text-gray-700"
                                                     />
                                                 </div>
                                                 <div>
@@ -951,7 +951,7 @@ const CloserCalendario = () => {
                                                         type="time"
                                                         value={nuevaReunionForm.hora}
                                                         onChange={e => setNuevaReunionForm(f => ({ ...f, hora: e.target.value }))}
-                                                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] text-gray-700"
+                                                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-(--theme-500) text-gray-700"
                                                     />
                                                 </div>
                                             </div>
@@ -961,7 +961,7 @@ const CloserCalendario = () => {
                                                 <select
                                                     value={nuevaReunionForm.duracion}
                                                     onChange={e => setNuevaReunionForm(f => ({ ...f, duracion: e.target.value }))}
-                                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] text-gray-700"
+                                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-(--theme-500) text-gray-700"
                                                 >
                                                     <option value="30">30 minutos</option>
                                                     <option value="45">45 minutos</option>
@@ -978,7 +978,7 @@ const CloserCalendario = () => {
                                                     onChange={e => setNuevaReunionForm(f => ({ ...f, notas: e.target.value }))}
                                                     placeholder="Temas a tratar, contexto..."
                                                     rows={2}
-                                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] resize-none text-gray-700 placeholder-gray-400"
+                                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-(--theme-500) resize-none text-gray-700 placeholder-gray-400"
                                                 />
                                             </div>
                                         </div>
@@ -986,7 +986,7 @@ const CloserCalendario = () => {
                                         <button
                                             onClick={handleAgendarNuevaReunion}
                                             disabled={guardando || !nuevaReunionForm.fecha || !nuevaReunionForm.hora}
-                                            className="w-full px-4 py-3.5 bg-[#8bc34a] hover:bg-lime-600 text-white rounded-xl transition-all flex items-center justify-center gap-2 font-bold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="w-full px-4 py-3.5 bg-(--theme-500) hover:bg-(--theme-600) text-white rounded-xl transition-all flex items-center justify-center gap-2 font-bold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {guardando ? (
                                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -1016,7 +1016,7 @@ const CloserCalendario = () => {
                             <div className="p-5 border-b border-gray-100">
                                 <div className="flex items-center justify-between mb-1">
                                     <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                        <Calendar className="w-5 h-5 text-[#8bc34a]" />
+                                        <Calendar className="w-5 h-5 text-(--theme-500)" />
                                         Agendar Reunión
                                     </h2>
                                     <button onClick={() => setModalAgendarDirecto(null)} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
@@ -1040,7 +1040,7 @@ const CloserCalendario = () => {
                                             value={agendarDirectoForm.fecha}
                                             min={new Date().toISOString().split('T')[0]}
                                             onChange={e => setAgendarDirectoForm(f => ({ ...f, fecha: e.target.value }))}
-                                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] text-gray-700"
+                                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-(--theme-500) text-gray-700"
                                         />
                                     </div>
                                     <div>
@@ -1049,7 +1049,7 @@ const CloserCalendario = () => {
                                             type="time"
                                             value={agendarDirectoForm.hora}
                                             onChange={e => setAgendarDirectoForm(f => ({ ...f, hora: e.target.value }))}
-                                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] text-gray-700"
+                                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-(--theme-500) text-gray-700"
                                         />
                                     </div>
                                 </div>
@@ -1059,7 +1059,7 @@ const CloserCalendario = () => {
                                     <select
                                         value={agendarDirectoForm.duracion}
                                         onChange={e => setAgendarDirectoForm(f => ({ ...f, duracion: e.target.value }))}
-                                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] text-gray-700"
+                                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-(--theme-500) text-gray-700"
                                     >
                                         <option value="30">30 minutos</option>
                                         <option value="45">45 minutos</option>
@@ -1076,14 +1076,14 @@ const CloserCalendario = () => {
                                         onChange={e => setAgendarDirectoForm(f => ({ ...f, notas: e.target.value }))}
                                         placeholder="Temas a tratar, contexto..."
                                         rows={2}
-                                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#8bc34a] resize-none text-gray-700 placeholder-gray-400"
+                                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-(--theme-500) resize-none text-gray-700 placeholder-gray-400"
                                     />
                                 </div>
 
                                 <button
                                     onClick={handleAgendarDirecto}
                                     disabled={guardandoDirecto || !agendarDirectoForm.fecha || !agendarDirectoForm.hora}
-                                    className="w-full px-4 py-3.5 bg-[#8bc34a] hover:bg-lime-600 text-white rounded-xl transition-all flex items-center justify-center gap-2 font-bold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full px-4 py-3.5 bg-(--theme-500) hover:bg-(--theme-600) text-white rounded-xl transition-all flex items-center justify-center gap-2 font-bold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {guardandoDirecto ? (
                                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

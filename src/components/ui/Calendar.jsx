@@ -36,7 +36,7 @@ function Calendar({
                     "h-9 w-9 p-0 font-normal aria-selected:opacity-100 inline-flex items-center justify-center rounded-md text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 disabled:pointer-events-none disabled:opacity-50"
                 ),
                 day_range_end: "day-range-end",
-                day_selected: "bg-red-500 text-white hover:bg-(--theme-600) hover:text-white focus:bg-(--theme-600) focus:text-white",
+                day_selected: "bg-(--theme-500) text-white hover:bg-(--theme-600) hover:text-white focus:bg-(--theme-600) focus:text-white",
                 day_today: "bg-gray-100 text-gray-900",
                 day_outside: "day-outside text-gray-500 opacity-50 aria-selected:bg-gray-100/50 aria-selected:text-gray-500 aria-selected:opacity-30",
                 day_disabled: "text-gray-500 opacity-50",
