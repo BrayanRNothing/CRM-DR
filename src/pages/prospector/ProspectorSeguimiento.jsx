@@ -1155,6 +1155,7 @@ const ProspectorSeguimiento = () => {
         // Tarea pendiente: mostrar si hay una próxima llamada agendada o cita
         const tareaLlamar = prospectoSeleccionado.proximaLlamada ? { fecha: prospectoSeleccionado.proximaLlamada, tipo: 'llamada' } : null;
         const proximaCita = actividadesContext.find(a => a.tipo === 'cita' && a.resultado === 'pendiente' && new Date(a.fechaCita || a.fecha) >= new Date());
+        const fechaProximaCita = proximaCita?.fechaCita || proximaCita?.fecha || null;
 
         const registrarActividad = async (payload) => {
             try {
@@ -1210,6 +1211,13 @@ const ProspectorSeguimiento = () => {
             } finally {
                 setGuardandoMural(false);
             }
+        };
+
+        const abrirRecordatorioLlamadaDirecto = () => {
+            const fechaDefault = new Date();
+            fechaDefault.setDate(fechaDefault.getDate() + 3);
+            const isoDefault = fechaDefault.toISOString().slice(0, 16);
+            setLlamadaFlow({ paso: 'llamarDespues', interesado: true, fechaProxima: isoDefault, notas: '' });
         };
 
         return (
@@ -1334,8 +1342,8 @@ const ProspectorSeguimiento = () => {
                                     <Calendar className="w-8 h-8 text-(--theme-500) shrink-0" />
                                     <div>
                                         <p className="text-xs font-bold text-(--theme-500) uppercase tracking-wider">Próxima Reunión</p>
-                                        <p className="font-bold text-gray-900">{new Date(proximaCita.fecha).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                                        <p className="text-sm text-gray-500">{formatHora(proximaCita.fecha)}</p>
+                                        <p className="font-bold text-gray-900">{new Date(fechaProximaCita).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                                        <p className="text-sm text-gray-500">{formatHora(fechaProximaCita)}</p>
                                     </div>
                                 </div>
                             )}
@@ -1343,32 +1351,41 @@ const ProspectorSeguimiento = () => {
                             {/* ==================== ÁRBOL DE LLAMADA ==================== */}
                             <div className="space-y-3">
                                 {llamadaFlow === null ? (
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {/* Llamar */}
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {/* Llamar */}
+                                            <button
+                                                onClick={() => setLlamadaFlow({ paso: 'contesto', notas: '', fechaProxima: '', interesado: null })}
+                                                className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm"
+                                            >
+                                                <Phone className="w-6 h-6" />
+                                                Llamar
+                                            </button>
+                                            {/* WhatsApp */}
+                                            <button
+                                                onClick={async () => {
+                                                    await registrarActividad({ tipo: 'whatsapp', resultado: 'enviado', notas: 'Mensaje de WhatsApp enviado' });
+                                                }}
+                                                className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-green-500 rounded-xl p-4 text-gray-700 hover:text-green-600 transition-all shadow-sm font-bold text-sm"
+                                            >
+                                                <MessageSquare className="w-6 h-6" />
+                                                WhatsApp
+                                            </button>
+                                            {/* Agendar reunión */}
+                                            <button
+                                                onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })}
+                                                className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm text-center leading-tight"
+                                            >
+                                                <Calendar className="w-6 h-6" />
+                                                Agendar Reunión
+                                            </button>
+                                        </div>
                                         <button
-                                            onClick={() => setLlamadaFlow({ paso: 'contesto', notas: '', fechaProxima: '', interesado: null })}
-                                            className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm"
+                                            onClick={abrirRecordatorioLlamadaDirecto}
+                                            className="w-full flex items-center justify-center gap-2 bg-amber-50 border border-amber-200 hover:border-amber-300 rounded-xl py-2.5 text-amber-700 hover:text-amber-800 font-bold text-sm transition-colors"
                                         >
-                                            <Phone className="w-6 h-6" />
-                                            Llamar
-                                        </button>
-                                        {/* WhatsApp */}
-                                        <button
-                                            onClick={async () => {
-                                                await registrarActividad({ tipo: 'whatsapp', resultado: 'enviado', notas: 'Mensaje de WhatsApp enviado' });
-                                            }}
-                                            className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-green-500 rounded-xl p-4 text-gray-700 hover:text-green-600 transition-all shadow-sm font-bold text-sm"
-                                        >
-                                            <MessageSquare className="w-6 h-6" />
-                                            WhatsApp
-                                        </button>
-                                        {/* Agendar reunión */}
-                                        <button
-                                            onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })}
-                                            className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm text-center leading-tight"
-                                        >
-                                            <Calendar className="w-6 h-6" />
-                                            Agendar Reunión
+                                            <Bell className="w-4 h-4" />
+                                            Recordatorio de llamada (rápido)
                                         </button>
                                     </div>
                                 ) : (
@@ -1578,24 +1595,64 @@ const ProspectorSeguimiento = () => {
                                     </div>
                                 )}
 
-                                {/* ========= CUADRO DE NOTAS EDITABLE ========= */}
-                                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Notas del Prospecto</p>
+                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                    {/* ========= NOTIFICACIONES ========= */}
+                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <Bell className="w-4 h-4 text-amber-600" />
+                                            <p className="text-xs font-bold text-amber-700 uppercase tracking-wider">Notificaciones</p>
+                                        </div>
+
+                                        {proximaCita && (
+                                            <div className="bg-white border border-amber-200 rounded-lg p-3 text-sm text-gray-700">
+                                                <p className="font-semibold text-gray-800">Ya hay reunión agendada</p>
+                                                <p className="text-gray-500 mt-1">
+                                                    {new Date(fechaProximaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {tareaLlamar && (
+                                            <div className="bg-white border border-amber-200 rounded-lg p-3 text-sm text-gray-700">
+                                                <p className="font-semibold text-gray-800">Recordatorio de llamada pendiente</p>
+                                                <p className="text-gray-500 mt-1">
+                                                    {new Date(tareaLlamar.fecha).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {!proximaCita && !tareaLlamar && (
+                                            <p className="text-sm text-amber-700">Sin alertas por ahora. Puedes programar una llamada para no perder seguimiento.</p>
+                                        )}
+
                                         <button
-                                            onClick={handleGuardarNotasRapidas}
-                                            disabled={loadingNotas}
-                                            className="text-[10px] bg-(--theme-600) text-white px-2 py-1 rounded font-bold hover:bg-(--theme-700) transition-colors disabled:opacity-50"
+                                            onClick={abrirRecordatorioLlamadaDirecto}
+                                            className="w-full flex items-center justify-center gap-2 bg-white border border-amber-300 hover:border-amber-400 rounded-lg py-2 text-sm font-bold text-amber-700"
                                         >
-                                            {loadingNotas ? 'Guardando...' : '✓ Guardar'}
+                                            <Clock className="w-4 h-4" />
+                                            Programar recordatorio de llamada
                                         </button>
                                     </div>
-                                    <textarea
-                                        value={notasRapidas}
-                                        onChange={(e) => setNotasRapidas(e.target.value)}
-                                        placeholder="Escribe notas importantes aquí..."
-                                        className="w-full bg-white border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent outline-none min-h-[100px] resize-none scrollbar-hide"
-                                    />
+
+                                    {/* ========= CUADRO DE NOTAS EDITABLE ========= */}
+                                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Notas del Prospecto</p>
+                                            <button
+                                                onClick={handleGuardarNotasRapidas}
+                                                disabled={loadingNotas}
+                                                className="text-[10px] bg-(--theme-600) text-white px-2 py-1 rounded font-bold hover:bg-(--theme-700) transition-colors disabled:opacity-50"
+                                            >
+                                                {loadingNotas ? 'Guardando...' : '✓ Guardar'}
+                                            </button>
+                                        </div>
+                                        <textarea
+                                            value={notasRapidas}
+                                            onChange={(e) => setNotasRapidas(e.target.value)}
+                                            placeholder="Escribe notas importantes aquí..."
+                                            className="w-full bg-white border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent outline-none min-h-[140px] resize-none scrollbar-hide"
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Acciones de cierre (acordeón para evitar missclick) */}
