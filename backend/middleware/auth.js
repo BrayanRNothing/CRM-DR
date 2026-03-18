@@ -47,8 +47,8 @@ const esSuperUser = (req, res, next) => {
         return res.status(401).json({ mensaje: 'Usuario no autenticado' });
     }
 
-    // Lista de roles permitidos (ya no existe admin/vendedor, pero se mantiene lógica limpia)
-    const rolesPermitidos = ['closer', 'prospector'];
+    // Lista de roles permitidos (ya no existe admin/vendedor_antiguo, pero se mantiene lógica limpia)
+    const rolesPermitidos = ['closer', 'prospector', 'vendedor'];
 
     if (rolesPermitidos.includes(req.usuario.rol)) {
         next();

@@ -4,6 +4,8 @@ const bcrypt = require('bcryptjs');
 const { db } = require('../config/database');
 const { auth, esSuperUser } = require('../middleware/auth');
 
+const ROLES_PERMITIDOS = ['prospector', 'closer', 'vendedor'];
+
 // Helper para formatear respuesta (simulando lo que hacía toMongoFormat si es necesario, o simplificando)
 const formatUser = (row) => ({
     id: row.id,
@@ -43,6 +45,10 @@ router.post('/', auth, esSuperUser, async (req, res) => {
             return res.status(400).json({ mensaje: 'Complete los campos requeridos' });
         }
 
+        if (!ROLES_PERMITIDOS.includes(rol)) {
+            return res.status(400).json({ mensaje: `Rol inválido. Roles permitidos: ${ROLES_PERMITIDOS.join(', ')}` });
+        }
+
         const existe = await db.prepare('SELECT id FROM usuarios WHERE usuario = ?').get(usuario.trim());
         if (existe) return res.status(400).json({ mensaje: 'Usuario ya existe' });
 
@@ -69,6 +75,10 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
 
         const row = await db.prepare('SELECT * FROM usuarios WHERE id = ?').get(id);
         if (!row) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+
+        if (rol && !ROLES_PERMITIDOS.includes(rol)) {
+            return res.status(400).json({ mensaje: `Rol inválido. Roles permitidos: ${ROLES_PERMITIDOS.join(', ')}` });
+        }
 
         const updates = [];
         const params = [];

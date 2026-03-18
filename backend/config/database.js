@@ -1,30 +1,24 @@
 /**
  * Configuración de base de datos
- * Soporta SQLite (desarrollo) y PostgreSQL (producción)
+ * PostgreSQL only
  */
 
 const { Pool } = require('pg');
-const path = require('path');
 
 let internalDb;
-let isPostgres = false;
+const isPostgres = true;
 
-if (process.env.DATABASE_URL) {
-  console.log('🌐 Conectando a PostgreSQL (Producción)...');
-  internalDb = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false
-    }
-  });
-  isPostgres = true;
-} else {
-  console.log('🔧 Inicializando base de datos local SQLite...');
-  const Database = require('better-sqlite3');
-  const dbPath = process.env.SQLITE_PATH || path.join(__dirname, '..', 'database.db');
-  internalDb = new Database(dbPath);
-  internalDb.pragma('journal_mode = WAL');
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL no configurada. Este backend requiere PostgreSQL y ya no usa SQLite.');
 }
+
+console.log('🌐 Conectando a PostgreSQL...');
+internalDb = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
 
 // Lista de columnas camelCase que Postgres almacena en minúsculas
 const CAMEL_COLS = [
@@ -139,7 +133,7 @@ const initDb = async () => {
     id SERIAL PRIMARY KEY,
     usuario TEXT UNIQUE NOT NULL,
     contraseña TEXT NOT NULL,
-    rol TEXT NOT NULL CHECK(rol IN ('prospector','closer')),
+    rol TEXT NOT NULL CHECK(rol IN ('prospector','closer','vendedor')),
     nombre TEXT NOT NULL,
     email TEXT,
     telefono TEXT,
@@ -409,9 +403,75 @@ const initDb = async () => {
         }
       }
     }
+
+    // SQLite no permite modificar CHECK fácilmente: recreamos tabla usuarios para permitir nuevos roles.
+    try {
+      const usuariosSql = internalDb.prepare(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usuarios'"
+      ).get();
+
+      const needsRoleMigration = usuariosSql?.sql && !usuariosSql.sql.includes("'vendedor'");
+      if (needsRoleMigration) {
+        internalDb.exec('PRAGMA foreign_keys = OFF');
+        internalDb.exec('BEGIN TRANSACTION');
+
+        internalDb.exec(`
+          CREATE TABLE IF NOT EXISTS usuarios_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario TEXT UNIQUE NOT NULL,
+            contraseña TEXT NOT NULL,
+            rol TEXT NOT NULL CHECK(rol IN ('prospector','closer','vendedor','admin','superadmin')),
+            nombre TEXT NOT NULL,
+            email TEXT,
+            telefono TEXT,
+            activo INTEGER DEFAULT 1,
+            fechaCreacion TEXT DEFAULT (datetime('now')),
+            googleRefreshToken TEXT,
+            googleAccessToken TEXT,
+            googleTokenExpiry REAL
+          );
+        `);
+
+        internalDb.exec(`
+          INSERT INTO usuarios_new (
+            id, usuario, contraseña, rol, nombre, email, telefono, activo,
+            fechaCreacion, googleRefreshToken, googleAccessToken, googleTokenExpiry
+          )
+          SELECT
+            id, usuario, contraseña, rol, nombre, email, telefono, activo,
+            fechaCreacion, googleRefreshToken, googleAccessToken, googleTokenExpiry
+          FROM usuarios;
+        `);
+
+        internalDb.exec('DROP TABLE usuarios');
+        internalDb.exec('ALTER TABLE usuarios_new RENAME TO usuarios');
+        internalDb.exec('COMMIT');
+        internalDb.exec('PRAGMA foreign_keys = ON');
+        console.log('✅ SQLite: migración de roles en usuarios completada (incluye vendedor)');
+      }
+    } catch (e) {
+      try { internalDb.exec('ROLLBACK'); } catch (_) { /* no-op */ }
+      try { internalDb.exec('PRAGMA foreign_keys = ON'); } catch (_) { /* no-op */ }
+      console.error('⚠️ SQLite: error migrando constraint de rol en usuarios:', e.message);
+    }
+    
     try {
       internalDb.prepare(`UPDATE clientes SET etapaEmbudo = 'prospecto_nuevo' WHERE etapaEmbudo IS NULL`).run();
     } catch (e) { /* ignorar */ }
+  }
+
+  // MIGRACIÓN POSTGRESQL PARA EL NUEVO ROL (vendedor)
+  if (isPostgres) {
+    try {
+        // Remover el constraint anterior y añadir el nuevo (con 'vendedor')
+        await internalDb.query(`
+            ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_check;
+            ALTER TABLE usuarios ADD CONSTRAINT usuarios_rol_check CHECK (rol IN ('prospector', 'closer', 'vendedor'));
+        `);
+        console.log('✅ Migración: Constraint de rol actualizado en Postgres para incluir "vendedor"');
+    } catch(e) {
+        console.error('⚠️ Migración: Error actualizando constraint de rol en Postgres:', e.message);
+    }
   }
 };
 

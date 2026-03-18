@@ -5,6 +5,8 @@ const bcrypt = require('bcryptjs');
 const { db } = require('../config/database');
 const { auth } = require('../middleware/auth');
 
+const ROLES_PERMITIDOS = ['prospector', 'closer', 'vendedor'];
+
 // @route   POST api/auth/login
 // @desc    Autenticar usuario y obtener token
 // @access  Public
@@ -71,6 +73,10 @@ router.post('/register', async (req, res) => {
         let { usuario, contraseña, nombre, email, telefono, rol } = req.body;
 
         if (!rol) rol = 'closer';
+
+        if (!ROLES_PERMITIDOS.includes(rol)) {
+            return res.status(400).json({ mensaje: `Rol inválido. Roles permitidos: ${ROLES_PERMITIDOS.join(', ')}` });
+        }
 
         if (!usuario || !contraseña || !nombre) {
             console.log('⚠️ Registro fallido: Faltan campos obligatorios');
