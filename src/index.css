@@ -3,37 +3,95 @@
 
 @theme {
   /* 
-   * CUSTOM GREEN THEME OVERRIDE
-   * Base: #8bc34a (Light Green)
-   * Highlight: #bfff75 (Lime)
-   * Replacing 'emerald' and 'teal' to unify the app in green.
+   * THEME COLORS MAPPING
+   * We map the 'primary' color palette to CSS variables that change depending on the active theme
    */
-  
-  /* Emerald override */
-  --color-emerald-50: #f4fce3;
-  --color-emerald-100: #e2f7c0;
-  --color-emerald-200: #c7ee8e;
-  --color-emerald-300: #bfff75; /* User's highlight */
-  --color-emerald-400: #a2e04d;
-  --color-emerald-500: #8bc34a; /* User's primary */
-  --color-emerald-600: #6ca82b;
-  --color-emerald-700: #538520;
-  --color-emerald-800: #436a1e;
-  --color-emerald-900: #38591d;
-  --color-emerald-950: #1d330c;
+  --color-primary-50: var(--theme-50);
+  --color-primary-100: var(--theme-100);
+  --color-primary-200: var(--theme-200);
+  --color-primary-300: var(--theme-300);
+  --color-primary-400: var(--theme-400);
+  --color-primary-500: var(--theme-500);
+  --color-primary-600: var(--theme-600);
+  --color-primary-700: var(--theme-700);
+  --color-primary-800: var(--theme-800);
+  --color-primary-900: var(--theme-900);
+  --color-primary-950: var(--theme-950);
+}
 
-  /* Teal override (mapped to same green family for total consistency) */
-  --color-teal-50: #f4fce3;
-  --color-teal-100: #e2f7c0;
-  --color-teal-200: #c7ee8e;
-  --color-teal-300: #bfff75;
-  --color-teal-400: #a2e04d;
-  --color-teal-500: #8bc34a;
-  --color-teal-600: #7cb342; /* Slightly different for gradients */
-  --color-teal-700: #538520;
-  --color-teal-800: #436a1e;
-  --color-teal-900: #38591d;
-  --color-teal-950: #1d330c;
+/* THEME: GREEN (Default) */
+.theme-green {
+  --theme-50: #f4fce3;
+  --theme-100: #e2f7c0;
+  --theme-200: #c7ee8e;
+  --theme-300: #bfff75;
+  --theme-400: #a2e04d;
+  --theme-500: #8bc34a; /* Base */
+  --theme-600: #7cb342;
+  --theme-700: #538520;
+  --theme-800: #436a1e;
+  --theme-900: #38591d;
+  --theme-950: #1d330c;
+}
+
+/* THEME: BLUE */
+.theme-blue {
+  --theme-50: #eff6ff;
+  --theme-100: #dbeafe;
+  --theme-200: #bfdbfe;
+  --theme-300: #93c5fd;
+  --theme-400: #60a5fa;
+  --theme-500: #3b82f6; /* Base */
+  --theme-600: #2563eb;
+  --theme-700: #1d4ed8;
+  --theme-800: #1e40af;
+  --theme-900: #1e3a8a;
+  --theme-950: #172554;
+}
+
+/* THEME: PURPLE */
+.theme-purple {
+  --theme-50: #faf5ff;
+  --theme-100: #f3e8ff;
+  --theme-200: #e9d5ff;
+  --theme-300: #d8b4fe;
+  --theme-400: #c084fc;
+  --theme-500: #a855f7; /* Base */
+  --theme-600: #9333ea;
+  --theme-700: #7e22ce;
+  --theme-800: #6b21a8;
+  --theme-900: #581c87;
+  --theme-950: #3b0764;
+}
+
+/* THEME: ORANGE */
+.theme-orange {
+  --theme-50: #fff7ed;
+  --theme-100: #ffedd5;
+  --theme-200: #fed7aa;
+  --theme-300: #fdba74;
+  --theme-400: #fb923c;
+  --theme-500: #f97316; /* Base */
+  --theme-600: #ea580c;
+  --theme-700: #c2410c;
+  --theme-800: #9a3412;
+  --theme-900: #7c2d12;
+  --theme-950: #431407;
+}
+
+/* THEME: TEAL */
+.theme-teal {
+  --theme-50: #f0fdfa;
+  --theme-100: #ccfbf1;
+  --theme-200: #99f6e4;
+  --theme-300: #5eead4;
+  --theme-400: #2dd4bf;
+  --theme-500: #14b8a6; /* Base */
+  --theme-600: #0d9488;
+  --theme-700: #0f766e;
+  --theme-800: #115e59;
+  --theme-900: #134e4a;
+  --theme-950: #042f2e;
 }
 
 /* Safe area support para móviles (notch, barras del navegador) */
@@ -87,8 +145,8 @@
 /* Calendar Styles */
 .rdp {
   --rdp-cell-size: 40px;
-  --rdp-accent-color: #8bc34a;
-  --rdp-background-color: #f0fdf4;
+  --rdp-accent-color: var(--theme-500, #8bc34a);
+  --rdp-background-color: var(--theme-50, #f0fdf4);
   margin: 0;
 }
 
@@ -96,13 +154,13 @@
 .rdp-day_selected:focus:not([disabled]),
 .rdp-day_selected:active:not([disabled]),
 .rdp-day_selected:hover:not([disabled]) {
-  background-color: #8bc34a;
+  background-color: var(--theme-500, #8bc34a);
   color: white;
 }
 
 .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
-  background-color: #f1f8e9;
-  color: #8bc34a;
+  background-color: var(--theme-100, #f1f8e9);
+  color: var(--theme-600, #8bc34a);
 }
 
 .calendar-with-indicators .rdp-table {
@@ -175,7 +233,7 @@
 }
 
 .calendar-with-indicators .rdp-day_selected {
-  background-color: #8bc34a !important;
+  background-color: var(--theme-500, #8bc34a) !important;
   color: white !important;
 }
 

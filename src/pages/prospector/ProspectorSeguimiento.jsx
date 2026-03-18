@@ -294,7 +294,7 @@ const ProspectorSeguimiento = () => {
             // Si venimos de otra página con un ID seleccionado
             if (location.state?.selectedId) {
                 const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
-                // eslint-disable-next-line eqeqeq
+                 
                 const found = res.data.find(p => p.id == location.state.selectedId || p._id == location.state.selectedId);
                 if (found) {
                     handleSeleccionarProspecto(found);

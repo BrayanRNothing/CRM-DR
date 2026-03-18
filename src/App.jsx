@@ -9,8 +9,10 @@ import CloserLayout from './layouts/CloserLayout.jsx';
 // Components
 import SkeletonLoader from './components/ui/SkeletonLoader.jsx';
 
-// Páginas
-import React, { Suspense, lazy } from 'react';
+// Componentes Globales
+import React, { Suspense, lazy, useEffect } from 'react';
+import useThemeStore, { THEMES } from './store/themeStore.js';
+
 const Login = lazy(() => import('./pages/auth/Login.jsx'));
 const Register = lazy(() => import('./pages/auth/Register.jsx'));
 const Ajustes = lazy(() => import('./pages/common/Ajustes.jsx'));
@@ -33,6 +35,18 @@ const UserManagement = lazy(() => import('./pages/common/UserManagement.jsx'));
 const UserProfile = lazy(() => import('./pages/common/UserProfile.jsx'));
 
 function App() {
+  const currentThemeId = useThemeStore((state) => state.currentThemeId);
+
+  useEffect(() => {
+    // Obtenemos la clase `theme-*` correcta basada en el ID seleccionado.
+    const activeThemeConfig = THEMES.find((t) => t.id === currentThemeId) || THEMES[0];
+    const newThemeClass = activeThemeConfig.className;
+
+    // Quitamos viejos theamas y agregamos el actual al body para efecto global
+    document.body.classList.remove(...THEMES.map((t) => t.className));
+    document.body.classList.add(newThemeClass);
+  }, [currentThemeId]);
+
   return (
     <BrowserRouter>
       <Toaster

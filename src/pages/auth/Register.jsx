@@ -4,9 +4,10 @@ import AnimatedGridBackground from '../../components/ui/AnimatedGridBackground';
 
 
 
-// URL DEL BACKEND (Ajústala si pruebas en local)
+import { Sparkles, ShieldCheck, Mail, Lock, User, Phone } from 'lucide-react';
+
+// URL DEL BACKEND
 import API_URL from '../../config/api';
-// const API_URL = 'http://localhost:4000'; 
 
 const Register = () => {
     const navigate = useNavigate();
@@ -123,220 +124,288 @@ const Register = () => {
 
         if (strength <= 1) return { level: 1, text: 'Débil', color: 'bg-red-500' };
         if (strength <= 3) return { level: 2, text: 'Media', color: 'bg-yellow-500' };
-        return { level: 3, text: 'Fuerte', color: 'bg-green-500' };
+        return { level: 3, text: 'Fuerte', color: 'bg-[var(--theme-500)]' };
     };
 
     const passwordStrength = getPasswordStrength();
 
     return (
-        <AnimatedGridBackground mode="light">
-            <div className="flex min-h-screen items-center justify-center text-slate-900 px-4 sm:px-6 lg:px-8" style={{ fontFamily: '"Space Grotesk", "Poppins", sans-serif' }}>
-
-                <div className="z-10 w-full max-w-6xl">
-                    <div className="grid gap-12 p-4 lg:grid-cols-2 lg:p-8">
-                        <div className="flex flex-col justify-center space-y-8 order-last lg:order-first">
-                            <div className="p-4">
-                                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100/50 bg-emerald-50/50 px-3 py-1 text-xs uppercase tracking-[0.2em] text-emerald-800 font-bold backdrop-blur-sm">
-                                    Crea tu cuenta
-                                </div>
-                                <div className="mt-8 flex items-center">
-                                    <div className="text-5xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent drop-shadow-xl py-4">
-                                        Sistema CRM
-                                    </div>
-                                </div>
-                                <p className="mt-6 text-lg text-slate-800 font-medium leading-relaxed drop-shadow-sm">
-                                    Registra tus datos y empieza a gestionar clientes y servicios en minutos.
-                                </p>
-                            </div>
-                            <div className="p-4 text-sm text-emerald-900">
-                                <p className="font-bold text-emerald-950 flex items-center gap-2 text-base">
-                                    <span className="text-2xl">✨</span> Recomendaciones
-                                </p>
-                                <ul className="mt-2 space-y-2 text-emerald-900 font-medium">
-                                    <li>• Usa una contraseña segura con mayúsculas y números.</li>
-                                    <li>• El email es obligatorio para recuperar tu acceso.</li>
-                                    <li>• Elige un usuario corto y facil de recordar.</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div className="p-4 lg:p-8 h-fit">
-                            <h2 className="text-4xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent drop-shadow-sm">Registro</h2>
-                            <p className="mt-3 text-base text-slate-700 font-semibold">Completa el formulario para crear tu cuenta.</p>
-
-                            <form onSubmit={handleRegister} className="mt-10 space-y-8">
-
-                                {error && (
-                                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center justify-center gap-2 mb-6">
-                                        <span>🚫</span> {error}
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-
-                                    {/* COLUMNA IZQUIERDA: Datos Personales */}
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-emerald-700 uppercase mb-2 ml-1">Nombre</label>
-                                            <input
-                                                type="text"
-                                                value={name}
-                                                onChange={(e) => setName(e.target.value)}
-                                                autoComplete="name"
-                                                className="w-full px-4 py-3 bg-white/50 backdrop-blur-sm border border-slate-200/60 rounded-xl text-slate-900 placeholder-slate-500 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-400 focus:bg-white/80 outline-none transition-all shadow-sm"
-                                                placeholder="Nombre completo"
-                                                required
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-xs font-bold text-emerald-700 uppercase mb-2 ml-1">Usuario *</label>
-                                            <input
-                                                type="text"
-                                                value={username}
-                                                onChange={(e) => setUsername(e.target.value)}
-                                                autoComplete="username"
-                                                className="w-full px-4 py-3 bg-white/50 backdrop-blur-sm border border-slate-200/60 rounded-xl text-slate-900 placeholder-slate-500 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-400 focus:bg-white/80 outline-none transition-all shadow-sm"
-                                                placeholder="tu_usuario"
-                                                required
-                                            />
-                                            <p className="text-xs text-slate-500 mt-1 ml-1">Solo letras, numeros y guiones bajos</p>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-xs font-bold text-emerald-700 uppercase mb-2 ml-1">Email *</label>
-                                            <input
-                                                type="email"
-                                                value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                                autoComplete="email"
-                                                className="w-full px-4 py-3 bg-white/50 backdrop-blur-sm border border-slate-200/60 rounded-xl text-slate-900 placeholder-slate-500 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-400 focus:bg-white/80 outline-none transition-all shadow-sm"
-                                                placeholder="correo@ejemplo.com"
-                                                required
-                                            />
-                                            <p className="text-xs text-slate-500 mt-1 ml-1">Usaremos este correo para recuperar acceso</p>
-                                        </div>
-                                    </div>
-
-                                    {/* COLUMNA DERECHA: Seguridad y Contacto */}
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-emerald-700 uppercase mb-2 ml-1">Telefono</label>
-                                            <input
-                                                type="tel"
-                                                value={phone}
-                                                onChange={(e) => setPhone(e.target.value)}
-                                                autoComplete="tel"
-                                                className="w-full px-4 py-3 bg-white/50 backdrop-blur-sm border border-slate-200/60 rounded-xl text-slate-900 placeholder-slate-500 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-400 focus:bg-white/80 outline-none transition-all shadow-sm"
-                                                placeholder="123 456 7890"
-                                            />
-                                        </div>
-
-                                        <div className="pb-5">
-                                            <label className="block text-xs font-bold text-emerald-700 uppercase mb-2 ml-1">Contraseña</label>
-                                            <div className="flex items-center gap-2 rounded-xl border border-slate-200/60 bg-white/50 backdrop-blur-sm px-4 py-3 focus-within:border-emerald-400 focus-within:bg-white/80 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all shadow-sm">
-                                                <input
-                                                    type={showPassword ? 'text' : 'password'}
-                                                    value={password}
-                                                    onChange={(e) => setPassword(e.target.value)}
-                                                    autoComplete="new-password"
-                                                    className="w-full bg-transparent text-slate-900 placeholder-slate-500 outline-none"
-                                                    placeholder="••••••••"
-                                                    required
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowPassword((prev) => !prev)}
-                                                    className="text-xs font-semibold text-emerald-600 hover:text-emerald-800"
-                                                >
-                                                    {showPassword ? 'Ocultar' : 'Mostrar'}
-                                                </button>
-                                            </div>
-                                            {/* Indicador de fortaleza */}
-                                            {password && (
-                                                <div className="mt-2">
-                                                    <div className="flex gap-1 mb-1">
-                                                        {[1, 2, 3].map((level) => (
-                                                            <div
-                                                                key={level}
-                                                                className={`h-1 flex-1 rounded-full transition-all ${level <= passwordStrength.level
-                                                                    ? passwordStrength.color
-                                                                    : 'bg-slate-200'
-                                                                    }`}
-                                                            ></div>
-                                                        ))}
-                                                    </div>
-                                                    <p className="text-xs text-slate-600">
-                                                        Fortaleza: <span className="font-semibold">{passwordStrength.text}</span>
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-xs font-bold text-emerald-700 uppercase mb-2 ml-1">Confirmar Contraseña</label>
-                                            <div className={`flex items-center gap-2 rounded-xl border bg-white/50 backdrop-blur-sm px-4 py-3 focus-within:bg-white/80 focus-within:ring-4 transition-all shadow-sm ${confirmPassword && password !== confirmPassword
-                                                ? 'border-red-500 focus-within:ring-red-500/20'
-                                                : 'border-slate-200/60 focus-within:ring-emerald-500/10'
-                                                }`}
-                                            >
-                                                <input
-                                                    type={showConfirm ? 'text' : 'password'}
-                                                    value={confirmPassword}
-                                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                                    autoComplete="new-password"
-                                                    className="w-full bg-transparent text-slate-900 placeholder-slate-500 outline-none"
-                                                    placeholder="••••••••"
-                                                    required
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowConfirm((prev) => !prev)}
-                                                    className="text-xs font-semibold text-emerald-600 hover:text-emerald-800"
-                                                >
-                                                    {showConfirm ? 'Ocultar' : 'Mostrar'}
-                                                </button>
-                                            </div>
-                                            {confirmPassword && password !== confirmPassword && (
-                                                <p className="text-xs text-red-400 mt-1 ml-1">Las contraseñas no coinciden</p>
-                                            )}
-                                            {confirmPassword && password === confirmPassword && (
-                                                <p className="text-xs text-emerald-600 mt-1 ml-1">✓ Las contraseñas coinciden</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 pt-2">
-                                    <label className="flex items-start gap-3 text-sm text-slate-600">
-                                        <input
-                                            type="checkbox"
-                                            checked={acceptTerms}
-                                            onChange={(e) => setAcceptTerms(e.target.checked)}
-                                            className="mt-0.5 h-4 w-4 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500/20"
-                                        />
-                                        <span>
-                                            Acepto los terminos y la politica de privacidad.
-                                        </span>
-                                    </label>
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-4 rounded-xl transition-all duration-300 shadow-lg shadow-emerald-500/20 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {loading ? 'Validando...' : 'CREAR CUENTA'}
-                                    </button>
-                                </div>
-                            </form>
-
-                            <div className="mt-6 text-center">
-                                <p className="text-sm text-slate-600">¿Ya tienes una cuenta? <a href="/" className="text-emerald-700 hover:text-emerald-900 font-semibold hover:underline transition-colors">Iniciar sesion</a></p>
-                            </div>
-                        </div>
+        <div className="min-h-screen w-full flex bg-slate-50 font-['Inter',sans-serif]">
+            {/* 🔴 Lado Izquierdo - Panel Decorativo Inmersivo 🔴 */}
+            <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden bg-[var(--theme-900)] justify-center items-center">
+                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[var(--theme-700)] via-[var(--theme-900)] to-[var(--theme-950)] opacity-90"></div>
+                
+                <div className="absolute -top-32 -left-32 w-96 h-96 bg-[var(--theme-500)] rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob"></div>
+                <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-[var(--theme-300)] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+                
+                <div className="relative z-10 p-16 max-w-lg text-white">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-8">
+                        <Sparkles className="w-4 h-4 text-[var(--theme-300)]" />
+                        <span className="text-sm font-medium tracking-wide">Plataforma CRM Premium</span>
                     </div>
+                    
+                    <h1 className="text-5xl font-black mb-6 leading-tight drop-shadow-md">
+                        Únete a la <br/>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--theme-200)] to-[var(--theme-400)]">
+                            evolución hoy.
+                        </span>
+                    </h1>
+                    
+                    <p className="text-[var(--theme-100)] text-lg leading-relaxed mb-4 opacity-90">
+                        Crea tu cuenta en segundos y obtén acceso total a nuestro conjunto moderno de herramientas administrativas.
+                    </p>
+                    
+                    <ul className="mt-8 space-y-4 text-[var(--theme-100)] opacity-90 font-medium">
+                        <li className="flex items-center gap-3">
+                            <span className="w-6 h-6 rounded-full bg-[var(--theme-500)]/30 border border-[var(--theme-500)]/50 flex items-center justify-center text-[var(--theme-200)] text-xs font-bold">✓</span>
+                            Organiza todos tus prospectos
+                        </li>
+                        <li className="flex items-center gap-3">
+                            <span className="w-6 h-6 rounded-full bg-[var(--theme-500)]/30 border border-[var(--theme-500)]/50 flex items-center justify-center text-[var(--theme-200)] text-xs font-bold">✓</span>
+                            Cierra acuerdos rápidamente
+                        </li>
+                        <li className="flex items-center gap-3">
+                            <span className="w-6 h-6 rounded-full bg-[var(--theme-500)]/30 border border-[var(--theme-500)]/50 flex items-center justify-center text-[var(--theme-200)] text-xs font-bold">✓</span>
+                            Reportes en tiempo real
+                        </li>
+                    </ul>
+                </div>
+
+                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-[var(--theme-950)] to-transparent opacity-80"
+                     style={{ backgroundImage: 'radial-gradient(var(--theme-500) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+            </div>
+
+            {/* 🟢 Lado Derecho - Formulario de Registro 🟢 */}
+            <div className="w-full lg:w-[55%] flex items-center justify-center p-8 sm:p-12 relative overflow-hidden overflow-y-auto">
+                <div className="lg:hidden absolute top-0 right-0 w-72 h-72 bg-[var(--theme-200)] rounded-full mix-blend-multiply blur-3xl opacity-30 animate-blob"></div>
+                <div className="lg:hidden absolute bottom-0 left-0 w-72 h-72 bg-[var(--theme-400)] rounded-full mix-blend-multiply blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+
+                <div className="w-full max-w-2xl relative z-10 m-auto py-8">
+                    <div className="text-center mb-10">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--theme-500)] to-[var(--theme-700)] shadow-xl shadow-[var(--theme-500)]/30 mb-6 transform -rotate-3 transition-transform hover:-rotate-6">
+                            <User className="w-8 h-8 text-white" />
+                        </div>
+                        <h2 className="text-3xl font-black text-slate-800 tracking-tight">Crear Cuenta</h2>
+                        <p className="text-slate-500 mt-2 font-medium">Completa los datos para registrarte en el sistema</p>
+                    </div>
+
+                    <form onSubmit={handleRegister} className="space-y-6">
+                        {error && (
+                            <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm shadow-sm animate-pulse-once">
+                                <span className="font-bold flex-shrink-0 text-xl">🚫</span>
+                                <p className="font-semibold">{error}</p>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                            {/* COLUMNA IZQUIERDA: Datos Personales */}
+                            <div className="space-y-5">
+                                <div className="relative group">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1 transition-colors group-focus-within:text-[var(--theme-600)]">
+                                        Nombre Completo
+                                    </label>
+                                    <div className="relative flex items-center">
+                                        <User className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-[var(--theme-500)] transition-colors" />
+                                        <input
+                                            type="text"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[var(--theme-500)] focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
+                                            placeholder="Ej. Juan Pérez"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="relative group">
+                                    <div className="flex justify-between items-baseline mb-1 ml-1">
+                                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 transition-colors group-focus-within:text-[var(--theme-600)]">
+                                            Usuario *
+                                        </label>
+                                        <span className="text-[10px] text-slate-400 font-medium">Sin espacios</span>
+                                    </div>
+                                    <div className="relative flex items-center">
+                                        <ShieldCheck className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-[var(--theme-500)] transition-colors" />
+                                        <input
+                                            type="text"
+                                            value={username}
+                                            onChange={(e) => setUsername(e.target.value)}
+                                            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[var(--theme-500)] focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
+                                            placeholder="juanp"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="relative group">
+                                    <div className="flex justify-between items-baseline mb-1 ml-1">
+                                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 transition-colors group-focus-within:text-[var(--theme-600)]">
+                                            Correo Electrónico *
+                                        </label>
+                                    </div>
+                                    <div className="relative flex items-center">
+                                        <Mail className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-[var(--theme-500)] transition-colors" />
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[var(--theme-500)] focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
+                                            placeholder="correo@ejemplo.com"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* COLUMNA DERECHA: Seguridad y Contacto */}
+                            <div className="space-y-5">
+                                <div className="relative group">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1 transition-colors group-focus-within:text-[var(--theme-600)]">
+                                        Teléfono
+                                    </label>
+                                    <div className="relative flex items-center">
+                                        <Phone className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-[var(--theme-500)] transition-colors" />
+                                        <input
+                                            type="tel"
+                                            value={phone}
+                                            onChange={(e) => setPhone(e.target.value)}
+                                            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[var(--theme-500)] focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
+                                            placeholder="+1 234 567 890"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="relative group">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1 transition-colors group-focus-within:text-[var(--theme-600)]">
+                                        Contraseña
+                                    </label>
+                                    <div className="relative flex items-center">
+                                        <Lock className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-[var(--theme-500)] transition-colors" />
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="w-full pl-12 pr-16 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[var(--theme-500)] focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
+                                            placeholder="••••••••"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-4 text-xs font-bold text-slate-400 hover:text-[var(--theme-600)] transition-colors"
+                                        >
+                                            {showPassword ? 'OCULTAR' : 'MOSTRAR'}
+                                        </button>
+                                    </div>
+                                    
+                                    {/* Indicador de fortaleza */}
+                                    {password && (
+                                        <div className="mt-2 ml-1">
+                                            <div className="flex gap-1 mb-1">
+                                                {[1, 2, 3].map((level) => (
+                                                    <div
+                                                        key={level}
+                                                        className={`h-1 flex-1 rounded-full transition-all ${level <= passwordStrength.level
+                                                            ? passwordStrength.color
+                                                            : 'bg-slate-200'
+                                                            }`}
+                                                    ></div>
+                                                ))}
+                                            </div>
+                                            <p className="text-[10px] text-slate-500 font-medium tracking-wide flex justify-between">
+                                                Seguridad <span>{passwordStrength.text}</span>
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="relative group">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1 transition-colors group-focus-within:text-[var(--theme-600)]">
+                                        Confirmar Contraseña
+                                    </label>
+                                    <div className="relative flex items-center">
+                                        <Lock className="absolute left-4 w-5 h-5 text-[var(--theme-300)] group-focus-within:text-[var(--theme-500)] transition-colors" />
+                                        <input
+                                            type={showConfirm ? 'text' : 'password'}
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className={`w-full pl-12 pr-16 py-3.5 bg-white border rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50 ${
+                                                confirmPassword && password !== confirmPassword 
+                                                ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' 
+                                                : 'border-slate-200 focus:border-[var(--theme-500)] focus:ring-[var(--theme-500)]'
+                                            }`}
+                                            placeholder="••••••••"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirm(!showConfirm)}
+                                            className="absolute right-4 text-xs font-bold text-slate-400 hover:text-[var(--theme-600)] transition-colors"
+                                        >
+                                            {showConfirm ? 'OCULTAR' : 'MOSTRAR'}
+                                        </button>
+                                    </div>
+                                    {confirmPassword && password !== confirmPassword && (
+                                        <p className="text-xs text-red-500 mt-1.5 ml-1 font-medium">Las contraseñas no coinciden</p>
+                                    )}
+                                    {confirmPassword && password === confirmPassword && (
+                                        <p className="text-xs text-[var(--theme-600)] mt-1.5 ml-1 font-medium flex items-center gap-1">✓ Coinciden</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100 flex flex-col gap-6">
+                            <label className="flex items-start gap-3 cursor-pointer group hover:bg-slate-100/50 p-2 rounded-xl transition-colors">
+                                <div className="relative flex items-center justify-center mt-0.5 shrink-0">
+                                    <input
+                                        type="checkbox"
+                                        checked={acceptTerms}
+                                        onChange={(e) => setAcceptTerms(e.target.checked)}
+                                        className="peer sr-only"
+                                    />
+                                    <div className="w-5 h-5 border-2 border-slate-300 rounded peer-checked:bg-[var(--theme-500)] peer-checked:border-[var(--theme-500)] transition-all"></div>
+                                    <svg className="absolute w-3 h-3 text-white pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" viewBox="0 0 14 10" fill="none">
+                                        <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                </div>
+                                <span className="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">
+                                    He leído y acepto los <a href="#" className="font-bold text-[var(--theme-600)] hover:underline">términos de servicio</a> y la <a href="#" className="font-bold text-[var(--theme-600)] hover:underline">política de privacidad</a>.
+                                </span>
+                            </label>
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="group relative w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--theme-500)] to-[var(--theme-600)] text-white py-4 px-8 rounded-2xl font-bold text-lg shadow-xl shadow-[var(--theme-500)]/30 hover:shadow-2xl hover:shadow-[var(--theme-500)]/40 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none transition-all duration-200 overflow-hidden"
+                            >
+                                <div className="absolute inset-0 w-full h-full bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-500 ease-out z-0"></div>
+                                <span className="relative z-10">{loading ? 'Validando...' : 'Crear mi Cuenta'}</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <p className="mt-8 text-center text-sm text-slate-500 font-medium">
+                        ¿Ya tienes una cuenta?{' '}
+                        <a href="/" className="font-bold text-[var(--theme-600)] hover:text-[var(--theme-800)] hover:underline underline-offset-4 transition-all">
+                            Inicia sesión aquí
+                        </a>
+                    </p>
                 </div>
             </div>
-        </AnimatedGridBackground>
+            
+            {/* Badge Flotante Producción */}
+            <div className="fixed bottom-4 right-4 z-50 pointer-events-none hidden md:block">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur border border-slate-200 shadow-sm">
+                    <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--theme-400)] opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--theme-500)]"></span>
+                    </span>
+                    <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500">v1.1 Estables</span>
+                </div>
+            </div>
+            
+        </div>
     );
 };
 

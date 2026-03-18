@@ -5,9 +5,11 @@ import AnimatedGridBackground from '../../components/ui/AnimatedGridBackground';
 import Register from './Register';
 import { getUser, saveUser, saveToken } from '../../utils/authUtils';
 
-// URL DEL BACKEND (Ajústala si pruebas en local)
+// URL DEL BACKEND
 import API_URL from '../../config/api';
-// const API_URL = 'http://localhost:4000'; 
+
+// Íconos decorativos
+import { Mail, Lock, LogIn, Sparkles, ShieldCheck } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -82,133 +84,183 @@ const Login = () => {
   };
 
   return (
-    <AnimatedGridBackground mode="light">
-      <div
-        className="relative flex min-h-screen items-center justify-center px-4 py-10 text-slate-900 sm:px-6 lg:px-8"
-        style={{ fontFamily: '"Space Grotesk", "Poppins", sans-serif' }}
-      >
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-32 right-10 h-72 w-72 rounded-full bg-slate-300/30 blur-3xl" />
-          <div className="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-slate-300/30 blur-3xl" />
-        </div>
-
-        <div className="relative w-full max-w-5xl">
-          <div className="grid gap-12 p-4 lg:grid-cols-2 lg:p-8 items-center">
-            <div className="flex flex-col justify-between space-y-8">
-              <div className="p-4">
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100/50 bg-emerald-50/50 px-3 py-1 text-xs uppercase tracking-[0.2em] text-emerald-800 font-bold backdrop-blur-sm">
-                  Acceso seguro
-                </div>
-                <div className="mt-8 flex items-center">
-                  <div className="text-5xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent drop-shadow-xl py-4">
-                    Sistema CRM
-                  </div>
-                </div>
-                <p className="mt-6 text-lg text-slate-800 font-medium leading-relaxed drop-shadow-sm">
-                  Administra clientes, servicios y reportes desde un solo lugar.
-                </p>
+    <div className="min-h-screen w-full flex bg-slate-50 font-['Inter',sans-serif]">
+      {/* 🔴 Lado Izquierdo - Panel Decorativo Inmersivo 🔴 */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-(--theme-900) justify-center items-center">
+        {/* Elementos Decorativos con Glassmorphism */}
+        <div className="absolute top-0 left-0 w-full h-full bg-linear-to-br from-(--theme-700) via-(--theme-900) to-(--theme-950) opacity-90"></div>
+        
+        {/* Orb blur */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-(--theme-500) rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob"></div>
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-(--theme-300) rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        
+        {/* Contenido flotante izquierdo */}
+        <div className="relative z-10 p-16 max-w-lg text-white">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-8">
+            <Sparkles className="w-4 h-4 text-(--theme-300)" />
+            <span className="text-sm font-medium tracking-wide">Plataforma CRM Premium</span>
+          </div>
+          
+          <h1 className="text-5xl font-black mb-6 leading-tight drop-shadow-md">
+            Gestiona tu éxito <br/>
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-(--theme-200) to-(--theme-400)">
+              sin complicaciones.
+            </span>
+          </h1>
+          
+          <p className="text-(--theme-100) text-lg leading-relaxed mb-12 opacity-90">
+            Cierra más ventas, aumenta tu productividad y administra toda tu cartera de prospectos desde una única interfaz intuitiva e inteligente.
+          </p>
+          
+          {/* Tarjeta de Testimonio Flotante (Soft UI) */}
+          <div className="relative bg-white/10 backdrop-blur-lg border border-white/20 p-6 rounded-3xl shadow-2xl">
+            <div className="flex gap-4">
+              <div className="w-12 h-12 rounded-full bg-linear-to-br from-(--theme-300) to-(--theme-600) flex items-center justify-center font-bold text-lg shadow-inner">
+                S
               </div>
-              <div className="p-4 text-sm text-emerald-900">
-                <p className="font-bold text-emerald-950 flex items-center gap-2 text-base">
-                  <span className="text-2xl">🛡️</span> Tip de seguridad
+              <div>
+                <p className="text-sm italic text-white/90 mb-2">
+                  "El nivel de organización que logramos con este sistema multiplicó nuestros cierres por tres."
                 </p>
-                <p className="mt-2 text-emerald-900 font-medium">Usa una contraseña única y no la compartas con nadie.</p>
+                <p className="text-xs font-bold text-(--theme-200)">— Sistema Administrativo</p>
               </div>
             </div>
+          </div>
+        </div>
 
-            <div className="p-8">
-              <h2 className="text-4xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent drop-shadow-sm">Inicia sesión</h2>
-              <p className="mt-3 text-base text-slate-700 font-semibold">
-                Completa tus datos para continuar.<br />
-                <span className="text-xs text-emerald-600 font-normal mt-1 block tracking-wide">Acceso de prueba: <strong className="font-bold bg-emerald-100 px-1 rounded">prospector</strong> o <strong className="font-bold bg-emerald-100 px-1 rounded">closer</strong></span>
-              </p>
+        {/* Patrón de cuadrícula inferior */}
+        <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-linear-to-t from-(--theme-950) to-transparent opacity-80"
+             style={{ backgroundImage: 'radial-gradient(var(--theme-500) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+      </div>
 
-              <form onSubmit={handleLogin} className="mt-10 space-y-8">
-                {error && (
-                  <div className="rounded-2xl border border-red-200/50 bg-red-50/80 backdrop-blur-sm px-4 py-3 text-sm text-red-700 shadow-sm">
-                    {error}
-                  </div>
-                )}
+      {/* 🟢 Lado Derecho - Formulario de Acceso 🟢 */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 lg:p-24 relative overflow-hidden">
+        {/* Background blobs for mobile only (hidden on LG so it's clean on split view) */}
+        <div className="lg:hidden absolute top-0 right-0 w-72 h-72 bg-(--theme-200) rounded-full mix-blend-multiply blur-3xl opacity-30 animate-blob"></div>
+        <div className="lg:hidden absolute bottom-0 left-0 w-72 h-72 bg-(--theme-400) rounded-full mix-blend-multiply blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-widest text-emerald-800 ml-1 mb-1">Usuario o correo</label>
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      autoComplete="username"
-                      className="mt-1 w-full rounded-xl border border-slate-200/60 bg-white/50 backdrop-blur-sm px-4 py-3.5 text-slate-900 placeholder-slate-500 focus:border-emerald-400 focus:bg-white/80 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all shadow-sm"
-                      placeholder="Ingresa tu usuario"
-                      required
-                    />
-                  </div>
+        <div className="w-full max-w-md relative z-10">
+          
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-linear-to-br from-(--theme-500) to-(--theme-700) shadow-xl shadow-(--theme-500)/30 mb-6 transform rotate-3 transition-transform hover:rotate-6">
+              <ShieldCheck className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-3xl font-black text-slate-800 tracking-tight">Iniciar Sesión</h2>
+            <p className="text-slate-500 mt-2 font-medium">Ingresa tus credenciales para continuar</p>
+          </div>
 
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-widest text-emerald-800 ml-1 mb-1">Contraseña</label>
-                    <div className="mt-1 flex items-center gap-2 rounded-xl border border-slate-200/60 bg-white/50 backdrop-blur-sm px-4 py-3.5 focus-within:border-emerald-400 focus-within:bg-white/80 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all shadow-sm">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        autoComplete="current-password"
-                        className="w-full bg-transparent text-slate-900 placeholder-slate-500 outline-none"
-                        placeholder="••••••••"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((prev) => !prev)}
-                        className="text-xs font-semibold text-emerald-600 hover:text-emerald-800"
-                      >
-                        {showPassword ? 'Ocultar' : 'Mostrar'}
-                      </button>
-                    </div>
-                  </div>
+          <form onSubmit={handleLogin} className="space-y-6">
+            
+            {error && (
+              <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm shadow-sm animate-pulse-once">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <p className="font-semibold">{error}</p>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="relative group">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1 transition-colors group-focus-within:text-(--theme-600)">
+                  Usuario o Correo
+                </label>
+                <div className="relative flex items-center">
+                  <Mail className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
+                    required
+                    style={{ '--tw-ring-color': 'var(--theme-500)' }}
+                    className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-(--theme-500) focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
+                    placeholder="ejemplo@correo.com"
+                  />
                 </div>
+              </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="h-4 w-4 rounded border-slate-300 bg-white text-emerald-500 focus:ring-emerald-500/20"
-                    />
-                    Recordar sesión
+              <div className="relative group">
+                <div className="flex items-center justify-between mb-1 ml-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 transition-colors group-focus-within:text-(--theme-600)">
+                    Contraseña
                   </label>
-                  <a href="/recuperar" className="text-emerald-700 hover:text-emerald-900">
-                    Olvidaste tu contraseña?
+                  <a href="/recuperar" className="text-xs font-semibold text-(--theme-600) hover:text-(--theme-800) mr-1">
+                    ¿Olvidaste tu contraseña?
                   </a>
                 </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-3.5 font-bold text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-emerald-500/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? 'Validando...' : 'Iniciar sesión'}
-                </button>
-
-                <div className="text-center text-xs text-slate-600 font-medium">
-                  No tienes una cuenta?{' '}
-                  <a href="/register" className="text-emerald-700 hover:text-emerald-900 underline decoration-2 underline-offset-4 hover:decoration-emerald-900">
-                    Regístrate aquí
-                  </a>
+                <div className="relative flex items-center">
+                  <Lock className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                    style={{ '--tw-ring-color': 'var(--theme-500)' }}
+                    className="w-full pl-12 pr-16 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-(--theme-500) focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 text-xs font-bold text-slate-400 hover:text-(--theme-600) transition-colors"
+                  >
+                    {showPassword ? 'OCULTAR' : 'MOSTRAR'}
+                  </button>
                 </div>
-              </form>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div className="fixed bottom-4 left-4 z-20">
-          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-slate-600 shadow-sm backdrop-blur-sm">
-            <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500"></div>
-            <span className="text-xs font-medium">v0.0.0 Producción</span>
-          </div>
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <div className="relative flex items-center justify-center">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="peer sr-only"
+                  />
+                  <div className="w-5 h-5 border-2 border-slate-300 rounded peer-checked:bg-(--theme-500) peer-checked:border-(--theme-500) transition-all"></div>
+                  <svg className="absolute w-3 h-3 text-white pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" viewBox="0 0 14 10" fill="none">
+                    <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <span className="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">Recordar mi sesión</span>
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="group relative w-full flex items-center justify-center gap-2 bg-linear-to-r from-(--theme-500) to-(--theme-600) text-white py-4 px-8 rounded-2xl font-bold text-lg shadow-xl shadow-(--theme-500)/30 hover:shadow-2xl hover:shadow-(--theme-500)/40 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none transition-all duration-200 overflow-hidden"
+            >
+              <div className="absolute inset-0 w-full h-full bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-500 ease-out z-0"></div>
+              <span className="relative z-10">{loading ? 'Validando Acceso...' : 'Entrar al Sistema'}</span>
+              {!loading && <LogIn className="relative z-10 w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+            </button>
+          </form>
+
+          <p className="mt-8 text-center text-sm text-slate-500 font-medium">
+            ¿Aún no tienes cuenta?{' '}
+            <a href="/register" className="font-bold text-(--theme-600) hover:text-(--theme-800) hover:underline underline-offset-4 transition-all">
+              Regístrate aquí
+            </a>
+          </p>
+
         </div>
       </div>
-    </AnimatedGridBackground>
+      
+      {/* Badge Flotante Producción */}
+      <div className="fixed bottom-4 right-4 z-50 pointer-events-none">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur border border-slate-200 shadow-sm">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-(--theme-400) opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-(--theme-500)"></span>
+          </span>
+          <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500">v1.1 Estables</span>
+        </div>
+      </div>
+      
+    </div>
   );
 };
 

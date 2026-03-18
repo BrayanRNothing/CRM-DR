@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import API_URL from '../../config/api';
 import { getUser, saveUser, getToken } from '../../utils/authUtils';
+import useThemeStore, { THEMES } from '../../store/themeStore.js';
 
 const GoogleIcon = ({ size = 20 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24">
@@ -41,6 +42,9 @@ export default function VendedorAjustes() {
     const [profileForm, setProfileForm] = useState({ nombre: '', email: '', telefono: '' });
     const [passForm, setPassForm] = useState({ next: '', confirm: '' });
     const [activeTab, setActiveTab] = useState('perfil');
+
+    // Theme Global State
+    const { currentThemeId, setTheme } = useThemeStore();
 
     useEffect(() => {
         const storedUser = getUser();
@@ -442,6 +446,44 @@ export default function VendedorAjustes() {
                                 </div>
                             </div>
 
+                            {/* Apariencia / Tema */}
+                            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                                <div className="p-6 sm:p-8">
+                                    <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
+                                        <div className="p-2 rounded-xl bg-slate-100 text-slate-600">
+                                            <Palette size={15} />
+                                        </div>
+                                        Apariencia del Sistema
+                                    </h2>
+                                    <p className="text-sm text-slate-500 mb-4">
+                                        Personaliza el color de acento principal del CRM en tu dispositivo.
+                                    </p>
+
+                                    <div className="flex flex-wrap gap-4">
+                                        {THEMES.map((theme) => {
+                                            const isActive = currentThemeId === theme.id;
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    key={theme.id}
+                                                    onClick={() => setTheme(theme.id)}
+                                                    className={`group relative flex items-center gap-3 p-3 pr-5 rounded-2xl border-2 transition-all ${isActive ? 'bg-slate-50 border-slate-300 shadow-sm' : 'border-transparent hover:bg-slate-50'}`}
+                                                >
+                                                    <div 
+                                                        className={`w-8 h-8 rounded-full shadow-sm flex items-center justify-center transition-transform ${isActive ? 'scale-110 ring-2 ring-offset-2' : 'group-hover:scale-110'}`}
+                                                        style={{ backgroundColor: theme.color, ringColor: theme.color }}
+                                                    >
+                                                        {isActive && <CheckCircle2 size={16} className="text-white" />}
+                                                    </div>
+                                                    <span className={`text-sm font-semibold ${isActive ? 'text-slate-900' : 'text-slate-600'}`}>
+                                                        {theme.label}
+                                                    </span>
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
 
                         </div>
                     )}
