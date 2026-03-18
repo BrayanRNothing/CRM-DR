@@ -5,6 +5,15 @@ import Avatar from './Avatar';
 
 const SIDEBAR_HINT_KEY = 'crm_sidebar_hint_seen';
 
+const BrandGlyph = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="3" y="3" width="7" height="7" rx="2" fill="currentColor" opacity="0.95" />
+        <rect x="14" y="3" width="7" height="7" rx="2" fill="currentColor" opacity="0.6" />
+        <rect x="3" y="14" width="7" height="7" rx="2" fill="currentColor" opacity="0.6" />
+        <rect x="14" y="14" width="7" height="7" rx="2" fill="currentColor" opacity="0.95" />
+    </svg>
+);
+
 const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', subtitle = 'Workspace', logo, onCollapseChange, mode = 'light' }) => {
     const location = useLocation();
     const [isCollapsed, setIsCollapsed] = useState(true);
@@ -47,14 +56,6 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', subtitle = 'Works
         : 'text-gray-500';
 
     const borderClass = isDark ? 'border-gray-800' : 'border-gray-100';
-    const initials = String(title)
-        .split(' ')
-        .filter(Boolean)
-        .map((w) => w[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase();
-
     return (
         <aside
             className={`flex flex-col border rounded-2xl transition-all duration-300 ${containerClasses} ${isCollapsed ? 'w-20' : 'w-64'
@@ -68,8 +69,8 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', subtitle = 'Works
                         className="relative flex items-center justify-center w-full group py-1"
                         title="Expandir menú"
                     >
-                        <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-(--theme-500) via-(--theme-600) to-(--theme-700) flex items-center justify-center text-white font-black text-sm shadow-lg ring-1 ring-white/20 transition-all duration-300 group-hover:scale-95 group-hover:opacity-20 text-center uppercase">
-                            {logo ? logo : initials}
+                        <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-(--theme-500) via-(--theme-600) to-(--theme-700) flex items-center justify-center text-white shadow-lg ring-1 ring-white/20 transition-all duration-300 group-hover:scale-95 group-hover:opacity-20">
+                            {logo ? logo : <BrandGlyph />}
                         </div>
                         <span className="absolute -bottom-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white" />
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -93,10 +94,10 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', subtitle = 'Works
                     <div className="flex items-center gap-2.5">
                         <button
                             onClick={handleToggle}
-                            className="shrink-0 w-11 h-11 rounded-xl bg-linear-to-br from-(--theme-500) via-(--theme-600) to-(--theme-700) text-white shadow-md ring-1 ring-white/20 flex items-center justify-center font-black text-xs tracking-wide hover:scale-[0.98] transition-transform"
+                            className="shrink-0 w-11 h-11 rounded-xl bg-linear-to-br from-(--theme-500) via-(--theme-600) to-(--theme-700) text-white shadow-md ring-1 ring-white/20 flex items-center justify-center hover:scale-[0.98] transition-transform"
                             title="Contraer/Expandir menú"
                         >
-                            {logo ? logo : initials}
+                            {logo ? logo : <BrandGlyph />}
                         </button>
                         <button
                             onClick={handleToggle}
