@@ -24,7 +24,7 @@ const CRMClientes = () => {
     });
 
     const getRole = () => {
-        const userStr = localStorage.getItem('user');
+        const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
         if (userStr) {
             try {
                 const user = JSON.parse(userStr);
@@ -36,10 +36,17 @@ const CRMClientes = () => {
         return 'prospector';
     };
 
+    const getRolePath = () => {
+        const rol = getRole();
+        // No existe /api/vendedor/*, reutilizamos rutas closer para vista de clientes e historial.
+        if (rol === 'vendedor') return 'closer';
+        return rol;
+    };
+
     const cargarClientes = async () => {
         setLoading(true);
         try {
-            const rol = getRole();
+            const rol = getRolePath();
             const res = await axios.get(
                 `${API_URL}/api/${rol}/clientes-ganados`,
                 { headers: getAuthHeaders() }
@@ -63,7 +70,7 @@ const CRMClientes = () => {
         setProspectoSeleccionado(cliente);
         setLoadingTimeline(true);
         try {
-            const rol = getRole();
+            const rol = getRolePath();
             const res = await axios.get(
                 `${API_URL}/api/${rol}/prospecto/${cliente.id || cliente._id}/historial-completo`,
                 { headers: getAuthHeaders() }
