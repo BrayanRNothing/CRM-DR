@@ -9,7 +9,7 @@ import { getUser, saveUser, saveToken } from '../../utils/authUtils';
 import API_URL from '../../config/api';
 
 // Íconos decorativos
-import { Mail, Lock, LogIn, Sparkles, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, LogIn, Sparkles, ShieldCheck, AlertCircle } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();

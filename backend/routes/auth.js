@@ -21,7 +21,7 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ mensaje: 'Credenciales inválidas' });
         }
 
-        if (!row.activo) {
+        if (row.activo === 0 || row.activo === false) {
             return res.status(401).json({ mensaje: 'Usuario desactivado. Contacte al administrador' });
         }
 
