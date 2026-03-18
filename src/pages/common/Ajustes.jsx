@@ -25,7 +25,7 @@ const Toggle = ({ value, onChange }) => (
     <button
         type="button"
         onClick={() => onChange(!value)}
-        className={`relative flex-shrink-0 w-12 h-6 rounded-full transition-all duration-300 focus:outline-none ${value ? 'bg-gradient-to-r from-(--theme-500) to-(--theme-400) shadow-lg shadow-(--theme-500)/30' : 'bg-slate-200'}`}
+        className={`relative shrink-0 w-12 h-6 rounded-full transition-all duration-300 focus:outline-none ${value ? 'bg-linear-to-r from-(--theme-500) to-(--theme-400) shadow-lg shadow-(--theme-500)/30' : 'bg-slate-200'}`}
     >
         <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full shadow-md transition-transform duration-300 ${value ? 'translate-x-6' : ''}`} />
     </button>
@@ -157,14 +157,14 @@ export default function VendedorAjustes() {
     ];
 
     return (
-        <div className="w-full h-screen overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-white">
+        <div className="w-full h-screen overflow-hidden bg-linear-to-br from-slate-100 via-slate-50 to-white">
             <div className="h-full overflow-y-auto">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24">
 
                     {/* ═══ HERO HEADER ═══ */}
                     <div className="relative rounded-3xl overflow-hidden mb-6 shadow-xl">
                         {/* Gradient Banner */}
-                        <div className={`h-28 sm:h-36 bg-gradient-to-br ${roleBg} relative`}>
+                        <div className={`h-28 sm:h-36 bg-linear-to-br ${roleBg} relative`}>
                             <div className="absolute inset-0 opacity-20"
                                 style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
                         </div>
@@ -174,9 +174,9 @@ export default function VendedorAjustes() {
                             {/* Avatar overlapping banner */}
                             <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-8 sm:-mt-10">
                                 <div className="relative w-fit">
-                                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-white to-slate-100 shadow-xl ring-4 ring-white flex items-center justify-center text-3xl sm:text-4xl font-black text-transparent bg-clip-text"
+                                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-linear-to-br from-white to-slate-100 shadow-xl ring-4 ring-white flex items-center justify-center text-3xl sm:text-4xl font-black text-transparent bg-clip-text"
                                         style={{ background: `linear-gradient(135deg, var(--tw-gradient-stops))` }}>
-                                        <div className={`w-full h-full rounded-2xl bg-gradient-to-br ${roleBg} flex items-center justify-center text-white text-3xl sm:text-4xl font-black shadow-lg`}>
+                                        <div className={`w-full h-full rounded-2xl bg-linear-to-br ${roleBg} flex items-center justify-center text-white text-3xl sm:text-4xl font-black shadow-lg`}>
                                             {String(user?.nombre || 'U').charAt(0).toUpperCase()}
                                         </div>
                                     </div>
@@ -191,7 +191,7 @@ export default function VendedorAjustes() {
                                     <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">{user?.nombre || 'Usuario'}</h1>
                                     <div className="flex flex-wrap items-center gap-2 mt-1.5">
                                         <span className="text-slate-400 text-sm">@{user?.usuario || 'usuario'}</span>
-                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold text-white bg-gradient-to-r ${roleBg}`}>
+                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold text-white bg-linear-to-r ${roleBg}`}>
                                             {user?.rol || 'Rol'}
                                         </span>
                                         {googleConnected && (
@@ -221,7 +221,7 @@ export default function VendedorAjustes() {
                                 onClick={() => setActiveTab(id)}
                                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all flex-1 justify-center
                                     ${activeTab === id
-                                        ? `bg-gradient-to-r ${roleBg} text-white shadow-md`
+                                        ? `bg-linear-to-r ${roleBg} text-white shadow-md`
                                         : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
                             >
                                 <Icon size={15} />
@@ -237,7 +237,7 @@ export default function VendedorAjustes() {
                                 <div className="" />
                                 <div className="p-6 sm:p-8">
                                     <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
-                                        <div className={`p-2 rounded-xl bg-gradient-to-br ${roleBg}`}>
+                                        <div className={`p-2 rounded-xl bg-linear-to-br ${roleBg}`}>
                                             <User className="text-white" size={16} />
                                         </div>
                                         Información Personal
@@ -273,7 +273,7 @@ export default function VendedorAjustes() {
                                     </div>
                                     <div className="mt-8 flex justify-end">
                                         <button type="submit" disabled={savingProfile}
-                                            className={`flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-gradient-to-r ${roleBg} hover:opacity-90 active:scale-95 transition-all disabled:opacity-50`}>
+                                            className={`flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-linear-to-r ${roleBg} hover:opacity-90 active:scale-95 transition-all disabled:opacity-50`}>
                                             <Save size={16} />
                                             {savingProfile ? 'Guardando...' : 'Guardar Cambios'}
                                         </button>
@@ -290,7 +290,7 @@ export default function VendedorAjustes() {
                                 <div className="" />
                                 <div className="p-6 sm:p-8">
                                     <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
-                                        <div className="p-2 rounded-xl bg-gradient-to-br from-(--theme-500) to-purple-600">
+                                        <div className="p-2 rounded-xl bg-linear-to-br from-(--theme-500) to-purple-600">
                                             <Shield className="text-white" size={16} />
                                         </div>
                                         Cambiar Contraseña
@@ -337,7 +337,7 @@ export default function VendedorAjustes() {
                                         )}
 
                                         <button type="submit" disabled={savingPass}
-                                            className="flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-gradient-to-r from-(--theme-500) to-purple-600 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50">
+                                            className="flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-linear-to-r from-(--theme-500) to-purple-600 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50">
                                             <KeyRound size={16} />
                                             {savingPass ? 'Actualizando...' : 'Actualizar Contraseña'}
                                         </button>
@@ -361,15 +361,15 @@ export default function VendedorAjustes() {
 
                                 {googleConnected ? (
                                     <div className="space-y-4 max-w-md">
-                                        <div className="relative p-5 bg-gradient-to-br from-green-50 to-(--theme-50) border border-green-200 rounded-2xl overflow-hidden">
+                                        <div className="relative p-5 bg-linear-to-br from-green-50 to-(--theme-50) border border-green-200 rounded-2xl overflow-hidden">
                                             <div className="absolute top-0 right-0 w-24 h-24 bg-green-200/30 rounded-full -translate-y-8 translate-x-8" />
                                             <div className="flex items-center gap-4">
                                                 {user?.nombre ? (
-                                                    <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-md flex-shrink-0 text-xl font-bold text-green-700">
+                                                    <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-md shrink-0 text-xl font-bold text-green-700">
                                                         {String(user?.nombre).charAt(0).toUpperCase()}
                                                     </div>
                                                 ) : (
-                                                    <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-md flex-shrink-0">
+                                                    <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-md shrink-0">
                                                         <GoogleIcon size={28} />
                                                     </div>
                                                 )}
@@ -377,7 +377,7 @@ export default function VendedorAjustes() {
                                                     <p className="font-bold text-green-900 truncate">Vínculo con Calendario Activo</p>
                                                     <p className="text-sm text-green-600 truncate">El sistema puede agendar por ti</p>
                                                 </div>
-                                                <div className="flex-shrink-0 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                                <div className="shrink-0 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
                                                     <CheckCircle2 className="text-green-500" size={18} fill="currentColor" />
                                                 </div>
                                             </div>
@@ -423,7 +423,7 @@ export default function VendedorAjustes() {
                                 <div className="" />
                                 <div className="p-6 sm:p-8">
                                     <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
-                                        <div className="p-2 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600">
+                                        <div className="p-2 rounded-xl bg-linear-to-br from-violet-500 to-purple-600">
                                             <Bell className="text-white" size={15} />
                                         </div>
                                         Notificaciones

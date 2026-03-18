@@ -130,7 +130,7 @@ const ProspectorDashboard = () => {
             <div className="flex-1 flex flex-col space-y-4 overflow-hidden min-h-0">
 
                 {/* Header — Embudo + Tabs */}
-                <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-md flex-shrink-0">
+                <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-md shrink-0">
                     <div className="flex items-center justify-between mb-2">
                         <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                             <TrendingUp className="w-6 h-6 text-[#0d9488]" />
@@ -260,7 +260,7 @@ const ProspectorDashboard = () => {
                     {/* Right Side: Tasks Sidebar */}
                     <div className="lg:col-span-2 flex flex-col min-h-0">
                         <div className="flex-1 bg-white border border-gray-200 rounded-xl p-6 shadow-md flex flex-col overflow-hidden">
-                            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2 flex-shrink-0">
+                            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2 shrink-0">
                                 <Target className="w-6 h-6 text-[#0d9488]" />
                                 Metas y Recordatorios
                             </h2>

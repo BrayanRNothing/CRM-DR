@@ -186,7 +186,7 @@ const CloserDashboard = () => {
         <div className="h-full flex flex-col p-5 overflow-hidden">
             <div className="flex-1 flex flex-col space-y-4 overflow-hidden min-h-0">
                 {/* Embudo Header - White Section */}
-                <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-md flex-shrink-0">
+                <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-md shrink-0">
                     <div className="flex items-center justify-between mb-2">
                         <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                             <BarChart3 className="w-6 h-6 text-green-600" />
@@ -298,7 +298,7 @@ const CloserDashboard = () => {
                     {/* Right Side: Tasks/Goals Sidebar - White Section (2 columns) */}
                     <div className="lg:col-span-2 flex flex-col min-h-0">
                         <div className="flex-1 bg-white border border-gray-200 rounded-xl p-6 shadow-md flex flex-col overflow-hidden">
-                            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2 flex-shrink-0">
+                            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2 shrink-0">
                                 <Calendar className="w-6 h-6 text-(--theme-600)" />
                                 Próximas Reuniones
                             </h2>

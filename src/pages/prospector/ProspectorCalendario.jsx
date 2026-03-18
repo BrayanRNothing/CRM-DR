@@ -363,7 +363,7 @@ const ProspectorCalendario = () => {
                             {selectedCloser && !closerLinkedToGoogle && (
                                 <div className="mb-4 flex flex-col p-4 bg-orange-50 border border-orange-200 rounded-xl space-y-2 animate-in fade-in">
                                     <div className="flex items-center gap-2 text-orange-800">
-                                        <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                        <AlertCircle className="w-5 h-5 shrink-0" />
                                         <p className="font-bold text-sm">Calendario No Vinculado</p>
                                     </div>
                                     <p className="text-sm text-orange-700">Este closer no ha vinculado su cuenta de Google Calendar en sus ajustes. El sistema no puede verificar sus horarios ocupados ni crear la sala de Meet automáticamente.</p>

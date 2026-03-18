@@ -99,7 +99,7 @@ const ConversionMetrics = ({ tasasConversion }) => {
             {metricas.filter(m => m.tasa < 30).length > 0 && (
                 <div className="mt-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
                     <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                        <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
                         <div>
                             <h4 className="text-red-400 font-semibold mb-2">Puntos Débiles Detectados</h4>
                             <ul className="space-y-1">

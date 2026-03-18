@@ -78,7 +78,7 @@ const SharedUserList = ({ role, title }) => {
                                 <div key={user.id}
                                     className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group">
                                     {/* Color bar */}
-                                    <div className={`h-1.5 bg-gradient-to-r ${roleGradient}`} />
+                                    <div className={`h-1.5 bg-linear-to-r ${roleGradient}`} />
 
                                     <div className="p-5">
                                         {/* Avatar + name */}
@@ -106,29 +106,29 @@ const SharedUserList = ({ role, title }) => {
                                         <div className="space-y-2 pt-3 border-t border-slate-100">
                                             {user.email ? (
                                                 <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                    <Mail size={13} className="text-gray-400 flex-shrink-0" />
+                                                    <Mail size={13} className="text-gray-400 shrink-0" />
                                                     <span className="truncate">{user.email}</span>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-2 text-xs text-gray-300">
-                                                    <Mail size={13} className="flex-shrink-0" />
+                                                    <Mail size={13} className="shrink-0" />
                                                     <span>Sin email registrado</span>
                                                 </div>
                                             )}
                                             {user.telefono ? (
                                                 <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                    <Phone size={13} className="text-gray-400 flex-shrink-0" />
+                                                    <Phone size={13} className="text-gray-400 shrink-0" />
                                                     <span>{user.telefono}</span>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-2 text-xs text-gray-300">
-                                                    <Phone size={13} className="flex-shrink-0" />
+                                                    <Phone size={13} className="shrink-0" />
                                                     <span>Sin teléfono</span>
                                                 </div>
                                             )}
                                             {user.fechaCreacion && (
                                                 <div className="flex items-center gap-2 text-xs text-gray-400">
-                                                    <Calendar size={13} className="text-gray-300 flex-shrink-0" />
+                                                    <Calendar size={13} className="text-gray-300 shrink-0" />
                                                     <span>Miembro desde {new Date(user.fechaCreacion).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                                                 </div>
                                             )}

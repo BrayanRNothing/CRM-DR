@@ -41,7 +41,7 @@ function ModalUsuario({ modoEdicion, formData, setFormData, handleSubmit, cerrar
             <div className={`relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 flex flex-col max-h-[85vh]`}>
 
                 {/* Dynamic Header */}
-                <div className={`flex-none bg-gradient-to-r ${theme.gradient} p-6 sm:p-8 text-white flex justify-between items-start shadow-lg relative overflow-hidden z-10`}>
+                <div className={`flex-none bg-linear-to-r ${theme.gradient} p-6 sm:p-8 text-white flex justify-between items-start shadow-lg relative overflow-hidden z-10`}>
                     <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
@@ -378,7 +378,7 @@ function UserManagement({ initialRole }) {
                                                     {role.label}
                                                 </span>
                                             </div>
-                                            <div className="flex flex-col gap-1.5 flex-shrink-0">
+                                            <div className="flex flex-col gap-1.5 shrink-0">
                                                 <button onClick={() => abrirModalEditar(user)}
                                                     className="p-1.5 text-(--theme-500) bg-(--theme-50) hover:bg-(--theme-100) rounded-lg transition-colors"
                                                     title="Editar">
@@ -407,16 +407,16 @@ function UserManagement({ initialRole }) {
                                         {/* Contact + date */}
                                         <div className="space-y-1.5 pt-3 border-t border-slate-100">
                                             <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                <Mail size={12} className="text-gray-300 flex-shrink-0" />
+                                                <Mail size={12} className="text-gray-300 shrink-0" />
                                                 <span className="truncate">{user.email || <span className="text-gray-300 italic">Sin email</span>}</span>
                                             </div>
                                             <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                <Phone size={12} className="text-gray-300 flex-shrink-0" />
+                                                <Phone size={12} className="text-gray-300 shrink-0" />
                                                 <span>{user.telefono || <span className="text-gray-300 italic">Sin teléfono</span>}</span>
                                             </div>
                                             {user.fechaCreacion && (
                                                 <div className="flex items-center gap-2 text-xs text-gray-400">
-                                                    <Calendar size={12} className="text-gray-300 flex-shrink-0" />
+                                                    <Calendar size={12} className="text-gray-300 shrink-0" />
                                                     <span>Desde {new Date(user.fechaCreacion).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                                                 </div>
                                             )}

@@ -162,7 +162,7 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', logo, onCollapseC
                                 className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                 title={isCollapsed ? item.name : ''}
                             >
-                                <div className="flex-shrink-0">{item.icon}</div>
+                                <div className="shrink-0">{item.icon}</div>
                                 {!isCollapsed && <span className="font-medium truncate">{item.name}</span>}
                             </Link>
                         );

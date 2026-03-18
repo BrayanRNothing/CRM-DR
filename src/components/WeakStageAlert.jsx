@@ -101,7 +101,7 @@ const WeakStageAlert = ({ etapasDebiles }) => {
                         {sugerencias[etapaDebil.etapa] && (
                             <div className="mt-3 p-3 bg-(--theme-500)/10 border border-(--theme-500)/20 rounded-lg">
                                 <div className="flex items-start gap-2 mb-2">
-                                    <Lightbulb className="w-4 h-4 text-(--theme-400) mt-0.5 flex-shrink-0" />
+                                    <Lightbulb className="w-4 h-4 text-(--theme-400) mt-0.5 shrink-0" />
                                     <h5 className="text-(--theme-400) font-semibold text-sm">Sugerencias de Mejora</h5>
                                 </div>
                                 <ul className="space-y-1 ml-6">
@@ -120,7 +120,7 @@ const WeakStageAlert = ({ etapasDebiles }) => {
             {/* Acción recomendada */}
             <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                 <div className="flex items-start gap-3">
-                    <Users className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                    <Users className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
                     <div>
                         <h4 className="text-yellow-400 font-semibold mb-1">Acción Recomendada</h4>
                         <p className="text-gray-300 text-sm">

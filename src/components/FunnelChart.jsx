@@ -48,7 +48,7 @@ const FunnelChart = ({ data }) => {
                                 className="mx-auto transition-all duration-300 hover:scale-105"
                                 style={{ width: `${ancho}%` }}
                             >
-                                <div className={`relative bg-gradient-to-r ${etapa.color} rounded-lg p-4 shadow-lg border ${debil ? 'border-red-500 border-2' : 'border-gray-700'}`}>
+                                <div className={`relative bg-linear-to-r ${etapa.color} rounded-lg p-4 shadow-lg border ${debil ? 'border-red-500 border-2' : 'border-gray-700'}`}>
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2">
@@ -103,7 +103,7 @@ const FunnelChart = ({ data }) => {
             )}
 
             {/* Conversión global */}
-            <div className="mt-4 p-4 bg-gradient-to-r from-green-500/20 to-(--theme-500)/20 border border-green-500/30 rounded-lg">
+            <div className="mt-4 p-4 bg-linear-to-r from-green-500/20 to-(--theme-500)/20 border border-green-500/30 rounded-lg">
                 <div className="flex items-center justify-between">
                     <div>
                         <h4 className="text-gray-300 text-sm">Conversión Global</h4>

@@ -94,7 +94,7 @@ const ProspectorEstadisticas = () => {
 
                 {/* Resumen Rápido */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                    <div className="bg-gradient-to-br from-(--theme-500) to-(--theme-600) rounded-xl p-6 shadow-lg border border-(--theme-400)/20">
+                    <div className="bg-linear-to-br from-(--theme-500) to-(--theme-600) rounded-xl p-6 shadow-lg border border-(--theme-400)/20">
                         <div className="flex items-center justify-between mb-2">
                             <Phone className="w-6 h-6 text-(--theme-200)" />
                             <span className="text-3xl font-bold text-white">{stats.metricas.mes.llamadas}</span>
@@ -106,7 +106,7 @@ const ProspectorEstadisticas = () => {
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 shadow-lg border border-green-400/20">
+                    <div className="bg-linear-to-br from-green-500 to-green-600 rounded-xl p-6 shadow-lg border border-green-400/20">
                         <div className="flex items-center justify-between mb-2">
                             <UserPlus className="w-6 h-6 text-green-200" />
                             <span className="text-3xl font-bold text-white">{stats.metricas.mes.exitosas}</span>
@@ -117,7 +117,7 @@ const ProspectorEstadisticas = () => {
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 shadow-lg border border-purple-400/20">
+                    <div className="bg-linear-to-br from-purple-500 to-purple-600 rounded-xl p-6 shadow-lg border border-purple-400/20">
                         <div className="flex items-center justify-between mb-2">
                             <Calendar className="w-6 h-6 text-purple-200" />
                             <span className="text-3xl font-bold text-white">{stats.metricas.mes.citas}</span>
@@ -145,7 +145,7 @@ const ProspectorEstadisticas = () => {
                             </div>
                             <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full"
+                                    className="h-full bg-linear-to-r from-green-500 to-green-400 rounded-full"
                                     style={{ width: `${Math.min(100, stats.metricas.hoy.tasaContacto)}%` }}
                                 />
                             </div>
@@ -169,7 +169,7 @@ const ProspectorEstadisticas = () => {
                             </div>
                             <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-gradient-to-r from-(--theme-500) to-(--theme-400) rounded-full"
+                                    className="h-full bg-linear-to-r from-(--theme-500) to-(--theme-400) rounded-full"
                                     style={{ width: `${Math.min(100, stats.metricas.semana.tasaContacto)}%` }}
                                 />
                             </div>
@@ -193,7 +193,7 @@ const ProspectorEstadisticas = () => {
                             </div>
                             <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full"
+                                    className="h-full bg-linear-to-r from-purple-500 to-purple-400 rounded-full"
                                     style={{ width: `${Math.min(100, stats.metricas.mes.tasaContacto)}%` }}
                                 />
                             </div>
@@ -230,7 +230,7 @@ const ProspectorEstadisticas = () => {
                                 </div>
                                 <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-gradient-to-r from-(--theme-500) to-(--theme-400) rounded-full"
+                                        className="h-full bg-linear-to-r from-(--theme-500) to-(--theme-400) rounded-full"
                                         style={{ width: `${stats.metricas.mes.tasaContacto}%` }}
                                     />
                                 </div>
@@ -265,7 +265,7 @@ const ProspectorEstadisticas = () => {
                                 </div>
                                 <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full"
+                                        className="h-full bg-linear-to-r from-purple-500 to-purple-400 rounded-full"
                                         style={{ width: `${stats.metricas.mes.tasaAgendamiento}%` }}
                                     />
                                 </div>

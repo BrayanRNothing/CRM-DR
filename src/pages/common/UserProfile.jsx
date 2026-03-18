@@ -82,7 +82,7 @@ const UserProfile = () => {
 
             <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
                 {/* Header Banner */}
-                <div className="h-32 bg-gradient-to-r from-(--theme-500) to-(--theme-600) relative">
+                <div className="h-32 bg-linear-to-r from-(--theme-500) to-(--theme-600) relative">
                     <div className="absolute -bottom-12 left-8">
                         <div className="w-24 h-24 rounded-2xl bg-white p-1 shadow-lg flex items-center justify-center text-4xl font-bold text-(--theme-600)">
                             {userProfile.nombre.charAt(0)}

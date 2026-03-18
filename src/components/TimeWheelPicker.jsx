@@ -1,4 +1,4 @@
-﻿import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 
 const ITEM_H = 32;
 const VISIBLE = 3;
@@ -42,7 +42,7 @@ function WheelColumn({ items, selected, onChange, display }) {
             <div className="absolute inset-x-0 pointer-events-none z-10 bg-(--theme-100) border-y border-(--theme-400) rounded"
                 style={{ top: ITEM_H, height: ITEM_H }} />
             <div className="absolute inset-x-0 top-0 pointer-events-none z-10 bg-gradient-to-b from-white to-transparent" style={{ height: ITEM_H }} />
-            <div className="absolute inset-x-0 bottom-0 pointer-events-none z-10 bg-gradient-to-t from-white to-transparent" style={{ height: ITEM_H }} />
+            <div className="absolute inset-x-0 bottom-0 pointer-events-none z-10 bg-linear-to-t from-white to-transparent" style={{ height: ITEM_H }} />
             <div ref={ref} onScroll={handleScroll} className="h-full overflow-y-scroll"
                 style={{ scrollSnapType: 'y mandatory', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 <div style={{ height: ITEM_H }} />
@@ -136,7 +136,7 @@ export default function TimeWheelPicker({ value, onChange, dateClassName = '', d
                 className={`w-full border border-slate-200 rounded px-3 py-1.5 text-sm ${dateClassName}`} />
 
             <div className="flex items-center gap-3 border border-slate-200 rounded-xl bg-white px-3 py-2">
-                {/* Live display — editable with keyboard */}
+                {/* Live display � editable with keyboard */}
                 <div className="flex flex-col items-center justify-center min-w-[72px]">
                     <div className="flex items-center text-3xl font-black text-(--theme-600) tabular-nums leading-none">
                         {/* Hour */}

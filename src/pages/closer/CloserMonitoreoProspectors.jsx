@@ -176,7 +176,7 @@ const CloserMonitoreoProspectors = () => {
         return (
             <div className="h-full flex flex-col p-4 gap-3 overflow-hidden">
                 {/* Header compacto */}
-                <div className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl px-4 py-3 shadow-sm flex-shrink-0">
+                <div className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl px-4 py-3 shadow-sm shrink-0">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <button
@@ -220,7 +220,7 @@ const CloserMonitoreoProspectors = () => {
                     {/* Izquierda: métricas de hoy */}
                     <div className="col-span-7 flex flex-col gap-3 min-h-0">
                         {/* 4 KPIs en fila */}
-                        <div className="grid grid-cols-4 gap-3 flex-shrink-0">
+                        <div className="grid grid-cols-4 gap-3 shrink-0">
                             {[
                                 { icon: <Users className="w-4 h-4 text-green-600" />, bg: 'bg-green-50', val: statsHoy.prospectosActivos || 0, label: 'Activos', sub: `+${statsHoy.prospectosRegistrados || 0} hoy` },
                                 { icon: <Calendar className="w-4 h-4 text-(--theme-600)" />, bg: 'bg-(--theme-50)', val: statsHoy.prospectosTransferidos || statsHoy.citasAgendadas || 0, label: 'Citas Agend.', sub: `${((statsHoy.citasAgendadas / (statsHoy.prospectosRegistrados || 1)) * 100).toFixed(0)}% efic.` },
@@ -239,7 +239,7 @@ const CloserMonitoreoProspectors = () => {
                         {/* Lista de prospectos con filtro */}
                         <div className="flex-1 bg-white/70 backdrop-blur-sm border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col min-h-0">
                             {/* Header con filtro */}
-                            <div className="flex items-center justify-between mb-3 flex-shrink-0">
+                            <div className="flex items-center justify-between mb-3 shrink-0">
                                 <div className="flex items-center gap-2">
                                     <Users className="w-4 h-4 text-green-600" />
                                     <span className="text-sm font-bold text-gray-800">Prospectos</span>
@@ -295,7 +295,7 @@ const CloserMonitoreoProspectors = () => {
                                         return (
                                             <div key={p.id} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-100 hover:border-green-200 transition-colors">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center text-green-600 font-bold text-xs flex-shrink-0">
+                                                    <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center text-green-600 font-bold text-xs shrink-0">
                                                         {nombre.charAt(0) || 'P'}
                                                     </div>
                                                     <div>
@@ -397,7 +397,7 @@ const CloserMonitoreoProspectors = () => {
                                             return (
                                                 <div key={i} className="relative flex items-start gap-2.5">
                                                     {/* dot */}
-                                                    <div className={`absolute -left-6 w-5 h-5 ${iconBg} rounded-full flex items-center justify-center border-2 border-white shadow-sm flex-shrink-0 mt-0.5`}>
+                                                    <div className={`absolute -left-6 w-5 h-5 ${iconBg} rounded-full flex items-center justify-center border-2 border-white shadow-sm shrink-0 mt-0.5`}>
                                                         {icon}
                                                     </div>
                                                     <div
@@ -456,7 +456,7 @@ const CloserMonitoreoProspectors = () => {
     return (
         <div className="h-full flex flex-col p-4 gap-3 overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                     <Users className="w-5 h-5 text-green-600" />
                     <div>
@@ -497,7 +497,7 @@ const CloserMonitoreoProspectors = () => {
             </div>
 
             {/* Resumen KPIs */}
-            <div className="grid grid-cols-4 gap-3 flex-shrink-0">
+            <div className="grid grid-cols-4 gap-3 shrink-0">
                 {[
                     { icon: <CheckCircle2 className="w-4 h-4 text-green-600" />, bg: 'bg-green-50 border-green-200', count: data.prospectors.filter(p => p.rendimiento.estado === 'excelente').length, label: 'Excelente', text: 'text-green-700' },
                     { icon: <TrendingUp className="w-4 h-4 text-amber-600" />, bg: 'bg-amber-50 border-amber-200', count: data.prospectors.filter(p => p.rendimiento.estado === 'bueno').length, label: 'Bueno', text: 'text-amber-700' },
@@ -528,7 +528,7 @@ const CloserMonitoreoProspectors = () => {
                                     {/* Header */}
                                     <div className="flex items-start justify-between mb-3 cursor-pointer" onClick={() => seleccionarProspector(item.prospector.id)}>
                                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                                            <div className={`w-8 h-8 rounded-xl ${cc.bg} border ${cc.border} flex items-center justify-center flex-shrink-0`}>
+                                            <div className={`w-8 h-8 rounded-xl ${cc.bg} border ${cc.border} flex items-center justify-center shrink-0`}>
                                                 <span className={`text-sm font-black ${cc.text}`}>{item.prospector.nombre.charAt(0)}</span>
                                             </div>
                                             <div className="min-w-0">
@@ -536,7 +536,7 @@ const CloserMonitoreoProspectors = () => {
                                                 <p className="text-gray-400 text-[10px] truncate">{item.prospector.correo}</p>
                                             </div>
                                         </div>
-                                        <div className={`flex items-center gap-1 px-2 py-1 ${cc.badge} rounded-lg text-[10px] font-bold capitalize ml-2 flex-shrink-0`}>
+                                        <div className={`flex items-center gap-1 px-2 py-1 ${cc.badge} rounded-lg text-[10px] font-bold capitalize ml-2 shrink-0`}>
                                             {getEstadoIcon(item.rendimiento.estado)}
                                             {item.rendimiento.estado}
                                         </div>

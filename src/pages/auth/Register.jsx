@@ -124,7 +124,7 @@ const Register = () => {
 
         if (strength <= 1) return { level: 1, text: 'Débil', color: 'bg-red-500' };
         if (strength <= 3) return { level: 2, text: 'Media', color: 'bg-yellow-500' };
-        return { level: 3, text: 'Fuerte', color: 'bg-[var(--theme-500)]' };
+        return { level: 3, text: 'Fuerte', color: 'bg-(--theme-500)' };
     };
 
     const passwordStrength = getPasswordStrength();
@@ -132,57 +132,57 @@ const Register = () => {
     return (
         <div className="min-h-screen w-full flex bg-slate-50 font-['Inter',sans-serif]">
             {/* 🔴 Lado Izquierdo - Panel Decorativo Inmersivo 🔴 */}
-            <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden bg-[var(--theme-900)] justify-center items-center">
-                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[var(--theme-700)] via-[var(--theme-900)] to-[var(--theme-950)] opacity-90"></div>
+            <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden bg-(--theme-900) justify-center items-center">
+                <div className="absolute top-0 left-0 w-full h-full bg-linear-to-br from-(--theme-600) via-(--theme-900) to-(--theme-950) opacity-90"></div>
                 
-                <div className="absolute -top-32 -left-32 w-96 h-96 bg-[var(--theme-500)] rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob"></div>
-                <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-[var(--theme-300)] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+                <div className="absolute -top-32 -left-32 w-96 h-96 bg-(--theme-500) rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-blob"></div>
+                <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-(--theme-300) rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
                 
                 <div className="relative z-10 p-16 max-w-lg text-white">
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-8">
-                        <Sparkles className="w-4 h-4 text-[var(--theme-300)]" />
+                        <Sparkles className="w-4 h-4 text-(--theme-300)" />
                         <span className="text-sm font-medium tracking-wide">Plataforma CRM Premium</span>
                     </div>
                     
                     <h1 className="text-5xl font-black mb-6 leading-tight drop-shadow-md">
                         Únete a la <br/>
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--theme-200)] to-[var(--theme-400)]">
+                        <span className="text-transparent bg-clip-text bg-linear-to-r from-(--theme-200) to-(--theme-400)">
                             evolución hoy.
                         </span>
                     </h1>
                     
-                    <p className="text-[var(--theme-100)] text-lg leading-relaxed mb-4 opacity-90">
+                    <p className="text-(--theme-100) text-lg leading-relaxed mb-4 opacity-90">
                         Crea tu cuenta en segundos y obtén acceso total a nuestro conjunto moderno de herramientas administrativas.
                     </p>
                     
-                    <ul className="mt-8 space-y-4 text-[var(--theme-100)] opacity-90 font-medium">
+                    <ul className="mt-8 space-y-4 text-(--theme-100) opacity-90 font-medium">
                         <li className="flex items-center gap-3">
-                            <span className="w-6 h-6 rounded-full bg-[var(--theme-500)]/30 border border-[var(--theme-500)]/50 flex items-center justify-center text-[var(--theme-200)] text-xs font-bold">✓</span>
+                            <span className="w-6 h-6 rounded-full bg-(--theme-500)/30 border border-(--theme-500)/50 flex items-center justify-center text-(--theme-200) text-xs font-bold">✓</span>
                             Organiza todos tus prospectos
                         </li>
                         <li className="flex items-center gap-3">
-                            <span className="w-6 h-6 rounded-full bg-[var(--theme-500)]/30 border border-[var(--theme-500)]/50 flex items-center justify-center text-[var(--theme-200)] text-xs font-bold">✓</span>
+                            <span className="w-6 h-6 rounded-full bg-(--theme-500)/30 border border-(--theme-500)/50 flex items-center justify-center text-(--theme-200) text-xs font-bold">✓</span>
                             Cierra acuerdos rápidamente
                         </li>
                         <li className="flex items-center gap-3">
-                            <span className="w-6 h-6 rounded-full bg-[var(--theme-500)]/30 border border-[var(--theme-500)]/50 flex items-center justify-center text-[var(--theme-200)] text-xs font-bold">✓</span>
+                            <span className="w-6 h-6 rounded-full bg-(--theme-500)/30 border border-(--theme-500)/50 flex items-center justify-center text-(--theme-200) text-xs font-bold">✓</span>
                             Reportes en tiempo real
                         </li>
                     </ul>
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-[var(--theme-950)] to-transparent opacity-80"
+                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-linear-to-t from-(--theme-950) to-transparent opacity-80"
                      style={{ backgroundImage: 'radial-gradient(var(--theme-500) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
             </div>
 
             {/* 🟢 Lado Derecho - Formulario de Registro 🟢 */}
             <div className="w-full lg:w-[55%] flex items-center justify-center p-8 sm:p-12 relative overflow-hidden overflow-y-auto">
-                <div className="lg:hidden absolute top-0 right-0 w-72 h-72 bg-[var(--theme-200)] rounded-full mix-blend-multiply blur-3xl opacity-30 animate-blob"></div>
-                <div className="lg:hidden absolute bottom-0 left-0 w-72 h-72 bg-[var(--theme-400)] rounded-full mix-blend-multiply blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+                <div className="lg:hidden absolute top-0 right-0 w-72 h-72 bg-(--theme-200) rounded-full mix-blend-multiply blur-3xl opacity-30 animate-blob"></div>
+                <div className="lg:hidden absolute bottom-0 left-0 w-72 h-72 bg-(--theme-400) rounded-full mix-blend-multiply blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
 
                 <div className="w-full max-w-2xl relative z-10 m-auto py-8">
                     <div className="text-center mb-10">
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--theme-500)] to-[var(--theme-700)] shadow-xl shadow-[var(--theme-500)]/30 mb-6 transform -rotate-3 transition-transform hover:-rotate-6">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-linear-to-br from-(--theme-500) to-(--theme-700) shadow-xl shadow-(--theme-500)/30 mb-6 transform -rotate-3 transition-transform hover:-rotate-6">
                             <User className="w-8 h-8 text-white" />
                         </div>
                         <h2 className="text-3xl font-black text-slate-800 tracking-tight">Crear Cuenta</h2>
@@ -192,7 +192,7 @@ const Register = () => {
                     <form onSubmit={handleRegister} className="space-y-6">
                         {error && (
                             <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm shadow-sm animate-pulse-once">
-                                <span className="font-bold flex-shrink-0 text-xl">🚫</span>
+                                <span className="font-bold shrink-0 text-xl">🚫</span>
                                 <p className="font-semibold">{error}</p>
                             </div>
                         )}
@@ -201,16 +201,16 @@ const Register = () => {
                             {/* COLUMNA IZQUIERDA: Datos Personales */}
                             <div className="space-y-5">
                                 <div className="relative group">
-                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1 transition-colors group-focus-within:text-[var(--theme-600)]">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1 transition-colors group-focus-within:text-(--theme-600)">
                                         Nombre Completo
                                     </label>
                                     <div className="relative flex items-center">
-                                        <User className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-[var(--theme-500)] transition-colors" />
+                                        <User className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
                                         <input
                                             type="text"
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
-                                            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[var(--theme-500)] focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
+                                            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-(--theme-500) focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
                                             placeholder="Ej. Juan Pérez"
                                             required
                                         />
@@ -219,18 +219,18 @@ const Register = () => {
 
                                 <div className="relative group">
                                     <div className="flex justify-between items-baseline mb-1 ml-1">
-                                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 transition-colors group-focus-within:text-[var(--theme-600)]">
+                                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 transition-colors group-focus-within:text-(--theme-600)">
                                             Usuario *
                                         </label>
                                         <span className="text-[10px] text-slate-400 font-medium">Sin espacios</span>
                                     </div>
                                     <div className="relative flex items-center">
-                                        <ShieldCheck className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-[var(--theme-500)] transition-colors" />
+                                        <ShieldCheck className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
                                         <input
                                             type="text"
                                             value={username}
                                             onChange={(e) => setUsername(e.target.value)}
-                                            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[var(--theme-500)] focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
+                                            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-(--theme-500) focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
                                             placeholder="juanp"
                                             required
                                         />
@@ -239,17 +239,17 @@ const Register = () => {
 
                                 <div className="relative group">
                                     <div className="flex justify-between items-baseline mb-1 ml-1">
-                                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 transition-colors group-focus-within:text-[var(--theme-600)]">
+                                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 transition-colors group-focus-within:text-(--theme-600)">
                                             Correo Electrónico *
                                         </label>
                                     </div>
                                     <div className="relative flex items-center">
-                                        <Mail className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-[var(--theme-500)] transition-colors" />
+                                        <Mail className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
                                         <input
                                             type="email"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[var(--theme-500)] focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
+                                            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-(--theme-500) focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
                                             placeholder="correo@ejemplo.com"
                                             required
                                         />
@@ -260,39 +260,39 @@ const Register = () => {
                             {/* COLUMNA DERECHA: Seguridad y Contacto */}
                             <div className="space-y-5">
                                 <div className="relative group">
-                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1 transition-colors group-focus-within:text-[var(--theme-600)]">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1 transition-colors group-focus-within:text-(--theme-600)">
                                         Teléfono
                                     </label>
                                     <div className="relative flex items-center">
-                                        <Phone className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-[var(--theme-500)] transition-colors" />
+                                        <Phone className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
                                         <input
                                             type="tel"
                                             value={phone}
                                             onChange={(e) => setPhone(e.target.value)}
-                                            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[var(--theme-500)] focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
+                                            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-(--theme-500) focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
                                             placeholder="+1 234 567 890"
                                         />
                                     </div>
                                 </div>
 
                                 <div className="relative group">
-                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1 transition-colors group-focus-within:text-[var(--theme-600)]">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1 transition-colors group-focus-within:text-(--theme-600)">
                                         Contraseña
                                     </label>
                                     <div className="relative flex items-center">
-                                        <Lock className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-[var(--theme-500)] transition-colors" />
+                                        <Lock className="absolute left-4 w-5 h-5 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
                                         <input
                                             type={showPassword ? 'text' : 'password'}
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
-                                            className="w-full pl-12 pr-16 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[var(--theme-500)] focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
+                                            className="w-full pl-12 pr-16 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-(--theme-500) focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50"
                                             placeholder="••••••••"
                                             required
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-4 text-xs font-bold text-slate-400 hover:text-[var(--theme-600)] transition-colors"
+                                            className="absolute right-4 text-xs font-bold text-slate-400 hover:text-(--theme-600) transition-colors"
                                         >
                                             {showPassword ? 'OCULTAR' : 'MOSTRAR'}
                                         </button>
@@ -320,11 +320,11 @@ const Register = () => {
                                 </div>
 
                                 <div className="relative group">
-                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1 transition-colors group-focus-within:text-[var(--theme-600)]">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1 ml-1 transition-colors group-focus-within:text-(--theme-600)">
                                         Confirmar Contraseña
                                     </label>
                                     <div className="relative flex items-center">
-                                        <Lock className="absolute left-4 w-5 h-5 text-[var(--theme-300)] group-focus-within:text-[var(--theme-500)] transition-colors" />
+                                        <Lock className="absolute left-4 w-5 h-5 text-(--theme-300) group-focus-within:text-(--theme-500) transition-colors" />
                                         <input
                                             type={showConfirm ? 'text' : 'password'}
                                             value={confirmPassword}
@@ -332,7 +332,7 @@ const Register = () => {
                                             className={`w-full pl-12 pr-16 py-3.5 bg-white border rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-opacity-10 transition-all shadow-sm shadow-slate-200/50 ${
                                                 confirmPassword && password !== confirmPassword 
                                                 ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' 
-                                                : 'border-slate-200 focus:border-[var(--theme-500)] focus:ring-[var(--theme-500)]'
+                                                : 'border-slate-200 focus:border-(--theme-500) focus:ring-(--theme-500)'
                                             }`}
                                             placeholder="••••••••"
                                             required
@@ -340,7 +340,7 @@ const Register = () => {
                                         <button
                                             type="button"
                                             onClick={() => setShowConfirm(!showConfirm)}
-                                            className="absolute right-4 text-xs font-bold text-slate-400 hover:text-[var(--theme-600)] transition-colors"
+                                            className="absolute right-4 text-xs font-bold text-slate-400 hover:text-(--theme-600) transition-colors"
                                         >
                                             {showConfirm ? 'OCULTAR' : 'MOSTRAR'}
                                         </button>
@@ -349,7 +349,7 @@ const Register = () => {
                                         <p className="text-xs text-red-500 mt-1.5 ml-1 font-medium">Las contraseñas no coinciden</p>
                                     )}
                                     {confirmPassword && password === confirmPassword && (
-                                        <p className="text-xs text-[var(--theme-600)] mt-1.5 ml-1 font-medium flex items-center gap-1">✓ Coinciden</p>
+                                        <p className="text-xs text-(--theme-600) mt-1.5 ml-1 font-medium flex items-center gap-1">✓ Coinciden</p>
                                     )}
                                 </div>
                             </div>
@@ -364,20 +364,20 @@ const Register = () => {
                                         onChange={(e) => setAcceptTerms(e.target.checked)}
                                         className="peer sr-only"
                                     />
-                                    <div className="w-5 h-5 border-2 border-slate-300 rounded peer-checked:bg-[var(--theme-500)] peer-checked:border-[var(--theme-500)] transition-all"></div>
+                                    <div className="w-5 h-5 border-2 border-slate-300 rounded peer-checked:bg-(--theme-500) peer-checked:border-(--theme-500) transition-all"></div>
                                     <svg className="absolute w-3 h-3 text-white pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" viewBox="0 0 14 10" fill="none">
                                         <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                     </svg>
                                 </div>
                                 <span className="text-sm font-medium text-slate-600 group-hover:text-slate-800 transition-colors">
-                                    He leído y acepto los <a href="#" className="font-bold text-[var(--theme-600)] hover:underline">términos de servicio</a> y la <a href="#" className="font-bold text-[var(--theme-600)] hover:underline">política de privacidad</a>.
+                                    He leído y acepto los <a href="#" className="font-bold text-(--theme-600) hover:underline">términos de servicio</a> y la <a href="#" className="font-bold text-(--theme-600) hover:underline">política de privacidad</a>.
                                 </span>
                             </label>
 
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="group relative w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--theme-500)] to-[var(--theme-600)] text-white py-4 px-8 rounded-2xl font-bold text-lg shadow-xl shadow-[var(--theme-500)]/30 hover:shadow-2xl hover:shadow-[var(--theme-500)]/40 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none transition-all duration-200 overflow-hidden"
+                                className="group relative w-full flex items-center justify-center gap-2 bg-linear-to-r from-(--theme-500) to-(--theme-600) text-white py-4 px-8 rounded-2xl font-bold text-lg shadow-xl shadow-(--theme-500)/30 hover:shadow-2xl hover:shadow-(--theme-500)/40 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none transition-all duration-200 overflow-hidden"
                             >
                                 <div className="absolute inset-0 w-full h-full bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-500 ease-out z-0"></div>
                                 <span className="relative z-10">{loading ? 'Validando...' : 'Crear mi Cuenta'}</span>
@@ -387,7 +387,7 @@ const Register = () => {
 
                     <p className="mt-8 text-center text-sm text-slate-500 font-medium">
                         ¿Ya tienes una cuenta?{' '}
-                        <a href="/" className="font-bold text-[var(--theme-600)] hover:text-[var(--theme-800)] hover:underline underline-offset-4 transition-all">
+                        <a href="/" className="font-bold text-(--theme-600) hover:text-(--theme-800) hover:underline underline-offset-4 transition-all">
                             Inicia sesión aquí
                         </a>
                     </p>
@@ -398,8 +398,8 @@ const Register = () => {
             <div className="fixed bottom-4 right-4 z-50 pointer-events-none hidden md:block">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur border border-slate-200 shadow-sm">
                     <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--theme-400)] opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--theme-500)]"></span>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-(--theme-400) opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-(--theme-500)"></span>
                     </span>
                     <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500">v1.1 Estables</span>
                 </div>
