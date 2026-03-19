@@ -17,16 +17,21 @@ const seedData = async () => {
 
         const hashProspector = await bcrypt.hash('prospector123', 10);
         const hashCloser = await bcrypt.hash('closer123', 10);
+        const hashAdmin = await bcrypt.hash('admin123', 10);
 
-        db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono) VALUES (?, ?, ?, ?, ?, ?)')
-            .run('prospector', hashProspector, 'prospector', 'Alex Mendoza', 'prospector@crm.com', '5554444444');
+        await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono, activo) VALUES (?, ?, ?, ?, ?, ?, ?)')
+            .run('admin', hashAdmin, 'closer', 'Administrador Sistema', 'admin@crm.com', '5550000000', 1);
 
-        db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono) VALUES (?, ?, ?, ?, ?, ?)')
-            .run('closer', hashCloser, 'closer', 'Fernando Ruiz', 'closer@crm.com', '5555555555');
+        await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono, activo) VALUES (?, ?, ?, ?, ?, ?, ?)')
+            .run('prospector', hashProspector, 'prospector', 'Alex Mendoza', 'prospector@crm.com', '5554444444', 1);
 
-        console.log('👥 Usuarios creados');
+        await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono, activo) VALUES (?, ?, ?, ?, ?, ?, ?)')
+            .run('closer', hashCloser, 'closer', 'Fernando Ruiz', 'closer@crm.com', '5555555555', 1);
+
+        console.log('👥 Usuarios creados (admin, prospector, closer)');
         console.log('\n✅ Seed completado');
         console.log('\n📝 Credenciales:');
+        console.log('   Admin:      admin / admin123            →  /closer');
         console.log('   Prospector: prospector / prospector123  →  /prospector');
         console.log('   Closer:     closer / closer123          →  /closer');
 

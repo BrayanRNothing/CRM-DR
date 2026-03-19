@@ -130,32 +130,34 @@ router.get('/dashboard', [auth, esProspector], async (req, res) => {
         // Filtros por período calculados en JS para compatibilidad total (SQLite/Postgres)
         const nowLocal = new Date();
         const startOfDay = new Date(nowLocal.getFullYear(), nowLocal.getMonth(), nowLocal.getDate()).toISOString().slice(0, 10);
+        const endOfDay = startOfDay + 'T23:59:59.999Z';
+        const startOfDayISO = startOfDay + 'T00:00:00.000Z';
 
         const sixDaysAgo = new Date(nowLocal);
         sixDaysAgo.setDate(nowLocal.getDate() - 6);
-        const startOfWeek = new Date(sixDaysAgo.getFullYear(), sixDaysAgo.getMonth(), sixDaysAgo.getDate()).toISOString().slice(0, 10);
+        const startOfWeek = new Date(sixDaysAgo.getFullYear(), sixDaysAgo.getMonth(), sixDaysAgo.getDate()).toISOString().slice(0, 10) + 'T00:00:00.000Z';
 
-        const startOfMonth = new Date(nowLocal.getFullYear(), nowLocal.getMonth(), 1).toISOString().slice(0, 10);
+        const startOfMonth = new Date(nowLocal.getFullYear(), nowLocal.getMonth(), 1).toISOString().slice(0, 10) + 'T00:00:00.000Z';
 
         // Actividades: campo 'fecha'
         const FILTROS_ACT = {
-            dia: `fecha LIKE '${startOfDay}%'`,
-            semana: `fecha >= '${startOfWeek}T00:00:00.000Z'`,
-            mes: `fecha >= '${startOfMonth}T00:00:00.000Z'`,
+            dia: `fecha >= '${startOfDayISO}' AND fecha <= '${endOfDay}'`,
+            semana: `fecha >= '${startOfWeek}'`,
+            mes: `fecha >= '${startOfMonth}'`,
             total: null
         };
         // Prospectos nuevos: campo 'fechaRegistro'
         const FILTROS_CLI = {
-            dia: `(fechaRegistro LIKE '${startOfDay}%' OR (fechaRegistro IS NULL AND fechaUltimaEtapa LIKE '${startOfDay}%'))`,
-            semana: `(fechaRegistro >= '${startOfWeek}T00:00:00.000Z' OR (fechaRegistro IS NULL AND fechaUltimaEtapa >= '${startOfWeek}T00:00:00.000Z'))`,
-            mes: `(fechaRegistro >= '${startOfMonth}T00:00:00.000Z' OR (fechaRegistro IS NULL AND fechaUltimaEtapa >= '${startOfMonth}T00:00:00.000Z'))`,
+            dia: `(fechaRegistro >= '${startOfDayISO}' AND fechaRegistro <= '${endOfDay}' OR (fechaRegistro IS NULL AND fechaUltimaEtapa >= '${startOfDayISO}' AND fechaUltimaEtapa <= '${endOfDay}'))`,
+            semana: `(fechaRegistro >= '${startOfWeek}' OR (fechaRegistro IS NULL AND fechaUltimaEtapa >= '${startOfWeek}'))`,
+            mes: `(fechaRegistro >= '${startOfMonth}' OR (fechaRegistro IS NULL AND fechaUltimaEtapa >= '${startOfMonth}'))`,
             total: null
         };
         // Reuniones agendadas: campo 'fecha' (en tabla actividades)
         const FILTROS_REUNION = {
-            dia: `fecha LIKE '${startOfDay}%'`,
-            semana: `fecha >= '${startOfWeek}T00:00:00.000Z'`,
-            mes: `fecha >= '${startOfMonth}T00:00:00.000Z'`,
+            dia: `fecha >= '${startOfDayISO}' AND fecha <= '${endOfDay}'`,
+            semana: `fecha >= '${startOfWeek}'`,
+            mes: `fecha >= '${startOfMonth}'`,
             total: null
         };
 

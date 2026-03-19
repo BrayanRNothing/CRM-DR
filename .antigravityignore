@@ -1,0 +1,61 @@
+# ============================================================
+# .antigravityignore — Optimizado para ahorro de tokens
+# ============================================================
+
+# --- Control de versiones ---
+.git/
+
+# --- Dependencias y builds ---
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+out/
+venv/
+.venv/
+target/
+__pycache__/
+.cache/
+
+# --- Imágenes y multimedia (no leer contenido binario) ---
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.svg
+*.ico
+*.mp4
+*.mp3
+*.webm
+*.pdf
+*.woff
+*.woff2
+*.ttf
+*.eot
+
+# --- Logs, temporales y mapas de fuente ---
+*.log
+*.tmp
+*.temp
+*.map
+*.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Archivos de base de datos locales ---
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Archivos de entorno (sensibles) ---
+.env.local
+.env.production
+
+# --- IDEs y sistema ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

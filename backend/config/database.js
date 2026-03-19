@@ -364,15 +364,25 @@ const initDb = async () => {
       ['clientes',  'telefono2',            'TEXT'],
       ['clientes',  '"proximaLlamada"',     'TIMESTAMPTZ'],
       ['clientes',  'interes',              'TEXT'],
+      ['usuarios',  'activo',               'INTEGER DEFAULT 1'],
     ];
     for (const [table, col, type] of colsMissingPg) {
       try {
+        // En Postgres, Column names without quotes are lowercase. 
+        // We check if it exists in any case, but add it as specified.
         await internalDb.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${col} ${type}`);
       } catch (e) {
         if (!e.message.includes('already exists')) {
           console.error(`⚠️ Error agregando ${col} a ${table}:`, e.message);
         }
       }
+    }
+    
+    // Asegurar que todos los usuarios tengan activo = 1 si es NULL
+    try {
+      await internalDb.query(`UPDATE usuarios SET activo = 1 WHERE activo IS NULL`);
+    } catch (e) {
+      console.error('⚠️ Error inicializando columna activo en usuarios:', e.message);
     }
     console.log('✅ Migración: columnas faltantes verificadas');
 
@@ -390,6 +400,7 @@ const initDb = async () => {
       ['clientes', 'telefono2 TEXT'],
       ['clientes', 'proximaLlamada TEXT'],
       ['clientes', 'interes TEXT'],
+      ['usuarios', 'activo INTEGER DEFAULT 1'],
       ['usuarios', 'googleRefreshToken TEXT'],
       ['usuarios', 'googleAccessToken TEXT'],
       ['usuarios', 'googleTokenExpiry REAL'],

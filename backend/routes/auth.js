@@ -18,12 +18,20 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ mensaje: 'Por favor ingrese usuario y contraseña' });
         }
 
-        const row = await db.prepare('SELECT * FROM usuarios WHERE usuario = ?').get(usuario.trim());
+        console.log(`🔑 Intento de login para usuario: "${usuario}"`);
+        
+        // Búsqueda insensible a mayúsculas para Postgres
+        const row = await db.prepare('SELECT * FROM usuarios WHERE LOWER(usuario) = LOWER(?)').get(usuario.trim());
+        
         if (!row) {
+            console.log(`❌ Usuario no encontrado: "${usuario}"`);
             return res.status(400).json({ mensaje: 'Credenciales inválidas' });
         }
 
-        if (row.activo === 0 || row.activo === false) {
+        console.log(`👤 Usuario encontrado: ${row.usuario} (Activo: ${row.activo}, Tipo: ${typeof row.activo})`);
+
+        if (row.activo == null || row.activo == 0 || row.activo === false) {
+            console.warn(`⚠️ Intento de login en cuenta desactivada: ${row.usuario}`);
             return res.status(401).json({ mensaje: 'Usuario desactivado. Contacte al administrador' });
         }
 
