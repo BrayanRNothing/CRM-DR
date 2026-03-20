@@ -171,6 +171,9 @@ const ProspectorSeguimiento = () => {
 
     // Estado para el acordeón de acciones de cierre
     const [acordeonCierreAbierto, setAcordeonCierreAbierto] = useState(false);
+    // Estado para editar etapa inline en la vista detallada
+    const [editandoEtapa, setEditandoEtapa] = useState(false);
+    const [loadingEtapa, setLoadingEtapa] = useState(false);
 
 
     const abrirModalEditar = (p) => {
@@ -499,8 +502,8 @@ const ProspectorSeguimiento = () => {
     const handleSeleccionarProspecto = async (p) => {
         setProspectoSeleccionado(p);
         setNotasRapidas(p.notas || ''); // Inicializar notas rápidas
-        setEditandoFechaSeguimiento(false); // Resetear edición inline de fecha
         setAcordeonCierreAbierto(false);    // Colapsar acordeón de cierre
+        setEditandoEtapa(false);            // Resetear edición de etapa
         setLoadingContext(true);
         try {
             // MEJORADO: Usar endpoint de historial completo para ver actividades de AMBOS (prospector y closer)
@@ -1313,6 +1316,70 @@ const ProspectorSeguimiento = () => {
             }
         };
 
+        const handleMarcarCitaRealizada = async () => {
+            setLoadingEtapa(true);
+            try {
+                await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}/editar`, {
+                    nombres: prospectoSeleccionado.nombres || '',
+                    apellidoPaterno: prospectoSeleccionado.apellidoPaterno || '',
+                    apellidoMaterno: prospectoSeleccionado.apellidoMaterno || '',
+                    telefono: prospectoSeleccionado.telefono || '',
+                    telefono2: prospectoSeleccionado.telefono2 || '',
+                    correo: prospectoSeleccionado.correo || '',
+                    empresa: prospectoSeleccionado.empresa || '',
+                    sitioWeb: prospectoSeleccionado.sitioWeb || '',
+                    ubicacion: prospectoSeleccionado.ubicacion || '',
+                    notas: prospectoSeleccionado.notas || '',
+                    etapaEmbudo: 'reunion_realizada'
+                }, { headers: getAuthHeaders() });
+                // También registrar la actividad de cita realizada
+                await axios.post(`${API_URL}/api/${rolePath}/registrar-actividad`, {
+                    clienteId: pid,
+                    tipo: 'cita',
+                    resultado: 'exitoso',
+                    descripcion: 'Cita realizada',
+                    notas: 'La cita fue marcada como realizada'
+                }, { headers: getAuthHeaders() });
+                toast.success('¡Cita marcada como realizada!');
+                const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
+                const updated = res.data.find(p => p.id === pid || p._id === pid);
+                if (updated) { setProspectoSeleccionado(updated); setProspectos(res.data); }
+                handleSeleccionarProspecto(updated || prospectoSeleccionado);
+            } catch (err) {
+                toast.error('Error al actualizar la cita');
+            } finally {
+                setLoadingEtapa(false);
+            }
+        };
+
+        const handleCambiarEtapa = async (nuevaEtapa) => {
+            setLoadingEtapa(true);
+            try {
+                await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}/editar`, {
+                    nombres: prospectoSeleccionado.nombres || '',
+                    apellidoPaterno: prospectoSeleccionado.apellidoPaterno || '',
+                    apellidoMaterno: prospectoSeleccionado.apellidoMaterno || '',
+                    telefono: prospectoSeleccionado.telefono || '',
+                    telefono2: prospectoSeleccionado.telefono2 || '',
+                    correo: prospectoSeleccionado.correo || '',
+                    empresa: prospectoSeleccionado.empresa || '',
+                    sitioWeb: prospectoSeleccionado.sitioWeb || '',
+                    ubicacion: prospectoSeleccionado.ubicacion || '',
+                    notas: prospectoSeleccionado.notas || '',
+                    etapaEmbudo: nuevaEtapa
+                }, { headers: getAuthHeaders() });
+                toast.success(`Etapa actualizada: ${getEtapaLabel(nuevaEtapa)}`);
+                setEditandoEtapa(false);
+                const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
+                const updated = res.data.find(p => p.id === pid || p._id === pid);
+                if (updated) { setProspectoSeleccionado(updated); setProspectos(res.data); }
+            } catch (err) {
+                toast.error('Error al cambiar la etapa');
+            } finally {
+                setLoadingEtapa(false);
+            }
+        };
+
         return (
             <div className="fixed inset-0 overflow-hidden p-4 sm:p-6 bg-slate-50 z-[40]">
                 <style>{`
@@ -1350,10 +1417,42 @@ const ProspectorSeguimiento = () => {
                                                     <Edit2 className="w-5 h-5" />
                                                 </button>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEtapaColor(prospectoSeleccionado.etapaEmbudo)}`}>
-                                                    {getEtapaLabel(prospectoSeleccionado.etapaEmbudo)}
-                                                </span>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                {editandoEtapa ? (
+                                                    <div className="flex items-center gap-1">
+                                                        <select
+                                                            autoFocus
+                                                            defaultValue={prospectoSeleccionado.etapaEmbudo}
+                                                            onChange={(e) => handleCambiarEtapa(e.target.value)}
+                                                            disabled={loadingEtapa}
+                                                            className="border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold bg-white focus:ring-2 focus:ring-(--theme-500) outline-none"
+                                                        >
+                                                            {Object.entries(ETAPAS_EMBUDO).map(([key, val]) => (
+                                                                <option key={key} value={key}>{val.label}</option>
+                                                            ))}
+                                                        </select>
+                                                        <button
+                                                            onClick={() => setEditandoEtapa(false)}
+                                                            className="p-1 text-slate-400 hover:text-slate-600 rounded"
+                                                            title="Cancelar"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-1">
+                                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEtapaColor(prospectoSeleccionado.etapaEmbudo)}`}>
+                                                            {getEtapaLabel(prospectoSeleccionado.etapaEmbudo)}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => setEditandoEtapa(true)}
+                                                            className="p-1 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded transition-all"
+                                                            title="Cambiar etapa"
+                                                        >
+                                                            <Edit2 className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                )}
                                                 {prospectoSeleccionado.empresa && (
                                                     <span className="text-gray-500 text-sm font-medium flex items-center gap-1.5 border-l border-slate-200 pl-2">
                                                         <Building2 className="w-4 h-4 text-slate-400" />
@@ -1485,17 +1584,6 @@ const ProspectorSeguimiento = () => {
                                 </div>
                             </div>
 
-                            {/* Próxima cita */}
-                            {proximaCita && (
-                                <div className="bg-(--theme-50) border border-(--theme-200) rounded-xl p-4 flex items-center gap-3 shadow-sm">
-                                    <Calendar className="w-8 h-8 text-(--theme-500) shrink-0" />
-                                    <div>
-                                        <p className="text-xs font-bold text-(--theme-500) uppercase tracking-wider">Próxima Reunión</p>
-                                        <p className="font-bold text-gray-900">{new Date(fechaProximaCita).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                                        <p className="text-sm text-gray-500">{formatHora(fechaProximaCita)}</p>
-                                    </div>
-                                </div>
-                            )}
 
                             {/* ==================== ÁRBOL DE LLAMADA ==================== */}
                             <div className="space-y-3">
@@ -1737,61 +1825,75 @@ const ProspectorSeguimiento = () => {
 
                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                                     {/* ========= NOTIFICACIONES ========= */}
-                                    <div className="bg-sky-50 border border-sky-200 rounded-xl p-4 space-y-3">
-                                        <div className="flex items-center gap-2">
-                                            <Bell className="w-4 h-4 text-sky-700" />
-                                            <p className="text-xs font-bold text-sky-800 uppercase tracking-wider">Notificaciones</p>
+                                    <div className="bg-sky-50 border border-sky-200 rounded-xl p-3 flex flex-col gap-2">
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <Bell className="w-3.5 h-3.5 text-sky-700" />
+                                            <p className="text-[10px] font-bold text-sky-800 uppercase tracking-wider">Notificaciones</p>
                                         </div>
 
-                                        {proximaCita && (
-                                            <div className="bg-white border border-sky-200 rounded-lg p-3 text-sm text-gray-700">
-                                                <p className="font-semibold text-gray-800">Ya hay reunión agendada</p>
-                                                <p className="text-gray-500 mt-1">
-                                                    {new Date(fechaProximaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
-                                                </p>
-                                            </div>
-                                        )}
+                                        {/* Contenido con altura fija y scroll */}
+                                        <div className="overflow-y-auto hide-scrollbar flex flex-col gap-2" style={{ maxHeight: '200px' }}>
 
-                                        {tareaLlamar && (
-                                            <div className="bg-white border border-sky-200 rounded-lg p-3 text-sm text-gray-700 space-y-2">
-                                                <p className="font-semibold text-gray-800">Recordatorio de llamada pendiente</p>
-                                                <p className="text-gray-500 mt-1">
-                                                    {new Date(tareaLlamar.fecha).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
-                                                </p>
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={handleEditarRecordatorio}
-                                                        className="flex-1 flex items-center justify-center gap-2 bg-white border border-sky-200 hover:bg-sky-50 text-sky-600 hover:text-sky-700 rounded-lg py-2 text-xs font-bold transition-colors"
-                                                    >
-                                                        <Edit2 className="w-3.5 h-3.5" />
-                                                        Editar
-                                                    </button>
-                                                    <button
-                                                        onClick={descartarRecordatorioLlamada}
-                                                        className="flex-1 flex items-center justify-center gap-2 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 hover:text-rose-700 rounded-lg py-2 text-xs font-bold transition-colors"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                        Quitar
-                                                    </button>
+                                            {proximaCita && (
+                                                <div className="bg-white border border-sky-200 rounded-lg px-3 py-2 space-y-1.5">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <p className="text-xs font-semibold text-gray-800">📅 Reunión agendada</p>
+                                                        <p className="text-[10px] text-gray-400 shrink-0">
+                                                            {new Date(fechaProximaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                                                        </p>
+                                                    </div>
+                                                    {prospectoSeleccionado.etapaEmbudo === 'reunion_agendada' && (
+                                                        <button
+                                                            onClick={handleMarcarCitaRealizada}
+                                                            disabled={loadingEtapa}
+                                                            className="w-full flex items-center justify-center gap-1.5 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded py-1.5 text-[10px] font-bold transition-colors disabled:opacity-50"
+                                                        >
+                                                            <CheckCircle2 className="w-3 h-3" />
+                                                            {loadingEtapa ? 'Guardando...' : 'Marcar como realizada'}
+                                                        </button>
+                                                    )}
                                                 </div>
-                                            </div>
-                                        )}
+                                            )}
 
-                                        {!proximaCita && !tareaLlamar && (
-                                            <p className="text-sm text-sky-800">Sin alertas por ahora. Puedes programar una llamada para no perder seguimiento.</p>
-                                        )}
+                                            {tareaLlamar && (
+                                                <div className="bg-white border border-sky-200 rounded-lg px-3 py-2 space-y-1.5">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <p className="text-xs font-semibold text-gray-800">📞 Recordatorio de llamada</p>
+                                                        <p className="text-[10px] text-gray-400 shrink-0">
+                                                            {new Date(tareaLlamar.fecha).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex gap-1.5">
+                                                        <button
+                                                            onClick={handleEditarRecordatorio}
+                                                            className="flex-1 flex items-center justify-center gap-1 bg-white border border-sky-200 hover:bg-sky-50 text-sky-600 rounded py-1.5 text-[10px] font-bold transition-colors"
+                                                        >
+                                                            <Edit2 className="w-3 h-3" /> Editar
+                                                        </button>
+                                                        <button
+                                                            onClick={descartarRecordatorioLlamada}
+                                                            className="flex-1 flex items-center justify-center gap-1 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded py-1.5 text-[10px] font-bold transition-colors"
+                                                        >
+                                                            <Trash2 className="w-3 h-3" /> Quitar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
 
-                                        <button
-                                            onClick={abrirRecordatorioLlamadaDirecto}
-                                            disabled={!!tareaLlamar}
-                                            className={`w-full flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-colors ${tareaLlamar
-                                                ? 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed'
-                                                : 'bg-white border border-sky-300 hover:border-sky-400 text-sky-700'
-                                                }`}
-                                        >
-                                            <Clock className="w-4 h-4" />
-                                            {tareaLlamar ? 'Ya existe recordatorio activo' : 'Programar recordatorio de llamada'}
-                                        </button>
+                                            {!proximaCita && !tareaLlamar && (
+                                                <p className="text-[11px] text-sky-700 px-1">Sin alertas por ahora.</p>
+                                            )}
+                                        </div>
+
+                                        {!tareaLlamar && (
+                                            <button
+                                                onClick={abrirRecordatorioLlamadaDirecto}
+                                                className="shrink-0 w-full flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-[11px] font-bold transition-colors bg-white border border-sky-300 hover:border-sky-400 text-sky-700"
+                                            >
+                                                <Clock className="w-3.5 h-3.5" />
+                                                Programar recordatorio
+                                            </button>
+                                        )}
                                     </div>
 
                                     {/* ========= CUADRO DE NOTAS EDITABLE ========= */}
@@ -1851,12 +1953,15 @@ const ProspectorSeguimiento = () => {
 
                         {/* ===================== COLUMNA DERECHA: HISTORIAL ===================== */}
                         <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden lg:h-full h-[70vh] min-h-0">
-                            <div className="p-5 border-b border-slate-100 bg-slate-50/50 rounded-t-xl flex items-center justify-between">
-                                <h3 className="font-bold text-gray-900 uppercase tracking-wider text-sm">Historial de interacciones</h3>
+                            <div className="p-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl flex items-center justify-between">
+                                <div>
+                                    <h3 className="font-bold text-gray-900 text-sm">Historial de interacciones</h3>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">↑ Más reciente arriba</p>
+                                </div>
                                 <span className="text-xs bg-slate-200 text-slate-600 rounded-full px-2 py-0.5 font-semibold">{actividadesContext.length}</span>
                             </div>
                             <div
-                                className="flex-1 overflow-y-auto p-5 space-y-4 hide-scrollbar"
+                                className="flex-1 overflow-y-auto px-4 py-4 hide-scrollbar"
                                 style={{ minHeight: 0 }}
                             >
                                 {loadingContext ? (
@@ -1869,50 +1974,74 @@ const ProspectorSeguimiento = () => {
                                         <p className="text-sm">Sin interacciones registradas aún.</p>
                                     </div>
                                 ) : (
-                                    [...actividadesContext].reverse().map((act, index) => {
-                                        const meta = getActIcon(act);
-                                        return (
-                                            <div key={act.id || index} className="flex gap-3">
-                                                {/* Ícono */}
-                                                <div className={`w-9 h-9 rounded-full ${meta.color} flex items-center justify-center text-lg shrink-0 shadow-sm`}>
-                                                    <span>{meta.icon}</span>
-                                                </div>
-                                                {/* Contenido */}
-                                                <div className="flex-1 bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <p className="font-semibold text-gray-900 text-sm">{meta.label}</p>
-                                                        <div className="flex items-center gap-1 shrink-0">
-                                                            <span className="text-xs text-gray-400 whitespace-nowrap">{formatHora(act.fecha)}</span>
-                                                            <button
-                                                                onClick={() => handleDeleteActividadContext(act.id)}
-                                                                title="Eliminar actividad"
-                                                                className="p-1 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
-                                                            >
-                                                                <Trash2 className="w-3 h-3" />
-                                                            </button>
+                                    <div className="relative">
+                                        {/* Línea vertical de tiempo */}
+                                        <div className="absolute left-[13px] top-2 bottom-2 w-px bg-slate-200" />
+
+                                        <div className="space-y-0">
+                                            {[...actividadesContext].reverse().map((act, index) => {
+                                                const meta = getActIcon(act);
+                                                const esElMasReciente = index === 0;
+
+                                                const dotColor =
+                                                    act.tipo === 'whatsapp' ? 'bg-green-500' :
+                                                    act.tipo === 'cita' ? 'bg-(--theme-500)' :
+                                                    act.tipo === 'llamada' && act.resultado === 'fallido' ? 'bg-rose-400' :
+                                                    act.tipo === 'llamada' ? 'bg-(--theme-500)' :
+                                                    act.tipo === 'cliente' ? 'bg-yellow-500' :
+                                                    act.tipo === 'descartado' ? 'bg-gray-400' :
+                                                    'bg-slate-400';
+
+                                                return (
+                                                    <div key={act.id || index} className="relative flex gap-3 pb-4">
+                                                        {/* Punto de la línea de tiempo */}
+                                                        <div className="relative z-10 shrink-0 mt-1.5">
+                                                            <div className={`w-[11px] h-[11px] rounded-full border-2 border-white ${dotColor} shadow-sm`} />
+                                                        </div>
+
+                                                        {/* Tarjeta */}
+                                                        <div className="flex-1 min-w-0">
+                                                            {esElMasReciente && (
+                                                                <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-white bg-(--theme-500) rounded px-1.5 py-0.5 mb-1">
+                                                                    Más reciente
+                                                                </span>
+                                                            )}
+                                                            <div className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 hover:border-slate-200 transition-colors">
+                                                                <div className="flex items-start justify-between gap-1">
+                                                                    <div className="min-w-0">
+                                                                        <p className="text-xs font-bold text-gray-800 leading-tight">{meta.label}</p>
+                                                                        <p className="text-[10px] text-slate-400 mt-0.5">
+                                                                            {new Date(act.fecha).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                                            {' · '}{formatHora(act.fecha)}
+                                                                            {act.vendedorNombre && <> · <span className="text-slate-500">{act.vendedorNombre}</span></>}
+                                                                        </p>
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => handleDeleteActividadContext(act.id)}
+                                                                        title="Eliminar"
+                                                                        className="shrink-0 p-1 rounded text-slate-200 hover:text-red-500 hover:bg-red-50 transition-all mt-0.5"
+                                                                    >
+                                                                        <Trash2 className="w-3 h-3" />
+                                                                    </button>
+                                                                </div>
+                                                                {getResultadoTexto(act) && (
+                                                                    <p className="text-[10px] text-gray-500 mt-1 font-medium">{getResultadoTexto(act)}</p>
+                                                                )}
+                                                                {act.notas && (
+                                                                    <p className="text-[10px] text-gray-500 mt-1 italic truncate" title={act.notas}>"{act.notas}"</p>
+                                                                )}
+                                                                {act.fechaCita && (
+                                                                    <p className="text-[10px] text-(--theme-600) mt-1 font-semibold">
+                                                                        📅 {new Date(act.fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                                                                    </p>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <p className="text-xs text-gray-500 mt-0.5">
-                                                        {new Date(act.fecha).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                        {act.vendedorNombre && <> · {act.vendedorNombre}</>}
-                                                    </p>
-                                                    {getResultadoTexto(act) && (
-                                                        <p className="text-xs font-medium text-gray-600 mt-1">{getResultadoTexto(act)}</p>
-                                                    )}
-                                                    {act.notas && (
-                                                        <p className="text-xs text-gray-500 mt-1.5 italic bg-white px-2 py-1.5 rounded-lg border border-slate-100">
-                                                            "{act.notas}"
-                                                        </p>
-                                                    )}
-                                                    {act.fechaCita && (
-                                                        <p className="text-xs text-(--theme-600) mt-1.5 font-medium">
-                                                            📅 {new Date(act.fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                             <div className="p-4 border-t border-slate-100 bg-slate-50/50">

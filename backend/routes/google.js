@@ -103,8 +103,8 @@ router.post('/save-tokens', auth, async (req, res) => {
 // @desc    Obtiene disponibilidad (freebusy) del closer
 // @access  Private
 router.get('/freebusy/:closerId', auth, async (req, res) => {
+    const closerId = parseInt(req.params.closerId);
     try {
-        const closerId = parseInt(req.params.closerId);
         const closer = await db.prepare('SELECT email, googleRefreshToken, googleAccessToken, googleTokenExpiry FROM usuarios WHERE id = ?').get(closerId);
 
         if (!closer) return res.status(404).json({ msg: 'Closer no encontrado' });
@@ -175,8 +175,8 @@ router.get('/freebusy/:closerId', auth, async (req, res) => {
 // @desc    Obtiene eventos del calendario del usuario autenticado
 // @access  Private
 router.get('/events', auth, async (req, res) => {
+    const userId = parseInt(req.usuario.id);
     try {
-        const userId = parseInt(req.usuario.id);
         const user = await db.prepare('SELECT googleRefreshToken, googleAccessToken, googleTokenExpiry FROM usuarios WHERE id = ?').get(userId);
 
         if (!user || (!user.googleRefreshToken && !user.googleAccessToken)) {
@@ -255,8 +255,8 @@ router.get('/events', auth, async (req, res) => {
 // @desc    Crea un evento en el Google Calendar del usuario autenticado
 // @access  Private
 router.post('/create-event', auth, async (req, res) => {
+    const userId = parseInt(req.usuario.id);
     try {
-        const userId = parseInt(req.usuario.id);
         const user = await db.prepare('SELECT googleRefreshToken, googleAccessToken, googleTokenExpiry FROM usuarios WHERE id = ?').get(userId);
 
         if (!user || (!user.googleRefreshToken && !user.googleAccessToken)) {
@@ -345,6 +345,7 @@ router.post('/create-event', auth, async (req, res) => {
 // @desc    Marca un evento como completado en Google Calendar
 // @access  Private
 router.patch('/mark-completed/:eventId', auth, async (req, res) => {
+    const userId = parseInt(req.usuario.id);
     try {
         const { eventId } = req.params;
         const { resultado, notas, clienteNombre } = req.body;
@@ -353,7 +354,6 @@ router.patch('/mark-completed/:eventId', auth, async (req, res) => {
             return res.status(400).json({ msg: 'Resultado es requerido' });
         }
 
-        const userId = parseInt(req.usuario.id);
         const usuario = await db.prepare('SELECT * FROM usuarios WHERE id = ?').get(userId);
 
         if (!usuario || !usuario.googleAccessToken) {

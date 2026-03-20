@@ -436,7 +436,7 @@ const VendedorDashboard = () => {
                                     <div className="text-xs font-bold text-gray-900 truncate">{p.nombre || `${p.nombres || ''} ${p.apellidos || ''}`.trim()}</div>
                                     <div className="flex items-center justify-between mt-1">
                                         <div className="text-[10px] font-bold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded">
-                                            📞 {new Date(p.proximaLlamada).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                            📞 {new Date(p.proximaLlamada).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                         </div>
                                         {p.telefono && <div className="text-[10px] text-gray-400 truncate max-w-16">{p.telefono}</div>}
                                     </div>
@@ -462,7 +462,7 @@ const VendedorDashboard = () => {
                                     <div className="text-xs font-bold text-gray-900 truncate">{r.cliente?.nombres} {r.cliente?.apellidoPaterno}</div>
                                     <div className="flex justify-between items-center mt-1">
                                         <div className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
-                                            {new Date(r.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                            {new Date(r.fecha).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                         </div>
                                         {r.cliente?.telefono && <div className="text-[10px] text-gray-400">📞 {r.cliente.telefono}</div>}
                                     </div>
