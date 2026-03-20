@@ -14,9 +14,10 @@ const ProspectorCalendario = () => {
     const location = useLocation();
     const currentUser = getUser();
     const isVendedor = String(currentUser?.rol || '').toLowerCase() === 'vendedor';
+    const currentUserId = String(currentUser?.id || currentUser?._id || '');
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
-    const [selectedCloser, setSelectedCloser] = useState('');
+    const [selectedCloser, setSelectedCloser] = useState(isVendedor ? currentUserId : '');
     const [closers, setClosers] = useState([]);
     const [prospectos, setProspectos] = useState([]);
     const [selectedProspect, setSelectedProspect] = useState('');
@@ -31,6 +32,7 @@ const ProspectorCalendario = () => {
     const [formData, setFormData] = useState({
         notas: ''
     });
+    const [activeTab, setActiveTab] = useState('agendar'); // 'agendar' o 'reuniones'
 
     const cargarMisReuniones = async () => {
         if (!isVendedor) return;
@@ -142,14 +144,33 @@ const ProspectorCalendario = () => {
                     const data = await res.json();
                     console.log("All Users Data:", data);
                     const OCULTAR_USERS = ['brayan', '@brayan', 'closer'];
-                    const closersList = data.filter(u => (u.rol === 'closer' || u.rol === 'vendedor') && !OCULTAR_USERS.includes(u.usuario?.toLowerCase()));
+                    let closersList = data.filter(u => {
+                        const isMe = (currentUserId && (String(u.id) === currentUserId || String(u._id) === currentUserId)) || 
+                                     (currentUser?.usuario && u.usuario && String(currentUser.usuario).toLowerCase() === String(u.usuario).toLowerCase());
+                        const roleMatch = String(u.rol).toLowerCase() === 'closer' || String(u.rol).toLowerCase() === 'vendedor';
+                        const isHidden = OCULTAR_USERS.includes(String(u.usuario || '').toLowerCase());
+                        
+                        if (isMe) return roleMatch;
+                        return roleMatch && !isHidden;
+                    });
+
+                    // Garantizar que el usuario actual esté en la lista si es vendedor/closer
+                    const amIInList = closersList.some(u => (currentUserId && (String(u.id) === currentUserId || String(u._id) === currentUserId)) || (currentUser?.usuario && u.usuario && String(currentUser.usuario).toLowerCase() === String(u.usuario).toLowerCase()));
+                    if (!amIInList && (isVendedor || currentUser?.rol === 'closer')) {
+                        const meInFetch = data.find(u => (currentUserId && (String(u.id) === currentUserId || String(u._id) === currentUserId)) || (currentUser?.usuario && u.usuario && String(currentUser.usuario).toLowerCase() === String(u.usuario).toLowerCase()));
+                        if (meInFetch) closersList.push(meInFetch);
+                    }
+
                     console.log("Filtered Closers:", closersList);
                     setClosers(closersList);
 
                     // Si el usuario actual es vendedor, autoasigna sus reuniones a sí mismo.
-                    if (isVendedor && currentUser?.id) {
-                        const yo = closersList.find(u => String(u.id) === String(currentUser.id));
-                        if (yo) setSelectedCloser(String(yo.id));
+                    if (isVendedor && currentUserId) {
+                        const yo = closersList.find(u => 
+                            (String(u.id) === currentUserId || String(u._id) === currentUserId) ||
+                            (currentUser?.usuario && u.usuario && String(currentUser.usuario).toLowerCase() === String(u.usuario).toLowerCase())
+                        );
+                        if (yo) setSelectedCloser(String(yo.id || yo._id));
                     }
                 } else {
                     console.error("Failed to fetch users");
@@ -243,10 +264,13 @@ const ProspectorCalendario = () => {
 
     useEffect(() => {
         // En rol vendedor, mantener asignación por defecto a sí mismo si aún no está elegida.
-        if (!isVendedor || selectedCloser || !currentUser?.id || closers.length === 0) return;
-        const yo = closers.find(u => String(u.id) === String(currentUser.id));
-        if (yo) setSelectedCloser(String(yo.id));
-    }, [isVendedor, selectedCloser, currentUser?.id, closers]);
+        if (!isVendedor || selectedCloser || !currentUserId || closers.length === 0) return;
+        const yo = closers.find(u => 
+            (String(u.id) === currentUserId || String(u._id) === currentUserId) ||
+            (currentUser?.usuario && u.usuario && String(currentUser.usuario).toLowerCase() === String(u.usuario).toLowerCase())
+        );
+        if (yo) setSelectedCloser(String(yo.id || yo._id));
+    }, [isVendedor, selectedCloser, currentUserId, closers, currentUser?.usuario]);
 
     useEffect(() => {
         cargarMisReuniones();
@@ -465,208 +489,256 @@ const ProspectorCalendario = () => {
 
                     {/* Scheduling Panel (Right Side - 1 Col) */}
                     <div className="lg:col-span-1 flex flex-col min-h-0">
-                        <div className="flex-1 bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col overflow-y-auto">
-                            <h2 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-                                <CalendarIcon className="w-6 h-6 text-[#689f38]" />
-                                Agendar Cita
-                            </h2>
-                            <p className="text-sm text-gray-500 mb-6">
-                                Programando para el <span className="font-bold text-gray-800">{selectedDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
-                            </p>
-
-                            {selectedCloser && !closerLinkedToGoogle && (
-                                <div className="mb-4 flex flex-col p-4 bg-orange-50 border border-orange-200 rounded-xl space-y-2 animate-in fade-in">
-                                    <div className="flex items-center gap-2 text-orange-800">
-                                        <AlertCircle className="w-5 h-5 shrink-0" />
-                                        <p className="font-bold text-sm">Calendario No Vinculado</p>
-                                    </div>
-                                    <p className="text-sm text-orange-700">Este closer no ha vinculado su cuenta de Google Calendar en sus ajustes. El sistema no puede verificar sus horarios ocupados ni crear la sala de Meet automáticamente.</p>
-                                </div>
-                            )}
-
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <div className="space-y-4">
-                                    {/* Prospect Selection */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Seleccionar Prospecto
-                                        </label>
-                                        <select
-                                            value={selectedProspect}
-                                            onChange={(e) => setSelectedProspect(e.target.value)}
-                                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-transparent"
-                                            required
-                                        >
-                                            <option value="">Selecciona un prospecto...</option>
-                                            {prospectos.map(p => (
-                                                <option key={p.id} value={p.id}>
-                                                    {p.nombres} {p.apellidoPaterno} - {p.empresa || 'Sin empresa'}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {/* Closer Selection */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            {isVendedor ? 'Asignar Responsable de Cierre' : 'Asignar Closer (Virtual)'}
-                                        </label>
-                                        <select
-                                            value={selectedCloser}
-                                            onChange={(e) => setSelectedCloser(e.target.value)}
-                                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-transparent"
-                                            required
-                                        >
-                                            <option value="">{isVendedor ? 'Selecciona responsable...' : 'Selecciona un closer...'}</option>
-                                            {closers.map(c => (
-                                                <option key={c.id} value={c.id}>{c.nombre} ({c.rol})</option>
-                                            ))}
-                                        </select>
-                                        {isVendedor && currentUser?.id && String(selectedCloser) === String(currentUser.id) && (
-                                            <p className="text-xs text-green-700 mt-1">La reunión se asignará a tu calendario.</p>
-                                        )}
-                                    </div>
-
-                                    {/* Time Selection */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Horarios Disponibles ({selectedDate ? selectedDate.toLocaleDateString() : ''})
-                                        </label>
-                                        <div className="grid grid-cols-3 gap-2 mt-2">
-                                            {selectedDate && selectedDate.getDay() !== 0 ? (
-                                                generateSlotsForDay(selectedDate).length > 0 ? (
-                                                    generateSlotsForDay(selectedDate).map((slot, idx) => {
-                                                        const timeStr = slot.start.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-                                                        const isSelected = selectedTimeSlot?.start.getTime() === slot.start.getTime();
-                                                        return (
-                                                            <button
-                                                                key={idx}
-                                                                type="button"
-                                                                disabled={slot.isBusy}
-                                                                onClick={() => !slot.isBusy && setSelectedTimeSlot(slot)}
-                                                                className={`p-2 border rounded-lg text-sm text-center transition-colors 
-                                                                    ${slot.isBusy
-                                                                        ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60'
-                                                                        : isSelected
-                                                                            ? 'bg-(--theme-500) border-(--theme-500) text-white font-bold'
-                                                                            : 'bg-white border-gray-300 hover:bg-green-50 text-gray-700'
-                                                                    }`}
-                                                            >
-                                                                {timeStr}
-                                                            </button>
-                                                        );
-                                                    })
-                                                ) : (
-                                                    <div className="col-span-3 text-sm text-gray-500 text-center py-4 bg-gray-50 rounded border border-gray-100 italic">Closer sin disponibilidad este día.</div>
-                                                )
-                                            ) : (
-                                                <div className="col-span-3 text-sm text-gray-500 text-center py-4 bg-gray-50 rounded border border-gray-100 italic">Día no laborable (Domingo).</div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Notes */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Notas Adicionales
-                                        </label>
-                                        <textarea
-                                            value={formData.notas}
-                                            onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
-                                            rows="3"
-                                            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-(--theme-500)"
-                                            placeholder="Detalles importantes para el closer..."
-                                        />
-                                    </div>
-                                </div>
-
+                        <div className="flex-1 bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col overflow-hidden">
+                            
+                            {/* Tabs Headers */}
+                            <div className="flex border-b border-gray-100 mb-4 shrink-0">
                                 <button
-                                    type="submit"
-                                    disabled={!selectedTimeSlot}
-                                    className="w-full py-3 px-4 bg-(--theme-500) text-white rounded-xl font-bold hover:bg-[#7cb342] shadow-lg shadow-(--theme-500)/30 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                    onClick={() => setActiveTab('agendar')}
+                                    className={`flex-1 py-2 text-xs font-bold transition-all border-b-2 ${activeTab === 'agendar' ? 'border-(--theme-500) text-(--theme-600)' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
                                 >
                                     Agendar Cita
                                 </button>
+                                {isVendedor && (
+                                    <button
+                                        onClick={() => setActiveTab('reuniones')}
+                                        className={`flex-1 py-2 text-xs font-bold transition-all border-b-2 ${activeTab === 'reuniones' ? 'border-(--theme-500) text-(--theme-600)' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        Mis Reuniones
+                                    </button>
+                                )}
+                            </div>
 
-                                {createdEventLink && (
-                                    <div className="mt-6 p-4 bg-(--theme-50) border border-(--theme-200) rounded-xl flex flex-col items-center animate-in fade-in zoom-in slide-in-from-bottom-2">
-                                        <div className="flex items-center gap-2 text-(--theme-800) mb-3">
-                                            <LinkIcon className="w-5 h-5" />
-                                            <p className="font-bold">Google Meet Creado</p>
+                            <div className="flex-1 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                                {activeTab === 'agendar' ? (
+                                    <div className="animate-in fade-in slide-in-from-right-2 duration-200">
+                                        <h2 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
+                                            <CalendarIcon className="w-5 h-5 text-[#689f38]" />
+                                            Agendar Cita
+                                        </h2>
+                                        <p className="text-xs text-gray-500 mb-4">
+                                            Para el <span className="font-bold text-gray-800">{selectedDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                                        </p>
+
+                                        {selectedCloser && !closerLinkedToGoogle && (
+                                            <div className="mb-4 flex flex-col p-3 bg-orange-50 border border-orange-200 rounded-lg space-y-1">
+                                                <div className="flex items-center gap-2 text-orange-800">
+                                                    <AlertCircle className="w-4 h-4 shrink-0" />
+                                                    <p className="font-bold text-xs">Calendario No Vinculado</p>
+                                                </div>
+                                                <p className="text-[11px] text-orange-700 leading-tight">Este closer no ha vinculado Google Calendar. No se verificará disponibilidad ni se creará Meet.</p>
+                                            </div>
+                                        )}
+
+                                        <form onSubmit={handleSubmit} className="space-y-4">
+                                            <div className="space-y-3">
+                                                {/* Prospect Selection */}
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                                                        Seleccionar Prospecto
+                                                    </label>
+                                                    <select
+                                                        value={selectedProspect}
+                                                        onChange={(e) => setSelectedProspect(e.target.value)}
+                                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-transparent"
+                                                        required
+                                                    >
+                                                        <option value="">Selecciona...</option>
+                                                        {prospectos.map(p => (
+                                                            <option key={p.id} value={p.id}>
+                                                                {p.nombres} {p.apellidoPaterno}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                {/* Closer Selection */}
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                                                        {isVendedor ? 'Responsable' : 'Asignar Closer'}
+                                                    </label>
+                                                    <select
+                                                        value={selectedCloser}
+                                                        onChange={(e) => setSelectedCloser(e.target.value)}
+                                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-transparent"
+                                                        required
+                                                    >
+                                                        <option value="">{isVendedor ? 'Selecciona...' : 'Selecciona closer...'}</option>
+                                                        {closers.map(c => (
+                                                            <option key={c.id || c._id} value={c.id || c._id}>{c.nombre}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                {/* Time Selection */}
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                                        Horarios Disponibles
+                                                    </label>
+                                                    <div className="grid grid-cols-2 gap-2 mt-1">
+                                                        {selectedDate && selectedDate.getDay() !== 0 ? (
+                                                            generateSlotsForDay(selectedDate).length > 0 ? (
+                                                                generateSlotsForDay(selectedDate).map((slot, idx) => {
+                                                                    const timeStr = slot.start.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                                                                    const isSelected = selectedTimeSlot?.start.getTime() === slot.start.getTime();
+                                                                    return (
+                                                                        <button
+                                                                            key={idx}
+                                                                            type="button"
+                                                                            disabled={slot.isBusy}
+                                                                            onClick={() => !slot.isBusy && setSelectedTimeSlot(slot)}
+                                                                            className={`p-1.5 border rounded-lg text-xs text-center transition-colors 
+                                                                                ${slot.isBusy
+                                                                                    ? 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
+                                                                                    : isSelected
+                                                                                        ? 'bg-(--theme-500) border-(--theme-500) text-white font-bold'
+                                                                                        : 'bg-white border-gray-200 hover:bg-green-50 text-gray-600'
+                                                                                }`}
+                                                                        >
+                                                                            {timeStr}
+                                                                        </button>
+                                                                    );
+                                                                })
+                                                            ) : (
+                                                                <div className="col-span-2 text-[10px] text-gray-400 text-center py-2 bg-gray-50 rounded italic">Sin disponibilidad.</div>
+                                                            )
+                                                        ) : (
+                                                            <div className="col-span-2 text-[10px] text-gray-400 text-center py-2 bg-gray-50 rounded italic">Cerrado.</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Notes */}
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                                                        Notas
+                                                    </label>
+                                                    <textarea
+                                                        value={formData.notas}
+                                                        onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
+                                                        rows="2"
+                                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-(--theme-500)"
+                                                        placeholder="Detalles..."
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                type="submit"
+                                                disabled={!selectedTimeSlot}
+                                                className="w-full py-2.5 px-4 bg-(--theme-500) text-white rounded-xl font-bold hover:bg-[#7cb342] shadow-md shadow-(--theme-500)/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                Agendar Cita
+                                            </button>
+
+                                            {createdEventLink && (
+                                                <div className="mt-4 p-3 bg-(--theme-50) border border-(--theme-200) rounded-lg flex flex-col items-center animate-in zoom-in-95">
+                                                    <div className="flex items-center gap-2 text-(--theme-800) mb-2">
+                                                        <LinkIcon className="w-4 h-4" />
+                                                        <p className="font-bold text-xs">Meet Creado</p>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(createdEventLink);
+                                                            toast.success('Enlace copiado');
+                                                        }}
+                                                        className="w-full py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) font-medium text-[10px] flex items-center justify-center gap-2 shadow-sm"
+                                                    >
+                                                        <Copy className="w-3.5 h-3.5" />
+                                                        Copiar Enlace
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </form>
+                                    </div>
+                                ) : (
+                                    <div className="animate-in fade-in slide-in-from-left-2 duration-200">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h3 className="text-lg font-bold text-gray-900">Reuniones Hoy</h3>
+                                            <button
+                                                type="button"
+                                                onClick={cargarMisReuniones}
+                                                className="p-1.5 text-xs rounded-lg hover:bg-slate-100 transition-colors"
+                                                title="Actualizar"
+                                            >
+                                                <LogIn className="w-4 h-4 text-slate-500" />
+                                            </button>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(createdEventLink);
-                                                toast.success('Enlace copiado al portapapeles');
-                                            }}
-                                            className="w-full py-2.5 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) font-medium text-sm flex items-center justify-center gap-2 transition-colors active:scale-95 shadow border border-(--theme-700)"
-                                        >
-                                            <Copy className="w-4 h-4" />
-                                            Copiar Enlace de Invitación
-                                        </button>
+
+                                        {loadingMisReuniones ? (
+                                            <div className="flex items-center justify-center p-8">
+                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-(--theme-500)"></div>
+                                            </div>
+                                        ) : misReuniones.length === 0 ? (
+                                            <p className="text-xs text-gray-400 text-center py-8 italic bg-slate-50 rounded-xl border border-dashed border-slate-200">No hay reuniones hoy.</p>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {misReuniones.map((r) => (
+                                                    <div key={r.id} className="border border-slate-100 rounded-xl p-3 bg-white hover:border-slate-200 transition-colors shadow-sm">
+                                                        <div className="mb-2">
+                                                            <p className="text-sm font-bold text-gray-900 line-clamp-1">
+                                                                {r?.cliente?.nombres || 'Cliente'} {r?.cliente?.apellidoPaterno || ''}
+                                                            </p>
+                                                            <p className="text-[11px] font-semibold text-(--theme-600) flex items-center gap-1">
+                                                                <Clock className="w-3 h-3" />
+                                                                {new Date(r.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-1.5">
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => registrarResultado(r, 'venta')} 
+                                                                disabled={guardandoResultadoId === r.id}
+                                                                className="px-2 py-1.5 text-[10px] font-bold rounded-lg bg-green-50 text-green-700 border border-green-100 hover:bg-green-100 disabled:opacity-60 transition-colors"
+                                                            >
+                                                                Venta
+                                                            </button>
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => registrarResultado(r, 'cotizacion')} 
+                                                                disabled={guardandoResultadoId === r.id}
+                                                                className="px-2 py-1.5 text-[10px] font-bold rounded-lg bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100 disabled:opacity-60 transition-colors"
+                                                            >
+                                                                Propuesta
+                                                            </button>
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => registrarResultado(r, 'otra_reunion')} 
+                                                                disabled={guardandoResultadoId === r.id}
+                                                                className="px-2 py-1.5 text-[10px] font-bold rounded-lg bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 disabled:opacity-60 transition-colors"
+                                                            >
+                                                                Reagendar
+                                                            </button>
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => registrarResultado(r, 'no_asistio')} 
+                                                                disabled={guardandoResultadoId === r.id}
+                                                                className="px-2 py-1.5 text-[10px] font-bold rounded-lg bg-red-50 text-red-700 border border-red-100 hover:bg-red-100 disabled:opacity-60 transition-colors"
+                                                            >
+                                                                No asistió
+                                                            </button>
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => registrarResultado(r, 'no_venta')} 
+                                                                disabled={guardandoResultadoId === r.id}
+                                                                className="col-span-2 px-2 py-1.5 text-[10px] font-bold rounded-lg bg-slate-50 text-slate-700 border border-slate-100 hover:bg-slate-100 disabled:opacity-60 transition-colors"
+                                                            >
+                                                                No interesado / Otros
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
-                            </form>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {isVendedor && (
-                    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-gray-900">Mis Reuniones de Hoy</h3>
-                            <button
-                                type="button"
-                                onClick={cargarMisReuniones}
-                                className="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
-                            >
-                                Actualizar
-                            </button>
-                        </div>
-
-                        {loadingMisReuniones ? (
-                            <p className="text-sm text-gray-500">Cargando reuniones...</p>
-                        ) : misReuniones.length === 0 ? (
-                            <p className="text-sm text-gray-500">No tienes reuniones pendientes hoy.</p>
-                        ) : (
-                            <div className="space-y-3">
-                                {misReuniones.map((r) => (
-                                    <div key={r.id} className="border border-slate-200 rounded-lg p-3">
-                                        <div className="flex items-center justify-between gap-3 mb-2">
-                                            <div>
-                                                <p className="font-semibold text-gray-900">
-                                                    {r?.cliente?.nombres || 'Cliente'} {r?.cliente?.apellidoPaterno || ''}
-                                                </p>
-                                                <p className="text-xs text-slate-500">
-                                                    {new Date(r.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                                                </p>
-                                            </div>
-                                            {!r?.clienteId && !r?.cliente?.id && !r?.cliente?._id && (
-                                                <span className="text-[11px] px-2 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200">
-                                                    Sin cliente vinculado
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                                            <button type="button" onClick={() => registrarResultado(r, 'no_asistio')} disabled={guardandoResultadoId === r.id}
-                                                className="px-2 py-2 text-xs rounded bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-60">No asistió</button>
-                                            <button type="button" onClick={() => registrarResultado(r, 'no_venta')} disabled={guardandoResultadoId === r.id}
-                                                className="px-2 py-2 text-xs rounded bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 disabled:opacity-60">No venta</button>
-                                            <button type="button" onClick={() => registrarResultado(r, 'otra_reunion')} disabled={guardandoResultadoId === r.id}
-                                                className="px-2 py-2 text-xs rounded bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 disabled:opacity-60">Otra reunión</button>
-                                            <button type="button" onClick={() => registrarResultado(r, 'cotizacion')} disabled={guardandoResultadoId === r.id}
-                                                className="px-2 py-2 text-xs rounded bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 disabled:opacity-60">Cotización</button>
-                                            <button type="button" onClick={() => registrarResultado(r, 'venta')} disabled={guardandoResultadoId === r.id}
-                                                className="px-2 py-2 text-xs rounded bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 disabled:opacity-60">Venta</button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
             </div>
         </div>
     );
