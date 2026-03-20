@@ -79,7 +79,7 @@ router.post('/save-tokens', auth, async (req, res) => {
         }
         if (tokens.expiry_date) {
             updates.push('googleTokenExpiry = ?');
-            params.push(tokens.expiry_date);
+            params.push(new Date(tokens.expiry_date).toISOString());
         }
 
         if (updates.length > 0) {
@@ -131,7 +131,7 @@ router.get('/freebusy/:closerId', auth, async (req, res) => {
             let params = [];
             if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
             if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-            if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(tokens.expiry_date); }
+            if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
 
             if (updateStr.length > 0) {
                 params.push(closerId);
@@ -199,7 +199,7 @@ router.get('/events', auth, async (req, res) => {
             let params = [];
             if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
             if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-            if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(tokens.expiry_date); }
+            if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
 
             if (updateStr.length > 0) {
                 params.push(userId);
@@ -284,7 +284,7 @@ router.post('/create-event', auth, async (req, res) => {
             const params = [];
             if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
             if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-            if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(tokens.expiry_date); }
+            if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
             if (updateStr.length > 0) {
                 params.push(userId);
                 await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
