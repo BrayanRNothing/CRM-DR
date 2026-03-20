@@ -150,16 +150,16 @@ const VendedorDashboard = () => {
 
             // Recordatorios de llamada de prospectos
             try {
-                const resProsp = await axios.get(`${API_URL}/api/prospectos`, { headers: getAuthHeaders() });
+                const resProsp = await axios.get(`${API_URL}/api/prospector/prospectos`, { headers: getAuthHeaders() });
                 const ahora = new Date();
                 const hoyFin = new Date();
                 hoyFin.setHours(23, 59, 59, 999);
                 const conRecordatorio = (resProsp.data || []).filter(p => {
-                    if (!p.recordatorio_llamada) return false;
-                    const fechaRec = new Date(p.recordatorio_llamada);
+                    if (!p.proximaLlamada) return false;
+                    const fechaRec = new Date(p.proximaLlamada);
                     return fechaRec >= ahora && fechaRec <= hoyFin;
                 });
-                conRecordatorio.sort((a, b) => new Date(a.recordatorio_llamada) - new Date(b.recordatorio_llamada));
+                conRecordatorio.sort((a, b) => new Date(a.proximaLlamada) - new Date(b.proximaLlamada));
                 setRecordatorios(conRecordatorio.slice(0, 4));
             } catch (e) {
                 console.error('Error recordatorios:', e);
@@ -436,7 +436,7 @@ const VendedorDashboard = () => {
                                     <div className="text-xs font-bold text-gray-900 truncate">{p.nombre || `${p.nombres || ''} ${p.apellidos || ''}`.trim()}</div>
                                     <div className="flex items-center justify-between mt-1">
                                         <div className="text-[10px] font-bold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded">
-                                            📞 {new Date(p.recordatorio_llamada).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                            📞 {new Date(p.proximaLlamada).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
                                         </div>
                                         {p.telefono && <div className="text-[10px] text-gray-400 truncate max-w-16">{p.telefono}</div>}
                                     </div>
