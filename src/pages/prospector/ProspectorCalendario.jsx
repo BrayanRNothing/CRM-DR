@@ -45,18 +45,16 @@ const ProspectorCalendario = () => {
             if (!res.ok) throw new Error('No se pudieron cargar reuniones');
             const data = await res.json();
 
-            const hoy = new Date();
-            const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime();
-            const finHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999).getTime();
-
-            const reunionesHoy = (data || [])
+            const ahora = new Date().getTime();
+            const proximas = (data || [])
                 .filter((r) => {
                     const f = new Date(r.fecha).getTime();
-                    return f >= inicioHoy && f <= finHoy;
+                    const esPendiente = r.resultado === 'pendiente' || !r.resultado;
+                    return f >= ahora && esPendiente;
                 })
                 .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
-            setMisReuniones(reunionesHoy);
+            setMisReuniones(proximas);
         } catch (error) {
             console.error('Error cargando reuniones del vendedor:', error);
             setMisReuniones([]);
@@ -655,7 +653,7 @@ const ProspectorCalendario = () => {
                                 ) : (
                                     <div className="animate-in fade-in slide-in-from-left-2 duration-200">
                                         <div className="flex items-center justify-between mb-3">
-                                            <h3 className="text-lg font-bold text-gray-900">Reuniones Hoy</h3>
+                                            <h3 className="text-lg font-bold text-gray-900">Mis Reuniones</h3>
                                             <button
                                                 type="button"
                                                 onClick={cargarMisReuniones}
@@ -671,7 +669,7 @@ const ProspectorCalendario = () => {
                                                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-(--theme-500)"></div>
                                             </div>
                                         ) : misReuniones.length === 0 ? (
-                                            <p className="text-xs text-gray-400 text-center py-8 italic bg-slate-50 rounded-xl border border-dashed border-slate-200">No hay reuniones hoy.</p>
+                                            <p className="text-xs text-gray-400 text-center py-8 italic bg-slate-50 rounded-xl border border-dashed border-slate-200">No hay reuniones próximas.</p>
                                         ) : (
                                             <div className="space-y-3">
                                                 {misReuniones.map((r) => (
@@ -682,7 +680,7 @@ const ProspectorCalendario = () => {
                                                             </p>
                                                             <p className="text-[11px] font-semibold text-(--theme-600) flex items-center gap-1">
                                                                 <Clock className="w-3 h-3" />
-                                                                {new Date(r.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                                                {new Date(r.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} - {new Date(r.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                                                             </p>
                                                         </div>
 
