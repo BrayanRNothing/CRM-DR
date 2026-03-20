@@ -1,5 +1,6 @@
-import { useState } from 'axios';
+import { useState } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 /**
  * Hook: useHistorialCompleto
@@ -20,7 +21,7 @@ export const useHistorialCompleto = (clienteId, rolPath) => {
         setError(null);
         try {
             // Intentar con el nuevo endpoint de historial completo
-            const endpoint = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/${rolPath}/prospecto/${clienteId}/historial-completo`;
+            const endpoint = `${API_URL}/api/${rolPath}/prospecto/${clienteId}/historial-completo`;
             
             const response = await axios.get(endpoint, {
                 headers: { 'x-auth-token': token }

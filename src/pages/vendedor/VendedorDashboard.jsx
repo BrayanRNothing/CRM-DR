@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, UserPlus, Calendar, TrendingUp, RefreshCw, Clock, CheckCircle2, Target, MessageSquare, ExternalLink, BarChart3, Users, Award, DollarSign, AlertTriangle, TrendingDown, Zap } from 'lucide-react';
+import { Phone, UserPlus, Calendar, TrendingUp, RefreshCw, Clock, CheckCircle2, Target, MessageSquare, ExternalLink, BarChart3, Users, Award, DollarSign, AlertTriangle, TrendingDown, Zap, Bell, ArrowRightLeft, PercentCircle } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import FunnelVisual from '../../components/FunnelVisual';
@@ -39,6 +39,7 @@ const VendedorDashboard = () => {
     const [closerData, setCloserData] = useState(null);
     const [tareas, setTareas] = useState([]);
     const [reuniones, setReuniones] = useState([]);
+    const [recordatorios, setRecordatorios] = useState([]);
     const [loadingTareas, setLoadingTareas] = useState(false);
     const [loadingReuniones, setLoadingReuniones] = useState(false);
     const [periodo, setPeriodo] = useState('dia');
@@ -147,6 +148,23 @@ const VendedorDashboard = () => {
             }
             if (!silent) setLoadingReuniones(false);
 
+            // Recordatorios de llamada de prospectos
+            try {
+                const resProsp = await axios.get(`${API_URL}/api/prospectos`, { headers: getAuthHeaders() });
+                const ahora = new Date();
+                const hoyFin = new Date();
+                hoyFin.setHours(23, 59, 59, 999);
+                const conRecordatorio = (resProsp.data || []).filter(p => {
+                    if (!p.recordatorio_llamada) return false;
+                    const fechaRec = new Date(p.recordatorio_llamada);
+                    return fechaRec >= ahora && fechaRec <= hoyFin;
+                });
+                conRecordatorio.sort((a, b) => new Date(a.recordatorio_llamada) - new Date(b.recordatorio_llamada));
+                setRecordatorios(conRecordatorio.slice(0, 4));
+            } catch (e) {
+                console.error('Error recordatorios:', e);
+            }
+
         } catch (error) {
             console.error('Error al cargar listas:', error);
             setLoadingTareas(false);
@@ -196,23 +214,27 @@ const VendedorDashboard = () => {
 
     const mP = prospectorData.periodos?.[periodo] || EMPTY_PERIODO;
     const tareasPendientes = tareas.filter(t => t.estado === 'pendiente');
+    const periodoSuffix = PERIODOS.find(p => p.key === periodo)?.suffix || 'hoy';
 
     return (
-        <div className="h-full flex flex-col p-5 overflow-y-auto overflow-x-hidden space-y-6 bg-gray-50/50">
-            {/* --- SECCIÓN 1: PROSPECCIÓN --- */}
-            <div className="flex flex-col space-y-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <TrendingUp className="w-6 h-6 text-(--theme-600)" />
-                        Rendimiento de Prospección
+        // Layout principal: contenido central + sidebar derecho
+        <div className="h-full flex gap-4 p-4 overflow-hidden bg-gray-50/50">
+
+            {/* ── COLUMNA CENTRAL ── */}
+            <div className="flex-1 flex flex-col gap-3 min-w-0 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+
+                {/* Tabs de período */}
+                <div className="flex items-center justify-between shrink-0">
+                    <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-(--theme-600)" />
+                        Mi Rendimiento
                     </h2>
-                    {/* Tabs de período para prospección */}
                     <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
                         {PERIODOS.map(p => (
                             <button
                                 key={p.key}
                                 onClick={() => setPeriodo(p.key)}
-                                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${periodo === p.key
+                                className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${periodo === p.key
                                     ? 'bg-(--theme-50) text-(--theme-600) shadow-sm border border-(--theme-100)'
                                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                                     }`}
@@ -223,215 +245,233 @@ const VendedorDashboard = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    <div className="lg:col-span-3">
-                        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm mb-4">
-                             <FunnelVisual
-                                stages={[
-                                    {
-                                        etapa: 'Prospectos',
-                                        cantidad: prospectorData.embudo.total,
-                                        color: 'bg-blue-500',
-                                        contadorHoy: prospectorData.periodos?.[periodo]?.prospectos ?? 0,
-                                        labelContador: `recibidos ${PERIODOS.find(p => p.key === periodo)?.suffix || 'hoy'}`,
-                                        cantidadExito: prospectorData.embudo.en_contacto,
-                                        cantidadPerdida: prospectorData.embudo.total - prospectorData.embudo.en_contacto,
-                                        porcentajeExito: prospectorData.tasasConversion.contacto,
-                                        porcentajePerdida: (100 - prospectorData.tasasConversion.contacto).toFixed(1),
-                                        labelExito: 'contactados',
-                                        labelPerdida: 'sin contacto'
-                                    },
-                                    {
-                                        etapa: 'Llamadas/Contacto',
-                                        cantidad: prospectorData.embudo.en_contacto,
-                                        color: 'bg-indigo-500',
-                                        contadorHoy: prospectorData.periodos?.[periodo]?.calls ?? prospectorData.periodos?.[periodo]?.llamadas ?? 0,
-                                        labelContador: `llamadas ${PERIODOS.find(p => p.key === periodo)?.suffix || 'hoy'}`,
-                                        cantidadExito: prospectorData.embudo.reunion_agendada,
-                                        cantidadPerdida: prospectorData.embudo.en_contacto - prospectorData.embudo.reunion_agendada,
-                                        porcentajeExito: prospectorData.tasasConversion.agendamiento,
-                                        porcentajePerdida: (100 - prospectorData.tasasConversion.agendamiento).toFixed(1),
-                                        labelExito: 'agendan cita',
-                                        labelPerdida: 'no agendan'
-                                    },
-                                    {
-                                        etapa: 'Citas Agendadas',
-                                        cantidad: prospectorData.embudo.reunion_agendada,
-                                        color: 'bg-emerald-500',
-                                        contadorHoy: prospectorData.periodos?.[periodo]?.reunions ?? prospectorData.periodos?.[periodo]?.reuniones ?? 0,
-                                        labelContador: `agendadas ${PERIODOS.find(p => p.key === periodo)?.suffix || 'hoy'}`,
-                                        cantidadExito: prospectorData.embudo.reunion_agendada,
-                                        porcentajeExito: 100,
-                                        labelExito: 'listas para cierre'
-                                    }
-                                ]}
-                                type="prospector"
-                            />
-                        </div>
-                        {/* Metrics Prospección */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white border text-center border-gray-200 rounded-xl p-4 shadow-sm">
-                                <Phone className="w-6 h-6 mx-auto text-indigo-500 mb-2" />
-                                <div className="text-2xl font-bold text-gray-900">{mP.llamadas}</div>
-                                <div className="text-xs text-gray-500 uppercase font-bold tracking-wider mt-1">Llamadas</div>
-                            </div>
-                            <div className="bg-white border text-center border-gray-200 rounded-xl p-4 shadow-sm">
-                                <UserPlus className="w-6 h-6 mx-auto text-blue-500 mb-2" />
-                                <div className="text-2xl font-bold text-gray-900">{mP.prospectos}</div>
-                                <div className="text-xs text-gray-500 uppercase font-bold tracking-wider mt-1">Prospectos</div>
-                            </div>
-                            <div className="bg-white border text-center border-gray-200 rounded-xl p-4 shadow-sm">
-                                <MessageSquare className="w-6 h-6 mx-auto text-purple-500 mb-2" />
-                                <div className="text-2xl font-bold text-gray-900">{mP.mensajes}</div>
-                                <div className="text-xs text-gray-500 uppercase font-bold tracking-wider mt-1">Mensajes</div>
-                            </div>
-                            <div className="bg-white border text-center border-gray-200 rounded-xl p-4 shadow-sm">
-                                <Calendar className="w-6 h-6 mx-auto text-emerald-500 mb-2" />
-                                <div className="text-2xl font-bold text-gray-900">{mP.reuniones}</div>
-                                <div className="text-xs text-gray-500 uppercase font-bold tracking-wider mt-1">Citas Agendadas</div>
-                            </div>
-                        </div>
+                {/* ── SECCIÓN PROSPECCIÓN ── */}
+                <div className="flex flex-col gap-2 shrink-0">
+                    <div className="flex items-center gap-1.5">
+                        <TrendingUp className="w-3.5 h-3.5 text-(--theme-600)" />
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Prospección</span>
                     </div>
-
-                    {/* Sidebar: Tareas (Prospección) */}
-                    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col max-h-[500px]">
-                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4 shrink-0">
-                            <Target className="w-5 h-5 text-indigo-500" /> Tareas Pendientes
-                        </h3>
-                        <div className="flex-1 overflow-y-auto pr-2 space-y-3" style={{ scrollbarWidth: 'thin' }}>
-                            {loadingTareas ? (
-                                <div className="flex justify-center p-4"><RefreshCw className="animate-spin text-gray-400 w-5 h-5" /></div>
-                            ) : tareasPendientes.length === 0 ? (
-                                <p className="text-sm text-gray-500 text-center py-4">No hay tareas pendientes.</p>
-                            ) : (
-                                tareasPendientes.map(t => (
-                                    <div key={t.id || t._id} className="bg-gray-50 border border-gray-100 rounded-lg p-3 group">
-                                        <div className="flex items-start justify-between">
-                                            <div>
-                                                <div className="text-sm font-bold text-gray-900 truncate pr-2">{t.titulo}</div>
-                                                <div className="text-xs text-gray-500 line-clamp-1 mt-0.5">{t.descripcion}</div>
-                                                {t.clienteNombre && (
-                                                    <div className="text-[10px] uppercase font-bold text-(--theme-600) mt-1">👤 {t.clienteNombre}</div>
-                                                )}
-                                            </div>
-                                            <button onClick={() => completarTarea(t.id || t._id)} className="text-gray-400 hover:text-green-500 transition-colors">
-                                                <CheckCircle2 className="w-5 h-5" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
+                    {/* Embudo Prospección */}
+                    <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+                        <FunnelVisual
+                            stages={[
+                                {
+                                    etapa: 'Prospectos',
+                                    cantidad: prospectorData.embudo.total,
+                                    color: 'bg-blue-500',
+                                    contadorHoy: prospectorData.periodos?.[periodo]?.prospectos ?? 0,
+                                    labelContador: `recibidos ${periodoSuffix}`,
+                                    cantidadExito: prospectorData.embudo.en_contacto,
+                                    cantidadPerdida: prospectorData.embudo.total - prospectorData.embudo.en_contacto,
+                                    porcentajeExito: prospectorData.tasasConversion.contacto,
+                                    porcentajePerdida: (100 - prospectorData.tasasConversion.contacto).toFixed(1),
+                                    labelExito: 'contactados',
+                                    labelPerdida: 'sin contacto'
+                                },
+                                {
+                                    etapa: 'Llamadas/Contacto',
+                                    cantidad: prospectorData.embudo.en_contacto,
+                                    color: 'bg-indigo-500',
+                                    contadorHoy: prospectorData.periodos?.[periodo]?.calls ?? prospectorData.periodos?.[periodo]?.llamadas ?? 0,
+                                    labelContador: `llamadas ${periodoSuffix}`,
+                                    cantidadExito: prospectorData.embudo.reunion_agendada,
+                                    cantidadPerdida: prospectorData.embudo.en_contacto - prospectorData.embudo.reunion_agendada,
+                                    porcentajeExito: prospectorData.tasasConversion.agendamiento,
+                                    porcentajePerdida: (100 - prospectorData.tasasConversion.agendamiento).toFixed(1),
+                                    labelExito: 'agendan cita',
+                                    labelPerdida: 'no agendan'
+                                },
+                                {
+                                    etapa: 'Citas Agendadas',
+                                    cantidad: prospectorData.embudo.reunion_agendada,
+                                    color: 'bg-emerald-500',
+                                    contadorHoy: prospectorData.periodos?.[periodo]?.reunions ?? prospectorData.periodos?.[periodo]?.reuniones ?? 0,
+                                    labelContador: `agendadas ${periodoSuffix}`,
+                                    cantidadExito: prospectorData.embudo.reunion_agendada,
+                                    porcentajeExito: 100,
+                                    labelExito: 'listas para cierre'
+                                }
+                            ]}
+                            type="prospector"
+                        />
+                    </div>
+                    {/* KPIs Prospección */}
+                    <div className="grid grid-cols-6 gap-2">
+                        {[
+                            { Icon: Phone, value: mP.llamadas, label: 'Llamadas', color: 'text-indigo-500' },
+                            { Icon: UserPlus, value: mP.prospectos, label: 'Prospectos', color: 'text-blue-500' },
+                            { Icon: MessageSquare, value: mP.mensajes, label: 'Mensajes', color: 'text-purple-500' },
+                            { Icon: Calendar, value: mP.reuniones, label: 'Citas Agendadas', color: 'text-emerald-500' },
+                            { Icon: TrendingUp, value: `${Math.round(prospectorData.tasasConversion.contacto) || 0}%`, label: 'Tasa Contacto', color: 'text-cyan-500' },
+                            { Icon: ArrowRightLeft, value: prospectorData.embudo.transferidos ?? 0, label: 'Transferidos', color: 'text-orange-500' },
+                        ].map(({ Icon, value, label, color, small }, i) => (
+                            <div key={i} className="bg-white border border-gray-200 rounded-xl px-2 py-2.5 shadow-sm text-center">
+                                <Icon className={`w-4 h-4 mx-auto ${color} mb-1`} />
+                                <div className={`font-bold text-gray-900 ${small ? 'text-sm' : 'text-lg'} leading-tight`}>{value}</div>
+                                <div className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mt-0.5 leading-tight">{label}</div>
+                            </div>
+                        ))}
                     </div>
                 </div>
+
+                {/* Divisor */}
+                <div className="border-t border-gray-200/70 shrink-0" />
+
+                {/* ── SECCIÓN CIERRE ── */}
+                <div className="flex flex-col gap-2 shrink-0 pb-2">
+                    <div className="flex items-center gap-1.5">
+                        <Award className="w-3.5 h-3.5 text-amber-500" />
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Cierre</span>
+                    </div>
+                    {/* Embudo Cierre */}
+                    <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+                        <FunnelVisual
+                            stages={[
+                                {
+                                    etapa: 'Reuniones Realizadas',
+                                    cantidad: closerData.embudo.reunion_realizada,
+                                    color: 'bg-cyan-500',
+                                    contadorHoy: closerData.metricas.reuniones.realizadasHoy,
+                                    labelContador: 'hoy',
+                                    cantidadExito: closerData.embudo.propuesta_enviada,
+                                    cantidadPerdida: closerData.analisisPerdidas.no_interesado,
+                                    porcentajeExito: Math.round(closerData.tasasConversion.interes) || 0,
+                                    porcentajePerdida: closerData.embudo.reunion_realizada > 0 ? ((closerData.analisisPerdidas.no_interesado / closerData.embudo.reunion_realizada) * 100).toFixed(1) : 0,
+                                    labelExito: 'piden propuesta',
+                                    labelPerdida: 'no interesados'
+                                },
+                                {
+                                    etapa: 'Propuestas Enviadas',
+                                    cantidad: closerData.embudo.propuesta_enviada,
+                                    color: 'bg-orange-500',
+                                    contadorHoy: closerData.metricas.reuniones.propuestasHoy,
+                                    labelContador: 'hoy',
+                                    cantidadExito: closerData.embudo.venta_ganada,
+                                    cantidadPerdida: closerData.embudo.propuesta_enviada - closerData.embudo.venta_ganada,
+                                    porcentajeExito: Math.round(closerData.tasasConversion.cierre) || 0,
+                                    porcentajePerdida: closerData.embudo.propuesta_enviada > 0 ? (((closerData.embudo.propuesta_enviada - closerData.embudo.venta_ganada) / closerData.embudo.propuesta_enviada) * 100).toFixed(1) : 0,
+                                    labelExito: 'aceptada',
+                                    labelPerdida: 'rechazada o en proceso'
+                                },
+                                {
+                                    etapa: 'Ventas Cerradas',
+                                    cantidad: closerData.embudo.venta_ganada,
+                                    color: 'bg-green-500',
+                                    contadorHoy: closerData.metricas.ventas.ventasHoy,
+                                    labelContador: 'hoy',
+                                    cantidadExito: closerData.embudo.venta_ganada,
+                                    porcentajeExito: 100,
+                                    labelExito: 'ganadas'
+                                }
+                            ]}
+                            type="closer"
+                        />
+                    </div>
+                    {/* KPIs Cierre */}
+                    <div className="grid grid-cols-6 gap-2">
+                        {[
+                            { Icon: TrendingUp, value: `${Math.round(closerData.tasasConversion.cierre) || 0}%`, label: 'Tasa Cierre', color: 'text-green-500' },
+                            { Icon: DollarSign, value: `$${(closerData.metricas.ventas.montoMes || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`, label: 'Monto Mensual', color: 'text-amber-500', small: true },
+                            { Icon: Award, value: closerData.metricas.ventas.mes, label: 'Ventas Mensuales', color: 'text-pink-500' },
+                            { Icon: CheckCircle2, value: `${Math.round(closerData.tasasConversion.asistencia) || 0}%`, label: 'Tasa Asistencia', color: 'text-cyan-500' },
+                            { Icon: Calendar, value: closerData.metricas.reuniones.hoy, label: 'Citas Hoy', color: 'text-indigo-500' },
+                            { Icon: Zap, value: closerData.metricas.ventas.ventasHoy, label: 'Ventas Hoy', color: 'text-emerald-500' },
+                        ].map(({ Icon, value, label, color, small }, i) => (
+                            <div key={i} className="bg-white border border-gray-200 rounded-xl px-2 py-2.5 shadow-sm text-center">
+                                <Icon className={`w-4 h-4 mx-auto ${color} mb-1`} />
+                                <div className={`font-bold text-gray-900 ${small ? 'text-sm' : 'text-lg'} leading-tight`}>{value}</div>
+                                <div className="text-[10px] text-gray-400 uppercase font-semibold tracking-wide mt-0.5 leading-tight">{label}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
             </div>
 
-            <hr className="border-gray-200/60 my-2" />
+            {/* ── SIDEBAR DERECHO ── */}
+            <div className="w-52 shrink-0 flex flex-col gap-3 overflow-hidden">
 
-            {/* --- SECCIÓN 2: CIERRE --- */}
-            <div className="flex flex-col space-y-4 pb-10">
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    <Award className="w-6 h-6 text-amber-500" />
-                    Rendimiento de Cierre
-                </h2>
-
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    <div className="lg:col-span-3">
-                        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm mb-4">
-                            <FunnelVisual
-                                stages={[
-                                    {
-                                        etapa: 'Reuniones Realizadas',
-                                        cantidad: closerData.embudo.reunion_realizada,
-                                        color: 'bg-cyan-500',
-                                        contadorHoy: closerData.metricas.reuniones.realizadasHoy,
-                                        labelContador: 'hoy',
-                                        cantidadExito: closerData.embudo.propuesta_enviada,
-                                        cantidadPerdida: closerData.analisisPerdidas.no_interesado,
-                                        porcentajeExito: Math.round(closerData.tasasConversion.interes) || 0,
-                                        porcentajePerdida: closerData.embudo.reunion_realizada > 0 ? ((closerData.analisisPerdidas.no_interesado / closerData.embudo.reunion_realizada) * 100).toFixed(1) : 0,
-                                        labelExito: 'piden propuesta',
-                                        labelPerdida: 'no interesados'
-                                    },
-                                    {
-                                        etapa: 'Propuestas Enviadas',
-                                        cantidad: closerData.embudo.propuesta_enviada,
-                                        color: 'bg-orange-500',
-                                        contadorHoy: closerData.metricas.reuniones.propuestasHoy,
-                                        labelContador: 'hoy',
-                                        cantidadExito: closerData.embudo.venta_ganada,
-                                        cantidadPerdida: closerData.embudo.propuesta_enviada - closerData.embudo.venta_ganada,
-                                        porcentajeExito: Math.round(closerData.tasasConversion.cierre) || 0,
-                                        porcentajePerdida: closerData.embudo.propuesta_enviada > 0 ? (((closerData.embudo.propuesta_enviada - closerData.embudo.venta_ganada) / closerData.embudo.propuesta_enviada) * 100).toFixed(1) : 0,
-                                        labelExito: 'aceptada',
-                                        labelPerdida: 'rechazada o en proceso'
-                                    },
-                                    {
-                                        etapa: 'Ventas Cerradas',
-                                        cantidad: closerData.embudo.venta_ganada,
-                                        color: 'bg-green-500',
-                                        contadorHoy: closerData.metricas.ventas.ventasHoy,
-                                        labelContador: 'hoy',
-                                        cantidadExito: closerData.embudo.venta_ganada,
-                                        porcentajeExito: 100,
-                                        labelExito: 'ganadas'
-                                    }
-                                ]}
-                                type="closer"
-                            />
-                        </div>
-                        {/* Metrics Cierre */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                             <div className="bg-white border text-center border-gray-200 rounded-xl p-4 shadow-sm">
-                                <TrendingUp className="w-6 h-6 mx-auto text-green-500 mb-2" />
-                                <div className="text-2xl font-bold text-gray-900">{Math.round(closerData.tasasConversion.cierre) || 0}%</div>
-                                <div className="text-xs text-gray-500 uppercase font-bold tracking-wider mt-1">Tasa Cierre</div>
-                            </div>
-                            <div className="bg-white border text-center border-gray-200 rounded-xl p-4 shadow-sm">
-                                <DollarSign className="w-6 h-6 mx-auto text-amber-500 mb-2" />
-                                <div className="text-xl font-bold text-gray-900">${(closerData.metricas.ventas.montoMes || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}</div>
-                                <div className="text-xs text-gray-500 uppercase font-bold tracking-wider mt-1">Monto Mensual</div>
-                            </div>
-                            <div className="bg-white border text-center border-gray-200 rounded-xl p-4 shadow-sm">
-                                <Award className="w-6 h-6 mx-auto text-pink-500 mb-2" />
-                                <div className="text-2xl font-bold text-gray-900">{closerData.metricas.ventas.mes}</div>
-                                <div className="text-xs text-gray-500 uppercase font-bold tracking-wider mt-1">Ventas Mensuales</div>
-                            </div>
-                            <div className="bg-white border text-center border-gray-200 rounded-xl p-4 shadow-sm">
-                                <CheckCircle2 className="w-6 h-6 mx-auto text-cyan-500 mb-2" />
-                                <div className="text-2xl font-bold text-gray-900">{Math.round(closerData.tasasConversion.asistencia) || 0}%</div>
-                                <div className="text-xs text-gray-500 uppercase font-bold tracking-wider mt-1">Tasa Asistencia</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Sidebar: Reuniones (Cierre) */}
-                    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col max-h-[500px]">
-                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-4 shrink-0">
-                            <Clock className="w-5 h-5 text-amber-500" /> Próximas Citas
-                        </h3>
-                        <div className="flex-1 overflow-y-auto pr-2 space-y-3" style={{ scrollbarWidth: 'thin' }}>
-                            {loadingReuniones ? (
-                                <div className="flex justify-center p-4"><RefreshCw className="animate-spin text-gray-400 w-5 h-5" /></div>
-                            ) : reuniones.length === 0 ? (
-                                <p className="text-sm text-gray-500 text-center py-4">Libre de reuniones.</p>
-                            ) : (
-                                reuniones.map(r => (
-                                    <div key={r.id || r._id} className="bg-amber-50/50 border border-amber-100 rounded-lg p-3 group">
-                                        <div className="text-sm font-bold text-gray-900 truncate">{r.cliente?.nombres} {r.cliente?.apellidoPaterno}</div>
-                                        <div className="flex justify-between items-center mt-2">
-                                            <div className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
-                                                {new Date(r.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
-                                            </div>
-                                            {r.cliente?.telefono && <div className="text-[10px] text-gray-500">📞 {r.cliente.telefono}</div>}
+                {/* Tareas Pendientes */}
+                <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm flex flex-col flex-1 min-h-0">
+                    <h3 className="text-xs font-bold text-gray-700 flex items-center gap-1.5 mb-2 shrink-0 uppercase tracking-wider">
+                        <Target className="w-3.5 h-3.5 text-indigo-500" /> Tareas Pendientes
+                    </h3>
+                    <div className="flex-1 overflow-y-auto space-y-2 min-h-0" style={{ scrollbarWidth: 'thin' }}>
+                        {loadingTareas ? (
+                            <div className="flex justify-center p-4"><RefreshCw className="animate-spin text-gray-400 w-4 h-4" /></div>
+                        ) : tareasPendientes.length === 0 ? (
+                            <p className="text-xs text-gray-400 text-center py-3">Sin tareas pendientes.</p>
+                        ) : (
+                            tareasPendientes.map(t => (
+                                <div key={t.id || t._id} className="bg-gray-50 border border-gray-100 rounded-lg p-2 group">
+                                    <div className="flex items-start justify-between gap-1">
+                                        <div className="min-w-0">
+                                            <div className="text-xs font-bold text-gray-900 truncate">{t.titulo}</div>
+                                            <div className="text-[10px] text-gray-400 line-clamp-1 mt-0.5">{t.descripcion}</div>
+                                            {t.clienteNombre && (
+                                                <div className="text-[10px] font-bold text-(--theme-600) mt-0.5">👤 {t.clienteNombre}</div>
+                                            )}
                                         </div>
+                                        <button onClick={() => completarTarea(t.id || t._id)} className="text-gray-300 hover:text-green-500 transition-colors shrink-0">
+                                            <CheckCircle2 className="w-4 h-4" />
+                                        </button>
                                     </div>
-                                ))
-                            )}
-                        </div>
+                                </div>
+                            ))
+                        )}
                     </div>
-
                 </div>
+
+                {/* Recordatorios de Llamada */}
+                <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm flex flex-col flex-1 min-h-0">
+                    <h3 className="text-xs font-bold text-gray-700 flex items-center gap-1.5 mb-2 shrink-0 uppercase tracking-wider">
+                        <Bell className="w-3.5 h-3.5 text-rose-500" /> Recordatorios Hoy
+                    </h3>
+                    <div className="flex-1 overflow-y-auto space-y-2 min-h-0" style={{ scrollbarWidth: 'thin' }}>
+                        {recordatorios.length === 0 ? (
+                            <p className="text-xs text-gray-400 text-center py-3">Sin recordatorios hoy.</p>
+                        ) : (
+                            recordatorios.map(p => (
+                                <div key={p.id || p._id} className="bg-rose-50/60 border border-rose-100 rounded-lg p-2">
+                                    <div className="text-xs font-bold text-gray-900 truncate">{p.nombre || `${p.nombres || ''} ${p.apellidos || ''}`.trim()}</div>
+                                    <div className="flex items-center justify-between mt-1">
+                                        <div className="text-[10px] font-bold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded">
+                                            📞 {new Date(p.recordatorio_llamada).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                        {p.telefono && <div className="text-[10px] text-gray-400 truncate max-w-16">{p.telefono}</div>}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                {/* Próximas Citas */}
+                <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm flex flex-col flex-1 min-h-0">
+                    <h3 className="text-xs font-bold text-gray-700 flex items-center gap-1.5 mb-2 shrink-0 uppercase tracking-wider">
+                        <Clock className="w-3.5 h-3.5 text-amber-500" /> Próximas Citas
+                    </h3>
+                    <div className="flex-1 overflow-y-auto space-y-2 min-h-0" style={{ scrollbarWidth: 'thin' }}>
+                        {loadingReuniones ? (
+                            <div className="flex justify-center p-4"><RefreshCw className="animate-spin text-gray-400 w-4 h-4" /></div>
+                        ) : reuniones.length === 0 ? (
+                            <p className="text-xs text-gray-400 text-center py-3">Libre de reuniones.</p>
+                        ) : (
+                            reuniones.map(r => (
+                                <div key={r.id || r._id} className="bg-amber-50/50 border border-amber-100 rounded-lg p-2">
+                                    <div className="text-xs font-bold text-gray-900 truncate">{r.cliente?.nombres} {r.cliente?.apellidoPaterno}</div>
+                                    <div className="flex justify-between items-center mt-1">
+                                        <div className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                                            {new Date(r.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                        {r.cliente?.telefono && <div className="text-[10px] text-gray-400">📞 {r.cliente.telefono}</div>}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
             </div>
         </div>
     );

@@ -157,26 +157,22 @@ export default function VendedorAjustes() {
     ];
 
     return (
-        <div className="w-full h-screen overflow-hidden bg-linear-to-br from-slate-100 via-slate-50 to-white">
+        <div className="w-full h-screen overflow-hidden bg-slate-50/50">
             <div className="h-full overflow-y-auto">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24">
+                <div className="max-w-7xl mx-auto px-4 sm:px-8 py-10 pb-32">
 
                     {/* ═══ HERO HEADER ═══ */}
-                    <div className="relative rounded-3xl overflow-hidden mb-6 shadow-xl">
+                    <div className="relative rounded-3xl overflow-hidden mb-8 shadow-xl border border-slate-200/50">
                         {/* Gradient Banner */}
-                        <div className={`h-28 sm:h-36 bg-linear-to-br ${roleBg} relative`}>
-                            <div className="absolute inset-0 opacity-20"
-                                style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
-                        </div>
+                        <div className={`h-32 sm:h-40 bg-linear-to-br ${roleBg} relative`} />
 
                         {/* Content below banner */}
                         <div className="bg-white px-5 sm:px-8 pb-5">
                             {/* Avatar overlapping banner */}
                             <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-8 sm:-mt-10">
                                 <div className="relative w-fit">
-                                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-linear-to-br from-white to-slate-100 shadow-xl ring-4 ring-white flex items-center justify-center text-3xl sm:text-4xl font-black text-transparent bg-clip-text"
-                                        style={{ background: `linear-gradient(135deg, var(--tw-gradient-stops))` }}>
-                                        <div className={`w-full h-full rounded-2xl bg-linear-to-br ${roleBg} flex items-center justify-center text-white text-3xl sm:text-4xl font-black shadow-lg`}>
+                                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white p-1 shadow-lg ring-4 ring-white flex items-center justify-center">
+                                        <div className={`w-full h-full rounded-2xl bg-linear-to-br ${roleBg} flex items-center justify-center text-white text-3xl sm:text-4xl font-black shadow-sm`}>
                                             {String(user?.nombre || 'U').charAt(0).toUpperCase()}
                                         </div>
                                     </div>
@@ -214,7 +210,7 @@ export default function VendedorAjustes() {
                     </div>
 
                     {/* ═══ TABS ═══ */}
-                    <div className="flex gap-1 bg-white/80 backdrop-blur-sm p-1.5 rounded-2xl shadow-sm border border-slate-100 mb-5 overflow-x-auto">
+                    <div className="flex gap-1 bg-white p-1.5 rounded-2xl shadow-md border border-slate-200 mb-8 overflow-x-auto max-w-2xl">
                         {tabs.map(({ id, label, icon: Icon }) => (
                             <button
                                 key={id}
@@ -233,7 +229,7 @@ export default function VendedorAjustes() {
                     {/* ═══ TAB: PERFIL ═══ */}
                     {activeTab === 'perfil' && (
                         <form onSubmit={handleSaveProfile}>
-                            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
                                 <div className="" />
                                 <div className="p-6 sm:p-8">
                                     <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
@@ -286,7 +282,7 @@ export default function VendedorAjustes() {
                     {/* ═══ TAB: SEGURIDAD ═══ */}
                     {activeTab === 'seguridad' && (
                         <form onSubmit={handleSavePass}>
-                            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
                                 <div className="" />
                                 <div className="p-6 sm:p-8">
                                     <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
@@ -419,7 +415,7 @@ export default function VendedorAjustes() {
                         <div className="space-y-4">
 
                             {/* Notificaciones */}
-                            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
                                 <div className="" />
                                 <div className="p-6 sm:p-8">
                                     <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
@@ -469,7 +465,7 @@ export default function VendedorAjustes() {
                                                     onClick={() => setTheme(theme.id)}
                                                     className={`group relative flex items-center gap-3 p-3 pr-5 rounded-2xl border-2 transition-all ${isActive ? 'bg-slate-50 border-slate-300 shadow-sm' : 'border-transparent hover:bg-slate-50'}`}
                                                 >
-                                                    <div 
+                                                    <div
                                                         className={`w-8 h-8 rounded-full shadow-sm flex items-center justify-center transition-transform ${isActive ? 'scale-110 ring-2 ring-offset-2' : 'group-hover:scale-110'}`}
                                                         style={{ backgroundColor: theme.color, ringColor: theme.color }}
                                                     >

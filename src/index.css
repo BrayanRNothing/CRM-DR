@@ -26,7 +26,8 @@
   --theme-200: #c7ee8e;
   --theme-300: #bfff75;
   --theme-400: #a2e04d;
-  --theme-500: #8bc34a; /* Base */
+  --theme-500: #8bc34a;
+  /* Base */
   --theme-600: #7cb342;
   --theme-700: #538520;
   --theme-800: #436a1e;
@@ -41,7 +42,8 @@
   --theme-200: #bfdbfe;
   --theme-300: #93c5fd;
   --theme-400: #60a5fa;
-  --theme-500: #3b82f6; /* Base */
+  --theme-500: #3b82f6;
+  /* Base */
   --theme-600: #2563eb;
   --theme-700: #1d4ed8;
   --theme-800: #1e40af;
@@ -56,7 +58,8 @@
   --theme-200: #e9d5ff;
   --theme-300: #d8b4fe;
   --theme-400: #c084fc;
-  --theme-500: #a855f7; /* Base */
+  --theme-500: #a855f7;
+  /* Base */
   --theme-600: #9333ea;
   --theme-700: #7e22ce;
   --theme-800: #6b21a8;
@@ -71,7 +74,8 @@
   --theme-200: #fed7aa;
   --theme-300: #fdba74;
   --theme-400: #fb923c;
-  --theme-500: #f97316; /* Base */
+  --theme-500: #f97316;
+  /* Base */
   --theme-600: #ea580c;
   --theme-700: #c2410c;
   --theme-800: #9a3412;
@@ -86,7 +90,8 @@
   --theme-200: #99f6e4;
   --theme-300: #5eead4;
   --theme-400: #2dd4bf;
-  --theme-500: #14b8a6; /* Base */
+  --theme-500: #14b8a6;
+  /* Base */
   --theme-600: #0d9488;
   --theme-700: #0f766e;
   --theme-800: #115e59;
@@ -239,4 +244,55 @@
 
 .calendar-with-indicators .rdp-day_today {
   font-weight: 700;
+}
+
+/* --- Efecto Premium de Reflejo de Cristal (Elegant Glass Shimmer) --- */
+@keyframes glass-shimmer {
+  0% { transform: translateX(-150%) skewX(-25deg); opacity: 0; }
+  20% { opacity: 1; }
+  50% { transform: translateX(250%) skewX(-25deg); opacity: 0; }
+  100% { transform: translateX(250%) skewX(-25deg); opacity: 0; }
+}
+
+.premium-reflejo {
+  position: relative;
+  overflow: hidden !important;
+}
+
+.premium-reflejo::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  transform: skewX(-25deg);
+  animation: glass-shimmer 8s infinite ease-in-out;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Borde ultra-fino con brillo del tema */
+.premium-reflejo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--theme-400), transparent, var(--theme-400));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: destination-out;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 4;
 }

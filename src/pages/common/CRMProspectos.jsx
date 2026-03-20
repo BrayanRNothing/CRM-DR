@@ -367,7 +367,7 @@ const CRMProspectos = () => {
     if (usandoApi || loadingApi) {
         return (
             <div className="min-h-screen bg-slate-50 p-6">
-                <div className="max-w-[1200px] mx-auto">
+                <div className="max-w-full mx-auto space-y-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900">Oportunidades / Prospectos</h1>
@@ -496,7 +496,7 @@ const CRMProspectos = () => {
                     {modalAbierto && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
                             <div className="absolute inset-0 bg-black/50 transition-opacity" onClick={cierreModal} />
-                            <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 flex flex-col max-h-[85vh]">
+                            <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 flex flex-col max-h-[85vh]">
                                 <div className="flex-none bg-linear-to-r from-(--theme-500) to-(--theme-600) p-6 sm:p-8 text-white flex justify-between items-start shadow-lg relative overflow-hidden z-10">
                                     <div className="relative z-10">
                                         <h2 className="text-2xl font-black tracking-tight mb-1">Nuevo Prospecto</h2>
@@ -508,42 +508,57 @@ const CRMProspectos = () => {
                                 </div>
 
                                 {/* Body */}
-                                <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-5 scrollbar-thin">
-                                    <div className="space-y-5">
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 pl-1">Información Principal</label>
-                                            <div className="grid grid-cols-1 gap-4">
-                                                <div className="group relative">
-                                                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
-                                                    <input type="text" value={nuevoProspecto.nombre}
-                                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, nombre: e.target.value })}
-                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-(--theme-500) rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
-                                                        placeholder="Nombre y Apellido" />
-                                                </div>
-                                                <div className="group relative">
-                                                    <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
-                                                    <input type="text" value={nuevoProspecto.empresa}
-                                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, empresa: e.target.value })}
-                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-(--theme-500) rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
-                                                        placeholder="Empresa (Opcional)" />
+                                <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6 scrollbar-thin bg-slate-50/30">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Columna Izquierda: Personal */}
+                                        <div className="space-y-5">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 pl-1">Información Personal</label>
+                                                <div className="space-y-4">
+                                                    <div className="group relative">
+                                                        <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
+                                                        <input type="text" value={nuevoProspecto.nombre}
+                                                            onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, nombre: e.target.value })}
+                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
+                                                            placeholder="Nombre Completo" />
+                                                    </div>
+                                                    <div className="group relative">
+                                                        <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
+                                                        <input type="text" value={nuevoProspecto.empresa}
+                                                            onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, empresa: e.target.value })}
+                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
+                                                            placeholder="Empresa (Opcional)" />
+                                                    </div>
+                                                    <div className="group relative">
+                                                        <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
+                                                        <input type="text" value={nuevoProspecto.ubicacion}
+                                                            onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, ubicacion: e.target.value })}
+                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
+                                                            placeholder="Ubicación / Ciudad" />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="group relative">
-                                                    <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
-                                                    <input type="tel" value={nuevoProspecto.telefono}
-                                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, telefono: e.target.value })}
-                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-(--theme-500) rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
-                                                        placeholder="Teléfono" />
-                                                </div>
-                                                <div className="group relative">
-                                                    <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
-                                                    <input type="email" value={nuevoProspecto.correo}
-                                                        onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, correo: e.target.value })}
-                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-(--theme-500) rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
-                                                        placeholder="Correo (Opcional)" />
+
+                                        {/* Columna Derecha: Contacto y Notas */}
+                                        <div className="space-y-5">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 pl-1">Contacto y Detalles</label>
+                                                <div className="space-y-4">
+                                                    <div className="group relative">
+                                                        <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
+                                                        <input type="tel" value={nuevoProspecto.telefono}
+                                                            onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, telefono: e.target.value })}
+                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
+                                                            placeholder="Teléfono *" />
+                                                    </div>
+                                                    <div className="group relative">
+                                                        <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
+                                                        <input type="email" value={nuevoProspecto.correo}
+                                                            onChange={(e) => setNuevoProspecto({ ...nuevoProspecto, correo: e.target.value })}
+                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
+                                                            placeholder="Correo (Opcional)" />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -571,7 +586,7 @@ const CRMProspectos = () => {
                     {modalEditarApi && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
                             <div className="absolute inset-0 bg-black/50 transition-opacity" onClick={() => setModalEditarApi(false)} />
-                            <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 flex flex-col max-h-[85vh]">
+                            <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 flex flex-col max-h-[85vh]">
                                 <div className="flex-none bg-linear-to-r from-(--theme-500) to-(--theme-600) p-6 sm:p-8 text-white flex justify-between items-start shadow-lg relative overflow-hidden z-10">
                                     <div className="relative z-10">
                                         <h2 className="text-2xl font-black tracking-tight mb-1">Editar Prospecto</h2>
@@ -582,42 +597,57 @@ const CRMProspectos = () => {
                                     </button>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-5 scrollbar-thin">
-                                    <div className="space-y-5">
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 pl-1">Información Principal</label>
-                                            <div className="grid grid-cols-1 gap-4">
-                                                <div className="group relative">
-                                                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
-                                                    <input type="text" value={prospectoAEditar.nombre}
-                                                        onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, nombre: e.target.value })}
-                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-(--theme-500) rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
-                                                        placeholder="Nombre y Apellido" />
-                                                </div>
-                                                <div className="group relative">
-                                                    <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
-                                                    <input type="text" value={prospectoAEditar.empresa}
-                                                        onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, empresa: e.target.value })}
-                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-(--theme-500) rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
-                                                        placeholder="Empresa (Opcional)" />
+                                <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6 scrollbar-thin bg-slate-50/30">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Columna Izquierda: Personal */}
+                                        <div className="space-y-5">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 pl-1">Información Personal</label>
+                                                <div className="space-y-4">
+                                                    <div className="group relative">
+                                                        <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
+                                                        <input type="text" value={prospectoAEditar.nombre}
+                                                            onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, nombre: e.target.value })}
+                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
+                                                            placeholder="Nombre Completo" />
+                                                    </div>
+                                                    <div className="group relative">
+                                                        <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
+                                                        <input type="text" value={prospectoAEditar.empresa}
+                                                            onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, empresa: e.target.value })}
+                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
+                                                            placeholder="Empresa (Opcional)" />
+                                                    </div>
+                                                    <div className="group relative">
+                                                        <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
+                                                        <input type="text" value={prospectoAEditar.ubicacion}
+                                                            onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, ubicacion: e.target.value })}
+                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
+                                                            placeholder="Ubicación / Ciudad" />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="group relative">
-                                                    <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
-                                                    <input type="tel" value={prospectoAEditar.telefono}
-                                                        onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, telefono: e.target.value })}
-                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-(--theme-500) rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
-                                                        placeholder="Teléfono" />
-                                                </div>
-                                                <div className="group relative">
-                                                    <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
-                                                    <input type="email" value={prospectoAEditar.correo}
-                                                        onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, correo: e.target.value })}
-                                                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-(--theme-500) rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400"
-                                                        placeholder="Correo (Opcional)" />
+
+                                        {/* Columna Derecha: Contacto y Notas */}
+                                        <div className="space-y-5">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 pl-1">Contacto y Correo</label>
+                                                <div className="space-y-4">
+                                                    <div className="group relative">
+                                                        <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
+                                                        <input type="tel" value={prospectoAEditar.telefono}
+                                                            onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, telefono: e.target.value })}
+                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
+                                                            placeholder="Teléfono *" />
+                                                    </div>
+                                                    <div className="group relative">
+                                                        <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
+                                                        <input type="email" value={prospectoAEditar.correo}
+                                                            onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, correo: e.target.value })}
+                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
+                                                            placeholder="Correo (Opcional)" />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -647,7 +677,7 @@ const CRMProspectos = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 p-6">
-            <div className="max-w-[1400px] mx-auto">
+            <div className="max-w-full mx-auto">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">Prospectos</h1>

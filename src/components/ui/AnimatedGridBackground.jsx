@@ -21,7 +21,7 @@ const AnimatedGridBackground = ({
 
     // Configuración de colores según modo
     const isDark = mode === 'dark';
-    const bgColor = isDark ? '#0a0a0a' : '#f8fafc'; // Slate-50 for light (mucho más claro y limpio)
+    const bgColor = isDark ? '#020617' : '#cbd5e1'; // Slate-950 (dark) vs Slate-300 (light) - Contraste definitivo
     const lineColor = isDark ? 'rgba(255,255,255,0.0)' : 'rgba(0,0,0,0.0)';
     const particleColor = isDark ? '#5eead4' : '#cbd5e1'; // Teal-400 (dark) vs Slate-300 (light) - Más sutil
 
@@ -156,7 +156,7 @@ const AnimatedGridBackground = ({
     }, [particleCount, mode, bgColor, lineColor, particleColor]);
 
     return (
-        <div className="relative w-full h-full bg-slate-50">
+        <div className={`relative w-full h-full ${isDark ? 'bg-[#020617]' : 'bg-[#cbd5e1]'}`}>
             {/* Canvas de fondo */}
             <canvas
                 ref={canvasRef}

@@ -41,7 +41,7 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', subtitle = 'Works
     // Estilos dinámicos
     const containerClasses = isDark
         ? 'backdrop-blur-xs border-gray-700/30 bg-gray-900/80 text-white'
-        : 'bg-white border-gray-200 text-gray-800 shadow-xl';
+        : 'bg-white border-gray-200 text-gray-800';
 
     const hoverClasses = isDark
         ? 'hover:bg-gray-800 hover:text-white'
@@ -58,7 +58,7 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', subtitle = 'Works
     const borderClass = isDark ? 'border-gray-800' : 'border-gray-100';
     return (
         <aside
-            className={`flex flex-col border rounded-2xl transition-all duration-300 ${containerClasses} ${isCollapsed ? 'w-20' : 'w-64'
+            className={`flex flex-col border rounded-2xl transition-all duration-300 premium-reflejo ${containerClasses} ${isCollapsed ? 'w-20' : 'w-64'
                 }`}
         >
             {/* Header */}
@@ -105,10 +105,10 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', subtitle = 'Works
                             title="Contraer/Expandir menú"
                         >
                             <p className="font-black tracking-tight text-lg leading-none bg-clip-text text-transparent bg-linear-to-r from-(--theme-600) to-(--theme-400) truncate">
-                                {title}
+                                {userInfo?.nombre || title}
                             </p>
                             <p className={`text-[11px] font-semibold mt-1 leading-none truncate transition-opacity ${isDark ? 'text-gray-400 group-hover:text-gray-300' : 'text-gray-400 group-hover:text-gray-600'}`}>
-                                {subtitle}
+                                {userInfo?.rol || subtitle}
                             </p>
                         </button>
                         <button
@@ -123,128 +123,169 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', subtitle = 'Works
             </div>
 
             {/* Content Wrapper with vertical shift animation */}
-            <div className={`flex-1 flex flex-col transition-all duration-500 ease-in-out ${isCollapsed ? 'translate-y-4' : '-translate-y-1'}`}>
-                {/* User Greeting */}
-                <div className={`px-4 py-3 border-b ${borderClass}`}>
-                    <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
-                        <div className="shrink-0 flex items-center justify-center w-8 h-8">
-                            <Avatar name={userInfo?.nombre || 'U'} size="sm" />
-                        </div>
-                        {!isCollapsed && (
-                            <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                                Hola, {userInfo?.nombre || 'Usuario'}
-                            </p>
-                        )}
-                    </div>
-                </div>
-
+            <div className={`flex-1 flex flex-col transition-all duration-500 ease-in-out ${isCollapsed ? 'translate-y-0' : '-translate-y-1'}`}>
                 {/* Navigation */}
                 <nav className="flex-1 p-3 flex flex-col overflow-y-auto scrollbar-hide">
-                {/* Regular items */}
-                <div className="space-y-1">
-                    {menuItems.filter(i => !i.isBottom).map((item, index) => {
-                        if (item.isAccordion) {
-                            const isOpen = openAccordions[item.name];
-                            return (
-                                <div key={index}>
-                                    <button
-                                        onClick={() => !isCollapsed && toggleAccordion(item.name)}
-                                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${inactiveClasses} ${hoverClasses}`}
-                                        title={isCollapsed ? item.name : ''}
-                                    >
-                                        <div className="shrink-0">{item.icon}</div>
-                                        {!isCollapsed && (
-                                            <>
-                                                <span className="font-medium truncate flex-1 text-left">{item.name}</span>
-                                                <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                                            </>
-                                        )}
-                                    </button>
-                                    {!isCollapsed && isOpen && item.children && (
-                                        <div className="ml-4 mt-1 space-y-1">
-                                            {item.children.map((child, childIndex) => {
-                                                const isActive = location.pathname === child.path;
-                                                return (
-                                                    <Link key={childIndex} to={child.path}
-                                                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
-                                                    >
-                                                        <div className="shrink-0">{child.icon}</div>
-                                                        <span className="font-medium truncate">{child.name}</span>
-                                                    </Link>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        }
-                        const isActive = location.pathname === item.path;
-                        return (
-                            <Link key={index} to={item.path}
-                                className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
-                                title={isCollapsed ? item.name : ''}
-                            >
-                                <div className="shrink-0">{item.icon}</div>
-                                {!isCollapsed && <span className="font-medium truncate">{item.name}</span>}
-                            </Link>
-                        );
-                    })}
-                </div>
+                    {/* Regular items */}
+                    <div className="space-y-1">
+                        {menuItems.filter(i => !i.isBottom).map((item, index) => {
+                            const isActive = item.path && location.pathname === item.path;
+                            const hasActiveChild = item.children?.some(child => location.pathname === child.path);
 
-                {/* Spacer pushes Ajustes to bottom */}
-                <div className="flex-1" />
+                            if (item.isAccordion) {
+                                const isOpen = openAccordions[item.name];
+                                return (
+                                    <div key={index} className="relative group/accordion">
+                                        <button
+                                            onClick={() => !isCollapsed && toggleAccordion(item.name)}
+                                            className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-all ${hasActiveChild && isCollapsed ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                            title={isCollapsed ? item.name : ''}
+                                        >
+                                            <div className="shrink-0">{item.icon}</div>
+                                            {!isCollapsed && (
+                                                <>
+                                                    <span className="font-medium truncate flex-1 text-left">{item.name}</span>
+                                                    <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                                                </>
+                                            )}
+                                        </button>
 
-                {/* Bottom items (Ajustes) */}
-                <div className={`space-y-1 pt-2 mt-2 border-t ${borderClass}`}>
-                    {menuItems.filter(i => i.isBottom).map((item, index) => {
-                        if (item.isAccordion) {
-                            const isOpen = openAccordions[item.name];
-                            return (
-                                <div key={`bot-${index}`}>
-                                    <button
-                                        onClick={() => !isCollapsed && toggleAccordion(item.name)}
-                                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${inactiveClasses} ${hoverClasses}`}
-                                        title={isCollapsed ? item.name : ''}
-                                    >
-                                        <div className="shrink-0">{item.icon}</div>
-                                        {!isCollapsed && (
-                                            <>
-                                                <span className="font-medium truncate flex-1 text-left">{item.name}</span>
-                                                <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                                            </>
+                                        {/* Submenú Flotante (cuando está contraído) */}
+                                        {isCollapsed && item.children && (
+                                            <div className="fixed left-22 ml-1 invisible group-hover/accordion:visible opacity-0 group-hover/accordion:opacity-100 transition-all duration-200 z-100">
+                                                <div className={`${containerClasses} border rounded-2xl p-2 min-w-[180px] backdrop-blur-xl`}>
+                                                    <div className={`px-3 py-2 border-b ${borderClass} mb-1`}>
+                                                        <p className="text-xs font-bold uppercase tracking-wider opacity-50">{item.name}</p>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        {item.children.map((child, childIndex) => {
+                                                            const isChildActive = location.pathname === child.path;
+                                                            return (
+                                                                <Link key={childIndex} to={child.path}
+                                                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${isChildActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                                                >
+                                                                    <div className="shrink-0">{child.icon}</div>
+                                                                    <span className="font-medium truncate">{child.name}</span>
+                                                                </Link>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         )}
-                                    </button>
-                                    {!isCollapsed && isOpen && item.children && (
-                                        <div className="ml-4 mt-1 space-y-1">
-                                            {item.children.map((child, childIndex) => {
-                                                const isActive = location.pathname === child.path;
-                                                return (
-                                                    <Link key={childIndex} to={child.path}
-                                                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
-                                                    >
-                                                        <div className="shrink-0">{child.icon}</div>
-                                                        <span className="font-medium truncate">{child.name}</span>
-                                                    </Link>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
+
+                                        {/* Acordeón Tradicional (cuando está expandido) */}
+                                        {!isCollapsed && isOpen && item.children && (
+                                            <div className="ml-4 mt-1 space-y-1 border-l-2 border-(--theme-500)/20 pl-2">
+                                                {item.children.map((child, childIndex) => {
+                                                    const isChildActive = location.pathname === child.path;
+                                                    return (
+                                                        <Link key={childIndex} to={child.path}
+                                                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${isChildActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                                        >
+                                                            <div className="shrink-0">{child.icon}</div>
+                                                            <span className="font-medium truncate">{child.name}</span>
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            }
+                            return (
+                                <Link key={index} to={item.path}
+                                    className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-all ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                    title={isCollapsed ? item.name : ''}
+                                >
+                                    <div className="shrink-0">{item.icon}</div>
+                                    {!isCollapsed && <span className="font-medium truncate">{item.name}</span>}
+                                </Link>
                             );
-                        }
-                        const isActive = location.pathname === item.path;
-                        return (
-                            <Link key={`bot-${index}`} to={item.path}
-                                className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
-                                title={isCollapsed ? item.name : ''}
-                            >
-                                <div className="shrink-0">{item.icon}</div>
-                                {!isCollapsed && <span className="font-medium truncate">{item.name}</span>}
-                            </Link>
-                        );
-                    })}
-                </div>
-            </nav>
+                        })}
+                    </div>
+
+                    {/* Spacer pushes Ajustes to bottom */}
+                    <div className="flex-1" />
+
+                    {/* Bottom items (Ajustes) */}
+                    <div className={`space-y-1 pt-2 mt-2 border-t ${borderClass}`}>
+                        {menuItems.filter(i => i.isBottom).map((item, index) => {
+                            const isActive = item.path && location.pathname === item.path;
+                            const hasActiveChild = item.children?.some(child => location.pathname === child.path);
+
+                            if (item.isAccordion) {
+                                const isOpen = openAccordions[item.name];
+                                return (
+                                    <div key={`bot-${index}`} className="relative group/accordion">
+                                        <button
+                                            onClick={() => !isCollapsed && toggleAccordion(item.name)}
+                                            className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-all ${hasActiveChild && isCollapsed ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                            title={isCollapsed ? item.name : ''}
+                                        >
+                                            <div className="shrink-0">{item.icon}</div>
+                                            {!isCollapsed && (
+                                                <>
+                                                    <span className="font-medium truncate flex-1 text-left">{item.name}</span>
+                                                    <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                                                </>
+                                            )}
+                                        </button>
+
+                                        {/* Submenú Flotante (cuando está contraído) */}
+                                        {isCollapsed && item.children && (
+                                            <div className="fixed left-22 bottom-4 ml-1 invisible group-hover/accordion:visible opacity-0 group-hover/accordion:opacity-100 transition-all duration-200 z-100">
+                                                <div className={`${containerClasses} border rounded-2xl p-2 min-w-[180px] backdrop-blur-xl`}>
+                                                    <div className={`px-3 py-2 border-b ${borderClass} mb-1`}>
+                                                        <p className="text-xs font-bold uppercase tracking-wider opacity-50">{item.name}</p>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        {item.children.map((child, childIndex) => {
+                                                            const isChildActive = location.pathname === child.path;
+                                                            return (
+                                                                <Link key={childIndex} to={child.path}
+                                                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${isChildActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                                                >
+                                                                    <div className="shrink-0">{child.icon}</div>
+                                                                    <span className="font-medium truncate">{child.name}</span>
+                                                                </Link>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {!isCollapsed && isOpen && item.children && (
+                                            <div className="ml-4 mt-1 space-y-1 border-l-2 border-(--theme-500)/20 pl-2">
+                                                {item.children.map((child, childIndex) => {
+                                                    const isChildActive = location.pathname === child.path;
+                                                    return (
+                                                        <Link key={childIndex} to={child.path}
+                                                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${isChildActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                                        >
+                                                            <div className="shrink-0">{child.icon}</div>
+                                                            <span className="font-medium truncate">{child.name}</span>
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            }
+                            return (
+                                <Link key={`bot-${index}`} to={item.path}
+                                    className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-all ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                    title={isCollapsed ? item.name : ''}
+                                >
+                                    <div className="shrink-0">{item.icon}</div>
+                                    {!isCollapsed && <span className="font-medium truncate">{item.name}</span>}
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </nav>
             </div>
 
         </aside>

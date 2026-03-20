@@ -18,12 +18,16 @@ import {
     Edit2,
     Filter,
     Bell,
+    Send,
     Download,
     Upload,
     Trash2,
     AlertCircle,
     FileText,
-    X
+    X,
+    Building2,
+    MapPin,
+    Globe
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -168,24 +172,6 @@ const ProspectorSeguimiento = () => {
     // Estado para el acordeón de acciones de cierre
     const [acordeonCierreAbierto, setAcordeonCierreAbierto] = useState(false);
 
-    // Estado para edición rápida de fecha de seguimiento
-    const [editandoFechaSeguimiento, setEditandoFechaSeguimiento] = useState(false);
-    const [nuevaFechaSeguimiento, setNuevaFechaSeguimiento] = useState('');
-
-    const guardarFechaSeguimiento = async (pid) => {
-        try {
-            await axios.put(
-                `${API_URL}/api/${rolePath}/prospectos/${pid}`,
-                { proximaLlamada: nuevaFechaSeguimiento || null },
-                { headers: getAuthHeaders() }
-            );
-            toast.success('Fecha de seguimiento actualizada');
-            setEditandoFechaSeguimiento(false);
-            const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
-            const updated = res.data.find(p => p.id === pid || p._id === pid);
-            if (updated) { setProspectoSeleccionado(updated); setProspectos(res.data); }
-        } catch { toast.error('Error al actualizar la fecha'); }
-    };
 
     const abrirModalEditar = (p) => {
         const tels = [p.telefono, p.telefono2].filter(Boolean);
@@ -298,7 +284,7 @@ const ProspectorSeguimiento = () => {
             // Si venimos de otra página con un ID seleccionado
             if (location.state?.selectedId) {
                 const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
-                 
+
                 const found = res.data.find(p => p.id == location.state.selectedId || p._id == location.state.selectedId);
                 if (found) {
                     handleSeleccionarProspecto(found);
@@ -602,135 +588,165 @@ const ProspectorSeguimiento = () => {
         <>
             {/* Modal Crear Prospecto */}
             {modalCrearAbierto && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-lg max-w-sm w-full">
-                        <div className="p-4 border-b border-slate-100">
-                            <h2 className="text-lg font-bold text-gray-900">+ Nuevo prospecto</h2>
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-lg max-w-3xl w-full flex flex-col max-h-[90vh]">
+                        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                <UserPlus className="w-6 h-6 text-(--theme-600)" />
+                                Nuevo prospecto
+                            </h2>
+                            <button onClick={resetImportModal} className="text-gray-400 hover:text-gray-600 transition-colors">
+                                <X className="w-6 h-6" />
+                            </button>
                         </div>
-                        <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Nombres</label>
-                                    <input
-                                        type="text"
-                                        value={formCrear.nombres}
-                                        onChange={(e) => setFormCrear((f) => ({ ...f, nombres: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                        placeholder="Juan"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Apellido</label>
-                                    <input
-                                        type="text"
-                                        value={formCrear.apellidoPaterno}
-                                        onChange={(e) => setFormCrear((f) => ({ ...f, apellidoPaterno: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                        placeholder="García"
-                                    />
-                                </div>
-                                <div className="col-span-2">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <label className="block text-xs font-medium text-gray-700">Teléfonos</label>
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormCrear((f) => ({ ...f, telefonos: [...f.telefonos, ''] }))}
-                                            className="flex items-center gap-1 text-xs text-(--theme-600) hover:text-(--theme-700) font-medium"
-                                        >
-                                            <Plus className="w-3.5 h-3.5" /> Agregar
-                                        </button>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {formCrear.telefonos.map((tel, idx) => (
-                                            <div key={idx} className="flex gap-2 items-center">
+                        <div className="p-6 space-y-6 overflow-y-auto scrollbar-hide">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Sección: Datos Personales */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Información Personal</h3>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Nombres *</label>
+                                            <input
+                                                type="text"
+                                                value={formCrear.nombres}
+                                                onChange={(e) => setFormCrear((f) => ({ ...f, nombres: e.target.value }))}
+                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                placeholder="Ej: Juan"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Apellido Paterno</label>
                                                 <input
-                                                    type="tel"
-                                                    value={tel}
-                                                    onChange={(e) => setFormCrear((f) => { const t = [...f.telefonos]; t[idx] = e.target.value; return { ...f, telefonos: t }; })}
-                                                    className="flex-1 border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                                    placeholder="+55 1234 5678"
+                                                    type="text"
+                                                    value={formCrear.apellidoPaterno}
+                                                    onChange={(e) => setFormCrear((f) => ({ ...f, apellidoPaterno: e.target.value }))}
+                                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                    placeholder="García"
                                                 />
-                                                {formCrear.telefonos.length > 1 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setFormCrear((f) => ({ ...f, telefonos: f.telefonos.filter((_, i) => i !== idx) }))}
-                                                        className="text-red-400 hover:text-red-600"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                )}
                                             </div>
-                                        ))}
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Apellido Materno</label>
+                                                <input
+                                                    type="text"
+                                                    value={formCrear.apellidoMaterno}
+                                                    onChange={(e) => setFormCrear((f) => ({ ...f, apellidoMaterno: e.target.value }))}
+                                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                    placeholder="López"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Correo</label>
-                                    <input
-                                        type="email"
-                                        value={formCrear.correo}
-                                        onChange={(e) => setFormCrear((f) => ({ ...f, correo: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                        placeholder="correo@ejemplo.com"
-                                    />
+
+                                {/* Sección: Contacto */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Contacto y Empresa</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Teléfonos *</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormCrear((f) => ({ ...f, telefonos: [...f.telefonos, ''] }))}
+                                                    className="flex items-center gap-1 text-xs text-(--theme-600) hover:text-(--theme-700) font-bold"
+                                                >
+                                                    <Plus className="w-3.5 h-3.5" /> Agregar
+                                                </button>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {formCrear.telefonos.map((tel, idx) => (
+                                                    <div key={idx} className="flex gap-2 items-center bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                                                        <Phone className="w-3.5 h-3.5 text-slate-400 ml-1" />
+                                                        <input
+                                                            type="tel"
+                                                            value={tel}
+                                                            onChange={(e) => setFormCrear((f) => { const t = [...f.telefonos]; t[idx] = e.target.value; return { ...f, telefonos: t }; })}
+                                                            className="flex-1 bg-transparent border-0 focus:ring-0 text-sm py-1"
+                                                            placeholder="55 1234 5678"
+                                                        />
+                                                        {formCrear.telefonos.length > 1 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setFormCrear((f) => ({ ...f, telefonos: f.telefonos.filter((_, i) => i !== idx) }))}
+                                                                className="text-red-400 hover:text-red-600 p-1"
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Correo Electrónico</label>
+                                            <input
+                                                type="email"
+                                                value={formCrear.correo}
+                                                onChange={(e) => setFormCrear((f) => ({ ...f, correo: e.target.value }))}
+                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                placeholder="correo@ejemplo.com"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Empresa</label>
-                                    <input
-                                        type="text"
-                                        value={formCrear.empresa}
-                                        onChange={(e) => setFormCrear((f) => ({ ...f, empresa: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                        placeholder="Mi Empresa"
-                                    />
+
+                                {/* Sección: Empresa y Web */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Detalles de Empresa</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Empresa</label>
+                                            <input
+                                                type="text"
+                                                value={formCrear.empresa}
+                                                onChange={(e) => setFormCrear((f) => ({ ...f, empresa: e.target.value }))}
+                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                placeholder="Nombre de la empresa"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Sitio Web</label>
+                                            <input
+                                                type="url"
+                                                value={formCrear.sitioWeb}
+                                                onChange={(e) => setFormCrear((f) => ({ ...f, sitioWeb: e.target.value }))}
+                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                placeholder="https://empresa.com"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Ubicación</label>
+                                            <input
+                                                type="text"
+                                                value={formCrear.ubicacion}
+                                                onChange={(e) => setFormCrear((f) => ({ ...f, ubicacion: e.target.value }))}
+                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                placeholder="Ciudad, Estado"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Sitio Web</label>
-                                    <input
-                                        type="url"
-                                        value={formCrear.sitioWeb}
-                                        onChange={(e) => setFormCrear((f) => ({ ...f, sitioWeb: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                        placeholder="https://ejemplo.com"
-                                    />
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Ubicación</label>
-                                    <input
-                                        type="text"
-                                        value={formCrear.ubicacion}
-                                        onChange={(e) => setFormCrear((f) => ({ ...f, ubicacion: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                        placeholder="Ciudad, Estado, País"
-                                    />
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Notas</label>
-                                    <textarea
-                                        rows={3}
-                                        value={formCrear.notas}
-                                        onChange={(e) => setFormCrear((f) => ({ ...f, notas: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm resize-none"
-                                        placeholder="Información relevante sobre el primer contacto..."
-                                    />
-                                </div>
+
                             </div>
                         </div>
-                        <div className="flex gap-2 p-4 border-t border-slate-100">
+                        <div className="flex gap-3 p-6 border-t border-slate-100 bg-slate-50 rounded-b-xl">
                             <button
                                 onClick={() => {
                                     setModalCrearAbierto(false);
                                     setFormCrear({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '' });
                                 }}
-                                className="flex-1 px-3 py-2 border border-slate-200 text-gray-700 rounded text-sm hover:bg-slate-50 font-medium"
+                                className="px-6 py-2.5 border border-slate-200 text-gray-700 rounded-lg text-sm hover:bg-white font-bold transition-all"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleCrearProspecto}
                                 disabled={loadingCrear}
-                                className="flex-1 px-3 py-2 bg-(--theme-600) text-white rounded text-sm hover:bg-(--theme-700) font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 px-6 py-2.5 bg-(--theme-600) text-white rounded-lg text-sm hover:bg-(--theme-700) font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all shadow-(--theme-500)/20"
                             >
-                                {loadingCrear ? 'Creando...' : '+ Crear'}
+                                {loadingCrear ? 'Creando...' : 'Crear Prospecto'}
                             </button>
                         </div>
                     </div>
@@ -738,147 +754,170 @@ const ProspectorSeguimiento = () => {
             )}
             {/* Modal Editar Prospecto */}
             {modalEditarAbierto && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-lg max-w-sm w-full">
-                        <div className="p-4 border-b border-slate-100">
-                            <h2 className="text-lg font-bold text-gray-900">✏️ Editar prospecto</h2>
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-lg max-w-3xl w-full flex flex-col max-h-[90vh]">
+                        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                <Edit2 className="w-6 h-6 text-(--theme-600)" />
+                                Editar prospecto
+                            </h2>
+                            <button onClick={() => setModalEditarAbierto(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                                <X className="w-6 h-6" />
+                            </button>
                         </div>
-                        <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Nombres</label>
-                                    <input
-                                        type="text"
-                                        value={prospectoAEditar.nombres}
-                                        onChange={(e) => setProspectoAEditar((f) => ({ ...f, nombres: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Apellido</label>
-                                    <input
-                                        type="text"
-                                        value={prospectoAEditar.apellidoPaterno}
-                                        onChange={(e) => setProspectoAEditar((f) => ({ ...f, apellidoPaterno: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                    />
-                                </div>
-                                <div className="col-span-2">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <label className="block text-xs font-medium text-gray-700">Teléfonos</label>
-                                        <button
-                                            type="button"
-                                            onClick={() => setProspectoAEditar((f) => ({ ...f, telefonos: [...(f.telefonos || ['']), ''] }))}
-                                            className="flex items-center gap-1 text-xs text-(--theme-600) hover:text-(--theme-700) font-medium"
-                                        >
-                                            <Plus className="w-3.5 h-3.5" /> Agregar
-                                        </button>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {(prospectoAEditar.telefonos || ['']).map((tel, idx) => (
-                                            <div key={idx} className="flex gap-2 items-center">
+                        <div className="p-6 space-y-6 overflow-y-auto scrollbar-hide">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Sección: Datos Personales */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Información Personal</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Nombres *</label>
+                                            <input
+                                                type="text"
+                                                value={prospectoAEditar.nombres}
+                                                onChange={(e) => setProspectoAEditar((f) => ({ ...f, nombres: e.target.value }))}
+                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Apellido Paterno</label>
                                                 <input
-                                                    type="tel"
-                                                    value={tel}
-                                                    onChange={(e) => setProspectoAEditar((f) => { const t = [...(f.telefonos || [''])]; t[idx] = e.target.value; return { ...f, telefonos: t }; })}
-                                                    className="flex-1 border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                                    placeholder="+55 1234 5678"
+                                                    type="text"
+                                                    value={prospectoAEditar.apellidoPaterno}
+                                                    onChange={(e) => setProspectoAEditar((f) => ({ ...f, apellidoPaterno: e.target.value }))}
+                                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
                                                 />
-                                                {(prospectoAEditar.telefonos || ['']).length > 1 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setProspectoAEditar((f) => ({ ...f, telefonos: (f.telefonos || ['']).filter((_, i) => i !== idx) }))}
-                                                        className="text-red-400 hover:text-red-600"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                )}
                                             </div>
-                                        ))}
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Apellido Materno</label>
+                                                <input
+                                                    type="text"
+                                                    value={prospectoAEditar.apellidoMaterno}
+                                                    onChange={(e) => setProspectoAEditar((f) => ({ ...f, apellidoMaterno: e.target.value }))}
+                                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Correo</label>
-                                    <input
-                                        type="email"
-                                        value={prospectoAEditar.correo}
-                                        onChange={(e) => setProspectoAEditar((f) => ({ ...f, correo: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                    />
+
+                                {/* Sección: Contacto */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Contacto y Correo</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Teléfonos *</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setProspectoAEditar((f) => ({ ...f, telefonos: [...(f.telefonos || ['']), ''] }))}
+                                                    className="flex items-center gap-1 text-xs text-(--theme-600) hover:text-(--theme-700) font-bold"
+                                                >
+                                                    <Plus className="w-3.5 h-3.5" /> Agregar
+                                                </button>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {(prospectoAEditar.telefonos || ['']).map((tel, idx) => (
+                                                    <div key={idx} className="flex gap-2 items-center bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                                                        <Phone className="w-3.5 h-3.5 text-slate-400 ml-1" />
+                                                        <input
+                                                            type="tel"
+                                                            value={tel}
+                                                            onChange={(e) => setProspectoAEditar((f) => { const t = [...(f.telefonos || [''])]; t[idx] = e.target.value; return { ...f, telefonos: t }; })}
+                                                            className="flex-1 bg-transparent border-0 focus:ring-0 text-sm py-1"
+                                                        />
+                                                        {(prospectoAEditar.telefonos || ['']).length > 1 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setProspectoAEditar((f) => ({ ...f, telefonos: (f.telefonos || ['']).filter((_, i) => i !== idx) }))}
+                                                                className="text-red-400 hover:text-red-600 p-1"
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Correo Electrónico</label>
+                                            <input
+                                                type="email"
+                                                value={prospectoAEditar.correo}
+                                                onChange={(e) => setProspectoAEditar((f) => ({ ...f, correo: e.target.value }))}
+                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Empresa</label>
-                                    <input
-                                        type="text"
-                                        value={prospectoAEditar.empresa}
-                                        onChange={(e) => setProspectoAEditar((f) => ({ ...f, empresa: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                    />
+
+                                {/* Sección: Empresa */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Detalles de Empresa</h3>
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Empresa</label>
+                                                <input
+                                                    type="text"
+                                                    value={prospectoAEditar.empresa}
+                                                    onChange={(e) => setProspectoAEditar((f) => ({ ...f, empresa: e.target.value }))}
+                                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Sitio Web</label>
+                                                <input
+                                                    type="url"
+                                                    value={prospectoAEditar.sitioWeb || ''}
+                                                    onChange={(e) => setProspectoAEditar((f) => ({ ...f, sitioWeb: e.target.value }))}
+                                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                    placeholder="https://..."
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Ubicación</label>
+                                            <input
+                                                type="text"
+                                                value={prospectoAEditar.ubicacion || ''}
+                                                onChange={(e) => setProspectoAEditar((f) => ({ ...f, ubicacion: e.target.value }))}
+                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                placeholder="Ciudad, Estado"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Etapa del Embudo</label>
+                                            <select
+                                                value={prospectoAEditar.etapaEmbudo}
+                                                onChange={(e) => setProspectoAEditar((f) => ({ ...f, etapaEmbudo: e.target.value }))}
+                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-(--theme-500) outline-none"
+                                            >
+                                                {Object.entries(ETAPAS_EMBUDO).map(([key, value]) => (
+                                                    <option key={key} value={key}>{value.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Sitio Web</label>
-                                    <input
-                                        type="url"
-                                        value={prospectoAEditar.sitioWeb || ''}
-                                        onChange={(e) => setProspectoAEditar((f) => ({ ...f, sitioWeb: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                        placeholder="https://ejemplo.com"
-                                    />
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Ubicación</label>
-                                    <input
-                                        type="text"
-                                        value={prospectoAEditar.ubicacion || ''}
-                                        onChange={(e) => setProspectoAEditar((f) => ({ ...f, ubicacion: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm"
-                                        placeholder="Ciudad, Estado, País"
-                                    />
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Notas</label>
-                                    <textarea
-                                        rows={3}
-                                        value={prospectoAEditar.notas || ''}
-                                        onChange={(e) => setProspectoAEditar((f) => ({ ...f, notas: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm resize-none"
-                                        placeholder="Notas sobre el prospecto..."
-                                    />
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Etapa del Embudo</label>
-                                    <select
-                                        value={prospectoAEditar.etapaEmbudo}
-                                        onChange={(e) => setProspectoAEditar((f) => ({ ...f, etapaEmbudo: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded px-3 py-1.5 text-sm bg-white"
-                                    >
-                                        {Object.entries(ETAPAS_EMBUDO).map(([key, value]) => (
-                                            <option key={key} value={key}>{value.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Recordatorio (Próxima Llamada)</label>
-                                    <TimeWheelPicker
-                                        value={prospectoAEditar.proximaLlamada || ''}
-                                        onChange={(val) => setProspectoAEditar((f) => ({ ...f, proximaLlamada: val }))}
-                                    />
-                                </div>
+
                             </div>
                         </div>
-                        <div className="flex gap-2 p-4 border-t border-slate-100">
+                        <div className="flex gap-3 p-6 border-t border-slate-100 bg-slate-50 rounded-b-xl">
                             <button
                                 onClick={() => setModalEditarAbierto(false)}
-                                className="flex-1 px-3 py-2 border border-slate-200 text-gray-700 rounded text-sm hover:bg-slate-50 font-medium"
+                                className="px-6 py-2.5 border border-slate-200 text-gray-700 rounded-lg text-sm hover:bg-white font-bold transition-all"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleEditarProspecto}
                                 disabled={loadingEditar}
-                                className="flex-1 px-3 py-2 bg-(--theme-600) text-white rounded text-sm hover:bg-(--theme-700) font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-1 px-6 py-2.5 bg-(--theme-600) text-white rounded-lg text-sm hover:bg-(--theme-700) font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all shadow-(--theme-500)/20"
                             >
-                                {loadingEditar ? 'Guardando...' : 'Guardar'}
+                                {loadingEditar ? 'Guardando...' : 'Guardar Cambios'}
                             </button>
                         </div>
                     </div>
@@ -1227,6 +1266,15 @@ const ProspectorSeguimiento = () => {
             setModalRecordatorioAbierto(true);
         };
 
+        const handleEditarRecordatorio = () => {
+            if (!tareaLlamar) return;
+            setRecordatorio({
+                fechaProxima: prospectoSeleccionado.proximaLlamada ? prospectoSeleccionado.proximaLlamada.slice(0, 16) : '',
+                notas: tareaLlamar.descripcion || ''
+            });
+            setModalRecordatorioAbierto(true);
+        };
+
         const descartarRecordatorioLlamada = async () => {
             try {
                 // Limpiar recordatorio activo del prospecto
@@ -1266,95 +1314,151 @@ const ProspectorSeguimiento = () => {
         };
 
         return (
-            <div className="min-h-screen p-6 bg-slate-50">
-                <div className="max-w-7xl mx-auto space-y-6">
+            <div className="fixed inset-0 overflow-hidden p-4 sm:p-6 bg-slate-50 z-[40]">
+                <style>{`
+                    .hide-scrollbar::-webkit-scrollbar { display: none; }
+                    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+                `}</style>
+                <div className="max-w-full mx-auto h-full flex flex-col gap-2">
                     {/* Botón regresar */}
                     <button
                         onClick={() => setProspectoSeleccionado(null)}
-                        className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors font-medium mb-2"
+                        className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors font-medium mb-2 shrink-0"
                     >
                         <ArrowLeft className="w-5 h-5" /> Regresar a la lista
                     </button>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 flex-1 min-h-0 overflow-hidden">
                         {/* ===================== COLUMNA IZQUIERDA ===================== */}
-                        <div className="lg:col-span-2 space-y-4">
+                        <div className="lg:col-span-2 flex flex-col gap-4 overflow-y-auto hide-scrollbar pr-1">
 
-                            {/* Cabecera + Estrellas + Datos de contacto */}
-                            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                                    <div>
-                                        <div className="flex items-center gap-3">
-                                            <h1 className="text-2xl font-bold text-gray-900">
-                                                {prospectoSeleccionado.nombres} {prospectoSeleccionado.apellidoPaterno}
-                                            </h1>
-                                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEtapaColor(prospectoSeleccionado.etapaEmbudo)}`}>
-                                                {getEtapaLabel(prospectoSeleccionado.etapaEmbudo)}
-                                            </span>
+                            {/* Cabecera + Estrellas + Datos de contacto (Rediseño 3 - Más Compacto) */}
+                            <div className="bg-white border border-slate-200 rounded-xl p-4 sm:px-6 shadow-sm shrink-0">
+                                <div className="flex flex-col gap-3">
+                                    {/* Fila Superior: Nombre, Editar, Etapa e Interés */}
+                                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-3 flex-wrap">
+                                                <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+                                                    {prospectoSeleccionado.nombres} {prospectoSeleccionado.apellidoPaterno}
+                                                </h1>
+                                                <button
+                                                    onClick={() => abrirModalEditar(prospectoSeleccionado)}
+                                                    className="p-1.5 text-slate-400 hover:text-(--theme-600) hover:bg-(--theme-50) rounded-full transition-all"
+                                                    title="Editar información del prospecto"
+                                                >
+                                                    <Edit2 className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEtapaColor(prospectoSeleccionado.etapaEmbudo)}`}>
+                                                    {getEtapaLabel(prospectoSeleccionado.etapaEmbudo)}
+                                                </span>
+                                                {prospectoSeleccionado.empresa && (
+                                                    <span className="text-gray-500 text-sm font-medium flex items-center gap-1.5 border-l border-slate-200 pl-2">
+                                                        <Building2 className="w-4 h-4 text-slate-400" />
+                                                        {prospectoSeleccionado.empresa}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
-                                        {prospectoSeleccionado.empresa && (
-                                            <p className="text-gray-500 mt-0.5">{prospectoSeleccionado.empresa}</p>
-                                        )}
-                                        <div className="flex flex-wrap gap-3 mt-3 text-sm text-gray-500">
-                                            {[prospectoSeleccionado.telefono, prospectoSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).map((tel, idx) => (
-                                                <span key={idx} className="flex items-center gap-1"><Phone className="w-4 h-4" /> {tel}</span>
-                                            ))}
-                                            {prospectoSeleccionado.correo && (
-                                                <span className="flex items-center gap-1"><Mail className="w-4 h-4" /> {prospectoSeleccionado.correo}</span>
-                                            )}
+
+                                        {/* Interés (estrellas sin contenedor) */}
+                                        <div className="flex items-center gap-2 py-1">
+                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Interés:</span>
+                                            <div className="flex items-center gap-0.5 text-yellow-500">
+                                                {[1, 2, 3, 4, 5].map((value) => (
+                                                    <button
+                                                        key={value}
+                                                        type="button"
+                                                        onClick={() => actualizarInteres(pid, prospectoSeleccionado.interes === value ? 0 : value)}
+                                                        className="hover:scale-110 transition-transform active:scale-95 px-0.5"
+                                                        title={`Nivel de interés: ${value} de 5`}
+                                                    >
+                                                        <Star className={`w-5.5 h-5.5 ${prospectoSeleccionado.interes >= value ? 'fill-yellow-400' : 'fill-slate-100 text-slate-300'}`} />
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
-                                    {/* Interés (estrellas) */}
-                                    <div className="flex items-center gap-1 text-yellow-500 shrink-0">
-                                        {[1, 2, 3, 4, 5].map((value) => (
-                                            <button
-                                                key={value}
-                                                type="button"
-                                                onClick={() => actualizarInteres(pid, prospectoSeleccionado.interes === value ? 0 : value)}
-                                                className="hover:scale-110 transition-transform"
-                                            >
-                                                <Star className={`w-6 h-6 ${prospectoSeleccionado.interes >= value ? 'fill-yellow-400' : 'fill-slate-100 text-slate-300'}`} />
-                                            </button>
-                                        ))}
-                                    </div>
+
+                                    {/* Grid de Información de Contacto (Solo si hay datos) - Ahora más compacto */}
+                                    {(prospectoSeleccionado.telefono || prospectoSeleccionado.correo || prospectoSeleccionado.ubicacion || prospectoSeleccionado.sitioWeb) && (
+                                        <div className="pt-3 border-t border-slate-100">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                                                {/* Teléfonos */}
+                                                {(prospectoSeleccionado.telefono || prospectoSeleccionado.telefono2) && (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
+                                                            <Phone className="w-3.5 h-3.5" />
+                                                        </div>
+                                                        <div className="flex flex-col overflow-hidden">
+                                                            <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Teléfono</span>
+                                                            <div className="flex flex-wrap text-xs font-bold text-slate-700 truncate">
+                                                                {[prospectoSeleccionado.telefono, prospectoSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).slice(0, 1).map((tel, idx) => (
+                                                                    <span key={idx}>{tel}</span>
+                                                                ))}
+                                                                {[prospectoSeleccionado.telefono, prospectoSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).length > 1 && (
+                                                                    <span className="ml-1 text-slate-400 text-[10px]">...</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Correo */}
+                                                {prospectoSeleccionado.correo && (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
+                                                            <Mail className="w-3.5 h-3.5" />
+                                                        </div>
+                                                        <div className="flex flex-col overflow-hidden">
+                                                            <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Correo</span>
+                                                            <span className="text-xs font-bold text-slate-700 truncate" title={prospectoSeleccionado.correo}>
+                                                                {prospectoSeleccionado.correo}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Ubicación */}
+                                                {prospectoSeleccionado.ubicacion && (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
+                                                            <MapPin className="w-3.5 h-3.5" />
+                                                        </div>
+                                                        <div className="flex flex-col overflow-hidden">
+                                                            <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Ubicación</span>
+                                                            <span className="text-xs font-bold text-slate-700 truncate">
+                                                                {prospectoSeleccionado.ubicacion}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Sitio Web */}
+                                                {prospectoSeleccionado.sitioWeb && (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
+                                                            <Globe className="w-3.5 h-3.5" />
+                                                        </div>
+                                                        <div className="flex flex-col overflow-hidden">
+                                                            <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Web</span>
+                                                            <a
+                                                                href={prospectoSeleccionado.sitioWeb.startsWith('http') ? prospectoSeleccionado.sitioWeb : `https://${prospectoSeleccionado.sitioWeb}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-xs font-bold text-(--theme-600) hover:underline truncate"
+                                                            >
+                                                                {prospectoSeleccionado.sitioWeb.replace(/^https?:\/\//, '')}
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-
-                                {/* Recordatorio de próxima acción */}
-                                {tareaLlamar && !editandoFechaSeguimiento && (
-                                    <div className="mt-4 flex items-center gap-2 px-3 py-2 bg-(--theme-50) border border-(--theme-200) rounded-lg text-sm text-(--theme-700) font-medium">
-                                        <Clock className="w-4 h-4 shrink-0" />
-                                        <span className="flex-1">Próximo seguimiento: {new Date(tareaLlamar.fecha).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}</span>
-                                        <button
-                                            title="Editar fecha de seguimiento"
-                                            onClick={() => { setNuevaFechaSeguimiento(prospectoSeleccionado.proximaLlamada ? prospectoSeleccionado.proximaLlamada.slice(0, 16) : ''); setEditandoFechaSeguimiento(true); }}
-                                            className="ml-1 p-1 rounded hover:bg-(--theme-100) transition-colors text-(--theme-500)"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                        </button>
-                                    </div>
-                                )}
-                                {editandoFechaSeguimiento && (
-                                    <div className="mt-4 px-3 py-3 bg-(--theme-50) border border-(--theme-200) rounded-lg">
-                                        <div className="flex items-center gap-2 mb-3 text-sm text-(--theme-700) font-medium">
-                                            <Clock className="w-4 h-4 shrink-0" />
-                                            <span>Editar fecha de seguimiento</span>
-                                        </div>
-                                        <TimeWheelPicker
-                                            value={nuevaFechaSeguimiento}
-                                            onChange={setNuevaFechaSeguimiento}
-                                        />
-                                        <div className="flex gap-2 mt-1">
-                                        <button
-                                            onClick={() => guardarFechaSeguimiento(pid)}
-                                            className="flex-1 px-3 py-2 bg-(--theme-600) text-white rounded-lg text-sm font-semibold hover:bg-(--theme-700)"
-                                        >Guardar</button>
-                                        <button
-                                            onClick={() => setEditandoFechaSeguimiento(false)}
-                                            className="flex-1 px-3 py-2 bg-white border border-slate-200 text-gray-600 rounded-lg text-sm font-semibold hover:bg-slate-50"
-                                        >Cancelar</button>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
 
                             {/* Estadísticas editables */}
@@ -1396,35 +1500,33 @@ const ProspectorSeguimiento = () => {
                             {/* ==================== ÁRBOL DE LLAMADA ==================== */}
                             <div className="space-y-3">
                                 {llamadaFlow === null ? (
-                                    <div className="space-y-3">
-                                        <div className="grid grid-cols-3 gap-3">
-                                            {/* Llamar */}
-                                            <button
-                                                onClick={() => setLlamadaFlow({ paso: 'contesto', notas: '', fechaProxima: '', interesado: null })}
-                                                className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm"
-                                            >
-                                                <Phone className="w-6 h-6" />
-                                                Llamar
-                                            </button>
-                                            {/* WhatsApp */}
-                                            <button
-                                                onClick={async () => {
-                                                    await registrarActividad({ tipo: 'whatsapp', resultado: 'enviado', notas: 'Mensaje de WhatsApp enviado' });
-                                                }}
-                                                className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-green-500 rounded-xl p-4 text-gray-700 hover:text-green-600 transition-all shadow-sm font-bold text-sm"
-                                            >
-                                                <MessageSquare className="w-6 h-6" />
-                                                WhatsApp
-                                            </button>
-                                            {/* Agendar reunión */}
-                                            <button
-                                                onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })}
-                                                className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm text-center leading-tight"
-                                            >
-                                                <Calendar className="w-6 h-6" />
-                                                Agendar Reunión
-                                            </button>
-                                        </div>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {/* Llamar */}
+                                        <button
+                                            onClick={() => setLlamadaFlow({ paso: 'contesto', notas: '', fechaProxima: '', interesado: null })}
+                                            className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm"
+                                        >
+                                            <Phone className="w-6 h-6" />
+                                            Llamar
+                                        </button>
+                                        {/* WhatsApp */}
+                                        <button
+                                            onClick={async () => {
+                                                await registrarActividad({ tipo: 'whatsapp', resultado: 'enviado', notas: 'Mensaje de WhatsApp enviado' });
+                                            }}
+                                            className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-green-500 rounded-xl p-4 text-gray-700 hover:text-green-600 transition-all shadow-sm font-bold text-sm"
+                                        >
+                                            <MessageSquare className="w-6 h-6" />
+                                            WhatsApp
+                                        </button>
+                                        {/* Agendar reunión */}
+                                        <button
+                                            onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })}
+                                            className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm text-center leading-tight"
+                                        >
+                                            <Calendar className="w-6 h-6" />
+                                            Agendar Reunión
+                                        </button>
                                     </div>
                                 ) : (
                                     /* ===== FLUJO DE LLAMADA ===== */
@@ -1656,13 +1758,22 @@ const ProspectorSeguimiento = () => {
                                                 <p className="text-gray-500 mt-1">
                                                     {new Date(tareaLlamar.fecha).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
                                                 </p>
-                                                <button
-                                                    onClick={descartarRecordatorioLlamada}
-                                                    className="w-full flex items-center justify-center gap-2 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 hover:text-rose-700 rounded-lg py-2 text-xs font-bold transition-colors"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                    Descartar recordatorio
-                                                </button>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={handleEditarRecordatorio}
+                                                        className="flex-1 flex items-center justify-center gap-2 bg-white border border-sky-200 hover:bg-sky-50 text-sky-600 hover:text-sky-700 rounded-lg py-2 text-xs font-bold transition-colors"
+                                                    >
+                                                        <Edit2 className="w-3.5 h-3.5" />
+                                                        Editar
+                                                    </button>
+                                                    <button
+                                                        onClick={descartarRecordatorioLlamada}
+                                                        className="flex-1 flex items-center justify-center gap-2 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 hover:text-rose-700 rounded-lg py-2 text-xs font-bold transition-colors"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                        Quitar
+                                                    </button>
+                                                </div>
                                             </div>
                                         )}
 
@@ -1704,31 +1815,30 @@ const ProspectorSeguimiento = () => {
                                     </div>
                                 </div>
 
-                                {/* Acciones de cierre (acordeón para evitar missclick) */}
-                                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                                {/* Acciones de cierre (Desplegable lateral) */}
+                                <div className="relative inline-block mt-2">
                                     <button
                                         onClick={() => setAcordeonCierreAbierto(v => !v)}
-                                        className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 hover:bg-slate-100 transition-colors text-sm font-semibold text-gray-600"
+                                        className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-gray-700 rounded-lg text-sm font-semibold transition-all border border-slate-200"
                                     >
-                                        <span className="flex items-center gap-2">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                                            Acciones de cierre
-                                        </span>
-                                        <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 text-slate-400 transition-transform ${acordeonCierreAbierto ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                                        Acciones de cierre
+                                        <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 text-slate-400 transition-transform ${acordeonCierreAbierto ? '-rotate-90' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
                                     </button>
+
                                     {acordeonCierreAbierto && (
-                                        <div className="p-3 bg-white border-t border-slate-100 space-y-2">
-                                            <p className="text-xs text-slate-400 text-center mb-2">Estas acciones son irreversibles. Confirma antes de continuar.</p>
+                                        <div className="absolute left-full top-0 ml-3 z-50 flex flex-row items-center gap-2 bg-white border border-slate-200 rounded-lg shadow-xl p-0 animate-in fade-in slide-in-from-left-2 duration-200 whitespace-nowrap overflow-hidden">
                                             <button
-                                                onClick={() => setModalPasarClienteAbierto(true)}
-                                                className="w-full flex items-center justify-center gap-2 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded-lg py-2 font-bold text-sm transition-colors"
+                                                onClick={() => { setModalPasarClienteAbierto(true); setAcordeonCierreAbierto(false); }}
+                                                className="flex items-center gap-2 bg-(--theme-600) hover:bg-(--theme-700) text-white px-4 py-2 font-bold text-sm transition-colors cursor-pointer"
                                             >
                                                 <CheckCircle2 className="w-4 h-4" />
                                                 Pasar a cliente
                                             </button>
+                                            <div className="w-px h-4 bg-slate-200 shadow-sm" />
                                             <button
-                                                onClick={() => setModalDescartarAbierto(true)}
-                                                className="w-full flex items-center justify-center gap-2 bg-white border border-red-200 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-lg py-2 font-bold text-sm transition-all"
+                                                onClick={() => { setModalDescartarAbierto(true); setAcordeonCierreAbierto(false); }}
+                                                className="flex items-center gap-2 bg-white text-red-500 hover:text-red-700 px-4 py-2 font-bold text-sm transition-all cursor-pointer"
                                             >
                                                 <XCircle className="w-4 h-4" />
                                                 Descartar prospecto
@@ -1740,13 +1850,13 @@ const ProspectorSeguimiento = () => {
                         </div>
 
                         {/* ===================== COLUMNA DERECHA: HISTORIAL ===================== */}
-                        <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden lg:sticky lg:top-6 h-[62vh] sm:h-[68vh] lg:h-[calc(100vh-9.5rem)] min-h-0">
+                        <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden lg:h-full h-[70vh] min-h-0">
                             <div className="p-5 border-b border-slate-100 bg-slate-50/50 rounded-t-xl flex items-center justify-between">
                                 <h3 className="font-bold text-gray-900 uppercase tracking-wider text-sm">Historial de interacciones</h3>
                                 <span className="text-xs bg-slate-200 text-slate-600 rounded-full px-2 py-0.5 font-semibold">{actividadesContext.length}</span>
                             </div>
                             <div
-                                className="flex-1 overflow-y-auto p-5 space-y-4 scrollbar-hide"
+                                className="flex-1 overflow-y-auto p-5 space-y-4 hide-scrollbar"
                                 style={{ minHeight: 0 }}
                             >
                                 {loadingContext ? (
@@ -1805,22 +1915,30 @@ const ProspectorSeguimiento = () => {
                                     })
                                 )}
                             </div>
-                            <div className="p-4 border-t border-slate-100 bg-white space-y-2">
-                                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Registrar en mural</p>
-                                <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+                                <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-(--theme-400)/20 focus-within:border-(--theme-400) transition-all">
                                     <textarea
                                         value={muralTexto}
                                         onChange={(e) => setMuralTexto(e.target.value)}
-                                        placeholder="Escribe una interacción rápida..."
-                                        className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-(--theme-400) focus:border-transparent outline-none"
-                                        rows={2}
+                                        placeholder="Escribe una nota rápida en el mural..."
+                                        className="flex-1 px-3 py-2.5 text-sm border-0 focus:ring-0 outline-none resize-none bg-transparent min-h-[44px] max-h-[120px] scrollbar-hide"
+                                        rows={1}
+                                        onInput={(e) => {
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = e.target.scrollHeight + 'px';
+                                        }}
                                     />
                                     <button
                                         onClick={registrarEnMural}
                                         disabled={guardandoMural || !muralTexto.trim()}
-                                        className="sm:self-end sm:h-10 px-4 py-2 bg-(--theme-600) text-white rounded-xl text-xs font-bold hover:bg-(--theme-700) shadow-sm hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="shrink-0 w-10 h-10 flex items-center justify-center bg-(--theme-600) hover:bg-(--theme-700) text-white rounded-xl transition-all shadow-sm shadow-(--theme-500)/20 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                                        title="Registrar en mural"
                                     >
-                                        {guardandoMural ? 'Guardando...' : 'Registrar'}
+                                        {guardandoMural ? (
+                                            <RefreshCw className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            <Send className="w-5 h-5" />
+                                        )}
                                     </button>
                                 </div>
                             </div>
@@ -1894,7 +2012,7 @@ const ProspectorSeguimiento = () => {
                                             toast.success('📞 Recordatorio programado correctamente');
                                             setModalRecordatorioAbierto(false);
                                             setRecordatorio({ fechaProxima: '', notas: '' });
-                                            
+
                                             // Recargar prospecto para actualizar UI
                                             const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
                                             const updated = res.data.find(p => p.id === pid || p._id === pid);
@@ -1927,7 +2045,7 @@ const ProspectorSeguimiento = () => {
     // VISTA PRINCIPAL (LISTA DE PROSPECTOS)
     return (
         <div className="min-h-screen p-6 bg-slate-50">
-            <div className="max-w-6xl mx-auto space-y-6">
+            <div className="max-w-full mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
@@ -1993,11 +2111,10 @@ const ProspectorSeguimiento = () => {
                                     <button
                                         key={btn.value}
                                         onClick={() => setFiltroEtapa(btn.value)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${
-                                            filtroEtapa === btn.value
-                                                ? 'bg-(--theme-600) text-white border-(--theme-600) shadow-sm'
-                                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-(--theme-400) hover:text-(--theme-700)'
-                                        }`}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtroEtapa === btn.value
+                                            ? 'bg-(--theme-600) text-white border-(--theme-600) shadow-sm'
+                                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-(--theme-400) hover:text-(--theme-700)'
+                                            }`}
                                     >
                                         {btn.label}
                                     </button>
@@ -2106,7 +2223,7 @@ const ProspectorSeguimiento = () => {
                                                             {p.ultimaActTipo === 'whatsapp' && <MessageSquare className="w-3 h-3 text-green-500" />}
                                                             {p.ultimaActTipo === 'correo' && <Mail className="w-3 h-3 text-purple-500" />}
                                                             {p.ultimaActTipo === 'cita' && <Calendar className="w-3 h-3 text-(--theme-500)" />}
-                                                            {!['llamada','whatsapp','correo','cita'].includes(p.ultimaActTipo) && <Clock className="w-3 h-3 text-slate-400" />}
+                                                            {!['llamada', 'whatsapp', 'correo', 'cita'].includes(p.ultimaActTipo) && <Clock className="w-3 h-3 text-slate-400" />}
                                                         </div>
                                                         <p className="text-[11px] text-slate-600 leading-snug" title={p.ultimaActNotas || ''}>
                                                             {p.ultimaActNotas

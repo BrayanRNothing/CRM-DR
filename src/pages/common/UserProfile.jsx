@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import AnimatedGridBackground from '../../components/ui/AnimatedGridBackground';
 import { ChevronLeft, User, Phone, Mail, BadgeCheck, Shield } from 'lucide-react';
 import { getUser } from '../../utils/authUtils';
+import API_URL from '../../config/api';
 import toast from 'react-hot-toast';
 
 const UserProfile = () => {
@@ -25,7 +26,7 @@ const UserProfile = () => {
                 // Revisando rutas: router.put('/:id'), router.delete('/:id'). FALTABA GET /:id individual.
                 // Modificaré el fetch para traer la lista y filtrar por ahora, para no tocar backend de nuevo si no es crítico.
 
-                const response = await fetch('http://localhost:4000/api/usuarios', {
+                const response = await fetch(`${API_URL}/api/usuarios`, {
                     headers: { 'x-auth-token': token }
                 });
 

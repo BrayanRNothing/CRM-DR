@@ -121,7 +121,7 @@ const ProspectorLayout = () => {
 
                 {/* Contenido flotante - Estilo Contenedor Blanco */}
                 <main
-                    className="flex-1 bg-white/80 backdrop-blur-md border border-white/40 rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 relative"
+                    className="flex-1 bg-white/80 backdrop-blur-md border border-white/40 rounded-3xl overflow-hidden transition-all duration-300 relative premium-reflejo"
                 >
                     <div className="h-full overflow-y-auto scrollbar-hide">
                         <Outlet />

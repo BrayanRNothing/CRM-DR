@@ -132,7 +132,7 @@ const CRMClientes = () => {
     if (prospectoSeleccionado) {
         return (
             <div className="min-h-screen bg-slate-50 p-6">
-                <div className="max-w-[1000px] mx-auto space-y-6">
+                <div className="max-w-full mx-auto space-y-6">
                     <button
                         onClick={() => setProspectoSeleccionado(null)}
                         className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-medium"
@@ -203,7 +203,7 @@ const CRMClientes = () => {
     return (
         <>
         <div className="min-h-screen bg-slate-50 p-6">
-            <div className="max-w-[1400px] mx-auto">
+            <div className="max-w-full mx-auto">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
