@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom';
 import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X } from 'lucide-react';
 import axios from 'axios';
 import { getToken } from '../../utils/authUtils';
-import { loadProspectos, saveProspectos } from '../../utils/prospectosStore';
 import { HistorialInteracciones } from '../../components/HistorialInteracciones';
 
 import API_URL from '../../config/api';
@@ -21,14 +20,10 @@ const CRMClientes = () => {
     const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
     const [creandoCliente, setCreandoCliente] = useState(false);
     const [formCliente, setFormCliente] = useState({
-        nombres: '',
-        apellidoPaterno: '',
-        apellidoMaterno: '',
+        nombreCompleto: '',
         telefono: '',
         correo: '',
-        empresa: '',
-        estado: 'proceso',
-        etapaEmbudo: 'prospecto_nuevo'
+        empresa: ''
     });
 
     // Estados para la vista detallada
@@ -280,25 +275,40 @@ const CRMClientes = () => {
     };
 
     const handleCrearCliente = async () => {
-        if (!formCliente.nombres || !formCliente.apellidoPaterno || !formCliente.telefono || !formCliente.correo) {
-            alert('Complete los campos requeridos: nombres, apellido paterno, teléfono y correo.');
+        if (!formCliente.nombreCompleto || !formCliente.telefono || !formCliente.correo) {
+            alert('Complete los campos requeridos: nombre completo, teléfono y correo.');
             return;
         }
 
+        const partesNombre = formCliente.nombreCompleto.trim().split(/\s+/).filter(Boolean);
+        const nombres = partesNombre[0] || '';
+        const restoApellidos = partesNombre.slice(1);
+        const apellidoPaterno = restoApellidos[0] || '';
+        const apellidoMaterno = restoApellidos.slice(1).join(' ');
+
         setCreandoCliente(true);
         try {
-            await axios.post(`${API_URL}/api/clientes`, formCliente, { headers: getAuthHeaders() });
+            await axios.post(
+                `${API_URL}/api/clientes`,
+                {
+                    nombres,
+                    apellidoPaterno,
+                    apellidoMaterno,
+                    telefono: formCliente.telefono,
+                    correo: formCliente.correo,
+                    empresa: formCliente.empresa,
+                    estado: 'ganado',
+                    etapaEmbudo: 'venta_ganada'
+                },
+                { headers: getAuthHeaders() }
+            );
             await cargarClientes();
             setMostrarModalCrear(false);
             setFormCliente({
-                nombres: '',
-                apellidoPaterno: '',
-                apellidoMaterno: '',
+                nombreCompleto: '',
                 telefono: '',
                 correo: '',
-                empresa: '',
-                estado: 'proceso',
-                etapaEmbudo: 'prospecto_nuevo'
+                empresa: ''
             });
             alert('Cliente creado exitosamente.');
         } catch (error) {
@@ -545,34 +555,14 @@ const CRMClientes = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Nombres *</label>
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre completo *</label>
                             <input
                                 type="text"
-                                value={formCliente.nombres}
-                                onChange={(e) => setFormCliente({ ...formCliente, nombres: e.target.value })}
+                                value={formCliente.nombreCompleto}
+                                onChange={(e) => setFormCliente({ ...formCliente, nombreCompleto: e.target.value })}
                                 className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                                placeholder="Juan"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Apellido Paterno *</label>
-                            <input
-                                type="text"
-                                value={formCliente.apellidoPaterno}
-                                onChange={(e) => setFormCliente({ ...formCliente, apellidoPaterno: e.target.value })}
-                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                                placeholder="García"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Apellido Materno</label>
-                            <input
-                                type="text"
-                                value={formCliente.apellidoMaterno}
-                                onChange={(e) => setFormCliente({ ...formCliente, apellidoMaterno: e.target.value })}
-                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                                placeholder="López"
+                                placeholder="Juan Pérez López"
                             />
                         </div>
                         <div>
@@ -604,34 +594,6 @@ const CRMClientes = () => {
                                 className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
                                 placeholder="Mi Empresa S.A."
                             />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Estado</label>
-                            <select
-                                value={formCliente.estado}
-                                onChange={(e) => setFormCliente({ ...formCliente, estado: e.target.value })}
-                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                            >
-                                <option value="proceso">Proceso</option>
-                                <option value="ganado">Ganado</option>
-                                <option value="perdido">Perdido</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Etapa Embudo</label>
-                            <select
-                                value={formCliente.etapaEmbudo}
-                                onChange={(e) => setFormCliente({ ...formCliente, etapaEmbudo: e.target.value })}
-                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                            >
-                                <option value="prospecto_nuevo">Prospecto Nuevo</option>
-                                <option value="en_contacto">En Contacto</option>
-                                <option value="reunion_agendada">Reunión Agendada</option>
-                                <option value="reunion_realizada">Reunión Realizada</option>
-                                <option value="en_negociacion">En Negociación</option>
-                                <option value="venta_ganada">Venta Ganada</option>
-                                <option value="perdido">Perdido</option>
-                            </select>
                         </div>
                     </div>
 

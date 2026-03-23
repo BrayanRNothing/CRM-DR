@@ -55,18 +55,38 @@ router.get('/:id', auth, esSuperUser, async (req, res) => {
 router.post('/', auth, esSuperUser, async (req, res) => {
     try {
         const { nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, vendedorAsignado, etapaEmbudo } = req.body;
-        if (!nombres || !apellidoPaterno || !telefono || !correo) {
+        if (!nombres || !telefono || !correo) {
             return res.status(400).json({ mensaje: 'Complete los campos requeridos' });
         }
-        const vendedorId = req.usuario.rol === 'admin' && vendedorAsignado ? parseInt(vendedorAsignado) : parseInt(req.usuario.id);
-        const etapa = etapaEmbudo || 'prospecto_nuevo';
+        const rol = String(req.usuario.rol || '').toLowerCase();
+        const usuarioId = parseInt(req.usuario.id);
+        const vendedorId = req.usuario.rol === 'admin' && vendedorAsignado ? parseInt(vendedorAsignado) : usuarioId;
+        const etapa = etapaEmbudo || 'venta_ganada';
+        const estadoCliente = estado || (etapa === 'venta_ganada' ? 'ganado' : 'proceso');
         const now = new Date().toISOString();
         const hist = JSON.stringify([{ etapa, fecha: now, vendedor: vendedorId }]);
 
+        const prospectorAsignado = rol === 'prospector' ? usuarioId : null;
+        const closerAsignado = (rol === 'closer' || rol === 'vendedor') ? usuarioId : null;
+
         await db.prepare(`
-            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaEmbudo, historialEmbudo, vendedorAsignado)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(nombres, apellidoPaterno || '', apellidoMaterno || '', telefono, correo, empresa || '', estado || 'proceso', etapa, hist, vendedorId);
+            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaEmbudo, historialEmbudo, vendedorAsignado, prospectorAsignado, closerAsignado, fechaUltimaEtapa)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+            nombres,
+            apellidoPaterno || '',
+            apellidoMaterno || '',
+            telefono,
+            correo,
+            empresa || '',
+            estadoCliente,
+            etapa,
+            hist,
+            vendedorId,
+            prospectorAsignado,
+            closerAsignado,
+            now
+        );
 
         const row = await db.prepare('SELECT * FROM clientes ORDER BY id DESC LIMIT 1').get();
         res.status(201).json({ mensaje: 'Cliente creado', cliente: toMongoFormat(row) || row });
