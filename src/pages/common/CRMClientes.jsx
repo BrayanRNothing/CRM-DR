@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload } from 'lucide-react';
+import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X } from 'lucide-react';
 import axios from 'axios';
 import { getToken } from '../../utils/authUtils';
 import { loadProspectos, saveProspectos } from '../../utils/prospectosStore';
@@ -15,6 +15,18 @@ const CRMClientes = () => {
     const [eliminando, setEliminando] = useState(false);
     const [importando, setImportando] = useState(false);
     const fileInputRef = useRef(null);
+    const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
+    const [creandoCliente, setCreandoCliente] = useState(false);
+    const [formCliente, setFormCliente] = useState({
+        nombres: '',
+        apellidoPaterno: '',
+        apellidoMaterno: '',
+        telefono: '',
+        correo: '',
+        empresa: '',
+        estado: 'proceso',
+        etapaEmbudo: 'prospecto_nuevo'
+    });
 
     // Estados para la vista detallada
     const [prospectoSeleccionado, setProspectoSeleccionado] = useState(null);
@@ -264,6 +276,36 @@ const CRMClientes = () => {
         }
     };
 
+    const handleCrearCliente = async () => {
+        if (!formCliente.nombres || !formCliente.apellidoPaterno || !formCliente.telefono || !formCliente.correo) {
+            alert('Complete los campos requeridos: nombres, apellido paterno, teléfono y correo.');
+            return;
+        }
+
+        setCreandoCliente(true);
+        try {
+            await axios.post(`${API_URL}/api/clientes`, formCliente, { headers: getAuthHeaders() });
+            await cargarClientes();
+            setMostrarModalCrear(false);
+            setFormCliente({
+                nombres: '',
+                apellidoPaterno: '',
+                apellidoMaterno: '',
+                telefono: '',
+                correo: '',
+                empresa: '',
+                estado: 'proceso',
+                etapaEmbudo: 'prospecto_nuevo'
+            });
+            alert('Cliente creado exitosamente.');
+        } catch (error) {
+            console.error('Error al crear cliente:', error);
+            alert(error.response?.data?.mensaje || 'No se pudo crear el cliente.');
+        } finally {
+            setCreandoCliente(false);
+        }
+    };
+
     const clientesFiltrados = useMemo(() => {
         return clientes.filter((cliente) => {
             const matchBusqueda =
@@ -367,6 +409,13 @@ const CRMClientes = () => {
                             onChange={handleImportarClientes}
                         />
                         <button
+                            onClick={() => setMostrarModalCrear(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Crear Cliente
+                        </button>
+                        <button
                             onClick={() => fileInputRef.current?.click()}
                             disabled={importando}
                             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
@@ -385,7 +434,7 @@ const CRMClientes = () => {
                         <button
                             onClick={cargarClientes}
                             disabled={loading}
-                            className="flex items-center gap-2 px-4 py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) disabled:opacity-50 transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50 transition-colors"
                         >
                             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                             Actualizar
@@ -472,6 +521,141 @@ const CRMClientes = () => {
                 )}
             </div>
         </div>
+        {/* Modal crear cliente */}
+        {mostrarModalCrear && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div className="bg-white rounded-2xl p-6 shadow-xl max-w-xl w-full mx-4 border border-slate-200">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900">Crear Cliente</h2>
+                        <button
+                            onClick={() => setMostrarModalCrear(false)}
+                            className="text-slate-400 hover:text-slate-600"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Nombres *</label>
+                            <input
+                                type="text"
+                                value={formCliente.nombres}
+                                onChange={(e) => setFormCliente({ ...formCliente, nombres: e.target.value })}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                                placeholder="Juan"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Apellido Paterno *</label>
+                            <input
+                                type="text"
+                                value={formCliente.apellidoPaterno}
+                                onChange={(e) => setFormCliente({ ...formCliente, apellidoPaterno: e.target.value })}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                                placeholder="García"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Apellido Materno</label>
+                            <input
+                                type="text"
+                                value={formCliente.apellidoMaterno}
+                                onChange={(e) => setFormCliente({ ...formCliente, apellidoMaterno: e.target.value })}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                                placeholder="López"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Teléfono *</label>
+                            <input
+                                type="tel"
+                                value={formCliente.telefono}
+                                onChange={(e) => setFormCliente({ ...formCliente, telefono: e.target.value })}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                                placeholder="555-123-4567"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Correo *</label>
+                            <input
+                                type="email"
+                                value={formCliente.correo}
+                                onChange={(e) => setFormCliente({ ...formCliente, correo: e.target.value })}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                                placeholder="juan@empresa.com"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Empresa</label>
+                            <input
+                                type="text"
+                                value={formCliente.empresa}
+                                onChange={(e) => setFormCliente({ ...formCliente, empresa: e.target.value })}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                                placeholder="Mi Empresa S.A."
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Estado</label>
+                            <select
+                                value={formCliente.estado}
+                                onChange={(e) => setFormCliente({ ...formCliente, estado: e.target.value })}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                            >
+                                <option value="proceso">Proceso</option>
+                                <option value="ganado">Ganado</option>
+                                <option value="perdido">Perdido</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Etapa Embudo</label>
+                            <select
+                                value={formCliente.etapaEmbudo}
+                                onChange={(e) => setFormCliente({ ...formCliente, etapaEmbudo: e.target.value })}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                            >
+                                <option value="prospecto_nuevo">Prospecto Nuevo</option>
+                                <option value="en_contacto">En Contacto</option>
+                                <option value="reunion_agendada">Reunión Agendada</option>
+                                <option value="reunion_realizada">Reunión Realizada</option>
+                                <option value="en_negociacion">En Negociación</option>
+                                <option value="venta_ganada">Venta Ganada</option>
+                                <option value="perdido">Perdido</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 justify-end">
+                        <button
+                            onClick={() => setMostrarModalCrear(false)}
+                            disabled={creandoCliente}
+                            className="px-6 py-2 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleCrearCliente}
+                            disabled={creandoCliente}
+                            className="px-6 py-2 rounded-lg bg-(--theme-600) text-white font-semibold hover:bg-(--theme-700) transition-colors disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {creandoCliente ? (
+                                <>
+                                    <RefreshCw className="w-4 h-4 animate-spin" />
+                                    Creando...
+                                </>
+                            ) : (
+                                <>
+                                    <Plus className="w-4 h-4" />
+                                    Crear Cliente
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
         {/* Modal confirmación eliminar */}
         {clienteAEliminar && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
