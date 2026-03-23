@@ -13,32 +13,49 @@ import SkeletonLoader from './components/ui/SkeletonLoader.jsx';
 import React, { Suspense, lazy, useEffect } from 'react';
 import useThemeStore, { THEMES } from './store/themeStore.js';
 
-const Login = lazy(() => import('./pages/auth/Login.jsx'));
-const Register = lazy(() => import('./pages/auth/Register.jsx'));
-const Ajustes = lazy(() => import('./pages/common/Ajustes.jsx'));
-const TerminosCondiciones = lazy(() => import('./pages/common/TerminosCondiciones.jsx'));
-const PoliticaPrivacidad = lazy(() => import('./pages/common/PoliticaPrivacidad.jsx'));
+const lazyWithRetry = (importer) =>
+  lazy(async () => {
+    try {
+      const module = await importer();
+      sessionStorage.removeItem('lazy-reload');
+      return module;
+    } catch (error) {
+      const hasReloaded = sessionStorage.getItem('lazy-reload');
+      if (!hasReloaded) {
+        sessionStorage.setItem('lazy-reload', 'true');
+        window.location.reload();
+        return { default: () => null };
+      }
+      throw error;
+    }
+  });
 
-const NotFound = lazy(() => import('./pages/NotFound.jsx'));
+const Login = lazyWithRetry(() => import('./pages/auth/Login.jsx'));
+const Register = lazyWithRetry(() => import('./pages/auth/Register.jsx'));
+const Ajustes = lazyWithRetry(() => import('./pages/common/Ajustes.jsx'));
+const TerminosCondiciones = lazyWithRetry(() => import('./pages/common/TerminosCondiciones.jsx'));
+const PoliticaPrivacidad = lazyWithRetry(() => import('./pages/common/PoliticaPrivacidad.jsx'));
+
+const NotFound = lazyWithRetry(() => import('./pages/NotFound.jsx'));
 
 // Prospector Pages
-const ProspectorDashboard = lazy(() => import('./pages/prospector/ProspectorDashboard.jsx'));
-const ProspectorCalendario = lazy(() => import('./pages/prospector/ProspectorCalendario.jsx'));
-const ProspectorSeguimiento = lazy(() => import('./pages/prospector/ProspectorSeguimiento.jsx'));
+const ProspectorDashboard = lazyWithRetry(() => import('./pages/prospector/ProspectorDashboard.jsx'));
+const ProspectorCalendario = lazyWithRetry(() => import('./pages/prospector/ProspectorCalendario.jsx'));
+const ProspectorSeguimiento = lazyWithRetry(() => import('./pages/prospector/ProspectorSeguimiento.jsx'));
 
 // Closer Pages
-const CloserDashboard = lazy(() => import('./pages/closer/CloserDashboard.jsx'));
-const CloserCalendario = lazy(() => import('./pages/closer/CloserCalendario.jsx'));
-const CloserMonitoreoProspectors = lazy(() => import('./pages/closer/CloserMonitoreoProspectors.jsx'));
+const CloserDashboard = lazyWithRetry(() => import('./pages/closer/CloserDashboard.jsx'));
+const CloserCalendario = lazyWithRetry(() => import('./pages/closer/CloserCalendario.jsx'));
+const CloserMonitoreoProspectors = lazyWithRetry(() => import('./pages/closer/CloserMonitoreoProspectors.jsx'));
 
 // Vendedor Pages
-const VendedorLayout = lazy(() => import('./layouts/VendedorLayout.jsx'));
-const VendedorDashboard = lazy(() => import('./pages/vendedor/VendedorDashboard.jsx'));
+const VendedorLayout = lazyWithRetry(() => import('./layouts/VendedorLayout.jsx'));
+const VendedorDashboard = lazyWithRetry(() => import('./pages/vendedor/VendedorDashboard.jsx'));
 
 // Shared Components
-const CRMClientes = lazy(() => import('./pages/common/CRMClientes.jsx'));
-const UserManagement = lazy(() => import('./pages/common/UserManagement.jsx'));
-const UserProfile = lazy(() => import('./pages/common/UserProfile.jsx'));
+const CRMClientes = lazyWithRetry(() => import('./pages/common/CRMClientes.jsx'));
+const UserManagement = lazyWithRetry(() => import('./pages/common/UserManagement.jsx'));
+const UserProfile = lazyWithRetry(() => import('./pages/common/UserProfile.jsx'));
 
 function App() {
   const currentThemeId = useThemeStore((state) => state.currentThemeId);
