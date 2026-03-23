@@ -249,12 +249,19 @@ const Login = () => {
           </p>
 
           <p className="mt-4 text-center text-xs text-slate-500 leading-relaxed">
-            Al iniciar sesión aceptas nuestros{' '}
+            Consulta nuestra{' '}
+            <Link
+              to="/politica-de-privacidad"
+              className="font-semibold text-(--theme-700) hover:text-(--theme-800) underline underline-offset-4"
+            >
+              Politica de Privacidad
+            </Link>{' '}
+            y las{' '}
             <Link
               to="/terminos-y-condiciones"
               className="font-semibold text-(--theme-700) hover:text-(--theme-800) underline underline-offset-4"
             >
-              Términos y Condiciones
+              Condiciones del Servicio
             </Link>
             .
           </p>

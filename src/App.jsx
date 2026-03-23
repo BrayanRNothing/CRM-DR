@@ -17,6 +17,7 @@ const Login = lazy(() => import('./pages/auth/Login.jsx'));
 const Register = lazy(() => import('./pages/auth/Register.jsx'));
 const Ajustes = lazy(() => import('./pages/common/Ajustes.jsx'));
 const TerminosCondiciones = lazy(() => import('./pages/common/TerminosCondiciones.jsx'));
+const PoliticaPrivacidad = lazy(() => import('./pages/common/PoliticaPrivacidad.jsx'));
 
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 
@@ -125,6 +126,7 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/terminos-y-condiciones" element={<TerminosCondiciones />} />
+          <Route path="/politica-de-privacidad" element={<PoliticaPrivacidad />} />
 
           {/* --- PROSPECTOR --- */}
           <Route path="/prospector" element={<ProspectorLayout />}>
