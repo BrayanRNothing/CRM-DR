@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { Search, Filter, Star, Plus, X, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, AlertTriangle } from 'lucide-react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload } from 'lucide-react';
 import axios from 'axios';
 import { getToken } from '../../utils/authUtils';
 import { loadProspectos, saveProspectos } from '../../utils/prospectosStore';
@@ -13,6 +13,8 @@ const CRMClientes = () => {
     const [busqueda, setBusqueda] = useState('');
     const [clienteAEliminar, setClienteAEliminar] = useState(null);
     const [eliminando, setEliminando] = useState(false);
+    const [importando, setImportando] = useState(false);
+    const fileInputRef = useRef(null);
 
     // Estados para la vista detallada
     const [prospectoSeleccionado, setProspectoSeleccionado] = useState(null);
@@ -115,6 +117,153 @@ const CRMClientes = () => {
         }
     };
 
+    const escapeCsv = (value) => {
+        const safe = String(value ?? '').replace(/"/g, '""');
+        return `"${safe}"`;
+    };
+
+    const parseCsvLine = (line) => {
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i += 1) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    current += '"';
+                    i += 1;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                values.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        values.push(current);
+
+        return values.map((item) => item.trim());
+    };
+
+    const exportarClientesCsv = () => {
+        if (!clientesFiltrados.length) {
+            alert('No hay clientes para exportar.');
+            return;
+        }
+
+        const headers = [
+            'nombres',
+            'apellidoPaterno',
+            'apellidoMaterno',
+            'telefono',
+            'correo',
+            'empresa',
+            'estado',
+            'etapaEmbudo',
+            'fechaUltimaEtapa'
+        ];
+
+        const rows = clientesFiltrados.map((cliente) => ([
+            cliente.nombres,
+            cliente.apellidoPaterno,
+            cliente.apellidoMaterno,
+            cliente.telefono,
+            cliente.correo,
+            cliente.empresa,
+            cliente.estado,
+            cliente.etapaEmbudo,
+            cliente.fechaUltimaEtapa
+        ].map(escapeCsv).join(',')));
+
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const dateStamp = new Date().toISOString().slice(0, 10);
+
+        link.href = url;
+        link.setAttribute('download', `clientes_${dateStamp}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleImportarClientes = async (event) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+
+        if (!file) return;
+
+        setImportando(true);
+        try {
+            const text = await file.text();
+            const lines = text
+                .split(/\r?\n/)
+                .map((line) => line.trim())
+                .filter(Boolean);
+
+            if (lines.length < 2) {
+                alert('El archivo CSV no tiene filas de datos.');
+                return;
+            }
+
+            const headers = parseCsvLine(lines[0]);
+            const requiredHeaders = ['nombres', 'apellidoPaterno', 'telefono', 'correo'];
+            const missingHeaders = requiredHeaders.filter((h) => !headers.includes(h));
+            if (missingHeaders.length) {
+                alert(`Faltan columnas requeridas: ${missingHeaders.join(', ')}`);
+                return;
+            }
+
+            const toPayload = (rowLine) => {
+                const values = parseCsvLine(rowLine);
+                const row = headers.reduce((acc, key, index) => {
+                    acc[key] = values[index] ?? '';
+                    return acc;
+                }, {});
+
+                return {
+                    nombres: row.nombres,
+                    apellidoPaterno: row.apellidoPaterno,
+                    apellidoMaterno: row.apellidoMaterno || '',
+                    telefono: row.telefono,
+                    correo: row.correo,
+                    empresa: row.empresa || '',
+                    estado: row.estado || 'proceso',
+                    etapaEmbudo: row.etapaEmbudo || 'prospecto_nuevo'
+                };
+            };
+
+            const payloads = lines.slice(1).map(toPayload).filter((row) => (
+                row.nombres && row.apellidoPaterno && row.telefono && row.correo
+            ));
+
+            if (!payloads.length) {
+                alert('No se encontraron filas validas para importar.');
+                return;
+            }
+
+            const results = await Promise.allSettled(
+                payloads.map((payload) => axios.post(`${API_URL}/api/clientes`, payload, { headers: getAuthHeaders() }))
+            );
+
+            const creados = results.filter((r) => r.status === 'fulfilled').length;
+            const fallidos = results.length - creados;
+
+            await cargarClientes();
+            alert(`Importacion finalizada. Creados: ${creados}. Fallidos: ${fallidos}.`);
+        } catch (error) {
+            console.error('Error al importar clientes:', error);
+            alert(error.response?.data?.mensaje || 'No se pudo importar el archivo CSV.');
+        } finally {
+            setImportando(false);
+        }
+    };
+
     const clientesFiltrados = useMemo(() => {
         return clientes.filter((cliente) => {
             const matchBusqueda =
@@ -209,14 +358,39 @@ const CRMClientes = () => {
                         <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
                         <p className="text-gray-500">Cartera de clientes ganados.</p>
                     </div>
-                    <button
-                        onClick={cargarClientes}
-                        disabled={loading}
-                        className="flex items-center gap-2 px-4 py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) disabled:opacity-50 transition-colors"
-                    >
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                        Actualizar
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".csv,text/csv"
+                            className="hidden"
+                            onChange={handleImportarClientes}
+                        />
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={importando}
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                        >
+                            {importando ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                            {importando ? 'Importando...' : 'Importar CSV'}
+                        </button>
+                        <button
+                            onClick={exportarClientesCsv}
+                            disabled={loading || !clientesFiltrados.length}
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                        >
+                            <Download className="w-4 h-4" />
+                            Exportar CSV
+                        </button>
+                        <button
+                            onClick={cargarClientes}
+                            disabled={loading}
+                            className="flex items-center gap-2 px-4 py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) disabled:opacity-50 transition-colors"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                            Actualizar
+                        </button>
+                    </div>
                 </div>
 
                 <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm mb-6">
