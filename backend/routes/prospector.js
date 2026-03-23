@@ -831,12 +831,14 @@ router.post('/pasar-a-cliente/:id', [auth, esProspector], async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `).run('prospecto', prospectorId, clienteId, now, 'Prospecto convertido a cliente', 'exitoso', notas || 'Convertido a cliente');
 
-        // Actualizar etapa del prospecto
+        // Actualizar etapa del prospecto y asegurar que tenga closerAsignado para que aparezca en la lista
         const hist = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
         hist.push({ etapa: 'venta_ganada', fecha: now, vendedor: prospectorId });
 
-        await db.prepare('UPDATE clientes SET etapaEmbudo = ?, estado = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, proximaLlamada = NULL WHERE id = ?')
-            .run('venta_ganada', 'ganado', now, now, JSON.stringify(hist), clienteId);
+        const closerParaAsignar = cliente.closerAsignado || prospectorId;
+
+        await db.prepare('UPDATE clientes SET etapaEmbudo = ?, estado = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, proximaLlamada = NULL, closerAsignado = ? WHERE id = ?')
+            .run('venta_ganada', 'ganado', now, now, JSON.stringify(hist), closerParaAsignar, clienteId);
 
         res.json({ msg: '✓ Prospecto convertido a cliente' });
     } catch (error) {

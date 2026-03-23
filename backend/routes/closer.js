@@ -795,12 +795,14 @@ router.post('/pasar-a-cliente/:id', [auth, esCloser], async (req, res) => {
         VALUES(?, ?, ?, ?, ?, ?, ?)
             `).run('prospecto', closerId, clienteId, now, 'Prospecto convertido a cliente', 'exitoso', notas || 'Convertido a cliente');
 
-        // Actualizar etapa del prospecto
+        // Actualizar etapa del prospecto y asegurar que tenga closerAsignado
         const hist = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
         hist.push({ etapa: 'venta_ganada', fecha: now, vendedor: closerId });
 
-        await db.prepare('UPDATE clientes SET etapaEmbudo = ?, estado = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ? WHERE id = ?')
-            .run('venta_ganada', 'ganado', now, now, JSON.stringify(hist), clienteId);
+        const closerParaAsignar = cliente.closerAsignado || closerId;
+
+        await db.prepare('UPDATE clientes SET etapaEmbudo = ?, estado = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, closerAsignado = ? WHERE id = ?')
+            .run('venta_ganada', 'ganado', now, now, JSON.stringify(hist), closerParaAsignar, clienteId);
 
         res.json({ msg: '✓ Prospecto convertido a cliente' });
     } catch (error) {
