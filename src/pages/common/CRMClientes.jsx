@@ -30,6 +30,12 @@ const CRMClientes = () => {
     const [prospectoSeleccionado, setProspectoSeleccionado] = useState(null);
     const [timeline, setTimeline] = useState([]);
     const [loadingTimeline, setLoadingTimeline] = useState(false);
+    const [guardandoSeguimiento, setGuardandoSeguimiento] = useState(false);
+    const [seguimientoForm, setSeguimientoForm] = useState({
+        resultado: 'pendiente',
+        notas: '',
+        fechaProxima: ''
+    });
 
     const getAuthHeaders = () => ({
         'x-auth-token': getToken() || ''
@@ -78,8 +84,7 @@ const CRMClientes = () => {
         return () => clearInterval(interval);
     }, []);
 
-    const handleVerDetalles = async (cliente) => {
-        setProspectoSeleccionado(cliente);
+    const cargarTimelineCliente = async (cliente) => {
         setLoadingTimeline(true);
         try {
             const rol = getRolePath();
@@ -93,6 +98,92 @@ const CRMClientes = () => {
             setTimeline([]);
         } finally {
             setLoadingTimeline(false);
+        }
+    };
+
+    const handleVerDetalles = async (cliente) => {
+        setProspectoSeleccionado(cliente);
+        setSeguimientoForm({
+            resultado: 'pendiente',
+            notas: '',
+            fechaProxima: cliente?.proximaLlamada ? String(cliente.proximaLlamada).slice(0, 16) : ''
+        });
+        await cargarTimelineCliente(cliente);
+    };
+
+    const handleGuardarSeguimiento = async () => {
+        if (!prospectoSeleccionado) return;
+
+        setGuardandoSeguimiento(true);
+        try {
+            const rol = getRolePath();
+            const clienteId = prospectoSeleccionado.id || prospectoSeleccionado._id;
+            const notas = seguimientoForm.notas?.trim() || 'Seguimiento de cliente registrado';
+
+            await axios.post(
+                `${API_URL}/api/${rol}/registrar-actividad`,
+                {
+                    clienteId,
+                    tipo: 'llamada',
+                    resultado: seguimientoForm.resultado,
+                    notas,
+                    proximaLlamada: seguimientoForm.fechaProxima || null
+                },
+                { headers: getAuthHeaders() }
+            );
+
+            if (seguimientoForm.fechaProxima) {
+                await axios.post(
+                    `${API_URL}/api/tareas`,
+                    {
+                        titulo: `Seguimiento cliente: ${prospectoSeleccionado.nombres || ''}`.trim(),
+                        descripcion: notas,
+                        cliente: clienteId,
+                        fechaLimite: seguimientoForm.fechaProxima,
+                        prioridad: 'media'
+                    },
+                    { headers: getAuthHeaders() }
+                );
+            }
+
+            await cargarClientes();
+            await cargarTimelineCliente(prospectoSeleccionado);
+            setSeguimientoForm({
+                resultado: 'pendiente',
+                notas: '',
+                fechaProxima: seguimientoForm.fechaProxima
+            });
+            alert('Seguimiento guardado correctamente.');
+        } catch (error) {
+            console.error('Error al guardar seguimiento:', error);
+            alert(error.response?.data?.msg || error.response?.data?.mensaje || 'No se pudo guardar el seguimiento.');
+        } finally {
+            setGuardandoSeguimiento(false);
+        }
+    };
+
+    const handleLimpiarProximaLlamada = async () => {
+        if (!prospectoSeleccionado) return;
+
+        setGuardandoSeguimiento(true);
+        try {
+            const rol = getRolePath();
+            const clienteId = prospectoSeleccionado.id || prospectoSeleccionado._id;
+
+            await axios.put(
+                `${API_URL}/api/${rol}/prospectos/${clienteId}`,
+                { proximaLlamada: null },
+                { headers: getAuthHeaders() }
+            );
+
+            setSeguimientoForm((prev) => ({ ...prev, fechaProxima: '' }));
+            await cargarClientes();
+            alert('Próxima llamada limpiada.');
+        } catch (error) {
+            console.error('Error al limpiar próxima llamada:', error);
+            alert(error.response?.data?.msg || error.response?.data?.mensaje || 'No se pudo limpiar la próxima llamada.');
+        } finally {
+            setGuardandoSeguimiento(false);
         }
     };
 
@@ -368,6 +459,66 @@ const CRMClientes = () => {
                                 <p className="text-xs text-slate-400 mt-2">
                                     ID: {prospectoSeleccionado.id || prospectoSeleccionado._id}
                                 </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                            <h2 className="text-lg font-bold text-slate-900">Seguimiento del Cliente</h2>
+                            {prospectoSeleccionado.proximaLlamada && (
+                                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                                    Próxima llamada: {new Date(prospectoSeleccionado.proximaLlamada).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                                </span>
+                            )}
+                        </div>
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Resultado</label>
+                                <select
+                                    value={seguimientoForm.resultado}
+                                    onChange={(e) => setSeguimientoForm((prev) => ({ ...prev, resultado: e.target.value }))}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                                >
+                                    <option value="pendiente">Pendiente</option>
+                                    <option value="exitoso">Exitoso</option>
+                                    <option value="fallido">Fallido</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Próxima llamada</label>
+                                <input
+                                    type="datetime-local"
+                                    value={seguimientoForm.fechaProxima}
+                                    onChange={(e) => setSeguimientoForm((prev) => ({ ...prev, fechaProxima: e.target.value }))}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Notas de seguimiento</label>
+                                <textarea
+                                    rows={3}
+                                    value={seguimientoForm.notas}
+                                    onChange={(e) => setSeguimientoForm((prev) => ({ ...prev, notas: e.target.value }))}
+                                    placeholder="Ej: Cliente interesado en plan anual, solicitar llamada el jueves..."
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                                />
+                            </div>
+                            <div className="md:col-span-2 flex flex-wrap justify-end gap-3">
+                                <button
+                                    onClick={handleLimpiarProximaLlamada}
+                                    disabled={guardandoSeguimiento}
+                                    className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200 transition-colors disabled:opacity-50"
+                                >
+                                    Limpiar próxima llamada
+                                </button>
+                                <button
+                                    onClick={handleGuardarSeguimiento}
+                                    disabled={guardandoSeguimiento}
+                                    className="px-6 py-2 rounded-lg bg-(--theme-600) text-white font-semibold hover:bg-(--theme-700) transition-colors disabled:opacity-50"
+                                >
+                                    {guardandoSeguimiento ? 'Guardando...' : 'Guardar seguimiento'}
+                                </button>
                             </div>
                         </div>
                     </div>
