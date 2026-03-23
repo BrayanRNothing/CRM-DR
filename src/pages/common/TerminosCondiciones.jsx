@@ -99,7 +99,7 @@ const metodosContacto = [
   },
   {
     titulo: 'Direccion administrativa',
-    valor: 'Av. Empresarial 102, Santo Domingo, Republica Dominicana',
+    valor: 'AVENIDA CUMBRES ELITE 1310, MONTERREY, NUEVO LEON, MEXICO',
     href: null,
     detalle: 'Recepcion de notificaciones formales en horario administrativo.'
   }
