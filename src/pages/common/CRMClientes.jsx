@@ -1,9 +1,11 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X } from 'lucide-react';
+import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar } from 'lucide-react';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { getToken } from '../../utils/authUtils';
 import { HistorialInteracciones } from '../../components/HistorialInteracciones';
+import TimeWheelPicker from '../../components/TimeWheelPicker';
 
 import API_URL from '../../config/api';
 
@@ -31,11 +33,7 @@ const CRMClientes = () => {
     const [timeline, setTimeline] = useState([]);
     const [loadingTimeline, setLoadingTimeline] = useState(false);
     const [guardandoSeguimiento, setGuardandoSeguimiento] = useState(false);
-    const [seguimientoForm, setSeguimientoForm] = useState({
-        resultado: 'pendiente',
-        notas: '',
-        fechaProxima: ''
-    });
+    const [llamadaFlow, setLlamadaFlow] = useState(null);
 
     const getAuthHeaders = () => ({
         'x-auth-token': getToken() || ''
@@ -69,10 +67,13 @@ const CRMClientes = () => {
                 `${API_URL}/api/${rol}/clientes-ganados`,
                 { headers: getAuthHeaders() }
             );
-            setClientes(res.data || []);
+            const data = res.data || [];
+            setClientes(data);
+            return data;
         } catch (error) {
             console.error('Error al cargar clientes:', error);
             setClientes([]);
+            return [];
         } finally {
             setLoading(false);
         }
@@ -103,88 +104,34 @@ const CRMClientes = () => {
 
     const handleVerDetalles = async (cliente) => {
         setProspectoSeleccionado(cliente);
-        setSeguimientoForm({
-            resultado: 'pendiente',
-            notas: '',
-            fechaProxima: cliente?.proximaLlamada ? String(cliente.proximaLlamada).slice(0, 16) : ''
-        });
+        setLlamadaFlow(null);
         await cargarTimelineCliente(cliente);
     };
 
-    const handleGuardarSeguimiento = async () => {
+    const registrarActividadCliente = async (payload) => {
         if (!prospectoSeleccionado) return;
 
-        setGuardandoSeguimiento(true);
-        try {
-            const rol = getRolePath();
-            const clienteId = prospectoSeleccionado.id || prospectoSeleccionado._id;
-            const notas = seguimientoForm.notas?.trim() || 'Seguimiento de cliente registrado';
+        const rol = getRolePath();
+        const clienteId = prospectoSeleccionado.id || prospectoSeleccionado._id;
 
-            await axios.post(
-                `${API_URL}/api/${rol}/registrar-actividad`,
-                {
-                    clienteId,
-                    tipo: 'llamada',
-                    resultado: seguimientoForm.resultado,
-                    notas,
-                    proximaLlamada: seguimientoForm.fechaProxima || null
-                },
-                { headers: getAuthHeaders() }
-            );
-
-            if (seguimientoForm.fechaProxima) {
-                await axios.post(
-                    `${API_URL}/api/tareas`,
-                    {
-                        titulo: `Seguimiento cliente: ${prospectoSeleccionado.nombres || ''}`.trim(),
-                        descripcion: notas,
-                        cliente: clienteId,
-                        fechaLimite: seguimientoForm.fechaProxima,
-                        prioridad: 'media'
-                    },
-                    { headers: getAuthHeaders() }
-                );
-            }
-
-            await cargarClientes();
-            await cargarTimelineCliente(prospectoSeleccionado);
-            setSeguimientoForm({
-                resultado: 'pendiente',
-                notas: '',
-                fechaProxima: seguimientoForm.fechaProxima
-            });
-            alert('Seguimiento guardado correctamente.');
-        } catch (error) {
-            console.error('Error al guardar seguimiento:', error);
-            alert(error.response?.data?.msg || error.response?.data?.mensaje || 'No se pudo guardar el seguimiento.');
-        } finally {
-            setGuardandoSeguimiento(false);
-        }
-    };
-
-    const handleLimpiarProximaLlamada = async () => {
-        if (!prospectoSeleccionado) return;
-
-        setGuardandoSeguimiento(true);
-        try {
-            const rol = getRolePath();
-            const clienteId = prospectoSeleccionado.id || prospectoSeleccionado._id;
-
+        if (payload.tipo === 'llamada' && prospectoSeleccionado.proximaLlamada) {
             await axios.put(
                 `${API_URL}/api/${rol}/prospectos/${clienteId}`,
                 { proximaLlamada: null },
                 { headers: getAuthHeaders() }
             );
-
-            setSeguimientoForm((prev) => ({ ...prev, fechaProxima: '' }));
-            await cargarClientes();
-            alert('Próxima llamada limpiada.');
-        } catch (error) {
-            console.error('Error al limpiar próxima llamada:', error);
-            alert(error.response?.data?.msg || error.response?.data?.mensaje || 'No se pudo limpiar la próxima llamada.');
-        } finally {
-            setGuardandoSeguimiento(false);
         }
+
+        await axios.post(
+            `${API_URL}/api/${rol}/registrar-actividad`,
+            { clienteId, ...payload },
+            { headers: getAuthHeaders() }
+        );
+
+        await cargarTimelineCliente(prospectoSeleccionado);
+        const lista = await cargarClientes();
+        const actualizado = lista.find((c) => String(c.id || c._id) === String(clienteId));
+        if (actualizado) setProspectoSeleccionado(actualizado);
     };
 
     const handleDeleteActividad = async (actividadId) => {
@@ -472,54 +419,260 @@ const CRMClientes = () => {
                                 </span>
                             )}
                         </div>
-                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Resultado</label>
-                                <select
-                                    value={seguimientoForm.resultado}
-                                    onChange={(e) => setSeguimientoForm((prev) => ({ ...prev, resultado: e.target.value }))}
-                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                                >
-                                    <option value="pendiente">Pendiente</option>
-                                    <option value="exitoso">Exitoso</option>
-                                    <option value="fallido">Fallido</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Próxima llamada</label>
-                                <input
-                                    type="datetime-local"
-                                    value={seguimientoForm.fechaProxima}
-                                    onChange={(e) => setSeguimientoForm((prev) => ({ ...prev, fechaProxima: e.target.value }))}
-                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                                />
-                            </div>
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Notas de seguimiento</label>
-                                <textarea
-                                    rows={3}
-                                    value={seguimientoForm.notas}
-                                    onChange={(e) => setSeguimientoForm((prev) => ({ ...prev, notas: e.target.value }))}
-                                    placeholder="Ej: Cliente interesado en plan anual, solicitar llamada el jueves..."
-                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                                />
-                            </div>
-                            <div className="md:col-span-2 flex flex-wrap justify-end gap-3">
-                                <button
-                                    onClick={handleLimpiarProximaLlamada}
-                                    disabled={guardandoSeguimiento}
-                                    className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200 transition-colors disabled:opacity-50"
-                                >
-                                    Limpiar próxima llamada
-                                </button>
-                                <button
-                                    onClick={handleGuardarSeguimiento}
-                                    disabled={guardandoSeguimiento}
-                                    className="px-6 py-2 rounded-lg bg-(--theme-600) text-white font-semibold hover:bg-(--theme-700) transition-colors disabled:opacity-50"
-                                >
-                                    {guardandoSeguimiento ? 'Guardando...' : 'Guardar seguimiento'}
-                                </button>
-                            </div>
+                        <div className="p-6">
+                            {!llamadaFlow && (
+                                <div className="space-y-3">
+                                    <p className="text-sm text-slate-600">Registra la llamada de seguimiento con el mismo flujo de prospectos.</p>
+                                    <div className="flex flex-wrap gap-3">
+                                        <button
+                                            onClick={() => setLlamadaFlow({
+                                                paso: 'inicial',
+                                                fechaProxima: prospectoSeleccionado.proximaLlamada ? String(prospectoSeleccionado.proximaLlamada).slice(0, 16) : '',
+                                                notas: ''
+                                            })}
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-(--theme-600) text-white rounded-lg font-semibold hover:bg-(--theme-700)"
+                                        >
+                                            <Phone className="w-4 h-4" />
+                                            Iniciar flujo de llamada
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {llamadaFlow && (
+                                <div className="space-y-4 border border-slate-200 rounded-xl p-4 bg-slate-50">
+                                    {llamadaFlow.paso === 'inicial' && (
+                                        <div className="space-y-3">
+                                            <p className="font-semibold text-slate-800">¿El cliente contestó la llamada?</p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <button
+                                                    onClick={() => setLlamadaFlow((f) => ({ ...f, paso: 'contesto' }))}
+                                                    className="py-2.5 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700"
+                                                >
+                                                    Sí, contestó
+                                                </button>
+                                                <button
+                                                    onClick={() => setLlamadaFlow((f) => ({ ...f, paso: 'reintento' }))}
+                                                    className="py-2.5 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700"
+                                                >
+                                                    No contestó
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {llamadaFlow.paso === 'contesto' && (
+                                        <div className="space-y-3">
+                                            <p className="font-semibold text-slate-800">¿Cómo respondió el cliente?</p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                <button
+                                                    onClick={() => setLlamadaFlow((f) => ({ ...f, paso: 'llamarDespues' }))}
+                                                    className="py-2.5 bg-(--theme-600) text-white rounded-lg font-bold hover:bg-(--theme-700)"
+                                                >
+                                                    Llamar después
+                                                </button>
+                                                <button
+                                                    onClick={() => setLlamadaFlow((f) => ({ ...f, paso: 'whatsapp' }))}
+                                                    className="py-2.5 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 inline-flex items-center justify-center gap-1"
+                                                >
+                                                    <MessageCircle className="w-4 h-4" /> WhatsApp/Correo
+                                                </button>
+                                                <button
+                                                    onClick={() => setLlamadaFlow((f) => ({ ...f, paso: 'sin_interes' }))}
+                                                    className="py-2.5 bg-gray-500 text-white rounded-lg font-bold hover:bg-gray-600"
+                                                >
+                                                    Sin interés
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {llamadaFlow.paso === 'reintento' && (
+                                        <div className="space-y-3">
+                                            <p className="font-semibold text-rose-700">No contestó. Programa reintento:</p>
+                                            <TimeWheelPicker
+                                                value={llamadaFlow.fechaProxima}
+                                                onChange={(val) => setLlamadaFlow((f) => ({ ...f, fechaProxima: val }))}
+                                            />
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            setGuardandoSeguimiento(true);
+                                                            const rol = getRolePath();
+                                                            const clienteId = prospectoSeleccionado.id || prospectoSeleccionado._id;
+                                                            if (llamadaFlow.fechaProxima) {
+                                                                await axios.put(
+                                                                    `${API_URL}/api/${rol}/prospectos/${clienteId}`,
+                                                                    { proximaLlamada: llamadaFlow.fechaProxima },
+                                                                    { headers: getAuthHeaders() }
+                                                                );
+                                                            }
+                                                            const lista = await cargarClientes();
+                                                            const actualizado = lista.find((c) => String(c.id || c._id) === String(clienteId));
+                                                            if (actualizado) setProspectoSeleccionado(actualizado);
+                                                            toast.success('Reintento programado');
+                                                            setLlamadaFlow(null);
+                                                        } catch {
+                                                            toast.error('Error al programar reintento');
+                                                        } finally {
+                                                            setGuardandoSeguimiento(false);
+                                                        }
+                                                    }}
+                                                    disabled={guardandoSeguimiento}
+                                                    className="flex-1 py-2 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 disabled:opacity-50"
+                                                >
+                                                    Programar reintento
+                                                </button>
+                                                <button
+                                                    onClick={() => setLlamadaFlow(null)}
+                                                    className="px-4 py-2 border border-slate-200 text-gray-600 rounded-lg hover:bg-slate-50"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {llamadaFlow.paso === 'whatsapp' && (
+                                        <div className="space-y-3">
+                                            <p className="font-semibold text-green-700">Añadir nota para WhatsApp/Correo</p>
+                                            <textarea
+                                                rows={2}
+                                                value={llamadaFlow.notas || ''}
+                                                onChange={(e) => setLlamadaFlow((f) => ({ ...f, notas: e.target.value }))}
+                                                placeholder="Ej: Enviar cotización por correo en la tarde"
+                                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400"
+                                            />
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        setGuardandoSeguimiento(true);
+                                                        const notaFinal = llamadaFlow.notas
+                                                            ? `Prefiere atención por WhatsApp o correo - ${llamadaFlow.notas}`
+                                                            : 'Prefiere atención por WhatsApp o correo';
+                                                        await registrarActividadCliente({ tipo: 'llamada', resultado: 'exitoso', notas: notaFinal });
+                                                        toast.success('Interacción guardada');
+                                                        setLlamadaFlow(null);
+                                                    } catch {
+                                                        toast.error('No se pudo guardar la interacción');
+                                                    } finally {
+                                                        setGuardandoSeguimiento(false);
+                                                    }
+                                                }}
+                                                disabled={guardandoSeguimiento}
+                                                className="w-full py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 disabled:opacity-50"
+                                            >
+                                                Guardar interacción
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {llamadaFlow.paso === 'sin_interes' && (
+                                        <div className="space-y-3">
+                                            <p className="font-semibold text-gray-700">Motivo de falta de interés</p>
+                                            <textarea
+                                                rows={2}
+                                                value={llamadaFlow.notas || ''}
+                                                onChange={(e) => setLlamadaFlow((f) => ({ ...f, notas: e.target.value }))}
+                                                placeholder="Ej: Dice que por ahora no requiere servicio"
+                                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gray-400"
+                                            />
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        setGuardandoSeguimiento(true);
+                                                        const notaFinal = llamadaFlow.notas
+                                                            ? `Sin interés - ${llamadaFlow.notas}`
+                                                            : 'Contestó, sin interés';
+                                                        await registrarActividadCliente({ tipo: 'llamada', resultado: 'fallido', notas: notaFinal });
+                                                        toast.success('Seguimiento guardado');
+                                                        setLlamadaFlow(null);
+                                                    } catch {
+                                                        toast.error('No se pudo guardar el seguimiento');
+                                                    } finally {
+                                                        setGuardandoSeguimiento(false);
+                                                    }
+                                                }}
+                                                disabled={guardandoSeguimiento}
+                                                className="w-full py-2 bg-gray-500 text-white rounded-lg font-bold hover:bg-gray-600 disabled:opacity-50"
+                                            >
+                                                Guardar y cerrar
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {llamadaFlow.paso === 'llamarDespues' && (
+                                        <div className="space-y-3">
+                                            <p className="font-semibold text-(--theme-700)">¿Cuándo le llamamos?</p>
+                                            <TimeWheelPicker
+                                                value={llamadaFlow.fechaProxima}
+                                                onChange={(val) => setLlamadaFlow((f) => ({ ...f, fechaProxima: val }))}
+                                            />
+                                            <textarea
+                                                rows={2}
+                                                value={llamadaFlow.notas || ''}
+                                                onChange={(e) => setLlamadaFlow((f) => ({ ...f, notas: e.target.value }))}
+                                                placeholder="Notas de la llamada..."
+                                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-400)"
+                                            />
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        setGuardandoSeguimiento(true);
+                                                        const clienteId = prospectoSeleccionado.id || prospectoSeleccionado._id;
+                                                        const notasFin = llamadaFlow.notas || 'Interesado, llamar después';
+
+                                                        await registrarActividadCliente({
+                                                            tipo: 'llamada',
+                                                            resultado: 'exitoso',
+                                                            notas: notasFin
+                                                        });
+
+                                                        if (llamadaFlow.fechaProxima) {
+                                                            await axios.post(
+                                                                `${API_URL}/api/tareas`,
+                                                                {
+                                                                    titulo: `Llamada de seguimiento: ${prospectoSeleccionado.nombres || ''}`.trim(),
+                                                                    descripcion: notasFin,
+                                                                    cliente: clienteId,
+                                                                    fechaLimite: llamadaFlow.fechaProxima,
+                                                                    prioridad: 'media'
+                                                                },
+                                                                { headers: getAuthHeaders() }
+                                                            );
+
+                                                            const rol = getRolePath();
+                                                            await axios.put(
+                                                                `${API_URL}/api/${rol}/prospectos/${clienteId}`,
+                                                                { proximaLlamada: llamadaFlow.fechaProxima },
+                                                                { headers: getAuthHeaders() }
+                                                            );
+                                                        }
+
+                                                        const lista = await cargarClientes();
+                                                        const actualizado = lista.find((c) => String(c.id || c._id) === String(clienteId));
+                                                        if (actualizado) setProspectoSeleccionado(actualizado);
+
+                                                        toast.success('Seguimiento guardado correctamente');
+                                                        setLlamadaFlow(null);
+                                                    } catch (error) {
+                                                        console.error(error);
+                                                        toast.error('Error al guardar el seguimiento');
+                                                    } finally {
+                                                        setGuardandoSeguimiento(false);
+                                                    }
+                                                }}
+                                                disabled={guardandoSeguimiento}
+                                                className="w-full py-2 bg-(--theme-600) text-white rounded-lg font-bold hover:bg-(--theme-700) disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                                            >
+                                                <Calendar className="w-4 h-4" />
+                                                Guardar seguimiento
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 
