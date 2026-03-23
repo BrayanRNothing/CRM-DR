@@ -14,7 +14,7 @@ const secciones = [
     contenido: [
       'Responsable: CRM DR Soluciones Comerciales.',
       'Area responsable: Soporte y Cumplimiento.',
-      'Canal principal de privacidad: privacidad@crm-dr.com.'
+      'Canal principal de privacidad: julio@updm.mx y brayan@updm.mx.'
     ]
   },
   {
@@ -96,20 +96,20 @@ const secciones = [
 const contactos = [
   {
     titulo: 'Correo de privacidad',
-    valor: 'privacidad@crm-dr.com',
-    href: 'mailto:privacidad@crm-dr.com',
+    valor: 'julio@updm.mx',
+    href: 'mailto:julio@updm.mx',
     detalle: 'Solicitudes ARCO, dudas sobre datos personales y revocacion de consentimiento.'
   },
   {
     titulo: 'Correo de soporte',
-    valor: 'soporte@crm-dr.com',
-    href: 'mailto:soporte@crm-dr.com',
+    valor: 'brayan@updm.mx',
+    href: 'mailto:brayan@updm.mx',
     detalle: 'Incidencias tecnicas relacionadas con acceso o funcionamiento del CRM.'
   },
   {
     titulo: 'Telefono',
-    valor: '+1 809 555 0147',
-    href: 'tel:+18095550147',
+    valor: '8136458366',
+    href: 'tel:8136458366',
     detalle: 'Lunes a viernes, 8:00 a.m. a 6:00 p.m. (GMT-4).'
   }
 ];

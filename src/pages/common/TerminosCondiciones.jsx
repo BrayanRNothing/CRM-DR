@@ -81,20 +81,20 @@ const secciones = [
 const metodosContacto = [
   {
     titulo: 'Correo de soporte',
-    valor: 'soporte@crm-dr.com',
-    href: 'mailto:soporte@crm-dr.com',
+    valor: 'julio@updm.mx / brayan@updm.mx',
+    href: 'mailto:julio@updm.mx,brayan@updm.mx',
     detalle: 'Atencion de incidencias tecnicas, acceso, bloqueos y consultas de uso.'
   },
   {
     titulo: 'Telefono',
-    valor: '+1 809 555 0147',
-    href: 'tel:+18095550147',
+    valor: '8136458366',
+    href: 'tel:8136458366',
     detalle: 'Lunes a viernes, 8:00 a.m. a 6:00 p.m. (GMT-4).'
   },
   {
     titulo: 'WhatsApp de soporte',
-    valor: '+1 809 555 0199',
-    href: 'https://wa.me/18095550199',
+    valor: '8136458366',
+    href: 'https://wa.me/8136458366',
     detalle: 'Soporte rapido para incidencias operativas y seguimiento de tickets.'
   },
   {
