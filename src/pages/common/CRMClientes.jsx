@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X } from 'lucide-react';
 import axios from 'axios';
 import { getToken } from '../../utils/authUtils';
@@ -8,6 +9,8 @@ import { HistorialInteracciones } from '../../components/HistorialInteracciones'
 import API_URL from '../../config/api';
 
 const CRMClientes = () => {
+    const location = useLocation();
+    const esMenuSeguimiento = location.pathname.endsWith('/clientes/seguimiento');
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
@@ -397,8 +400,14 @@ const CRMClientes = () => {
             <div className="max-w-full mx-auto">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
-                        <p className="text-gray-500">Cartera de clientes ganados.</p>
+                        <h1 className="text-2xl font-bold text-gray-900">
+                            {esMenuSeguimiento ? 'Seguimiento de Clientes' : 'Clientes'}
+                        </h1>
+                        <p className="text-gray-500">
+                            {esMenuSeguimiento
+                                ? 'Gestiona y da seguimiento a tu cartera de clientes ganados.'
+                                : 'Cartera de clientes ganados.'}
+                        </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <input

@@ -55,6 +55,15 @@ const VendedorLayout = () => {
             )
         },
         {
+            name: 'Seguimiento Clientes',
+            path: '/vendedor/clientes/seguimiento',
+            icon: (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-8V6a1 1 0 10-2 0v5a1 1 0 00.293.707l2.5 2.5a1 1 0 001.414-1.414L11 10z" clipRule="evenodd" />
+                </svg>
+            )
+        },
+        {
             name: 'Usuarios',
             isAccordion: true,
             isBottom: true,

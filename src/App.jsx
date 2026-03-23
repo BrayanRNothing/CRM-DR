@@ -130,6 +130,7 @@ function App() {
             <Route path="prospectos" element={<ProspectorSeguimiento />} />
             <Route path="calendario" element={<ProspectorCalendario />} />
             <Route path="clientes" element={<CRMClientes />} />
+            <Route path="clientes/seguimiento" element={<CRMClientes />} />
             <Route path="usuarios/prospectors" element={<UserManagement initialRole="prospector" />} />
             <Route path="usuarios/closers" element={<UserManagement initialRole="closer" />} />
             <Route path="usuarios/vendedores" element={<UserManagement initialRole="vendedor" />} />
@@ -142,6 +143,7 @@ function App() {
             <Route path="calendario" element={<CloserCalendario />} />
             <Route path="prospectos" element={<ProspectorSeguimiento />} />
             <Route path="clientes" element={<CRMClientes />} />
+            <Route path="clientes/seguimiento" element={<CRMClientes />} />
             <Route path="usuarios/prospectors" element={<UserManagement initialRole="prospector" />} />
             <Route path="usuarios/closers" element={<UserManagement initialRole="closer" />} />
             <Route path="usuarios/vendedores" element={<UserManagement initialRole="vendedor" />} />
@@ -156,6 +158,7 @@ function App() {
             <Route path="calendario" element={<ProspectorCalendario />} />
             <Route path="prospectos" element={<ProspectorSeguimiento />} />
             <Route path="clientes" element={<CRMClientes />} />
+            <Route path="clientes/seguimiento" element={<CRMClientes />} />
             <Route path="usuarios/prospectors" element={<UserManagement initialRole="prospector" />} />
             <Route path="usuarios/closers" element={<UserManagement initialRole="closer" />} />
             <Route path="usuarios/vendedores" element={<UserManagement initialRole="vendedor" />} />
