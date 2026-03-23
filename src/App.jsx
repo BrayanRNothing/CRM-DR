@@ -16,6 +16,7 @@ import useThemeStore, { THEMES } from './store/themeStore.js';
 const Login = lazy(() => import('./pages/auth/Login.jsx'));
 const Register = lazy(() => import('./pages/auth/Register.jsx'));
 const Ajustes = lazy(() => import('./pages/common/Ajustes.jsx'));
+const TerminosCondiciones = lazy(() => import('./pages/common/TerminosCondiciones.jsx'));
 
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 
@@ -123,6 +124,7 @@ function App() {
           {/* RUTA PÚBLICA (El Login es la raíz "/") */}
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/terminos-y-condiciones" element={<TerminosCondiciones />} />
 
           {/* --- PROSPECTOR --- */}
           <Route path="/prospector" element={<ProspectorLayout />}>

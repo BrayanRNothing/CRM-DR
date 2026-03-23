@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AnimatedGridBackground from '../../components/ui/AnimatedGridBackground';
 
 import Register from './Register';
@@ -246,6 +246,17 @@ const Login = () => {
             <a href="/register" className="font-bold text-(--theme-600) hover:text-(--theme-800) hover:underline underline-offset-4 transition-all">
               Regístrate aquí
             </a>
+          </p>
+
+          <p className="mt-4 text-center text-xs text-slate-500 leading-relaxed">
+            Al iniciar sesión aceptas nuestros{' '}
+            <Link
+              to="/terminos-y-condiciones"
+              className="font-semibold text-(--theme-700) hover:text-(--theme-800) underline underline-offset-4"
+            >
+              Términos y Condiciones
+            </Link>
+            .
           </p>
 
         </div>
