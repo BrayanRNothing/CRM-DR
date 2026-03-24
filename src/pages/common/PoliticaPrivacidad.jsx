@@ -26,9 +26,10 @@ const secciones = [
     ]
   },
   {
-    titulo: '4. Uso de Google Calendar',
+    titulo: '4. Uso de Google Calendar y Datos de Usuario (Google API)',
     contenido: [
       'Si el usuario autoriza la integracion con Google Calendar, la plataforma accede solo a los permisos necesarios para leer o crear eventos vinculados a actividades comerciales.',
+      'El uso y la transferencia a cualquier otra aplicacion de la informacion recibida de las APIs de Google por parte de este CRM se adheriran a la Politica de Datos de Usuario de los Servicios de la API de Google (Google API Services User Data Policy), incluidos los requisitos de Uso Limitado.',
       'No utilizamos datos de Google Calendar para publicidad, perfilado comercial externo ni venta de informacion a terceros.',
       'El usuario puede revocar en cualquier momento los permisos desde su cuenta de Google en la seccion de seguridad y aplicaciones conectadas.'
     ]
@@ -117,7 +118,7 @@ const contactos = [
 const PoliticaPrivacidad = () => {
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto w-full">
         <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6 sm:p-10">
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
             Politica de Privacidad

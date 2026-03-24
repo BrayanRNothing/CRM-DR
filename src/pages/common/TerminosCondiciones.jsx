@@ -108,7 +108,7 @@ const metodosContacto = [
 const TerminosCondiciones = () => {
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto w-full">
         <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6 sm:p-10">
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
             Terminos y Condiciones
