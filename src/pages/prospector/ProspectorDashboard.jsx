@@ -180,7 +180,7 @@ const ProspectorDashboard = () => {
                                 {
                                     etapa: 'Llamadas/Contacto',
                                     cantidad: data.embudo.en_contacto,
-                                    color: 'bg-(--theme-500)',
+                                    color: 'bg-blue-500',
                                     contadorHoy: data.periodos?.[periodo]?.calls ?? data.periodos?.[periodo]?.llamadas ?? 0,
                                     labelContador: `llamadas ${PERIODOS.find(p => p.key === periodo)?.suffix || 'hoy'}`,
                                     cantidadExito: data.embudo.reunion_agendada,

@@ -42,6 +42,8 @@ export default function VendedorAjustes() {
     const [profileForm, setProfileForm] = useState({ nombre: '', email: '', telefono: '' });
     const [passForm, setPassForm] = useState({ next: '', confirm: '' });
     const [activeTab, setActiveTab] = useState('perfil');
+    const [googleAccountInfo, setGoogleAccountInfo] = useState(null);
+    const [loadingGoogle, setLoadingGoogle] = useState(false);
 
     // Theme Global State
     const { currentThemeId, setTheme } = useThemeStore();
@@ -55,8 +57,29 @@ export default function VendedorAjustes() {
         const gLinked = localStorage.getItem('google_linked');
         if (gLinked === 'true') {
             setGoogleConnected(true);
+            fetchGoogleInfo();
         }
     }, []);
+
+    const fetchGoogleInfo = async () => {
+        setLoadingGoogle(true);
+        try {
+            const res = await fetch(`${API_URL}/api/google/account-info`, {
+                headers: { 'x-auth-token': getToken() }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setGoogleAccountInfo(data);
+            } else if (res.status === 401) {
+                setGoogleConnected(false);
+                localStorage.removeItem('google_linked');
+            }
+        } catch (err) {
+            console.error('Error fetching google info:', err);
+        } finally {
+            setLoadingGoogle(false);
+        }
+    };
 
     const loginGoogle = useGoogleLogin({
         flow: 'auth-code',
@@ -76,6 +99,7 @@ export default function VendedorAjustes() {
                     setGoogleConnected(true);
                     localStorage.setItem('google_linked', 'true');
                     toast.success('¡Google vinculado correctamente!', { id: tid });
+                    fetchGoogleInfo();
                 } else {
                     toast.error('Ocurrió un error al guardar credenciales.', { id: tid });
                 }
@@ -86,11 +110,24 @@ export default function VendedorAjustes() {
         onError: () => toast.error('Error al conectar Google'),
     });
 
-    const handleDisconnectGoogle = () => {
-        // En una app real debríamos borrar el token en el backend también
-        localStorage.removeItem('google_linked');
-        setGoogleConnected(false);
-        toast.success('Cuenta Google desvinculada localmente');
+    const handleDisconnectGoogle = async () => {
+        const tid = toast.loading('Desvinculando Google...');
+        try {
+            const res = await fetch(`${API_URL}/api/google/disconnect`, {
+                method: 'POST',
+                headers: { 'x-auth-token': getToken() }
+            });
+            if (res.ok) {
+                localStorage.removeItem('google_linked');
+                setGoogleConnected(false);
+                setGoogleAccountInfo(null);
+                toast.success('Cuenta Google desvinculada', { id: tid });
+            } else {
+                toast.error('Error al desvincular en el servidor', { id: tid });
+            }
+        } catch (err) {
+            toast.error('Error de red', { id: tid });
+        }
     };
 
     const handleSaveProfile = async (e) => {
@@ -141,11 +178,7 @@ export default function VendedorAjustes() {
         navigate('/');
     };
 
-    const roleColors = {
-        closer: 'from-(--theme-500) to-(--theme-600)',
-        prospector: 'from-(--theme-500) to-(--theme-600)',
-    };
-    const roleBg = roleColors[user?.rol] || 'from-slate-500 to-slate-600';
+    const roleBg = 'from-(--theme-500) to-(--theme-600)';
 
     const inp = "w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-(--theme-500)/30 focus:border-(--theme-500) outline-none transition-all text-sm shadow-sm";
 
@@ -157,12 +190,12 @@ export default function VendedorAjustes() {
     ];
 
     return (
-        <div className="w-full h-screen overflow-hidden bg-slate-50/50">
+        <div className="w-full h-screen overflow-hidden bg-(--theme-50)/20">
             <div className="h-full overflow-y-auto">
-                <div className="max-w-7xl mx-auto px-4 sm:px-8 py-10 pb-32">
+                <div className="w-full max-w-(--breakpoint-2xl) mx-auto px-4 sm:px-10 py-10 pb-32">
 
                     {/* ═══ HERO HEADER ═══ */}
-                    <div className="relative rounded-3xl overflow-hidden mb-8 shadow-xl border border-slate-200/50">
+                    <div className="relative rounded-3xl overflow-hidden mb-8 shadow-xl border border-(--theme-200)/50">
                         {/* Gradient Banner */}
                         <div className={`h-32 sm:h-40 bg-linear-to-br ${roleBg} relative`} />
 
@@ -184,14 +217,14 @@ export default function VendedorAjustes() {
                                 </div>
 
                                 <div className="flex-1 pb-0">
-                                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">{user?.nombre || 'Usuario'}</h1>
+                                    <h1 className="text-xl sm:text-2xl font-black text-(--theme-900) leading-tight">{user?.nombre || 'Usuario'}</h1>
                                     <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                                        <span className="text-slate-400 text-sm">@{user?.usuario || 'usuario'}</span>
+                                        <span className="text-(--theme-500) text-sm font-medium">@{user?.usuario || 'usuario'}</span>
                                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold text-white bg-linear-to-r ${roleBg}`}>
                                             {user?.rol || 'Rol'}
                                         </span>
                                         {googleConnected && (
-                                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-600 border border-green-200">
+                                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-(--theme-50) text-(--theme-600) border border-(--theme-200)">
                                                 <GoogleIcon size={11} /> Vinculado
                                             </span>
                                         )}
@@ -209,27 +242,54 @@ export default function VendedorAjustes() {
                         </div>
                     </div>
 
-                    {/* ═══ TABS ═══ */}
-                    <div className="flex gap-1 bg-white p-1.5 rounded-2xl shadow-md border border-slate-200 mb-8 overflow-x-auto max-w-2xl">
-                        {tabs.map(({ id, label, icon: Icon }) => (
-                            <button
-                                key={id}
-                                onClick={() => setActiveTab(id)}
-                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all flex-1 justify-center
-                                    ${activeTab === id
-                                        ? `bg-linear-to-r ${roleBg} text-white shadow-md`
-                                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-                            >
-                                <Icon size={15} />
-                                <span className="hidden sm:inline">{label}</span>
-                            </button>
-                        ))}
-                    </div>
+                    {/* ═══ GRID CONTENT ═══ */}
+                    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-start">
+                        
+                        {/* ═══ TABS SIDEBAR (Hybrid) ═══ */}
+                        <div className="lg:sticky lg:top-8 z-10">
+                            <div className="flex lg:flex-col gap-2 bg-white/80 backdrop-blur-md p-1.5 lg:p-2 rounded-2xl shadow-sm border border-(--theme-200) overflow-x-auto no-scrollbar lg:overflow-visible">
+                                {tabs.map(({ id, label, icon: Icon }) => {
+                                    const isActive = activeTab === id;
+                                    return (
+                                        <button
+                                            key={id}
+                                            onClick={() => setActiveTab(id)}
+                                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold whitespace-nowrap transition-all flex-1 lg:flex-none
+                                                ${isActive
+                                                    ? `bg-linear-to-r ${roleBg} text-white shadow-lg shadow-(--theme-500)/20`
+                                                    : 'text-(--theme-500) hover:text-(--theme-700) hover:bg-(--theme-50)'}`}
+                                        >
+                                            <Icon size={18} className={isActive ? 'text-white' : 'text-(--theme-400)'} />
+                                            <span>{label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Info Card desktop only */}
+                            <div className="hidden lg:block mt-6 p-5 bg-linear-to-br from-(--theme-50) to-white rounded-3xl border border-(--theme-200) shadow-sm overflow-hidden relative group">
+                                <div className={`absolute top-0 right-0 w-24 h-24 bg-linear-to-br ${roleBg} opacity-5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-110 transition-transform duration-700`} />
+                                <h3 className="text-xs font-black text-(--theme-400) uppercase tracking-widest mb-2">Estado de Cuenta</h3>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-bold text-(--theme-600)">Plan</span>
+                                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black text-white bg-linear-to-r ${roleBg}`}>PREMIUM</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-bold text-(--theme-600)">Sesión</span>
+                                        <span className="text-xs font-medium text-(--theme-500)">Activa</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ═══ MAIN CONTENT ═══ */}
+                        <div className="space-y-6">
 
                     {/* ═══ TAB: PERFIL ═══ */}
                     {activeTab === 'perfil' && (
                         <form onSubmit={handleSaveProfile}>
-                            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+                            <div className="bg-white rounded-3xl shadow-xl border border-(--theme-200) overflow-hidden">
                                 <div className="" />
                                 <div className="p-6 sm:p-8">
                                     <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
@@ -282,7 +342,7 @@ export default function VendedorAjustes() {
                     {/* ═══ TAB: SEGURIDAD ═══ */}
                     {activeTab === 'seguridad' && (
                         <form onSubmit={handleSavePass}>
-                            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+                            <div className="bg-white rounded-3xl shadow-xl border border-(--theme-200) overflow-hidden">
                                 <div className="" />
                                 <div className="p-6 sm:p-8">
                                     <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
@@ -343,115 +403,131 @@ export default function VendedorAjustes() {
                         </form>
                     )}
 
-                    {/* ═══ TAB: INTEGRACIONES (Google) ═══ */}
                     {activeTab === 'integraciones' && (
-                        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                            <div className="" />
-                            <div className="p-6 sm:p-8">
-                                <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
-                                    <div className="p-2 rounded-xl bg-white border border-slate-200 shadow-sm">
-                                        <GoogleIcon size={16} />
+                        <div className="bg-white rounded-3xl shadow-xl border border-(--theme-200) overflow-hidden">
+                            <div className="p-4 sm:p-6">
+                                <h2 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                    <div className="p-1.5 rounded-lg bg-white border border-slate-200 shadow-sm">
+                                        <GoogleIcon size={14} />
                                     </div>
                                     Cuenta Google
                                 </h2>
 
                                 {googleConnected ? (
-                                    <div className="space-y-4 max-w-md">
-                                        <div className="relative p-5 bg-linear-to-br from-green-50 to-(--theme-50) border border-green-200 rounded-2xl overflow-hidden">
-                                            <div className="absolute top-0 right-0 w-24 h-24 bg-green-200/30 rounded-full -translate-y-8 translate-x-8" />
-                                            <div className="flex items-center gap-4">
-                                                {user?.nombre ? (
-                                                    <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-md shrink-0 text-xl font-bold text-green-700">
-                                                        {String(user?.nombre).charAt(0).toUpperCase()}
-                                                    </div>
+                                    <div className="space-y-4 max-w-2xl">
+                                        <div className="relative p-4 bg-linear-to-br from-(--theme-50) to-white border border-(--theme-100) rounded-2xl overflow-hidden shadow-xs">
+                                            <div className="absolute top-0 right-0 w-24 h-24 bg-(--theme-200)/20 rounded-full -translate-y-8 translate-x-8" />
+                                            
+                                            <div className="flex flex-col sm:flex-row items-center gap-4 relative z-10">
+                                                {googleAccountInfo?.picture ? (
+                                                    <img src={googleAccountInfo.picture} alt="Google Profile" className="w-14 h-14 rounded-xl shadow-md ring-2 ring-white" />
                                                 ) : (
-                                                    <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center shadow-md shrink-0">
-                                                        <GoogleIcon size={28} />
+                                                    <div className="w-14 h-14 rounded-xl bg-white flex items-center justify-center shadow-md ring-2 ring-white">
+                                                        <GoogleIcon size={24} />
                                                     </div>
                                                 )}
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-bold text-green-900 truncate">Vínculo con Calendario Activo</p>
-                                                    <p className="text-sm text-green-600 truncate">El sistema puede agendar por ti</p>
+                                                
+                                                <div className="flex-1 text-center sm:text-left">
+                                                    <h3 className="text-base font-black text-(--theme-900) leading-tight">{googleAccountInfo?.name || 'Vínculo Activo'}</h3>
+                                                    <p className="text-(--theme-700) text-xs font-medium flex items-center justify-center sm:justify-start gap-1">
+                                                        <Mail size={12} />
+                                                        {googleAccountInfo?.email || 'Cargando información...'}
+                                                    </p>
+                                                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
+                                                        <span className="px-1.5 py-0.5 rounded-md bg-white/60 text-[9px] font-bold text-(--theme-700) uppercase tracking-wider backdrop-blur-sm border border-(--theme-200)">
+                                                            Calendar
+                                                        </span>
+                                                        <span className="px-1.5 py-0.5 rounded-md bg-(--theme-100)/80 text-[9px] font-bold text-(--theme-700) uppercase tracking-wider border border-(--theme-200)">
+                                                            ONLINE
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className="shrink-0 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
-                                                    <CheckCircle2 className="text-green-500" size={18} fill="currentColor" />
+
+                                                <div className="shrink-0 flex items-center justify-center w-8 h-8 bg-white rounded-lg shadow-xs border border-(--theme-200)">
+                                                    <CheckCircle2 className="text-(--theme-500)" size={18} fill="currentColor" />
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-start gap-2.5 p-3 bg-(--theme-50) rounded-xl text-sm text-(--theme-700)">
-                                            <span className="mt-0.5">ℹ️</span>
-                                            <span>Tu cuenta está vinculada. Puedes acceder a tu Calendario desde el menú principal.</span>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div className="p-4 bg-(--theme-50)/50 border border-(--theme-100) rounded-xl">
+                                                <h4 className="text-[10px] font-black text-(--theme-400) uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                    <Shield size={12} /> Permisos
+                                                </h4>
+                                                <div className="space-y-1">
+                                                    {['Calendario', 'Eventos', 'Perfil'].map((p, i) => (
+                                                        <div key={i} className="flex items-center gap-2 text-xs font-semibold text-(--theme-600)">
+                                                            <div className="w-1 h-1 rounded-full bg-(--theme-500)" />
+                                                            {p}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="p-4 bg-(--theme-50)/50 border border-(--theme-100) rounded-xl">
+                                                <h4 className="text-[10px] font-black text-(--theme-400) uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                    <Monitor size={12} /> Estado
+                                                </h4>
+                                                <div className="space-y-1.5">
+                                                    <div className="flex justify-between text-[11px] font-semibold">
+                                                        <span className="text-(--theme-500)">Sesión:</span>
+                                                        <span className="text-(--theme-600) uppercase">Activa</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-[11px] font-semibold">
+                                                        <span className="text-(--theme-500)">ID:</span>
+                                                        <span className="text-(--theme-400) font-mono italic">{googleAccountInfo?.id?.slice(0, 6)}...</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-start gap-3 p-3 bg-amber-50/50 rounded-xl border border-amber-100 text-[11px] text-amber-700 font-medium">
+                                            <AlertCircle size={16} className="shrink-0" />
+                                            <span>Para cambiar de cuenta, desvincula la actual primero. Esto detendrá la sincronización.</span>
                                         </div>
 
                                         <button onClick={handleDisconnectGoogle}
-                                            className="w-full flex items-center justify-center gap-2 py-3 px-5 bg-white border-2 border-red-200 text-red-600 font-bold rounded-xl hover:bg-red-50 hover:border-red-300 active:scale-95 transition-all text-sm">
-                                            <Link2Off size={16} />
-                                            Desvincular Cuenta Google
+                                            className="w-full sm:w-auto flex items-center justify-center gap-2 py-2.5 px-6 bg-white border border-red-100 text-red-500 font-bold rounded-xl hover:bg-red-50 hover:border-red-200 active:scale-95 transition-all text-xs shadow-xs">
+                                            <Link2Off size={14} />
+                                            Desvincular Google
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="max-w-md">
-                                        <div className="text-center py-8 px-4">
-                                            <div className="w-20 h-20 mx-auto mb-4 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center">
-                                                <GoogleIcon size={36} />
-                                            </div>
-                                            <h3 className="font-bold text-slate-700 text-lg mb-1">Ninguna cuenta vinculada</h3>
-                                            <p className="text-slate-400 text-sm mb-6">Vincula tu Google para usar el Calendario integrado</p>
-                                            <button onClick={() => loginGoogle()}
-                                                className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-2xl hover:border-(--theme-400) hover:shadow-lg hover:shadow-(--theme-500)/10 active:scale-95 transition-all text-sm">
-                                                <GoogleIcon size={20} />
-                                                Vincular con Google
-                                            </button>
+                                    <div className="max-w-md text-center py-8 px-5 bg-(--theme-50)/40 rounded-2xl border border-dashed border-(--theme-300)">
+                                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white shadow-lg flex items-center justify-center relative">
+                                            <div className="absolute inset-0 bg-linear-to-br from-blue-50 to-red-50 rounded-full animate-pulse opacity-50" />
+                                            <GoogleIcon size={32} />
                                         </div>
+                                        <h3 className="font-black text-slate-800 text-lg mb-1">Conecta con Google</h3>
+                                        <p className="text-slate-500 text-xs mb-5 leading-snug">
+                                            Sincroniza agenda y tareas para gestionar tu tiempo desde el CRM.
+                                        </p>
+                                        <button onClick={() => loginGoogle()}
+                                            className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 font-black rounded-xl hover:border-(--theme-400) hover:shadow-xl hover:shadow-(--theme-500)/10 active:scale-95 transition-all text-xs group">
+                                            <div className="group-hover:rotate-12 transition-transform">
+                                                <GoogleIcon size={18} />
+                                            </div>
+                                            Vincular ahora
+                                        </button>
                                     </div>
                                 )}
                             </div>
                         </div>
                     )}
 
-                    {/* ═══ TAB: PREFERENCIAS ═══ */}
                     {activeTab === 'preferencias' && (
-                        <div className="space-y-4">
-
-                            {/* Notificaciones */}
-                            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
-                                <div className="" />
-                                <div className="p-6 sm:p-8">
+                        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+                            <div className="p-4 sm:p-6 max-h-[360px] overflow-y-auto space-y-6 custom-scrollbar bg-(--theme-50)/30 shadow-inner">
+                                
+                                {/* 1. Apariencia / Tema (Moved Up) */}
+                                <section>
                                     <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
-                                        <div className="p-2 rounded-xl bg-linear-to-br from-violet-500 to-purple-600">
-                                            <Bell className="text-white" size={15} />
-                                        </div>
-                                        Notificaciones
-                                    </h2>
-                                    <div className="space-y-3">
-                                        {[
-                                            { key: 'email', label: 'Por Email', desc: 'Alertas enviadas a tu correo' },
-                                            { key: 'tasks', label: 'Tareas', desc: 'Recordatorios de tareas pendientes' },
-                                            { key: 'updates', label: 'Actualizaciones', desc: 'Novedades del sistema' },
-                                        ].map(({ key, label, desc }) => (
-                                            <div key={key} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                                <div>
-                                                    <p className="font-semibold text-slate-700 text-sm">{label}</p>
-                                                    <p className="text-xs text-slate-400 mt-0.5">{desc}</p>
-                                                </div>
-                                                <Toggle value={notifs[key]} onChange={v => setNotifs(p => ({ ...p, [key]: v }))} />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Apariencia / Tema */}
-                            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                                <div className="p-6 sm:p-8">
-                                    <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
-                                        <div className="p-2 rounded-xl bg-slate-100 text-slate-600">
+                                        <div className="p-2 rounded-xl bg-(--theme-100) text-(--theme-600)">
                                             <Palette size={15} />
                                         </div>
                                         Apariencia del Sistema
                                     </h2>
-                                    <p className="text-sm text-slate-500 mb-4">
+                                    <p className="text-sm text-slate-500 mb-6 font-medium">
                                         Personaliza el color de acento principal del CRM en tu dispositivo.
                                     </p>
 
@@ -463,7 +539,7 @@ export default function VendedorAjustes() {
                                                     type="button"
                                                     key={theme.id}
                                                     onClick={() => setTheme(theme.id)}
-                                                    className={`group relative flex items-center gap-3 p-3 pr-5 rounded-2xl border-2 transition-all ${isActive ? 'bg-slate-50 border-slate-300 shadow-sm' : 'border-transparent hover:bg-slate-50'}`}
+                                                    className={`group relative flex items-center gap-3 p-3 pr-5 rounded-2xl border-2 transition-all ${isActive ? 'bg-white border-(--theme-300) shadow-sm' : 'border-transparent hover:bg-white/50'}`}
                                                 >
                                                     <div
                                                         className={`w-8 h-8 rounded-full shadow-sm flex items-center justify-center transition-transform ${isActive ? 'scale-110 ring-2 ring-offset-2' : 'group-hover:scale-110'}`}
@@ -478,12 +554,40 @@ export default function VendedorAjustes() {
                                             )
                                         })}
                                     </div>
-                                </div>
-                            </div>
+                                </section>
 
+                                {/* 2. Notificaciones (Moved Down) */}
+                                <section>
+                                    <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
+                                        <div className="p-2 rounded-xl bg-linear-to-br from-violet-500 to-purple-600">
+                                            <Bell className="text-white" size={15} />
+                                        </div>
+                                        Centro de Notificaciones
+                                    </h2>
+                                    <div className="space-y-3">
+                                        {[
+                                            { key: 'email', label: 'Por Email', desc: 'Alertas enviadas a tu correo' },
+                                            { key: 'tasks', label: 'Tareas', desc: 'Recordatorios de tareas pendientes' },
+                                            { key: 'updates', label: 'Actualizaciones', desc: 'Novedades del sistema' },
+                                            { key: 'push', label: 'Push Desktop', desc: 'Notificaciones en el navegador' },
+                                        ].map(({ key, label, desc }) => (
+                                            <div key={key} className="flex items-center justify-between p-4 bg-white/60 rounded-2xl border border-(--theme-100) hover:border-(--theme-300) transition-colors">
+                                                <div>
+                                                    <p className="font-bold text-(--theme-900) text-sm">{label}</p>
+                                                    <p className="text-[10px] text-(--theme-500) font-medium mt-0.5 uppercase tracking-wide">{desc}</p>
+                                                </div>
+                                                <Toggle value={notifs[key]} onChange={v => setNotifs(p => ({ ...p, [key]: v }))} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+
+                            </div>
                         </div>
                     )}
 
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

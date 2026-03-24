@@ -258,7 +258,7 @@ const VendedorDashboard = () => {
                                 {
                                     etapa: 'Prospectos',
                                     cantidad: prospectorData.embudo.total,
-                                    color: 'bg-blue-500',
+                                    color: 'bg-(--theme-500)',
                                     contadorHoy: prospectorData.periodos?.[periodo]?.prospectos ?? 0,
                                     labelContador: `recibidos ${periodoSuffix}`,
                                     cantidadExito: prospectorData.embudo.en_contacto,
@@ -271,7 +271,7 @@ const VendedorDashboard = () => {
                                 {
                                     etapa: 'Llamadas/Contacto',
                                     cantidad: prospectorData.embudo.en_contacto,
-                                    color: 'bg-indigo-500',
+                                    color: 'bg-blue-500',
                                     contadorHoy: prospectorData.periodos?.[periodo]?.calls ?? prospectorData.periodos?.[periodo]?.llamadas ?? 0,
                                     labelContador: `llamadas ${periodoSuffix}`,
                                     cantidadExito: prospectorData.embudo.reunion_agendada,
@@ -284,7 +284,7 @@ const VendedorDashboard = () => {
                                 {
                                     etapa: 'Citas Agendadas',
                                     cantidad: prospectorData.embudo.reunion_agendada,
-                                    color: 'bg-emerald-500',
+                                    color: 'bg-green-500',
                                     contadorHoy: prospectorData.periodos?.[periodo]?.reunions ?? prospectorData.periodos?.[periodo]?.reuniones ?? 0,
                                     labelContador: `agendadas ${periodoSuffix}`,
                                     cantidadExito: prospectorData.embudo.reunion_agendada,
@@ -330,7 +330,7 @@ const VendedorDashboard = () => {
                                 {
                                     etapa: 'Reuniones Realizadas',
                                     cantidad: closerData.embudo.reunion_realizada,
-                                    color: 'bg-cyan-500',
+                                    color: 'bg-(--theme-500)',
                                     contadorHoy: closerData.metricas.reuniones.realizadasHoy,
                                     labelContador: 'hoy',
                                     cantidadExito: closerData.embudo.propuesta_enviada,
@@ -343,7 +343,7 @@ const VendedorDashboard = () => {
                                 {
                                     etapa: 'Propuestas Enviadas',
                                     cantidad: closerData.embudo.propuesta_enviada,
-                                    color: 'bg-orange-500',
+                                    color: 'bg-cyan-500',
                                     contadorHoy: closerData.metricas.reuniones.propuestasHoy,
                                     labelContador: 'hoy',
                                     cantidadExito: closerData.embudo.venta_ganada,

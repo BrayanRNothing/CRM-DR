@@ -137,7 +137,16 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', subtitle = 'Works
                                 return (
                                     <div key={index} className="relative group/accordion">
                                         <button
-                                            onClick={() => !isCollapsed && toggleAccordion(item.name)}
+                                            onClick={() => {
+                                                if (isCollapsed) {
+                                                    handleToggle();
+                                                    if (!openAccordions[item.name]) {
+                                                        toggleAccordion(item.name);
+                                                    }
+                                                } else {
+                                                    toggleAccordion(item.name);
+                                                }
+                                            }}
                                             className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-all ${hasActiveChild && isCollapsed ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                             title={isCollapsed ? item.name : ''}
                                         >
@@ -219,7 +228,16 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'CRM', subtitle = 'Works
                                 return (
                                     <div key={`bot-${index}`} className="relative group/accordion">
                                         <button
-                                            onClick={() => !isCollapsed && toggleAccordion(item.name)}
+                                            onClick={() => {
+                                                if (isCollapsed) {
+                                                    handleToggle();
+                                                    if (!openAccordions[item.name]) {
+                                                        toggleAccordion(item.name);
+                                                    }
+                                                } else {
+                                                    toggleAccordion(item.name);
+                                                }
+                                            }}
                                             className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-all ${hasActiveChild && isCollapsed ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                             title={isCollapsed ? item.name : ''}
                                         >

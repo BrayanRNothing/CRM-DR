@@ -457,4 +457,81 @@ router.patch('/mark-completed/:eventId', auth, async (req, res) => {
     }
 });
 
+// @route   GET api/google/account-info
+// @desc    Obtiene información del perfil de Google (nombre, email, foto)
+// @access  Private
+router.get('/account-info', auth, async (req, res) => {
+    const userId = parseInt(req.usuario.id);
+    try {
+        const user = await db.prepare('SELECT googleRefreshToken, googleAccessToken, googleTokenExpiry FROM usuarios WHERE id = ?').get(userId);
+
+        if (!user || (!user.googleRefreshToken && !user.googleAccessToken)) {
+            return res.status(400).json({ msg: 'No se ha vinculado Google Calendar', notLinked: true });
+        }
+
+        const client = new OAuth2Client(
+            process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET
+        );
+
+        client.setCredentials({
+            refresh_token: user.googleRefreshToken,
+            access_token: user.googleAccessToken,
+            expiry_date: user.googleTokenExpiry
+        });
+
+        // Configurar listener para actualizar tokens si se refrescan
+        client.on('tokens', async (tokens) => {
+            const updateStr = [];
+            const params = [];
+            if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
+            if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
+            if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
+            if (updateStr.length > 0) {
+                params.push(userId);
+                await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
+            }
+        });
+
+        const oauth2 = google.oauth2({ version: 'v2', auth: client });
+        const userInfo = await oauth2.userinfo.v2.me.get();
+
+        res.json({
+            name: userInfo.data.name,
+            email: userInfo.data.email,
+            picture: userInfo.data.picture,
+            id: userInfo.data.id,
+            verified_email: userInfo.data.verified_email,
+            scopes: client.credentials.scope?.split(' ') || []
+        });
+
+    } catch (error) {
+        console.error('Error fetching Google account info:', error.response ? error.response.data : error.message);
+        if (isGoogleAuthError(error)) {
+            await clearGoogleTokens(userId);
+            return res.status(401).json({
+                msg: 'La sesión de Google expiró. Vuelve a vincular tu cuenta.',
+                notLinked: true,
+                code: 'google_auth_expired'
+            });
+        }
+        res.status(500).json({ msg: 'Error al obtener información de Google' });
+    }
+});
+
+// @route   POST api/google/disconnect
+// @desc    Desvincula la cuenta de Google del usuario (borra tokens)
+// @access  Private
+router.post('/disconnect', auth, async (req, res) => {
+    const userId = parseInt(req.usuario.id);
+    try {
+        await clearGoogleTokens(userId);
+        res.json({ msg: 'Cuenta de Google desvinculada exitosamente' });
+    } catch (error) {
+        console.error('Error desvinculando Google:', error.message);
+        res.status(500).json({ msg: 'Error al desvincular cuenta de Google' });
+    }
+});
+
 module.exports = router;
+
