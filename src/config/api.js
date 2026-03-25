@@ -1,10 +1,10 @@
-// Placeholder API configuration
+// Placeholder API configurations
 // Replace this with your actual backend URL when you connect your API
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://crmupdm-production.up.railway.app';
 
-// Global interceptor: auto-logout when token is expired or invalid
+// Global interceptor: auto-logout when token is expired or invalid  
 axios.interceptors.response.use(
     (response) => response,
     (error) => {
