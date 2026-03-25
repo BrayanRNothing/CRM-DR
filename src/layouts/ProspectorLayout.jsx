@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import AnimatedGridBackground from '../components/ui/AnimatedGridBackground';
 import FloatingSidebar from '../components/ui/FloatingSidebar';
 import { getUser } from '../utils/authUtils';
+import logosolomycrm from '../assets/logosolomycrm.png';
 
 
 const ProspectorLayout = () => {
@@ -113,8 +114,9 @@ const ProspectorLayout = () => {
                 <FloatingSidebar
                     menuItems={menuItems}
                     userInfo={{ ...usuario, rol: 'Prospector' }}
-                    title="CRM"
+                    title="solomycrm"
                     subtitle="Prospector"
+                    logo={<img src={logosolomycrm} alt="solomycrm" className="w-8 h-8 object-contain" />}
                     onCollapseChange={setSidebarCollapsed}
                     mode="light"
                 />

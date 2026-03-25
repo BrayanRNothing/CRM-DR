@@ -26,6 +26,7 @@ const getAuthHeaders = () => ({ 'x-auth-token': localStorage.getItem('token') ||
 const ProspectorDashboard = () => {
     const [data, setData] = useState(null);
     const [tareas, setTareas] = useState([]);
+    const [recordatorios, setRecordatorios] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingTareas, setLoadingTareas] = useState(false);
     const [sinDatos, setSinDatos] = useState(false);
@@ -57,7 +58,18 @@ const ProspectorDashboard = () => {
             setLoading(false);
         }
     };
-
+ 
+    const cargarRecordatorios = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/api/prospector/prospectos`, { headers: getAuthHeaders() });
+            const conRecordatorio = (response.data || []).filter(p => !!p.proximaLlamada);
+            conRecordatorio.sort((a, b) => new Date(a.proximaLlamada) - new Date(b.proximaLlamada));
+            setRecordatorios(conRecordatorio);
+        } catch (error) {
+            console.error('Error al cargar recordatorios:', error);
+        }
+    };
+ 
     const cargarTareas = async () => {
         setLoadingTareas(true);
         try {
@@ -83,11 +95,13 @@ const ProspectorDashboard = () => {
     useEffect(() => {
         cargarDatos();
         cargarTareas();
+        cargarRecordatorios();
 
         // Polling de 5 minutos como respaldo
         const interval = setInterval(() => {
             cargarDatos();
             cargarTareas();
+            cargarRecordatorios();
         }, 5 * 60 * 1000);
 
         // 🚀 WebSockets Actualización en tiempo real
@@ -95,6 +109,7 @@ const ProspectorDashboard = () => {
             console.log('socket: prospectos actualizados', obj);
             cargarDatos();
             cargarTareas();
+            cargarRecordatorios();
         });
 
         return () => {
@@ -262,10 +277,40 @@ const ProspectorDashboard = () => {
                         <div className="flex-1 bg-white border border-gray-200 rounded-xl p-6 shadow-md flex flex-col overflow-hidden">
                             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2 shrink-0">
                                 <Target className="w-6 h-6 text-[#0d9488]" />
-                                Metas y Recordatorios
+                                Metas y Tareas
                             </h2>
+ 
+                            <div className="flex-1 space-y-3 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+                                
+                                {/* ── RECORDATORIOS DE LLAMADA ── */}
+                                {recordatorios.length > 0 && (
+                                    <div className="mb-8">
+                                        <h3 className="text-xs font-bold text-rose-600 uppercase tracking-widest flex items-center gap-2 mb-3">
+                                            <Phone className="w-3.5 h-3.5" /> Recordatorios Pendientes
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {recordatorios.map(p => (
+                                                <div 
+                                                    key={p.id || p._id} 
+                                                    className="bg-rose-50 border border-rose-100 rounded-xl p-4 flex items-center justify-between group hover:border-rose-300 transition-colors shadow-sm cursor-pointer"
+                                                    onClick={() => navigate('/prospector/prospectos', { state: { selectedId: p.id || p._id } })}
+                                                >
+                                                    <div className="flex-1 min-w-0 pr-3">
+                                                        <div className="font-bold text-gray-900 truncate">{p.nombre || `${p.nombres || ''} ${p.apellidoPaterno || ''}`.trim()}</div>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <Clock className="w-3 h-3 text-rose-500" />
+                                                            <span className="text-[10px] text-rose-600 font-bold uppercase">
+                                                                📞 {new Date(p.proximaLlamada).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <ExternalLink className="w-4 h-4 text-rose-300 group-hover:text-rose-500 transition-colors" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
-                            <div className="flex-1 space-y-3 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin', scrollbarColor: '#3b82f6 #f3f4f6' }}>
                                 {/* METAS EN MODO STACK */}
                                 <div className="space-y-3 mb-6">
                                     {/* Meta 12 llamadas diarias */}
@@ -307,11 +352,18 @@ const ProspectorDashboard = () => {
                                         </div>
                                     </div>
                                 </div>
+                                
+                                {/* TAREAS PENDIENTES */}
+                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2 mb-3 mt-8">
+                                    <Clock className="w-3.5 h-3.5" /> Tareas Pendientes
+                                </h3>
 
                                 {loadingTareas ? (
                                     <div className="flex justify-center items-center h-20">
                                         <RefreshCw className="w-6 h-6 animate-spin text-(--theme-500)" />
                                     </div>
+                                ) : tareasPendientes.length === 0 ? (
+                                    <p className="text-xs text-gray-400 text-center py-6">Sin tareas generales.</p>
                                 ) : (
                                     tareasPendientes.map((t) => {
                                         const prospectoId = t.cliente || t.clienteId;

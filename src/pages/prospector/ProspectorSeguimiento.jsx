@@ -1285,23 +1285,6 @@ const ProspectorSeguimiento = () => {
                     proximaLlamada: null
                 }, { headers: getAuthHeaders() });
 
-                // Mejor esfuerzo: marcar como completada la última tarea pendiente de llamada
-                try {
-                    const tareasRes = await axios.get(`${API_URL}/api/tareas`, { headers: getAuthHeaders() });
-                    const tareaPendienteLlamada = (tareasRes.data || [])
-                        .filter(t => String(t.cliente) === String(pid) && t.estado === 'pendiente' && (t.titulo || '').toLowerCase().includes('llamada de seguimiento'))
-                        .sort((a, b) => new Date(b.fechaLimite || b.createdAt || 0) - new Date(a.fechaLimite || a.createdAt || 0))[0];
-
-                    if (tareaPendienteLlamada?.id || tareaPendienteLlamada?._id) {
-                        const taskId = tareaPendienteLlamada.id || tareaPendienteLlamada._id;
-                        await axios.put(`${API_URL}/api/tareas/${taskId}`, {
-                            estado: 'completada'
-                        }, { headers: getAuthHeaders() });
-                    }
-                } catch (taskErr) {
-                    console.warn('No se pudo completar tarea de recordatorio:', taskErr);
-                }
-
                 const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
                 const updated = res.data.find(p => p.id === pid || p._id === pid);
                 if (updated) {
@@ -1794,16 +1777,7 @@ const ProspectorSeguimiento = () => {
                                                             });
 
                                                             if (llamadaFlow.fechaProxima) {
-                                                                // 2. Crear Tarea de seguimiento
-                                                                await axios.post(`${API_URL}/api/tareas`, {
-                                                                    titulo: `Llamada de seguimiento: ${prospectoSeleccionado.nombres}`,
-                                                                    descripcion: notasFin,
-                                                                    cliente: pidLocal,
-                                                                    fechaLimite: llamadaFlow.fechaProxima,
-                                                                    prioridad: 'media'
-                                                                }, { headers: getAuthHeaders() });
-
-                                                                // 3. Actualizar solo proximaLlamada (ruta simple, no requiere nombres/telefono)
+                                                                // 2. Actualizar solo proximaLlamada (ruta simple, no requiere nombres/telefono)
                                                                 await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLocal}`, {
                                                                     proximaLlamada: llamadaFlow.fechaProxima
                                                                 }, { headers: getAuthHeaders() });
@@ -2123,16 +2097,7 @@ const ProspectorSeguimiento = () => {
                                             // NO registrar como actividad tipo 'llamada' (eso contaría como llamada realizada)
 
                                             if (recordatorio.fechaProxima) {
-                                                // 1. Crear Tarea de seguimiento
-                                                await axios.post(`${API_URL}/api/tareas`, {
-                                                    titulo: `Llamada de seguimiento: ${prospectoSeleccionado.nombres}`,
-                                                    descripcion: notasFin,
-                                                    cliente: pid,
-                                                    fechaLimite: recordatorio.fechaProxima,
-                                                    prioridad: 'media'
-                                                }, { headers: getAuthHeaders() });
-
-                                                // 2. Actualizar proximaLlamada
+                                                // 1. Actualizar proximaLlamada
                                                 await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, {
                                                     proximaLlamada: recordatorio.fechaProxima
                                                 }, { headers: getAuthHeaders() });

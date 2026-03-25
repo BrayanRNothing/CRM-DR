@@ -156,8 +156,8 @@ const VendedorDashboard = () => {
                 hoyFin.setHours(23, 59, 59, 999);
                 const conRecordatorio = (resProsp.data || []).filter(p => {
                     if (!p.proximaLlamada) return false;
-                    const fechaRec = new Date(p.proximaLlamada);
-                    return fechaRec >= ahora && fechaRec <= hoyFin;
+                    // Mostrar todos los que tengan fecha de llamada, incluso si ya pasó (pendientes)
+                    return true;
                 });
                 conRecordatorio.sort((a, b) => new Date(a.proximaLlamada) - new Date(b.proximaLlamada));
                 setRecordatorios(conRecordatorio.slice(0, 4));
@@ -425,7 +425,7 @@ const VendedorDashboard = () => {
                 {/* Recordatorios de Llamada */}
                 <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm flex flex-col flex-1 min-h-0">
                     <h3 className="text-xs font-bold text-gray-700 flex items-center gap-1.5 mb-2 shrink-0 uppercase tracking-wider">
-                        <Bell className="w-3.5 h-3.5 text-rose-500" /> Recordatorios Hoy
+                        <Phone className="w-3.5 h-3.5 text-rose-500" /> Recordatorios Pendientes
                     </h3>
                     <div className="flex-1 overflow-y-auto space-y-2 min-h-0" style={{ scrollbarWidth: 'thin' }}>
                         {recordatorios.length === 0 ? (

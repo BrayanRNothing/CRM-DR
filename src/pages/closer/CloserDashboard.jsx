@@ -34,8 +34,8 @@ const INITIAL_DATA = {
 
 const CloserDashboard = () => {
     const [loading, setLoading] = useState(true);
-    const [data, setData] = useState(null);
     const [tareas, setTareas] = useState([]);
+    const [recordatorios, setRecordatorios] = useState([]);
     const [loadingTareas, setLoadingTareas] = useState(false);
 
 
@@ -149,18 +149,32 @@ const CloserDashboard = () => {
         }
     };
 
+    const cargarRecordatorios = async (silent = false) => {
+        try {
+            const response = await axios.get(`${API_URL}/api/prospector/prospectos`, { headers: getAuthHeaders() });
+            const conRecordatorio = (response.data || []).filter(p => !!p.proximaLlamada);
+            conRecordatorio.sort((a, b) => new Date(a.proximaLlamada) - new Date(b.proximaLlamada));
+            setRecordatorios(conRecordatorio);
+        } catch (error) {
+            console.error('Error al cargar recordatorios:', error);
+        }
+    };
+
     useEffect(() => {
         cargarDatos();
         cargarProximasReuniones();
+        cargarRecordatorios();
         const interval = setInterval(() => {
             cargarDatos(true);
             cargarProximasReuniones(true);
+            cargarRecordatorios(true);
         }, 5 * 60 * 1000);
 
         socket.on('prospectos_actualizados', (obj) => {
             console.log('socket: prospectos actualizados detectado', obj);
             cargarDatos(true);
             cargarProximasReuniones(true);
+            cargarRecordatorios(true);
         });
 
         return () => {
@@ -303,7 +317,41 @@ const CloserDashboard = () => {
                                 Próximas Reuniones
                             </h2>
 
-                            <div className="flex-1 space-y-4 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin', scrollbarColor: '#3b82f6 #f3f4f6' }}>
+                            <div className="flex-1 space-y-4 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+                                
+                                {/* ── RECORDATORIOS DE SEGUIMIENTO ── */}
+                                {recordatorios.length > 0 && (
+                                    <div className="mb-6">
+                                        <h3 className="text-xs font-bold text-rose-600 flex items-center gap-2 mb-3 uppercase tracking-wider">
+                                            <Phone className="w-3.5 h-3.5" /> Recordatorios Pendientes
+                                        </h3>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            {recordatorios.map(p => (
+                                                <div 
+                                                    key={p.id || p._id} 
+                                                    className="bg-rose-50/50 border border-rose-100 rounded-xl p-3 flex items-center justify-between group hover:border-rose-300 transition-colors shadow-sm cursor-pointer"
+                                                    onClick={() => navigate('/prospector/prospectos', { state: { selectedId: p.id || p._id } })}
+                                                >
+                                                    <div className="flex-1 min-w-0 pr-3">
+                                                        <div className="font-bold text-gray-900 text-sm truncate">{p.nombre || `${p.nombres || ''} ${p.apellidoPaterno || ''}`.trim()}</div>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <Clock className="w-3 h-3 text-rose-500" />
+                                                            <span className="text-[10px] text-rose-600 font-bold uppercase">
+                                                                📞 {new Date(p.proximaLlamada).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <Zap className="w-3.5 h-3.5 text-rose-300 group-hover:text-rose-500 transition-colors" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                <h3 className="text-xs font-bold text-gray-500 flex items-center gap-2 mb-3 uppercase tracking-wider mt-2">
+                                    <Calendar className="w-3.5 h-3.5" /> Citas Programadas
+                                </h3>
+
                                 {loadingTareas ? (
                                     <div className="flex justify-center items-center h-20">
                                         <RefreshCw className="w-6 h-6 animate-spin text-(--theme-500)" />
