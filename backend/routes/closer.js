@@ -4,6 +4,30 @@ const { db, isPostgres } = require('../config/database');
 const { auth } = require('../middleware/auth');
 const { toMongoFormat, toMongoFormatMany } = require('../lib/helpers');
 
+const parseGoogleExpiryToMillis = (value) => {
+    if (value === null || value === undefined) return undefined;
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value.getTime();
+
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (/^\d+$/.test(trimmed)) {
+            const numeric = Number(trimmed);
+            if (Number.isFinite(numeric)) return numeric;
+        }
+        const parsed = Date.parse(trimmed);
+        if (!Number.isNaN(parsed)) return parsed;
+    }
+
+    return undefined;
+};
+
+const parseGoogleExpiryToIso = (value) => {
+    const millis = parseGoogleExpiryToMillis(value);
+    if (!millis) return undefined;
+    return new Date(millis).toISOString();
+};
+
 const esCloser = (req, res, next) => {
     const rol = String(req.usuario.rol).toLowerCase();
     if (rol !== 'closer' && rol !== 'vendedor') {
@@ -176,7 +200,7 @@ router.get('/calendario', [auth, esCloser], async (req, res) => {
                 client.setCredentials({
                     refresh_token: usuario.googleRefreshToken,
                     access_token: usuario.googleAccessToken,
-                    expiry_date: usuario.googleTokenExpiry
+                    expiry_date: parseGoogleExpiryToMillis(usuario.googleTokenExpiry)
                 });
 
                 // Actualizar tokens si se refrescan
@@ -185,7 +209,11 @@ router.get('/calendario', [auth, esCloser], async (req, res) => {
                     let params = [];
                     if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
                     if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-                    if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(tokens.expiry_date); }
+                    const expiryIso = parseGoogleExpiryToIso(tokens.expiry_date);
+                    if (expiryIso) {
+                        updateStr.push('googleTokenExpiry = ?');
+                        params.push(expiryIso);
+                    }
 
                     if (updateStr.length > 0) {
                         params.push(closerId);

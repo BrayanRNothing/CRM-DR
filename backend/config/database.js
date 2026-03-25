@@ -70,6 +70,75 @@ const mapPgRow = (row) => {
   return mapped;
 };
 
+const normalizeGoogleTokenExpiryValue = (value) => {
+  if (value === null || value === undefined) return value;
+
+  if (value instanceof Date) {
+    const time = value.getTime();
+    return Number.isNaN(time) ? value : value.toISOString();
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    if (value > 100000000000) return new Date(value).toISOString();
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (/^\d+$/.test(trimmed)) {
+      const numeric = Number(trimmed);
+      if (Number.isFinite(numeric) && numeric > 100000000000) {
+        return new Date(numeric).toISOString();
+      }
+      return value;
+    }
+
+    const parsed = Date.parse(trimmed);
+    if (!Number.isNaN(parsed)) {
+      return new Date(parsed).toISOString();
+    }
+  }
+
+  return value;
+};
+
+const normalizePgParams = (sql, params = []) => {
+  if (!isPostgres || !Array.isArray(params) || params.length === 0) return params;
+
+  const normalized = [...params];
+
+  // UPDATE ... googleTokenExpiry = $n
+  const assignmentRegex = /"?googleTokenExpiry"?\s*=\s*\$(\d+)/gi;
+  let match;
+  while ((match = assignmentRegex.exec(sql)) !== null) {
+    const idx = Number(match[1]) - 1;
+    if (idx >= 0 && idx < normalized.length) {
+      normalized[idx] = normalizeGoogleTokenExpiryValue(normalized[idx]);
+    }
+  }
+
+  // INSERT ... (cols...) VALUES ($1, $2, ...)
+  const insertRegex = /INSERT\s+INTO\s+[^\s(]+\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/i;
+  const insertMatch = sql.match(insertRegex);
+  if (insertMatch) {
+    const cols = insertMatch[1].split(',').map(c => c.trim().replace(/"/g, ''));
+    const vals = insertMatch[2].split(',').map(v => v.trim());
+    const colIndex = cols.findIndex(c => c === 'googleTokenExpiry');
+    if (colIndex >= 0 && colIndex < vals.length) {
+      const valExpr = vals[colIndex];
+      const placeholderMatch = valExpr.match(/^\$(\d+)$/);
+      if (placeholderMatch) {
+        const idx = Number(placeholderMatch[1]) - 1;
+        if (idx >= 0 && idx < normalized.length) {
+          normalized[idx] = normalizeGoogleTokenExpiryValue(normalized[idx]);
+        }
+      }
+    }
+  }
+
+  return normalized;
+};
+
 // Shim para imitar better-sqlite3 de forma asíncrona
 const db = {
   pragma: (sql) => {
@@ -81,7 +150,8 @@ const db = {
     return {
       get: async (...params) => {
         if (isPostgres) {
-          const res = await internalDb.query(finalSql, params);
+          const safeParams = normalizePgParams(finalSql, params);
+          const res = await internalDb.query(finalSql, safeParams);
           return mapPgRow(res.rows[0]);
         } else {
           return internalDb.prepare(sql).get(...params);
@@ -89,7 +159,8 @@ const db = {
       },
       all: async (...params) => {
         if (isPostgres) {
-          const res = await internalDb.query(finalSql, params);
+          const safeParams = normalizePgParams(finalSql, params);
+          const res = await internalDb.query(finalSql, safeParams);
           return res.rows.map(mapPgRow);
         } else {
           return internalDb.prepare(sql).all(...params);
@@ -102,13 +173,15 @@ const db = {
           const trimmed = query.trim().toUpperCase();
           if (trimmed.startsWith('INSERT') && !trimmed.includes('RETURNING')) {
             query += ' RETURNING id';
-            const res = await internalDb.query(query, params);
+            const safeParams = normalizePgParams(query, params);
+            const res = await internalDb.query(query, safeParams);
             return {
               lastInsertRowid: res.rows[0]?.id || null,
               changes: res.rowCount
             };
           }
-          const res = await internalDb.query(query, params);
+          const safeParams = normalizePgParams(query, params);
+          const res = await internalDb.query(query, safeParams);
           return { lastInsertRowid: null, changes: res.rowCount };
         } else {
           return internalDb.prepare(sql).run(...params);
