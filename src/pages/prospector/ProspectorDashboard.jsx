@@ -21,7 +21,9 @@ const EMPTY_DATA = {
     periodos: { dia: EMPTY_PERIODO, semana: EMPTY_PERIODO, mes: EMPTY_PERIODO, total: EMPTY_PERIODO }
 };
 
-const getAuthHeaders = () => ({ 'x-auth-token': localStorage.getItem('token') || '' });
+import { getToken } from '../../utils/authUtils';
+
+const getAuthHeaders = () => ({ 'x-auth-token': getToken() || '' });
 
 const ProspectorDashboard = () => {
     const [data, setData] = useState(null);

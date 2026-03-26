@@ -18,11 +18,11 @@ axios.interceptors.response.use(
                 sessionStorage.removeItem('token');
                 sessionStorage.removeItem('user');
                 // Redirect to login only if not already there
-                if (!window.location.pathname.includes('/login')) {
+                if (window.location.pathname !== '/') {
                     const msg = code === 'TOKEN_EXPIRED'
                         ? 'Tu sesión ha expirado. Por favor inicia sesión de nuevo.'
                         : 'Sesión inválida. Por favor inicia sesión.';
-                    window.location.href = `/login?expired=1&msg=${encodeURIComponent(msg)}`;
+                    window.location.href = `/?expired=1&msg=${encodeURIComponent(msg)}`;
                 }
             }
         }

@@ -31,7 +31,9 @@ const INITIAL_CLOSER_DATA = {
     analisisPerdidas: { no_asistio: 0, no_interesado: 0 }
 };
 
-const getAuthHeaders = () => ({ 'x-auth-token': localStorage.getItem('token') || '' });
+import { getToken } from '../../utils/authUtils';
+
+const getAuthHeaders = () => ({ 'x-auth-token': getToken() || '' });
 
 const VendedorDashboard = () => {
     const [loading, setLoading] = useState(true);

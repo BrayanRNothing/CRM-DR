@@ -5,6 +5,7 @@ import FunnelVisual from '../../components/FunnelVisual';
 
 import API_URL from '../../config/api';
 import socket from '../../config/socket';
+import { getToken } from '../../utils/authUtils';
 
 // Datos iniciales en 0 cuando no hay conexión
 const INITIAL_DATA = {
@@ -92,13 +93,13 @@ const CloserDashboard = () => {
     };
 
     const getAuthHeaders = () => ({
-        'x-auth-token': localStorage.getItem('token') || ''
+        'x-auth-token': getToken() || ''
     });
 
     const cargarDatos = async (silent = false) => {
         try {
             if (!silent) setLoading(true);
-            const token = localStorage.getItem('token');
+            const token = getToken();
 
             if (!token) {
                 setData(INITIAL_DATA);
