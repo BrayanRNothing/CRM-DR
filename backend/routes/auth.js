@@ -12,33 +12,43 @@ const ROLES_PERMITIDOS = ['prospector', 'closer', 'vendedor'];
 // @access  Public
 router.post('/login', async (req, res) => {
     try {
-        const { usuario, contraseña } = req.body;
+        console.log('--- INICIO INTENTO DE LOGIN ---');
+        console.log('Body recibido (sin contraseña):', { ...req.body, contraseña: '***' });
+        
+        // El frontend envía { usuario, contraseña } pero el input puede ser un email
+        const identificador = req.body.usuario || req.body.email; 
+        const { contraseña } = req.body;
 
-        if (!usuario || !contraseña) {
-            return res.status(400).json({ mensaje: 'Por favor ingrese usuario y contraseña' });
+        if (!identificador || !contraseña) {
+            console.warn('⚠️ Login fallido: Faltan credenciales', { identificador: !!identificador, contraseña: !!contraseña });
+            return res.status(400).json({ mensaje: 'Por favor ingrese usuario/email y contraseña' });
         }
 
-        console.log(`🔑 Intento de login para usuario: "${usuario}"`);
+        console.log(`🔑 Intento de login para: "${identificador}"`);
         
-        // Búsqueda insensible a mayúsculas para Postgres
-        const row = await db.prepare('SELECT * FROM usuarios WHERE LOWER(usuario) = LOWER(?)').get(usuario.trim());
+        // Búsqueda en Postgres por usuario (LOWER) o email (LOWER)
+        const query = 'SELECT * FROM usuarios WHERE LOWER(usuario) = LOWER(?) OR LOWER(email) = LOWER(?)';
+        const row = await db.prepare(query).get(identificador.trim(), identificador.trim());
         
         if (!row) {
-            console.log(`❌ Usuario no encontrado: "${usuario}"`);
+            console.log(`❌ Login fallido: Usuario/Email no encontrado: "${identificador}"`);
             return res.status(400).json({ mensaje: 'Credenciales inválidas' });
         }
 
-        console.log(`👤 Usuario encontrado: ${row.usuario} (Activo: ${row.activo}, Tipo: ${typeof row.activo})`);
+        console.log(`👤 Usuario encontrado: ${row.usuario} (ID: ${row.id}, Activo: ${row.activo}, Tipo de activo: ${typeof row.activo})`);
 
         if (row.activo == null || row.activo == 0 || row.activo === false) {
-            console.warn(`⚠️ Intento de login en cuenta desactivada: ${row.usuario}`);
+            console.warn(`⚠️ Intento de login en cuenta desactivada. Usuario: ${row.usuario}`);
             return res.status(401).json({ mensaje: 'Usuario desactivado. Contacte al administrador' });
         }
 
         const contraseñaValida = await bcrypt.compare(contraseña, row.contraseña);
         if (!contraseñaValida) {
+            console.log(`❌ Login fallido: Contraseña incorrecta para el usuario: "${row.usuario}"`);
             return res.status(400).json({ mensaje: 'Credenciales inválidas' });
         }
+
+        console.log(`✅ Login exitoso para el usuario: "${row.usuario}"`);
 
         // Crear Payload
         const payload = {
