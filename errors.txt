@@ -1,0 +1,12 @@
+
+C:\Users\Brayan\Downloads\CRM-V12\src\components\ProspectoDetalle.jsx
+   128:18  error  'error' is defined but never used                                                           no-unused-vars
+   139:18  error  'error' is defined but never used                                                           no-unused-vars
+   165:18  error  'error' is defined but never used                                                           no-unused-vars
+   176:11  error  'prospectos' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   354:22  error  'err' is defined but never used                                                             no-unused-vars
+   382:22  error  'err' is defined but never used                                                             no-unused-vars
+  1117:51  error  'notasFin' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+
+✖ 7 problems (7 errors, 0 warnings)
+

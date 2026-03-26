@@ -590,6 +590,86 @@ router.get('/prospectos/:id/actividades', auth, async (req, res) => {
     }
 });
 
+// ============ RECORDATORIOS DE LLAMADA (múltiples) ============
+
+// GET /api/prospector/prospectos/:id/recordatorios
+router.get('/prospectos/:id/recordatorios', auth, async (req, res) => {
+    try {
+        const clienteId = parseInt(req.params.id);
+        const vendedorId = parseInt(req.usuario.id);
+        const rows = await db.prepare(`
+            SELECT * FROM tareas
+            WHERE cliente = ? AND titulo = 'Recordatorio de llamada' AND estado = 'pendiente'
+            ORDER BY fechaLimite ASC
+        `).all(clienteId);
+        res.json(rows);
+    } catch (error) {
+        console.error('Error al obtener recordatorios:', error);
+        res.status(500).json({ msg: 'Error del servidor' });
+    }
+});
+
+// POST /api/prospector/prospectos/:id/recordatorios
+router.post('/prospectos/:id/recordatorios', auth, async (req, res) => {
+    try {
+        const clienteId = parseInt(req.params.id);
+        const vendedorId = parseInt(req.usuario.id);
+        const { fechaLimite, descripcion } = req.body;
+
+        if (!fechaLimite) return res.status(400).json({ msg: 'La fecha es requerida' });
+
+        const result = await db.prepare(`
+            INSERT INTO tareas (titulo, descripcion, vendedor, cliente, estado, prioridad, fechaLimite)
+            VALUES ('Recordatorio de llamada', ?, ?, ?, 'pendiente', 'media', ?)
+        `).run(descripcion || '', vendedorId, clienteId, new Date(fechaLimite).toISOString());
+
+        const row = await db.prepare('SELECT * FROM tareas WHERE id = ?').get(result.lastInsertRowid);
+        res.status(201).json({ msg: 'Recordatorio creado', recordatorio: row });
+    } catch (error) {
+        console.error('Error al crear recordatorio:', error);
+        res.status(500).json({ msg: 'Error del servidor' });
+    }
+});
+
+// DELETE /api/prospector/recordatorios/:recordatorioId
+router.delete('/recordatorios/:recordatorioId', auth, async (req, res) => {
+    try {
+        const id = parseInt(req.params.recordatorioId);
+        const vendedorId = parseInt(req.usuario.id);
+        const tarea = await db.prepare('SELECT id FROM tareas WHERE id = ? AND vendedor = ?').get(id, vendedorId);
+        if (!tarea) return res.status(404).json({ msg: 'Recordatorio no encontrado' });
+        await db.prepare('DELETE FROM tareas WHERE id = ?').run(id);
+        res.json({ msg: 'Recordatorio eliminado' });
+    } catch (error) {
+        console.error('Error al eliminar recordatorio:', error);
+        res.status(500).json({ msg: 'Error del servidor' });
+    }
+});
+
+// PUT /api/prospector/recordatorios/:recordatorioId
+router.put('/recordatorios/:recordatorioId', auth, async (req, res) => {
+    try {
+        const id = parseInt(req.params.recordatorioId);
+        const vendedorId = parseInt(req.usuario.id);
+        const { fechaLimite, descripcion } = req.body;
+        const tarea = await db.prepare('SELECT id FROM tareas WHERE id = ? AND vendedor = ?').get(id, vendedorId);
+        if (!tarea) return res.status(404).json({ msg: 'Recordatorio no encontrado' });
+        const updates = [];
+        const params = [];
+        if (fechaLimite !== undefined) { updates.push('fechaLimite = ?'); params.push(new Date(fechaLimite).toISOString()); }
+        if (descripcion !== undefined) { updates.push('descripcion = ?'); params.push(descripcion); }
+        if (updates.length > 0) {
+            params.push(id);
+            await db.prepare(`UPDATE tareas SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+        }
+        const row = await db.prepare('SELECT * FROM tareas WHERE id = ?').get(id);
+        res.json({ msg: 'Recordatorio actualizado', recordatorio: row });
+    } catch (error) {
+        console.error('Error al actualizar recordatorio:', error);
+        res.status(500).json({ msg: 'Error del servidor' });
+    }
+});
+
 // PUT /api/prospector/prospectos/:id
 router.put('/prospectos/:id', auth, async (req, res) => {
     try {

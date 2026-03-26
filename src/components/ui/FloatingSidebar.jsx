@@ -69,11 +69,11 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                         className="relative flex items-center justify-center w-full group py-1"
                         title="Expandir menú"
                     >
-                        <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-(--theme-500) via-(--theme-600) to-(--theme-700) flex items-center justify-center text-white shadow-lg ring-1 ring-white/20 transition-all duration-300 group-hover:scale-95 group-hover:opacity-20">
+                        <div className="w-12 h-12 flex items-center justify-center transition-all duration-300 group-hover:scale-95">
                             {logo ? logo : <BrandGlyph />}
                         </div>
                         <span className="absolute -bottom-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white" />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="absolute inset-0 flex items-center justify-center translate-x-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <ChevronRight size={24} className={`${isDark ? 'text-white' : 'text-gray-800'}`} />
                         </div>
                         {/* Indicador one-time: punto pulsante + tooltip */}
@@ -94,7 +94,7 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                     <div className="flex items-center gap-2.5">
                         <button
                             onClick={handleToggle}
-                            className="shrink-0 w-11 h-11 rounded-xl bg-linear-to-br from-(--theme-500) via-(--theme-600) to-(--theme-700) text-white shadow-md ring-1 ring-white/20 flex items-center justify-center hover:scale-[0.98] transition-transform"
+                            className="shrink-0 w-11 h-11 flex items-center justify-center hover:scale-[0.98] transition-transform"
                             title="Contraer/Expandir menú"
                         >
                             {logo ? logo : <BrandGlyph />}

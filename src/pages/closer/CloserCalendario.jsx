@@ -174,7 +174,7 @@ const CloserCalendario = () => {
                     const res = await fetch(`${API_URL}/api/closer/registrar-reunion`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
-                        body: JSON.stringify({ clienteId, resultado, notas: notasModal })
+                        body: JSON.stringify({ clienteId, resultado, notas: notasModal, fechaReunion: modalRegistrar.fecha })
                     });
                     if (!res.ok) { const d = await res.json(); throw new Error(d.msg); }
                 }
@@ -232,7 +232,7 @@ const CloserCalendario = () => {
                 const res = await fetch(`${API_URL}/api/closer/registrar-reunion`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
-                    body: JSON.stringify({ clienteId, resultado, notas: notasModal })
+                    body: JSON.stringify({ clienteId, resultado, notas: notasModal, fechaReunion: modalRegistrar.fecha })
                 });
                 if (!res.ok) { const data = await res.json(); throw new Error(data.msg || 'Error al registrar'); }
             } else {

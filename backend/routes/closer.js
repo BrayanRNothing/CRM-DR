@@ -633,7 +633,7 @@ router.get('/prospectos/:id/actividades', auth, async (req, res) => {
 
 router.post('/registrar-reunion', [auth, esCloser], async (req, res) => {
     try {
-        const { clienteId, resultado, notas } = req.body;
+        const { clienteId, resultado, notas, fechaReunion } = req.body;
 
         const resultadosValidos = ['no_asistio', 'no_venta', 'otra_reunion', 'cotizacion', 'venta'];
         if (!clienteId || !resultado || !resultadosValidos.includes(resultado)) {
@@ -686,9 +686,31 @@ router.post('/registrar-reunion', [auth, esCloser], async (req, res) => {
 
         const resStatus = resultado === 'venta' ? 'exitoso' : (resultado === 'no_asistio' || resultado === 'no_venta' ? 'fallido' : 'exitoso');
 
-        // Cerrar citas pendientes previas para que no salgan en el dashboard
-        await db.prepare(`UPDATE actividades SET resultado = ? WHERE cliente = ? AND tipo = 'cita' AND resultado = 'pendiente'`)
-            .run(resStatus, cid);
+        // Cerrar solo la cita pendiente que corresponde a esta reunión.
+        // Si llega fechaReunion, toma la más cercana a esa fecha.
+        let citaObjetivo = null;
+        if (fechaReunion) {
+            citaObjetivo = await db.prepare(`
+                SELECT id FROM actividades
+                WHERE cliente = ? AND tipo = 'cita' AND resultado = 'pendiente'
+                ORDER BY ABS(strftime('%s', fecha) - strftime('%s', ?)) ASC
+                LIMIT 1
+            `).get(cid, new Date(fechaReunion).toISOString());
+        }
+
+        if (!citaObjetivo) {
+            citaObjetivo = await db.prepare(`
+                SELECT id FROM actividades
+                WHERE cliente = ? AND tipo = 'cita' AND resultado = 'pendiente'
+                ORDER BY fecha ASC
+                LIMIT 1
+            `).get(cid);
+        }
+
+        if (citaObjetivo) {
+            await db.prepare('UPDATE actividades SET resultado = ? WHERE id = ?')
+                .run(resStatus, citaObjetivo.id);
+        }
 
         await db.prepare('INSERT INTO actividades (tipo, vendedor, cliente, fecha, descripcion, resultado, notas) VALUES (?, ?, ?, ?, ?, ?, ?)')
             .run('cita', closerId, cid, now, descripcion, resStatus, notas || '');
