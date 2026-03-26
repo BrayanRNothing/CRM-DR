@@ -139,4 +139,15 @@ router.get('/me', auth, async (req, res) => {
     }
 });
 
+// ⚠️ TEMPORAL: Ruta de diagnóstico — ELIMINAR después de depurar
+router.get('/debug-users', async (req, res) => {
+    try {
+        const users = await db.prepare('SELECT id, usuario, nombre, rol, email, activo FROM usuarios').all();
+        res.json({ total: users.length, usuarios: users });
+    } catch (error) {
+        console.error('Error en debug-users:', error);
+        res.status(500).json({ mensaje: 'Error del servidor', error: error.message });
+    }
+});
+
 module.exports = router;
