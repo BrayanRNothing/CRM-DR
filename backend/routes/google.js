@@ -313,9 +313,9 @@ router.post('/create-event', auth, async (req, res) => {
             const cid = parseInt(clienteId);
             const now = new Date().toISOString();
             try {
-                await db.prepare('INSERT INTO actividades (tipo, vendedor, cliente, fecha, descripcion, resultado, notas) VALUES (?, ?, ?, ?, ?, ?, ?)')
-                    .run('cita', userId, cid, new Date(startDateTime).toISOString(), `Próxima reunión agendada: ${title}`, 'pendiente', description || '');
-                await db.prepare('UPDATE clientes SET ultimaInteraccion = ? WHERE id = ?').run(now, cid);
+                await db.prepare('INSERT INTO actividades (tipo, vendedor, cliente, fecha, descripcion, resultado, notas, "googleMeetLink") VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+                    .run('cita', userId, cid, new Date(startDateTime).toISOString(), `Próxima reunión agendada: ${title}`, 'pendiente', description || '', event.data.hangoutLink || '');
+                await db.prepare('UPDATE clientes SET "ultimaInteraccion" = ? WHERE id = ?').run(now, cid);
             } catch (dbErr) {
                 console.error('Error registrando actividad:', dbErr);
             }
@@ -530,6 +530,130 @@ router.post('/disconnect', auth, async (req, res) => {
     } catch (error) {
         console.error('Error desvinculando Google:', error.message);
         res.status(500).json({ msg: 'Error al desvincular cuenta de Google' });
+    }
+});
+
+// Helper: busca un evento en Google Calendar por fecha exacta y usuario
+async function findEventByActivity(calendar, activity) {
+    const timeMin = new Date(activity.fecha).toISOString();
+    const timeMax = new Date(new Date(activity.fecha).getTime() + 60000).toISOString(); // 1 minuto de margen
+
+    const response = await calendar.events.list({
+        calendarId: 'primary',
+        timeMin: timeMin,
+        timeMax: timeMax,
+        singleEvents: true
+    });
+
+    const events = response.data.items || [];
+    // Intentar buscar match por título o descripción si hay varios
+    if (events.length > 1) {
+        return events.find(e => 
+            (e.summary && e.summary.includes('[CITA]')) || 
+            (e.description && e.description.includes(`ID Actividad: ${activity.id}`))
+        ) || events[0];
+    }
+    return events[0];
+}
+
+// @route   DELETE api/google/event-by-activity/:activityId
+// @desc    Busca y elimina un evento en Google Calendar basado en una actividad de la BD
+// @access  Private
+router.delete('/event-by-activity/:activityId', auth, async (req, res) => {
+    const userId = parseInt(req.usuario.id);
+    try {
+        const activityId = parseInt(req.params.activityId);
+        const activity = await db.prepare('SELECT * FROM actividades WHERE id = ?').get(activityId);
+        
+        if (!activity || activity.tipo !== 'cita') {
+            return res.status(404).json({ msg: 'Actividad de cita no encontrada' });
+        }
+
+        const usuario = await db.prepare('SELECT * FROM usuarios WHERE id = ?').get(userId);
+        if (!usuario || !usuario.googleAccessToken) {
+            return res.status(400).json({ msg: 'Google Calendar no vinculado' });
+        }
+
+        const client = new OAuth2Client(
+            process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET
+        );
+        client.setCredentials({
+            access_token: usuario.googleAccessToken,
+            refresh_token: usuario.googleRefreshToken,
+            expiry_date: usuario.googleTokenExpiry
+        });
+
+        const calendar = google.calendar({ version: 'v3', auth: client });
+        const event = await findEventByActivity(calendar, activity);
+
+        if (event) {
+            await calendar.events.delete({
+                calendarId: 'primary',
+                eventId: event.id
+            });
+            return res.json({ msg: 'Evento eliminado de Google Calendar', eventId: event.id });
+        }
+
+        res.json({ msg: 'No se encontró evento coincidente en Google Calendar' });
+    } catch (error) {
+        console.error('Error eliminando evento por actividad:', error);
+        res.status(500).json({ msg: 'Error al sincronizar con Google Calendar' });
+    }
+});
+
+// @route   PATCH api/google/event-by-activity/:activityId
+// @desc    Busca y actualiza un evento en Google Calendar basado en una actividad de la BD
+// @access  Private
+router.patch('/event-by-activity/:activityId', auth, async (req, res) => {
+    const userId = parseInt(req.usuario.id);
+    try {
+        const activityId = parseInt(req.params.activityId);
+        const activity = await db.prepare('SELECT * FROM actividades WHERE id = ?').get(activityId);
+        
+        if (!activity || activity.tipo !== 'cita') {
+            return res.status(404).json({ msg: 'Actividad de cita no encontrada' });
+        }
+
+        const { title, startDateTime, endDateTime, description } = req.body;
+
+        const usuario = await db.prepare('SELECT * FROM usuarios WHERE id = ?').get(userId);
+        if (!usuario || !usuario.googleAccessToken) {
+            return res.status(400).json({ msg: 'Google Calendar no vinculado' });
+        }
+
+        const client = new OAuth2Client(
+            process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET
+        );
+        client.setCredentials({
+            access_token: usuario.googleAccessToken,
+            refresh_token: usuario.googleRefreshToken,
+            expiry_date: usuario.googleTokenExpiry
+        });
+
+        const calendar = google.calendar({ version: 'v3', auth: client });
+        const event = await findEventByActivity(calendar, activity);
+
+        if (event) {
+            const resource = {};
+            if (title) resource.summary = title;
+            if (description) resource.description = description;
+            if (startDateTime) resource.start = { dateTime: startDateTime, timeZone: 'America/Mexico_City' };
+            if (endDateTime) resource.end = { dateTime: endDateTime, timeZone: 'America/Mexico_City' };
+
+            const updated = await calendar.events.patch({
+                calendarId: 'primary',
+                eventId: event.id,
+                resource
+            });
+            return res.json({ msg: 'Evento actualizado en Google Calendar', event: updated.data });
+        }
+
+        res.json({ msg: 'No se encontró evento coincidente en Google Calendar' });
+    } catch (error) {
+        console.error('Error actualizando evento por actividad:', error);
+        res.status(500).json({ msg: 'Error al sincronizar con Google Calendar' });
     }
 });
 

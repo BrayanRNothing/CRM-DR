@@ -188,7 +188,8 @@ const ProspectorSeguimiento = () => {
             ubicacion: p.ubicacion || '',
             notas: p.notas || '',
             etapaEmbudo: p.etapaEmbudo || 'prospecto_nuevo',
-            proximaLlamada: p.proximaLlamada ? p.proximaLlamada.slice(0, 16) : ''
+            proximaLlamada: p.proximaLlamada ? p.proximaLlamada.slice(0, 16) : '',
+            interes: p.interes || 0
         });
         setModalEditarAbierto(true);
     };
@@ -197,7 +198,7 @@ const ProspectorSeguimiento = () => {
         setLoadingEditar(true);
         try {
             const telefonosLimpios = (prospectoAEditar.telefonos || []).filter(t => t.trim());
-            const payload = { ...prospectoAEditar, telefono: telefonosLimpios[0] || '', telefono2: telefonosLimpios.slice(1).join(', ') || '' };
+            const payload = { ...prospectoAEditar, telefono: telefonosLimpios[0] || '', telefono2: telefonosLimpios.slice(1).join(', ') || '', interes: prospectoAEditar.interes || 0 };
             delete payload.telefonos;
             await axios.put(`${API_URL}/api/${rolePath}/prospectos/${prospectoAEditar.id}/editar`, payload, {
                 headers: getAuthHeaders()
@@ -504,7 +505,7 @@ const ProspectorSeguimiento = () => {
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
-                        <div className="p-6 space-y-6 overflow-y-auto scrollbar-hide">
+                        <div className="p-6 space-y-6 overflow-y-auto">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Sección: Datos Personales */}
                                 <div className="space-y-4">
@@ -657,172 +658,189 @@ const ProspectorSeguimiento = () => {
                     </div>
                 </div>
             )}
-            {/* Modal Editar Prospecto */}
+            {/* Modal Editar Prospecto - Rediseño Moderno */}
             {modalEditarAbierto && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-lg max-w-3xl w-full flex flex-col max-h-[90vh]">
-                        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
-                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                <Edit2 className="w-6 h-6 text-(--theme-600)" />
-                                Editar prospecto
-                            </h2>
-                            <button onClick={() => setModalEditarAbierto(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                                <X className="w-6 h-6" />
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 transition-all duration-300">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col max-h-[82vh] overflow-hidden animate-fadeIn">
+                        {/* Header */}
+                        <div className="px-6 py-4 bg-gradient-to-r from-(--theme-50) to-white border-b border-slate-100 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-(--theme-100) rounded-xl flex items-center justify-center">
+                                    <Edit2 className="w-5 h-5 text-(--theme-600)" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">Editar Prospecto</h2>
+                                    <p className="text-xs text-slate-500 mt-0.5">Actualiza la información de contacto</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setModalEditarAbierto(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600">
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
+
+                        {/* Content */}
                         <div className="p-6 space-y-6 overflow-y-auto scrollbar-hide">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Sección: Datos Personales */}
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Información Personal</h3>
-                                    <div className="space-y-4">
+                            {/* Sección: Datos Personales */}
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
+                                    Información Personal
+                                </h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Nombres *</label>
+                                        <input
+                                            type="text"
+                                            value={prospectoAEditar.nombres}
+                                            onChange={(e) => setProspectoAEditar((f) => ({ ...f, nombres: e.target.value }))}
+                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Nombres *</label>
+                                            <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Apellido Paterno</label>
                                             <input
                                                 type="text"
-                                                value={prospectoAEditar.nombres}
-                                                onChange={(e) => setProspectoAEditar((f) => ({ ...f, nombres: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                value={prospectoAEditar.apellidoPaterno}
+                                                onChange={(e) => setProspectoAEditar((f) => ({ ...f, apellidoPaterno: e.target.value }))}
+                                                className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
                                             />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Apellido Paterno</label>
-                                                <input
-                                                    type="text"
-                                                    value={prospectoAEditar.apellidoPaterno}
-                                                    onChange={(e) => setProspectoAEditar((f) => ({ ...f, apellidoPaterno: e.target.value }))}
-                                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Apellido Materno</label>
-                                                <input
-                                                    type="text"
-                                                    value={prospectoAEditar.apellidoMaterno}
-                                                    onChange={(e) => setProspectoAEditar((f) => ({ ...f, apellidoMaterno: e.target.value }))}
-                                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Sección: Contacto */}
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Contacto y Correo</h3>
-                                    <div className="space-y-4">
                                         <div>
-                                            <div className="flex items-center justify-between mb-1.5">
-                                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Teléfonos *</label>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setProspectoAEditar((f) => ({ ...f, telefonos: [...(f.telefonos || ['']), ''] }))}
-                                                    className="flex items-center gap-1 text-xs text-(--theme-600) hover:text-(--theme-700) font-bold"
-                                                >
-                                                    <Plus className="w-3.5 h-3.5" /> Agregar
-                                                </button>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {(prospectoAEditar.telefonos || ['']).map((tel, idx) => (
-                                                    <div key={idx} className="flex gap-2 items-center bg-slate-50 p-1.5 rounded-lg border border-slate-100">
-                                                        <Phone className="w-3.5 h-3.5 text-slate-400 ml-1" />
-                                                        <input
-                                                            type="tel"
-                                                            value={tel}
-                                                            onChange={(e) => setProspectoAEditar((f) => { const t = [...(f.telefonos || [''])]; t[idx] = e.target.value; return { ...f, telefonos: t }; })}
-                                                            className="flex-1 bg-transparent border-0 focus:ring-0 text-sm py-1"
-                                                        />
-                                                        {(prospectoAEditar.telefonos || ['']).length > 1 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setProspectoAEditar((f) => ({ ...f, telefonos: (f.telefonos || ['']).filter((_, i) => i !== idx) }))}
-                                                                className="text-red-400 hover:text-red-600 p-1"
-                                                            >
-                                                                <X className="w-4 h-4" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Correo Electrónico</label>
+                                            <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Apellido Materno</label>
                                             <input
-                                                type="email"
-                                                value={prospectoAEditar.correo}
-                                                onChange={(e) => setProspectoAEditar((f) => ({ ...f, correo: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                type="text"
+                                                value={prospectoAEditar.apellidoMaterno}
+                                                onChange={(e) => setProspectoAEditar((f) => ({ ...f, apellidoMaterno: e.target.value }))}
+                                                className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
                                             />
                                         </div>
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Sección: Empresa */}
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Detalles de Empresa</h3>
-                                    <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Empresa</label>
-                                                <input
-                                                    type="text"
-                                                    value={prospectoAEditar.empresa}
-                                                    onChange={(e) => setProspectoAEditar((f) => ({ ...f, empresa: e.target.value }))}
-                                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Sitio Web</label>
-                                                <input
-                                                    type="url"
-                                                    value={prospectoAEditar.sitioWeb || ''}
-                                                    onChange={(e) => setProspectoAEditar((f) => ({ ...f, sitioWeb: e.target.value }))}
-                                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
-                                                    placeholder="https://..."
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Ubicación</label>
-                                            <input
-                                                type="text"
-                                                value={prospectoAEditar.ubicacion || ''}
-                                                onChange={(e) => setProspectoAEditar((f) => ({ ...f, ubicacion: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
-                                                placeholder="Ciudad, Estado"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Etapa del Embudo</label>
-                                            <select
-                                                value={prospectoAEditar.etapaEmbudo}
-                                                onChange={(e) => setProspectoAEditar((f) => ({ ...f, etapaEmbudo: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-(--theme-500) outline-none"
+                            {/* Sección: Contacto */}
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
+                                    Contacto
+                                </h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Teléfonos *</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setProspectoAEditar((f) => ({ ...f, telefonos: [...(f.telefonos || ['']), ''] }))}
+                                                className="flex items-center gap-1.5 text-xs text-(--theme-600) hover:text-(--theme-700) font-bold hover:bg-(--theme-50) px-2.5 py-1.5 rounded-lg transition-all"
                                             >
-                                                {Object.entries(ETAPAS_EMBUDO).map(([key, value]) => (
-                                                    <option key={key} value={key}>{value.label}</option>
-                                                ))}
-                                            </select>
+                                                <Plus className="w-3.5 h-3.5" /> Agregar
+                                            </button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(prospectoAEditar.telefonos || ['']).map((tel, idx) => (
+                                                <div key={idx} className="flex gap-3 items-center bg-gradient-to-r from-slate-50 to-white p-3 rounded-lg border border-slate-200 hover:border-slate-300 transition-all group">
+                                                    <Phone className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors flex-shrink-0" />
+                                                    <input
+                                                        type="tel"
+                                                        value={tel}
+                                                        onChange={(e) => setProspectoAEditar((f) => { const t = [...(f.telefonos || [''])]; t[idx] = e.target.value; return { ...f, telefonos: t }; })}
+                                                        className="flex-1 bg-transparent border-0 focus:ring-0 text-sm py-1 outline-none"
+                                                        placeholder="Ej: +56 9 1234 5678"
+                                                    />
+                                                    {(prospectoAEditar.telefonos || ['']).length > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setProspectoAEditar((f) => ({ ...f, telefonos: (f.telefonos || ['']).filter((_, i) => i !== idx) }))}
+                                                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-all"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Correo Electrónico</label>
+                                        <input
+                                            type="email"
+                                            value={prospectoAEditar.correo}
+                                            onChange={(e) => setProspectoAEditar((f) => ({ ...f, correo: e.target.value }))}
+                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
+                                            placeholder="ejemplo@empresa.com"
+                                        />
+                                    </div>
                                 </div>
+                            </div>
 
+                            {/* Sección: Empresa */}
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
+                                    Detalles de Empresa
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Empresa</label>
+                                        <input
+                                            type="text"
+                                            value={prospectoAEditar.empresa}
+                                            onChange={(e) => setProspectoAEditar((f) => ({ ...f, empresa: e.target.value }))}
+                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
+                                            placeholder="Nombre de la empresa"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Sitio Web</label>
+                                        <input
+                                            type="url"
+                                            value={prospectoAEditar.sitioWeb || ''}
+                                            onChange={(e) => setProspectoAEditar((f) => ({ ...f, sitioWeb: e.target.value }))}
+                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
+                                            placeholder="https://ejemplo.com"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Ubicación</label>
+                                    <input
+                                        type="text"
+                                        value={prospectoAEditar.ubicacion || ''}
+                                        onChange={(e) => setProspectoAEditar((f) => ({ ...f, ubicacion: e.target.value }))}
+                                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
+                                        placeholder="Ciudad, Estado"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Etapa del Embudo</label>
+                                    <select
+                                        value={prospectoAEditar.etapaEmbudo}
+                                        onChange={(e) => setProspectoAEditar((f) => ({ ...f, etapaEmbudo: e.target.value }))}
+                                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm bg-white focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
+                                    >
+                                        {Object.entries(ETAPAS_EMBUDO).map(([key, value]) => (
+                                            <option key={key} value={key}>{value.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                        <div className="flex gap-3 p-6 border-t border-slate-100 bg-slate-50 rounded-b-xl">
+
+                        {/* Footer */}
+                        <div className="flex gap-3 p-6 border-t border-slate-100 bg-slate-50 justify-end">
                             <button
                                 onClick={() => setModalEditarAbierto(false)}
-                                className="px-6 py-2.5 border border-slate-200 text-gray-700 rounded-lg text-sm hover:bg-white font-bold transition-all"
+                                className="px-6 py-3 border border-slate-300 text-gray-700 rounded-lg text-sm hover:bg-white font-bold transition-all hover:shadow-sm"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleEditarProspecto}
                                 disabled={loadingEditar}
-                                className="flex-1 px-6 py-2.5 bg-(--theme-600) text-white rounded-lg text-sm hover:bg-(--theme-700) font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all shadow-(--theme-500)/20"
+                                className="px-8 py-3 bg-(--theme-600) text-white rounded-lg text-sm hover:bg-(--theme-700) font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all"
                             >
-                                {loadingEditar ? 'Guardando...' : 'Guardar Cambios'}
+                                {loadingEditar ? '⏳ Guardando...' : '✓ Guardar Cambios'}
                             </button>
                         </div>
                     </div>
@@ -1009,15 +1027,18 @@ const ProspectorSeguimiento = () => {
     // VISTA DETALLADA DEL PROSPECTO
     if (prospectoSeleccionado) {
         return (
-            <ProspectoDetalle
-                prospecto={prospectoSeleccionado}
-                rolePath={rolePath}
-                onVolver={() => setProspectoSeleccionado(null)}
-                onActualizado={cargarDatos}
-                abrirModalEditar={abrirModalEditar}
-                setModalPasarClienteAbierto={setModalPasarClienteAbierto}
-                setModalDescartarAbierto={setModalDescartarAbierto}
-            />
+            <>
+                <ProspectoDetalle
+                    prospecto={prospectoSeleccionado}
+                    rolePath={rolePath}
+                    onVolver={() => setProspectoSeleccionado(null)}
+                    onActualizado={cargarDatos}
+                    abrirModalEditar={abrirModalEditar}
+                    setModalPasarClienteAbierto={setModalPasarClienteAbierto}
+                    setModalDescartarAbierto={setModalDescartarAbierto}
+                />
+                {renderModales()}
+            </>
         );
     }
 // VISTA PRINCIPAL (LISTA DE PROSPECTOS)
@@ -1034,20 +1055,22 @@ const ProspectorSeguimiento = () => {
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                         <button
-                            onClick={handleExportCsv}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-(--theme-300) text-(--theme-700) rounded-lg hover:bg-(--theme-50) transition-colors font-medium text-sm"
-                            title="Exportar lista actual a CSV"
-                        >
-                            <Upload className="w-4 h-4" />
-                            Exportar CSV
-                        </button>
-                        <button
                             onClick={() => setIsImportModalAbierto(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 transition-colors font-medium text-sm"
+                            disabled={importando}
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-sm font-medium"
                             title="Importar prospectos desde CSV"
                         >
+                            {importando ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                            {importando ? 'Importando...' : 'Importar CSV'}
+                        </button>
+                        <button
+                            onClick={handleExportCsv}
+                            disabled={loading || !prospectosFiltrados.length}
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors text-sm font-medium"
+                            title="Exportar lista actual a CSV"
+                        >
                             <Download className="w-4 h-4" />
-                            Importar CSV
+                            Exportar CSV
                         </button>
                         <button
                             onClick={() => setModalCrearAbierto(true)}
@@ -1060,17 +1083,17 @@ const ProspectorSeguimiento = () => {
                 </div>
 
                 {/* Buscador + Filtros 30/70 */}
-                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
                     <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-4 items-center">
                         {/* 30% Búsqueda */}
                         <div className="relative w-full">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <input
                                 type="text"
                                 placeholder="Buscar prospectos..."
                                 value={busquedaProspecto}
                                 onChange={(e) => setBusquedaProspecto(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-slate-50 text-sm h-[42px]"
+                                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-sm"
                                 title="Buscar por nombre, empresa, correo o teléfono"
                             />
                         </div>
@@ -1081,10 +1104,10 @@ const ProspectorSeguimiento = () => {
                             <div className="flex flex-wrap gap-1.5">
                                 {[
                                     { value: 'todos', label: 'Todos' },
-                                    { value: 'en_contacto', label: '✅ En contacto' },
-                                    { value: 'sin_respuesta', label: '📵 Sin respuesta' },
-                                    { value: 'no_contactado', label: '🔇 No contactado' },
-                                    { value: 'con_cita', label: '📅 Con cita' },
+                                    { value: 'en_contacto', label: 'En contacto' },
+                                    { value: 'sin_respuesta', label: 'Sin respuesta' },
+                                    { value: 'no_contactado', label: 'No contactado' },
+                                    { value: 'con_cita', label: 'Con cita' },
                                 ].map(btn => (
                                     <button
                                         key={btn.value}
@@ -1135,10 +1158,10 @@ const ProspectorSeguimiento = () => {
                         <p className="text-gray-400 text-sm mt-1">Intenta con otra búsqueda o crea uno nuevo.</p>
                     </div>
                 ) : (
-                    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="min-w-full text-sm">
-                                <thead className="bg-slate-100/70 text-slate-600">
+                                <thead className="bg-slate-100/70 text-slate-500 uppercase">
                                     <tr>
                                         <th className="px-4 py-3 text-left font-semibold">Cliente</th>
                                         <th className="px-4 py-3 text-left font-semibold">Empresa</th>

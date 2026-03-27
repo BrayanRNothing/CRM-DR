@@ -27,7 +27,7 @@ const CAMEL_COLS = [
   'vendedorAsignado', 'fechaRegistro', 'ultimaInteraccion', 'proximaLlamada',
   'cambioEtapa', 'etapaAnterior', 'etapaNueva', 'fechaLimite', 'fechaCreacion',
   'googleRefreshToken', 'googleAccessToken', 'googleTokenExpiry',
-  'vendedorNombre', 'vendedorRol', 'closerNombre', 'sitioWeb'
+  'vendedorNombre', 'vendedorRol', 'closerNombre', 'sitioWeb', 'googleMeetLink'
 ];
 
 // Helper: convierte '?' a '$1', '$2', etc. para Postgres y añade comillas dobles a columnas camelCase
@@ -58,7 +58,7 @@ const pgMap = {
   fechacreacion: 'fechaCreacion', googlerefreshtoken: 'googleRefreshToken',
   googleaccesstoken: 'googleAccessToken', googletokenexpiry: 'googleTokenExpiry',
   vendedornombre: 'vendedorNombre', vendedorrol: 'vendedorRol', closernombre: 'closerNombre',
-  sitioweb: 'sitioWeb'
+  sitioweb: 'sitioWeb', googlemeetlink: 'googleMeetLink'
 };
 
 const mapPgRow = (row) => {
@@ -254,7 +254,8 @@ const initDb = async () => {
     cambioEtapa INTEGER DEFAULT 0,
     etapaAnterior TEXT,
     etapaNueva TEXT,
-    notas TEXT
+    notas TEXT,
+    "googleMeetLink" TEXT
   );
 
   CREATE TABLE IF NOT EXISTS tareas (
@@ -410,6 +411,10 @@ const initDb = async () => {
              AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='actividades' AND column_name='etapaNueva') THEN
             ALTER TABLE actividades RENAME COLUMN etapanueva TO "etapaNueva";
           END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='actividades' AND column_name='googlemeetlink')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='actividades' AND column_name='googleMeetLink') THEN
+            ALTER TABLE actividades RENAME COLUMN googlemeetlink TO "googleMeetLink";
+          END IF;
 
           -- tareas
           IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tareas' AND column_name='fechalimite')
@@ -438,6 +443,7 @@ const initDb = async () => {
       ['clientes',  '"proximaLlamada"',     'TIMESTAMPTZ'],
       ['clientes',  'interes',              'TEXT'],
       ['usuarios',  'activo',               'INTEGER DEFAULT 1'],
+      ['actividades', '"googleMeetLink"',   'TEXT'],
     ];
     for (const [table, col, type] of colsMissingPg) {
       try {

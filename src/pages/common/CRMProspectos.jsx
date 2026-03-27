@@ -208,13 +208,14 @@ const CRMProspectos = () => {
             ubicacion: p.ubicacion || '',
             correo: p.correo || '',
             telefono: p.telefono || '',
-            notas: p.notas || ''
+            notas: p.notas || '',
+            interes: p.interes || 0
         });
         setModalEditarApi(true);
     };
 
     const handleEditarProspectoApi = async () => {
-        const { id, nombre, empresa, telefono, correo, ubicacion, notas } = prospectoAEditar;
+        const { id, nombre, empresa, telefono, correo, ubicacion, notas, interes } = prospectoAEditar;
         const parts = nombre ? nombre.trim().split(' ') : [];
         const nombres = parts.length > 0 ? parts[0] : '';
         const apellidoPaterno = parts.length > 1 ? parts.slice(1).join(' ') : '';
@@ -226,7 +227,7 @@ const CRMProspectos = () => {
 
         const payload = {
             nombres, apellidoPaterno, apellidoMaterno: '', telefono,
-            correo: correo || '', empresa: empresa || '', ubicacion: ubicacion || '', notas: notas || ''
+            correo: correo || '', empresa: empresa || '', ubicacion: ubicacion || '', notas: notas || '', interes: interes || 0
         };
 
         setLoadingEditarApi(true);
@@ -584,88 +585,129 @@ const CRMProspectos = () => {
                     )}
 
                     {modalEditarApi && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-                            <div className="absolute inset-0 bg-black/50 transition-opacity" onClick={() => setModalEditarApi(false)} />
-                            <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 flex flex-col max-h-[85vh]">
-                                <div className="flex-none bg-linear-to-r from-(--theme-500) to-(--theme-600) p-6 sm:p-8 text-white flex justify-between items-start shadow-lg relative overflow-hidden z-10">
-                                    <div className="relative z-10">
-                                        <h2 className="text-2xl font-black tracking-tight mb-1">Editar Prospecto</h2>
-                                        <p className="text-white/90 text-sm font-medium">Modifica los datos del prospecto.</p>
+                        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 transition-all duration-300">
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col max-h-[82vh] overflow-hidden">
+                                {/* Header */}
+                                <div className="px-6 py-4 bg-gradient-to-r from-(--theme-50) to-white border-b border-slate-100 flex justify-between items-center">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-(--theme-100) rounded-xl flex items-center justify-center">
+                                            <Edit2 className="w-5 h-5 text-(--theme-600)" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-bold text-gray-900">Editar Prospecto</h2>
+                                            <p className="text-xs text-slate-500 mt-0.5">Actualiza la información de contacto</p>
+                                        </div>
                                     </div>
-                                    <button onClick={() => setModalEditarApi(false)} className="relative z-10 p-2 rounded-full hover:bg-white/20 transition-colors text-white/80 hover:text-white">
-                                        <X size={24} strokeWidth={2.5} />
+                                    <button onClick={() => setModalEditarApi(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600">
+                                        <X className="w-5 h-5" />
                                     </button>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6 scrollbar-thin bg-slate-50/30">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* Columna Izquierda: Personal */}
-                                        <div className="space-y-5">
+                                {/* Content */}
+                                <div className="p-6 space-y-5 overflow-y-auto">
+                                    {/* Sección: Información Personal */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
+                                            Información Personal
+                                        </h3>
+                                        <div className="space-y-3">
                                             <div>
-                                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 pl-1">Información Personal</label>
-                                                <div className="space-y-4">
-                                                    <div className="group relative">
-                                                        <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
-                                                        <input type="text" value={prospectoAEditar.nombre}
-                                                            onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, nombre: e.target.value })}
-                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
-                                                            placeholder="Nombre Completo" />
-                                                    </div>
-                                                    <div className="group relative">
-                                                        <Building2 size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
-                                                        <input type="text" value={prospectoAEditar.empresa}
-                                                            onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, empresa: e.target.value })}
-                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
-                                                            placeholder="Empresa (Opcional)" />
-                                                    </div>
-                                                    <div className="group relative">
-                                                        <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
-                                                        <input type="text" value={prospectoAEditar.ubicacion}
-                                                            onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, ubicacion: e.target.value })}
-                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
-                                                            placeholder="Ubicación / Ciudad" />
-                                                    </div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Nombre Completo *</label>
+                                                <input
+                                                    type="text"
+                                                    value={prospectoAEditar.nombre}
+                                                    onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, nombre: e.target.value })}
+                                                    className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
+                                                    placeholder="Ej: Juan García López"
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Empresa</label>
+                                                    <input
+                                                        type="text"
+                                                        value={prospectoAEditar.empresa}
+                                                        onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, empresa: e.target.value })}
+                                                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
+                                                        placeholder="Nombre empresa"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Ubicación</label>
+                                                    <input
+                                                        type="text"
+                                                        value={prospectoAEditar.ubicacion}
+                                                        onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, ubicacion: e.target.value })}
+                                                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
+                                                        placeholder="Ciudad, Estado"
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        {/* Columna Derecha: Contacto y Notas */}
-                                        <div className="space-y-5">
+                                    {/* Sección: Contacto */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
+                                            Contacto
+                                        </h3>
+                                        <div className="space-y-3">
                                             <div>
-                                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 pl-1">Contacto y Correo</label>
-                                                <div className="space-y-4">
-                                                    <div className="group relative">
-                                                        <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
-                                                        <input type="tel" value={prospectoAEditar.telefono}
-                                                            onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, telefono: e.target.value })}
-                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
-                                                            placeholder="Teléfono *" />
-                                                    </div>
-                                                    <div className="group relative">
-                                                        <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-(--theme-500) transition-colors" />
-                                                        <input type="email" value={prospectoAEditar.correo}
-                                                            onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, correo: e.target.value })}
-                                                            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 focus:border-(--theme-500) focus:ring-2 focus:ring-(--theme-500)/20 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-400 shadow-sm"
-                                                            placeholder="Correo (Opcional)" />
-                                                    </div>
-                                                </div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Teléfono *</label>
+                                                <input
+                                                    type="tel"
+                                                    value={prospectoAEditar.telefono}
+                                                    onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, telefono: e.target.value })}
+                                                    className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
+                                                    placeholder="Ej: +56 9 1234 5678"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Correo Electrónico</label>
+                                                <input
+                                                    type="email"
+                                                    value={prospectoAEditar.correo}
+                                                    onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, correo: e.target.value })}
+                                                    className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
+                                                    placeholder="ejemplo@empresa.com"
+                                                />
                                             </div>
                                         </div>
+                                    </div>
+
+                                    {/* Sección: Notas */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
+                                            Notas
+                                        </h3>
+                                        <textarea
+                                            value={prospectoAEditar.notas}
+                                            onChange={(e) => setProspectoAEditar({ ...prospectoAEditar, notas: e.target.value })}
+                                            rows={3}
+                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300 resize-none"
+                                            placeholder="Información adicional..."
+                                        />
                                     </div>
                                 </div>
 
-                                <div className="flex-none p-6 sm:p-8 pt-2 border-t border-gray-100 bg-white">
-                                    <div className="flex gap-3">
-                                        <button onClick={() => setModalEditarApi(false)}
-                                            className="px-6 py-3.5 rounded-xl border-2 border-slate-100 text-slate-500 font-bold hover:bg-slate-50 hover:text-slate-700 hover:border-slate-200 transition-all active:scale-95">
-                                            Cancelar
-                                        </button>
-                                        <button onClick={handleEditarProspectoApi}
-                                            disabled={loadingEditarApi || !prospectoAEditar.nombre?.trim() || !prospectoAEditar.telefono?.trim()}
-                                            className="flex-1 py-3.5 rounded-xl bg-(--theme-500) hover:bg-(--theme-600) text-white font-bold transition-all active:scale-95 shadow-lg shadow-(--theme-500)/30 disabled:opacity-50">
-                                            {loadingEditarApi ? 'Guardando...' : 'Guardar Cambios'}
-                                        </button>
-                                    </div>
+                                {/* Footer */}
+                                <div className="flex gap-3 p-6 border-t border-slate-100 bg-slate-50 justify-end">
+                                    <button
+                                        onClick={() => setModalEditarApi(false)}
+                                        className="px-6 py-3 border border-slate-300 text-gray-700 rounded-lg text-sm hover:bg-white font-bold transition-all hover:shadow-sm"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={handleEditarProspectoApi}
+                                        disabled={loadingEditarApi || !prospectoAEditar.nombre?.trim() || !prospectoAEditar.telefono?.trim()}
+                                        className="px-8 py-3 bg-(--theme-600) text-white rounded-lg text-sm hover:bg-(--theme-700) font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all"
+                                    >
+                                        {loadingEditarApi ? '⏳ Guardando...' : '✓ Guardar Cambios'}
+                                    </button>
                                 </div>
                             </div>
                         </div>

@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar } from 'lucide-react';
+import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar, Filter, Star, Mail, MessageSquare, Clock } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { getToken } from '../../utils/authUtils';
@@ -18,6 +18,7 @@ const CRMClientes = () => {
     const [clienteAEliminar, setClienteAEliminar] = useState(null);
     const [eliminando, setEliminando] = useState(false);
     const [importando, setImportando] = useState(false);
+    const [filtro, setFiltro] = useState('todos');
     const fileInputRef = useRef(null);
     const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
     const [creandoCliente, setCreandoCliente] = useState(false);
@@ -366,9 +367,16 @@ const CRMClientes = () => {
                 (cliente.empresa || '').toLowerCase().includes(busqueda.toLowerCase()) ||
                 (cliente.correo || '').toLowerCase().includes(busqueda.toLowerCase()) ||
                 (cliente.telefono || '').includes(busqueda);
+            
+            if (filtro === 'con_recordatorio') {
+                return matchBusqueda && !!cliente.proximaLlamada;
+            }
+            if (filtro === 'sin_recordatorio') {
+                return matchBusqueda && !cliente.proximaLlamada;
+            }
             return matchBusqueda;
         });
-    }, [clientes, busqueda]);
+    }, [clientes, busqueda, filtro]);
 
     // VISTA DETALLADA
     if (prospectoSeleccionado) {
@@ -732,13 +740,6 @@ const CRMClientes = () => {
                             onChange={handleImportarClientes}
                         />
                         <button
-                            onClick={() => setMostrarModalCrear(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Crear Cliente
-                        </button>
-                        <button
                             onClick={() => fileInputRef.current?.click()}
                             disabled={importando}
                             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
@@ -755,27 +756,53 @@ const CRMClientes = () => {
                             Exportar CSV
                         </button>
                         <button
-                            onClick={cargarClientes}
-                            disabled={loading}
-                            className="flex items-center gap-2 px-4 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50 transition-colors"
+                            onClick={() => setMostrarModalCrear(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors"
                         >
-                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                            Actualizar
+                            <Plus className="w-4 h-4" />
+                            Crear Cliente
                         </button>
                     </div>
                 </div>
 
                 <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm mb-6">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Buscar clientes por nombre, empresa, teléfono..."
-                            value={busqueda}
-                            onChange={(event) => setBusqueda(event.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                        />
+                    <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-4 items-center">
+                        <div className="relative w-full">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Buscar clientes por nombre, empresa, teléfono..."
+                                value={busqueda}
+                                onChange={(event) => setBusqueda(event.target.value)}
+                                className="w-full bg-white border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) text-sm"
+                            />
+                        </div>
+                        <div className="flex flex-wrap gap-2 items-center w-full">
+                            <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+                            <div className="flex flex-wrap gap-1.5">
+                                {[
+                                    { value: 'todos', label: 'Todos' },
+                                    { value: 'con_recordatorio', label: 'Con recordatorio' },
+                                    { value: 'sin_recordatorio', label: 'Sin recordatorio' },
+                                ].map(btn => (
+                                    <button
+                                        key={btn.value}
+                                        onClick={() => setFiltro(btn.value)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtro === btn.value
+                                            ? 'bg-(--theme-600) text-white border-(--theme-600) shadow-sm'
+                                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-(--theme-400) hover:text-(--theme-700)'
+                                            }`}
+                                    >
+                                        {btn.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
+                    {/* Contador de resultados */}
+                    <p className="text-xs text-slate-400 mt-2">
+                        Mostrando <span className="font-semibold text-slate-600">{clientesFiltrados.length}</span> de <span className="font-semibold text-slate-600">{clientes.length}</span> clientes
+                    </p>
                 </div>
 
                 {loading ? (
@@ -791,48 +818,117 @@ const CRMClientes = () => {
                     <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="min-w-full text-sm">
-                                <thead className="bg-slate-100/70 text-slate-500 uppercase">
+                                <thead>
                                     <tr>
-                                        <th className="px-4 py-3 text-left">Nombre</th>
-                                        <th className="px-4 py-3 text-left">Empresa</th>
-                                        <th className="px-4 py-3 text-left">Teléfono</th>
-                                        <th className="px-4 py-3 text-left">Correo</th>
-                                        <th className="px-4 py-3 text-left">Convertido el</th>
-                                        <th className="px-4 py-3 text-center">Acciones</th>
+                                        <th className="px-4 py-3 text-left font-semibold">Cliente</th>
+                                        <th className="px-4 py-3 text-left font-semibold">Empresa</th>
+                                        <th className="px-4 py-3 text-left font-semibold">Contacto</th>
+                                        <th className="px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider">Etapa</th>
+                                        <th className="px-4 py-3 text-left font-semibold">Última interacción</th>
+                                        <th className="px-4 py-3 text-left font-semibold">Recordatorio</th>
+                                        <th className="px-4 py-3 text-center font-semibold">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {clientesFiltrados.map((cliente) => (
-                                        <tr key={cliente._id || cliente.id} className="hover:bg-slate-50/70 transition-colors">
-                                            <td className="px-4 py-3 font-medium text-gray-900">
-                                                {cliente.nombres} {cliente.apellidoPaterno}
+                                        <tr key={cliente._id || cliente.id} className="hover:bg-slate-50/70 transition-colors cursor-pointer" onClick={() => handleVerDetalles(cliente)}>
+                                            <td className="px-4 py-3 text-left">
+                                                <div className="flex flex-col">
+                                                    <p className="font-medium text-gray-900 leading-tight">
+                                                        {cliente.nombres} {cliente.apellidoPaterno}
+                                                    </p>
+                                                    <div className="flex items-center gap-0.5 text-yellow-500 scale-75 origin-left mt-0.5">
+                                                        {[1, 2, 3, 4, 5].map((val) => (
+                                                            <Star key={val} className="w-3.5 h-3.5 fill-yellow-400" />
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </td>
-                                            <td className="px-4 py-3 text-gray-600">{cliente.empresa || '—'}</td>
-                                            <td className="px-4 py-3 text-gray-600">{cliente.telefono || '—'}</td>
-                                            <td className="px-4 py-3 text-(--theme-600)">{cliente.correo || '—'}</td>
-                                            <td className="px-4 py-3 text-gray-600">
-                                                {cliente.fechaUltimaEtapa
-                                                    ? new Date(cliente.fechaUltimaEtapa).toLocaleDateString('es-MX')
-                                                    : '—'
-                                                }
+                                            <td className="px-4 py-3 text-gray-600 text-sm whitespace-nowrap">{cliente.empresa || '—'}</td>
+                                            <td className="px-4 py-3">
+                                                <div className="space-y-0.5">
+                                                    {cliente.telefono ? (
+                                                        <p className="flex items-center gap-1.5 text-gray-700 text-sm font-medium">
+                                                            <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                            {cliente.telefono}
+                                                        </p>
+                                                    ) : null}
+                                                    {cliente.correo ? (
+                                                        <p className="flex items-center gap-1.5 text-gray-500 text-sm">
+                                                            <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                            <span>{cliente.correo}</span>
+                                                        </p>
+                                                    ) : null}
+                                                    {!cliente.telefono && !cliente.correo && (
+                                                        <span className="text-xs text-slate-400 italic">Sin contacto</span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <div className="flex items-center justify-center gap-2">
-                                                <button
-                                                    onClick={() => handleVerDetalles(cliente)}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
-                                                >
-                                                    <History className="w-4 h-4" />
-                                                    Ver Detalles
-                                                    <ChevronRight className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => setClienteAEliminar(cliente)}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium"
-                                                    title="Eliminar cliente"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-(--theme-100) text-(--theme-600)">
+                                                    Venta Ganada
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 max-w-[200px]">
+                                                {cliente.ultimaActTipo ? (
+                                                    <div className="flex items-start gap-1.5">
+                                                        <div className="mt-0.5 shrink-0">
+                                                            {cliente.ultimaActTipo === 'llamada' && <Phone className="w-3 h-3 text-(--theme-500)" />}
+                                                            {cliente.ultimaActTipo === 'whatsapp' && <MessageSquare className="w-3 h-3 text-green-500" />}
+                                                            {cliente.ultimaActTipo === 'correo' && <Mail className="w-3 h-3 text-purple-500" />}
+                                                            {cliente.ultimaActTipo === 'cita' && <Calendar className="w-3 h-3 text-(--theme-500)" />}
+                                                            {!['llamada', 'whatsapp', 'correo', 'cita'].includes(cliente.ultimaActTipo) && <Clock className="w-3 h-3 text-slate-400" />}
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-600 leading-snug" title={cliente.ultimaActNotas || ''}>
+                                                            {cliente.ultimaActNotas
+                                                                ? (cliente.ultimaActNotas.length > 50 ? cliente.ultimaActNotas.slice(0, 50) + '…' : cliente.ultimaActNotas)
+                                                                : <span className="italic text-slate-400">{cliente.ultimaActTipo}</span>}
+                                                        </p>
+                                                    </div>
+                                                ) : cliente.fechaUltimaEtapa ? (
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Plus className="w-3 h-3 text-emerald-500" />
+                                                        <span className="text-[11px] text-slate-500">
+                                                            Ganado el {new Date(cliente.fechaUltimaEtapa).toLocaleDateString('es-MX')}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs text-slate-300 italic">Sin historial</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                {cliente.proximaLlamada ? (() => {
+                                                    const esVencido = new Date(cliente.proximaLlamada) < new Date();
+                                                    return (
+                                                        <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-(--theme-600)'}`}>
+                                                            <div className={`w-2 h-2 rounded-full animate-pulse ${esVencido ? 'bg-red-500' : 'bg-(--theme-500)'}`}></div>
+                                                            <span className="text-xs font-semibold">
+                                                                {new Date(cliente.proximaLlamada).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                                                                {esVencido && ' ⚠'}
+                                                            </span>
+                                                            <Phone className="w-3 h-3" />
+                                                        </div>
+                                                    );
+                                                })() : (
+                                                    <span className="text-xs text-slate-400 italic">Sin pendiente</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <div className="flex items-center justify-center gap-3">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleVerDetalles(cliente); }}
+                                                        className="text-gray-400 hover:text-(--theme-600) transition-colors p-2 rounded-full hover:bg-(--theme-50)"
+                                                        title="Ver Detalles / Historial"
+                                                    >
+                                                        <History className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); setClienteAEliminar(cliente); }}
+                                                        className="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50"
+                                                        title="Eliminar Cliente"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>

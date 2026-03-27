@@ -4,7 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
     Phone, MessageSquare, Mail, Calendar, CheckCircle2,
-    XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2
+    XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink
 } from 'lucide-react';
 
 import { getToken } from '../utils/authUtils';
@@ -66,6 +66,8 @@ export default function ProspectoDetalle({
     const [acordeonCierreAbierto, setAcordeonCierreAbierto] = useState(false);
     const [recordatoriosLlamada, setRecordatoriosLlamada] = useState([]);
     const [loadingCitaId, setLoadingCitaId] = useState(null);
+    const [modalCita, setModalCita] = useState({ abierto: false, cita: null, editando: false });
+    const [editDataCita, setEditDataCita] = useState({ fecha: '', notas: '' });
 
     // Solo actualizar estado local al recibir nuevos datos
     useEffect(() => {
@@ -334,6 +336,62 @@ export default function ProspectoDetalle({
         } catch (err) {
             console.error(err);
             toast.error('No se pudo eliminar el recordatorio');
+        }
+    };
+
+    const handleDescartarCita = async (cita) => {
+        if (!window.confirm('¿Descartar esta reunión? Se eliminará de la base de datos y se intentará quitar de Google Calendar.')) return;
+        try {
+            const id = cita.id || cita._id;
+            // 1. Eliminar de Google Calendar (intento)
+            try {
+                await axios.delete(`${API_URL}/api/google/event-by-activity/${id}`, { headers: getAuthHeaders() });
+            } catch (gErr) {
+                console.warn('No se pudo eliminar de Google Calendar:', gErr.message);
+            }
+            // 2. Eliminar de la BD
+            await axios.delete(`${API_URL}/api/actividades/${id}`, { headers: getAuthHeaders() });
+            setActividadesContext(prev => prev.filter(a => (a.id || a._id) !== id));
+            toast.success('Reunión descartada');
+        } catch (error) {
+            console.error(error);
+            toast.error('Error al descartar la reunión');
+        }
+    };
+
+    const handleActualizarCita = async () => {
+        if (!editDataCita.fecha) return toast.error('La fecha es requerida');
+        try {
+            const id = modalCita.cita.id || modalCita.cita._id;
+            // 1. Actualizar en la BD
+            await axios.put(`${API_URL}/api/actividades/${id}`, {
+                fecha: editDataCita.fecha,
+                notas: editDataCita.notas
+            }, { headers: getAuthHeaders() });
+
+            // 2. Sincronizar con Google Calendar
+            try {
+                await axios.patch(`${API_URL}/api/google/event-by-activity/${id}`, {
+                    startDateTime: new Date(editDataCita.fecha).toISOString(),
+                    endDateTime: new Date(new Date(editDataCita.fecha).getTime() + 45 * 60000).toISOString(),
+                    description: editDataCita.notas
+                }, { headers: getAuthHeaders() });
+            } catch (gErr) {
+                console.warn('No se pudo sincronizar actualización con Google:', gErr.message);
+            }
+
+            // Actualizar contexto local
+            setActividadesContext(prev => prev.map(a => 
+                (a.id || a._id) === id 
+                ? { ...a, fecha: editDataCita.fecha, notas: editDataCita.notas } 
+                : a
+            ));
+
+            toast.success('Reunión actualizada');
+            setModalCita({ abierto: false, cita: null, editando: false });
+        } catch (error) {
+            console.error(error);
+            toast.error('Error al actualizar la reunión');
         }
     };
 
@@ -643,14 +701,14 @@ export default function ProspectoDetalle({
                             </div>
 
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                                <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-2 shadow-sm">
+                                <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-2 shadow-sm relative max-h-[280px]">
                                     <div className="flex items-center gap-2 shrink-0">
                                         <Bell className="w-3.5 h-3.5 text-(--theme-500)" />
                                         <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Notificaciones</p>
                                     </div>
 
                                     {/* Contenido con altura fija y scroll */}
-                                    <div className="overflow-y-auto hide-scrollbar flex flex-col gap-2" style={{ maxHeight: '200px' }}>
+                                    <div className="overflow-y-auto hide-scrollbar flex flex-col gap-2 flex-shrink-0" style={{ maxHeight: '200px', height: '200px' }}>
 
                                         {citasPendientes.map((cita) => {
                                             const fechaCita = cita.fechaCita || cita.fecha;
@@ -662,14 +720,42 @@ export default function ProspectoDetalle({
                                                             {new Date(fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
                                                         </p>
                                                     </div>
-                                                    <button
-                                                        onClick={() => handleMarcarCitaRealizada(cita)}
-                                                        disabled={loadingCitaId === cita.id}
-                                                        className="w-full flex items-center justify-center gap-1.5 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded py-1.5 text-[10px] font-bold transition-colors disabled:opacity-50"
-                                                    >
-                                                        <CheckCircle2 className="w-3 h-3" />
-                                                        {loadingCitaId === cita.id ? 'Guardando...' : 'Marcar como realizada'}
-                                                    </button>
+                                                    
+                                                    <div className="flex gap-1.5">
+                                                        <button
+                                                            onClick={() => handleMarcarCitaRealizada(cita)}
+                                                            disabled={loadingCitaId === cita.id}
+                                                            title="Marcar como realizada"
+                                                            className="flex-1 flex items-center justify-center gap-1.5 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded py-1.5 text-[10px] font-bold transition-colors disabled:opacity-50"
+                                                        >
+                                                            <CheckCircle2 className="w-3 h-3" />
+                                                            {loadingCitaId === cita.id ? '...' : 'Realizada'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setModalCita({ abierto: true, cita, editando: false })}
+                                                            className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                            title="Ver"
+                                                        >
+                                                            <Eye className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setEditDataCita({ fecha: fechaCita, notas: cita.notas || '' });
+                                                                setModalCita({ abierto: true, cita, editando: true });
+                                                            }}
+                                                            className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                            title="Editar"
+                                                        >
+                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDescartarCita(cita)}
+                                                            className="flex items-center justify-center bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                            title="Descartar"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             );
                                         })}
@@ -707,6 +793,14 @@ export default function ProspectoDetalle({
                                         )}
                                     </div>
 
+                                    {/* Indicador de scroll discreto */}
+                                    {(citasPendientes.length + recordatoriosLlamada.length > 2) && (
+                                        <div className="absolute left-0 right-0 flex justify-center pointer-events-none" style={{ bottom: '-6px' }}>
+                                            <svg className="w-5 h-5 text-slate-400 animate-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M7 10l5 5 5-5z" />
+                                            </svg>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* ========= CUADRO DE NOTAS EDITABLE ========= */}
@@ -734,7 +828,7 @@ export default function ProspectoDetalle({
                             <div className="relative inline-block mt-2">
                                 <button
                                     onClick={() => setAcordeonCierreAbierto(v => !v)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-gray-700 rounded-lg text-sm font-semibold transition-all border border-slate-200"
+                                    className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-semibold transition-all border border-slate-200"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
                                     Acciones de cierre
@@ -1193,6 +1287,132 @@ export default function ProspectoDetalle({
                             >
                                 ✓ Guardar recordatorio
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* MODAL DETALLE / EDICIÓN DE CITA */}
+            {modalCita.abierto && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="px-6 py-5 border-b border-slate-100 bg-linear-to-r from-(--theme-50) to-white flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Calendar className="w-5 h-5 text-(--theme-600)" />
+                                <h2 className="text-lg font-bold text-gray-900">
+                                    {modalCita.editando ? 'Editar reunión agendada' : 'Detalles de la reunión'}
+                                </h2>
+                            </div>
+                            <button
+                                onClick={() => setModalCita({ abierto: false, cita: null, editando: false })}
+                                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                            >
+                                <X className="w-5 h-5 text-slate-400" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            {modalCita.editando ? (
+                                <>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha y Hora</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={editDataCita.fecha ? new Date(editDataCita.fecha).toISOString().slice(0, 16) : ''}
+                                            onChange={(e) => setEditDataCita({ ...editDataCita, fecha: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-400) outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Notas de la reunión</label>
+                                        <textarea
+                                            value={editDataCita.notas}
+                                            onChange={(e) => setEditDataCita({ ...editDataCita, notas: e.target.value })}
+                                            placeholder="Detalles o preparativos para la reunión..."
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-400) outline-none transition-all min-h-[120px] resize-none"
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div className="bg-slate-50 p-4 rounded-xl space-y-3">
+                                        <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                                            <span className="text-xs font-bold text-slate-400 uppercase">Fecha</span>
+                                            <span className="text-sm font-semibold text-slate-700">
+                                                {new Date(modalCita.cita.fechaCita || modalCita.cita.fecha).toLocaleDateString('es-MX', { dateStyle: 'long' })}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                                            <span className="text-xs font-bold text-slate-400 uppercase">Hora</span>
+                                            <span className="text-sm font-semibold text-slate-700">
+                                                {new Date(modalCita.cita.fechaCita || modalCita.cita.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="text-xs font-bold text-slate-400 uppercase">Notas</span>
+                                            <p className="text-sm text-slate-600 leading-relaxed italic">
+                                                {modalCita.cita.notas || 'Sin notas registradas.'}
+                                            </p>
+                                        </div>
+
+                                        {modalCita.cita.googleMeetLink && (
+                                            <div className="pt-2 border-t border-slate-200">
+                                                <span className="text-xs font-bold text-(--theme-600) uppercase block mb-1.5">Enlace de Google Meet</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-600 truncate font-mono">
+                                                        {modalCita.cita.googleMeetLink}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(modalCita.cita.googleMeetLink);
+                                                            toast.success('Enlace copiado');
+                                                        }}
+                                                        className="p-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg shadow-sm transition-all"
+                                                        title="Copiar enlace"
+                                                    >
+                                                        <Copy className="w-4 h-4" />
+                                                    </button>
+                                                    <a
+                                                        href={modalCita.cita.googleMeetLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="p-2 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded-lg shadow-sm transition-all"
+                                                        title="Unirse a la reunión"
+                                                    >
+                                                        <ExternalLink className="w-4 h-4" />
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-3 p-3 bg-(--theme-50) border border-(--theme-100) rounded-xl">
+                                        <div className="p-2 bg-white rounded-lg shadow-sm">
+                                            <Star className="w-4 h-4 text-(--theme-500)" />
+                                        </div>
+                                        <div className="text-xs">
+                                            <p className="font-bold text-(--theme-700)">Reunión con {prospectoSeleccionado.nombres}</p>
+                                            <p className="text-(--theme-600)">Empresa: {prospectoSeleccionado.empresa || 'No especificada'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                            <button
+                                onClick={() => setModalCita({ abierto: false, cita: null, editando: false })}
+                                className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-lg transition-colors"
+                            >
+                                Cerrar
+                            </button>
+                            {modalCita.editando && (
+                                <button
+                                    onClick={handleActualizarCita}
+                                    className="px-6 py-2 bg-(--theme-600) text-white rounded-lg text-sm font-bold hover:bg-(--theme-700) shadow-sm transition-colors"
+                                >
+                                    Guardar cambios
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
