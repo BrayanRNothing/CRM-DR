@@ -68,12 +68,17 @@ export default function ProspectoDetalle({
     const [loadingCitaId, setLoadingCitaId] = useState(null);
     const [modalCita, setModalCita] = useState({ abierto: false, cita: null, editando: false });
     const [editDataCita, setEditDataCita] = useState({ fecha: '', notas: '' });
+    const [customMetricLabel, setCustomMetricLabel] = useState(initialProspecto?.customMetricLabel || '');
+    const [customMetricValue, setCustomMetricValue] = useState(initialProspecto?.customMetricValue || '');
+    const [guardandoMetrica, setGuardandoMetrica] = useState(false);
 
     // Solo actualizar estado local al recibir nuevos datos
     useEffect(() => {
         if (initialProspecto) {
             setProspectoSeleccionado(initialProspecto);
             setNotasRapidas(initialProspecto.notas || '');
+            setCustomMetricLabel(initialProspecto.customMetricLabel || '');
+            setCustomMetricValue(initialProspecto.customMetricValue || '');
         }
     }, [initialProspecto]);
 
@@ -184,6 +189,24 @@ export default function ProspectoDetalle({
             toast.error('Error al guardar notas');
         } finally {
             setLoadingNotas(false);
+        }
+    };
+
+    const handleGuardarMetricaPersonalizada = async () => {
+        if (!prospectoSeleccionado) return;
+        setGuardandoMetrica(true);
+        try {
+            const pidLoc = prospectoSeleccionado.id || prospectoSeleccionado._id;
+            await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLoc}`, {
+                customMetricLabel,
+                customMetricValue
+            }, { headers: getAuthHeaders() });
+            setProspectoSeleccionado(prev => ({ ...prev, customMetricLabel, customMetricValue }));
+            if (onActualizado) onActualizado();
+        } catch (error) {
+            console.error('Error al guardar métrica personalizada:', error);
+        } finally {
+            setGuardandoMetrica(false);
         }
     };
 
@@ -647,27 +670,67 @@ export default function ProspectoDetalle({
                             </div>
                         </div>
 
-                        {/* Estadísticas editables */}
+                        {/* Estadísticas de Seguimiento */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Sí contestó</p>
-                                <p className="text-3xl font-black text-(--theme-500)">{llamadasExitosas}</p>
-                                <p className="text-xs text-gray-400 mt-1">veces</p>
+                            {/* Cuadro 1: Antigüedad */}
+                            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Antigüedad</p>
+                                <p className="text-2xl font-black text-(--theme-600)">
+                                    {prospectoSeleccionado.fechaRegistro || prospectoSeleccionado.createdAt 
+                                        ? `${Math.max(1, Math.ceil(Math.abs(new Date() - new Date(prospectoSeleccionado.fechaRegistro || prospectoSeleccionado.createdAt)) / (1000 * 60 * 60 * 24)))} días`
+                                        : 'N/A'}
+                                </p>
+                                <p className="text-[10px] text-gray-400 mt-1">
+                                    {prospectoSeleccionado.fechaRegistro || prospectoSeleccionado.createdAt
+                                        ? `Desde: ${new Date(prospectoSeleccionado.fechaRegistro || prospectoSeleccionado.createdAt).toLocaleDateString('es-MX')}`
+                                        : 'Sin fecha'}
+                                </p>
                             </div>
-                            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">No contestó</p>
-                                <p className="text-3xl font-black text-rose-500">{llamadasFallidas}</p>
-                                <p className="text-xs text-gray-400 mt-1">veces</p>
+
+                            {/* Cuadro 2: Llamadas (Contestadas / No contestadas) */}
+                            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Llamadas</p>
+                                <div className="flex items-center justify-center gap-1">
+                                    <span className="text-2xl font-black text-(--theme-500)" title="Contestadas">{llamadasExitosas}</span>
+                                    <span className="text-xl font-bold text-slate-300">/</span>
+                                    <span className="text-2xl font-black text-rose-500" title="No contestadas">{llamadasFallidas}</span>
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-1 font-bold italic">Si / No contestó</p>
                             </div>
-                            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Citas</p>
-                                <p className="text-3xl font-black text-(--theme-500)">{actividadesContext.filter(a => a.tipo === 'cita').length}</p>
-                                <p className="text-xs text-gray-400 mt-1">agendadas</p>
+
+                            {/* Cuadro 3: Reuniones Realizadas */}
+                            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Reuniones</p>
+                                <p className="text-3xl font-black text-(--theme-500)">
+                                    {actividadesContext.filter(a => a.tipo === 'cita' && a.resultado === 'exitoso').length}
+                                </p>
+                                <p className="text-[10px] text-gray-400 mt-1 font-bold">Realizadas</p>
                             </div>
-                            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">WhatsApps</p>
-                                <p className="text-3xl font-black text-green-500">{actividadesContext.filter(a => a.tipo === 'whatsapp').length}</p>
-                                <p className="text-xs text-gray-400 mt-1">enviados</p>
+
+                            {/* Cuadro 4: Métrica Personalizada (Editable) */}
+                            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center relative group min-h-[100px]">
+                                <input
+                                    type="text"
+                                    value={customMetricLabel}
+                                    onChange={(e) => setCustomMetricLabel(e.target.value)}
+                                    onBlur={handleGuardarMetricaPersonalizada}
+                                    placeholder="TÍTULO"
+                                    className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 text-center bg-transparent border-none focus:ring-1 focus:ring-slate-100 rounded outline-none w-full placeholder:text-gray-200"
+                                />
+                                <input
+                                    type="text"
+                                    value={customMetricValue}
+                                    onChange={(e) => setCustomMetricValue(e.target.value)}
+                                    onBlur={handleGuardarMetricaPersonalizada}
+                                    placeholder="VALOR"
+                                    className="text-2xl font-black text-slate-700 text-center bg-transparent border-none focus:ring-1 focus:ring-slate-100 rounded outline-none w-full placeholder:text-gray-200"
+                                />
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Edit2 className="w-3 h-3 text-slate-300" />
+                                </div>
+                                <p className="text-[9px] text-gray-300 mt-1 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {guardandoMetrica ? 'Guardando...' : 'Editable'}
+                                </p>
                             </div>
                         </div>
 
@@ -1005,12 +1068,9 @@ export default function ProspectoDetalle({
                                         >✓ Sí, contestó</button>
                                         <button
                                             onClick={async () => {
-                                                // Registrar llamada fallida y sugerir agendar reintento
+                                                // Registrar llamada fallida
                                                 await registrarActividad({ tipo: 'llamada', resultado: 'fallido', notas: 'No contestó' });
-                                                const hoy = new Date();
-                                                hoy.setDate(hoy.getDate() + 1);
-                                                const defaultDate = hoy.toISOString().slice(0, 16);
-                                                setLlamadaFlow({ paso: 'reintento', notas: '', fechaProxima: defaultDate });
+                                                setLlamadaFlow(null);
                                             }}
                                             className="flex-1 py-2.5 bg-rose-500 text-white rounded-lg font-bold hover:bg-rose-600 transition-colors"
                                         >✗ No contestó</button>

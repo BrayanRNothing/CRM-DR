@@ -303,8 +303,8 @@ router.post('/crear-prospecto', [auth, esProspector], async (req, res) => {
         const now = new Date().toISOString();
 
         const stmt = await db.prepare(`
-            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, sitioWeb, ubicacion, vendedorAsignado, prospectorAsignado, closerAsignado, etapaEmbudo, fechaRegistro, fechaUltimaEtapa)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prospecto_nuevo', ?, ?)
+            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, sitioWeb, ubicacion, customMetricLabel, customMetricValue, vendedorAsignado, prospectorAsignado, closerAsignado, etapaEmbudo, fechaRegistro, fechaUltimaEtapa)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prospecto_nuevo', ?, ?)
         `);
         const result = await stmt.run(
             (nombres || '').trim(),
@@ -317,6 +317,8 @@ router.post('/crear-prospecto', [auth, esProspector], async (req, res) => {
             (notas || '').trim(),
             (sitioWeb || '').trim(),
             (ubicacion || '').trim(),
+            (req.body.customMetricLabel || '').trim(),
+            (req.body.customMetricValue || '').trim(),
             prospectorId,
             prospectorId,
             closerId,
@@ -347,7 +349,7 @@ router.post('/crear-prospecto', [auth, esProspector], async (req, res) => {
 // POST /api/prospector/registrar-actividad
 router.post('/registrar-actividad', [auth, esProspector], async (req, res) => {
     try {
-        const { clienteId, tipo, resultado, descripcion, notas, fechaCita, etapaEmbudo, proximaLlamada, interes } = req.body;
+        const { clienteId, tipo, resultado, descripcion, notas, fechaCita, etapaEmbudo, proximaLlamada, interes, customMetricLabel, customMetricValue } = req.body;
         const tiposValidos = ['llamada', 'mensaje', 'correo', 'whatsapp', 'cita', 'prospecto'];
         const resultadosValidos = ['exitoso', 'pendiente', 'fallido'];
 
@@ -395,6 +397,16 @@ router.post('/registrar-actividad', [auth, esProspector], async (req, res) => {
         if (interes !== undefined) {
             updates.push('interes = ?');
             params.push(parseInt(interes));
+        }
+
+        if (customMetricLabel !== undefined) {
+            updates.push('customMetricLabel = ?');
+            params.push(customMetricLabel);
+        }
+
+        if (customMetricValue !== undefined) {
+            updates.push('customMetricValue = ?');
+            params.push(customMetricValue);
         }
 
         // Cambio manual o automático de etapa
@@ -466,7 +478,7 @@ router.get('/prospecto/:id/historial-completo', auth, async (req, res) => {
             FROM actividades a
             LEFT JOIN usuarios u ON a.vendedor = u.id
             WHERE a.cliente = ?
-            ORDER BY a.fecha ASC
+            ORDER BY a."createdAt" ASC
         `).all(prospectoId);
 
         // Obtener historial del embudo
@@ -508,12 +520,18 @@ router.get('/prospecto/:id/historial-completo', auth, async (req, res) => {
                 vendedorRol: a.vendedorRol || 'vendedor',
                 descripcion: a.descripcion,
                 resultado: a.resultado,
-                notas: a.notas
+                notas: a.notas,
+                createdAt: a.createdAt
             });
         });
 
-        // Ordenar por fecha
-        timeline.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        // Ordenar por fecha de creación (para que el orden refleje cuándo se registró cada cosa)
+        // Usamos createdAt para actividades y fecha para cambios de etapa (que es cuando ocurren)
+        timeline.sort((a, b) => {
+            const dateA = new Date(a.createdAt || a.fecha);
+            const dateB = new Date(b.createdAt || b.fecha);
+            return dateA - dateB;
+        });
 
         res.json({
             cliente: toMongoFormat(cliente) || cliente,
@@ -674,13 +692,15 @@ router.put('/recordatorios/:recordatorioId', auth, async (req, res) => {
 router.put('/prospectos/:id', auth, async (req, res) => {
     try {
         const prospectoId = parseInt(req.params.id);
-        const { interes, proximaLlamada } = req.body;
+        const { interes, proximaLlamada, customMetricLabel, customMetricValue } = req.body;
 
         const updates = [];
         const params = [];
 
         if (interes !== undefined) { updates.push('interes = ?'); params.push(interes); }
         if (proximaLlamada !== undefined) { updates.push('proximaLlamada = ?'); params.push(proximaLlamada); }
+        if (customMetricLabel !== undefined) { updates.push('customMetricLabel = ?'); params.push(customMetricLabel); }
+        if (customMetricValue !== undefined) { updates.push('customMetricValue = ?'); params.push(customMetricValue); }
 
         if (updates.length > 0) {
             params.push(prospectoId);
@@ -698,7 +718,7 @@ router.put('/prospectos/:id', auth, async (req, res) => {
 router.put('/prospectos/:id/editar', [auth, esProspector], async (req, res) => {
     try {
         const prospectoId = parseInt(req.params.id);
-        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, ubicacion, notas, etapaEmbudo, sitioWeb } = req.body;
+        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, ubicacion, notas, etapaEmbudo, sitioWeb, customMetricLabel, customMetricValue } = req.body;
         const prospectorId = parseInt(req.usuario.id);
         const now = new Date().toISOString();
 
@@ -710,7 +730,7 @@ router.put('/prospectos/:id/editar', [auth, esProspector], async (req, res) => {
         const updates = [
             'nombres = ?', 'apellidoPaterno = ?', 'apellidoMaterno = ?',
             'telefono = ?', 'telefono2 = ?', 'correo = ?', 'empresa = ?', 'notas = ?', 'sitioWeb = ?', 'ubicacion = ?',
-            'interes = ?', 'proximaLlamada = ?'
+            'interes = ?', 'proximaLlamada = ?', 'customMetricLabel = ?', 'customMetricValue = ?'
             // ultimaInteraccion NO se actualiza al editar datos — solo al registrar actividades reales
         ];
         const params = [
@@ -725,7 +745,9 @@ router.put('/prospectos/:id/editar', [auth, esProspector], async (req, res) => {
             (sitioWeb || '').trim(),
             (ubicacion || '').trim(),
             req.body.interes !== undefined ? req.body.interes : 0,
-            req.body.proximaLlamada || null
+            req.body.proximaLlamada || null,
+            customMetricLabel || '',
+            customMetricValue || ''
         ];
 
         // Manejo de cambio de etapa

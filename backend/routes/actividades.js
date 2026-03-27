@@ -33,7 +33,7 @@ router.get('/cliente/:clienteId/historial-completo', auth, async (req, res) => {
             FROM actividades a
             LEFT JOIN usuarios u ON a.vendedor = u.id
             WHERE a.cliente = ?
-            ORDER BY a.fecha ASC
+            ORDER BY a."createdAt" ASC
         `).all(clienteId);
 
         // Obtener historial del embudo
@@ -75,12 +75,17 @@ router.get('/cliente/:clienteId/historial-completo', auth, async (req, res) => {
                 descripcion: a.descripcion,
                 resultado: a.resultado,
                 notas: a.notas,
+                createdAt: a.createdAt,
                 timestamp: new Date(a.fecha).getTime()
             });
         });
 
-        // Ordenar por fecha
-        timeline.sort((a, b) => a.timestamp - b.timestamp);
+        // Ordenar por fecha de creación (para que el orden refleje cuándo se registró cada cosa)
+        timeline.sort((a, b) => {
+            const dateA = new Date(a.createdAt || a.fecha);
+            const dateB = new Date(b.createdAt || b.fecha);
+            return dateA - dateB;
+        });
 
         // Obtener información de prospector y closer
         let prospectorInfo = null;

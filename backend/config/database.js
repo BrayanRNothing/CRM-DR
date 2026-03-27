@@ -27,7 +27,8 @@ const CAMEL_COLS = [
   'vendedorAsignado', 'fechaRegistro', 'ultimaInteraccion', 'proximaLlamada',
   'cambioEtapa', 'etapaAnterior', 'etapaNueva', 'fechaLimite', 'fechaCreacion',
   'googleRefreshToken', 'googleAccessToken', 'googleTokenExpiry',
-  'vendedorNombre', 'vendedorRol', 'closerNombre', 'sitioWeb', 'googleMeetLink'
+  'vendedorNombre', 'vendedorRol', 'closerNombre', 'sitioWeb', 'googleMeetLink',
+  'customMetricLabel', 'customMetricValue'
 ];
 
 // Helper: convierte '?' a '$1', '$2', etc. para Postgres y añade comillas dobles a columnas camelCase
@@ -58,7 +59,8 @@ const pgMap = {
   fechacreacion: 'fechaCreacion', googlerefreshtoken: 'googleRefreshToken',
   googleaccesstoken: 'googleAccessToken', googletokenexpiry: 'googleTokenExpiry',
   vendedornombre: 'vendedorNombre', vendedorrol: 'vendedorRol', closernombre: 'closerNombre',
-  sitioweb: 'sitioWeb', googlemeetlink: 'googleMeetLink'
+  sitioweb: 'sitioWeb', googlemeetlink: 'googleMeetLink',
+  custommetriclabel: 'customMetricLabel', custommetricvalue: 'customMetricValue'
 };
 
 const mapPgRow = (row) => {
@@ -255,7 +257,8 @@ const initDb = async () => {
     etapaAnterior TEXT,
     etapaNueva TEXT,
     notas TEXT,
-    "googleMeetLink" TEXT
+    "googleMeetLink" TEXT,
+    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
   );
 
   CREATE TABLE IF NOT EXISTS tareas (
@@ -444,6 +447,9 @@ const initDb = async () => {
       ['clientes',  'interes',              'TEXT'],
       ['usuarios',  'activo',               'INTEGER DEFAULT 1'],
       ['actividades', '"googleMeetLink"',   'TEXT'],
+      ['actividades', '"createdAt"',        'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP'],
+      ['clientes',    '"customMetricLabel"', 'TEXT'],
+      ['clientes',    '"customMetricValue"', 'TEXT'],
     ];
     for (const [table, col, type] of colsMissingPg) {
       try {
@@ -483,6 +489,9 @@ const initDb = async () => {
       ['usuarios', 'googleRefreshToken TEXT'],
       ['usuarios', 'googleAccessToken TEXT'],
       ['usuarios', 'googleTokenExpiry REAL'],
+      ['actividades', 'createdAt TEXT DEFAULT (datetime(\'now\'))'],
+      ['clientes', 'customMetricLabel TEXT'],
+      ['clientes', 'customMetricValue TEXT'],
     ];
     for (const [table, colDef] of colsMissingSqlite) {
       try {

@@ -932,6 +932,16 @@ const CloserCalendario = () => {
                                                 <p className="text-xs text-yellow-600">Ahora agenda la próxima cita en tu calendario</p>
                                             </div>
                                         </div>
+                                        
+                                        {!modalRegistrar.clienteId && (
+                                            <div className="mb-4 flex flex-col p-3 bg-red-50 border border-red-200 rounded-lg space-y-1">
+                                                <div className="flex items-center gap-2 text-red-800">
+                                                    <AlertCircle className="w-4 h-4 shrink-0" />
+                                                    <p className="font-bold text-xs">Prospecto no vinculado</p>
+                                                </div>
+                                                <p className="text-[11px] text-red-700 leading-tight">No se puede agendar otra reunión porque este evento de Google no está vinculado a ningún prospecto en el CRM.</p>
+                                            </div>
+                                        )}
 
                                         <div className="space-y-3">
                                             <div className="grid grid-cols-2 gap-3">
@@ -985,7 +995,7 @@ const CloserCalendario = () => {
 
                                         <button
                                             onClick={handleAgendarNuevaReunion}
-                                            disabled={guardando || !nuevaReunionForm.fecha || !nuevaReunionForm.hora}
+                                            disabled={guardando || !nuevaReunionForm.fecha || !nuevaReunionForm.hora || !modalRegistrar.clienteId}
                                             className="w-full px-4 py-3.5 bg-(--theme-500) hover:bg-(--theme-600) text-white rounded-xl transition-all flex items-center justify-center gap-2 font-bold shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {guardando ? (

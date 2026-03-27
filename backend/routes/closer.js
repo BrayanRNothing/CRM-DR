@@ -532,13 +532,13 @@ router.get('/prospecto/:id/historial-completo', auth, async (req, res) => {
             return res.status(403).json({ msg: 'No tienes permisos de rol para ver esto' });
         }
 
-        // Obtener TODAS las actividades del cliente (de todos los vendedores que han trabajado en él)
+        // Obtener TODAS las actividades del cliente
         const actividades = await db.prepare(`
             SELECT a.*, u.nombre as vendedorNombre, u.rol as vendedorRol
             FROM actividades a
             LEFT JOIN usuarios u ON a.vendedor = u.id
             WHERE a.cliente = ?
-            ORDER BY a.fecha ASC
+            ORDER BY a."createdAt" ASC
         `).all(prospectoId);
 
         // Obtener historial del embudo
@@ -580,12 +580,17 @@ router.get('/prospecto/:id/historial-completo', auth, async (req, res) => {
                 vendedorRol: a.vendedorRol || 'vendedor',
                 descripcion: a.descripcion,
                 resultado: a.resultado,
-                notas: a.notas
+                notas: a.notas,
+                createdAt: a.createdAt
             });
         });
 
-        // Ordenar por fecha
-        timeline.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        // Ordenar por fecha de creación (para que el orden refleje cuándo se registró cada cosa)
+        timeline.sort((a, b) => {
+            const dateA = new Date(a.createdAt || a.fecha);
+            const dateB = new Date(b.createdAt || b.fecha);
+            return dateA - dateB;
+        });
 
         res.json({
             cliente: toMongoFormat(cliente) || cliente,

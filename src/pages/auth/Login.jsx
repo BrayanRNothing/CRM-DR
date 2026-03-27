@@ -109,11 +109,8 @@ const Login = () => {
           <div className="flex items-center justify-between gap-6 px-8 py-4 bg-white/80 backdrop-blur-md border border-white/40 rounded-2xl shadow-sm relative overflow-hidden">
             <div className="absolute inset-0 bg-linear-to-r from-transparent via-(--theme-500)/5 to-transparent opacity-50 pointer-events-none" />
             
-            {/* Brand Logo & Typewriter */}
-            <div className="flex items-center gap-4 relative z-10 w-[160px] shrink-0">
-              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center p-2 shadow-sm border border-slate-100/50">
-                <img src={logosolomycrm} alt="Logo" className="w-full h-full object-contain" />
-              </div>
+            {/* Brand Title & Typewriter */}
+            <div className="flex items-center gap-4 relative z-10 shrink-0">
               <strong className="text-xs font-black tracking-[0.25em] uppercase text-slate-900">
                 <Typewriter
                   options={{
@@ -124,15 +121,23 @@ const Login = () => {
               </strong>
             </div>
 
-            {/* Nav Links */}
-            <div className="hidden md:flex items-center gap-8 relative z-10">
-              {['Capacidades', 'Seguridad', 'Planes'].map((item) => (
-                <Link key={item} to="#" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">{item}</Link>
+            {/* Nav Links - Distributed */}
+            <div className="hidden md:flex items-center justify-between flex-1 max-w-5xl ml-12 relative z-10">
+              {[
+                { name: 'Página web', to: '#' },
+                { name: 'Suscripciones', to: '#' },
+                { name: 'Contáctanos', to: '#' },
+                { name: 'Términos y condiciones de uso', to: '/terminos-y-condiciones' },
+                { name: 'Política de privacidad', to: '/politica-de-privacidad' }
+              ].map((link) => (
+                <Link 
+                  key={link.name} 
+                  to={link.to} 
+                  className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
+                >
+                  {link.name}
+                </Link>
               ))}
-              <div className="w-px h-4 bg-slate-200 mx-1" />
-              <Link to="#" className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-(--theme-600) transition-colors flex items-center gap-2">
-                Soporte
-              </Link>
             </div>
           </div>
         </div>

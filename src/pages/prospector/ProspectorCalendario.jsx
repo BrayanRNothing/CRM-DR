@@ -623,7 +623,7 @@ const ProspectorCalendario = () => {
 
                                             <button
                                                 type="submit"
-                                                disabled={!selectedTimeSlot}
+                                                disabled={!selectedTimeSlot || !selectedProspect}
                                                 className="w-full py-2.5 px-4 bg-(--theme-500) text-white rounded-xl font-bold hover:bg-[#7cb342] shadow-md shadow-(--theme-500)/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 Agendar Cita
