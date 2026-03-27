@@ -113,7 +113,8 @@ export default function ProspectoDetalle({
                         vendedorRol: act.vendedorRol,
                         descripcion: act.descripcion,
                         resultado: act.resultado,
-                        notas: act.notas
+                        notas: act.notas,
+                        googleMeetLink: act.googleMeetLink
                     }));
                 setActividadesContext(actividades);
             } else {
