@@ -16,6 +16,11 @@ const CloserLayout = () => {
             window.location.href = '/'; // Force redirect if no session
             return;
         }
+        // Protección de rol: si el usuario no es closer, redirigir a su dashboard correcto
+        if (userGuardado.rol && userGuardado.rol !== 'closer') {
+            if (userGuardado.rol === 'prospector') { window.location.href = '/prospector'; return; }
+            if (userGuardado.rol === 'vendedor') { window.location.href = '/vendedor'; return; }
+        }
         setUsuario(userGuardado);
     }, []);
 

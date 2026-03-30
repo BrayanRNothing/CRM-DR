@@ -86,12 +86,13 @@ const CloserMonitoreoProspectors = () => {
         setExpandedRows(new Set());
         setProspectosData({});
         const interval = setInterval(() => cargarDatos(true), 5 * 60 * 1000);
-        socket.on('prospectos_actualizados', (obj) => {
+        const handleSocketUpdate = (obj) => {
             cargarDatos(true);
-        });
+        };
+        socket.on('prospectos_actualizados', handleSocketUpdate);
         return () => {
             clearInterval(interval);
-            socket.off('prospectos_actualizados');
+            socket.off('prospectos_actualizados', handleSocketUpdate);
         };
     }, [periodo]);
 

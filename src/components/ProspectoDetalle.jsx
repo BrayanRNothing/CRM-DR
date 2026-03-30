@@ -34,6 +34,24 @@ const formatHora = (date) => {
     return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 };
 
+const WhatsAppIcon = ({ size = 32, className = "" }) => (
+    <svg viewBox="0 0 448 512" width={size} height={size} className={className}>
+        <path fill="#25D366" d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-5.5-2.8-23.2-8.5-44.2-27.1-16.4-14.6-27.4-32.7-30.6-38.1-3.2-5.4-.3-8.3 2.4-11.1 2.4-2.5 5.5-6.5 8.3-9.8 2.8-3.3 3.7-5.6 5.6-9.3 1.8-3.7.9-6.9-.5-9.8-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 13.2 5.8 23.5 9.2 31.5 11.8 13.3 4.2 25.4 3.6 35 2.2 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
+    </svg>
+);
+
+const GmailIcon = ({ size = 32, className = "" }) => (
+    <svg viewBox="0 0 256 193" width={size} height={size} className={className}>
+        <g>
+            <path d="M58.1818182,192.049515 L58.1818182,93.1404244 L27.5066233,65.0770089 L0,49.5040608 L0,174.59497 C0,184.253152 7.82545455,192.049515 17.4545455,192.049515 L58.1818182,192.049515 Z" fill="#4285F4"></path>
+            <path d="M197.818182,192.049515 L238.545455,192.049515 C248.203636,192.049515 256,184.224061 256,174.59497 L256,49.5040608 L224.844415,67.3422767 L197.818182,93.1404244 L197.818182,192.049515 Z" fill="#34A853"></path>
+            <polygon fill="#EA4335" points="58.1818182 93.1404244 54.0077618 54.4932827 58.1818182 17.5040608 128 69.8676972 197.818182 17.5040608 202.487488 52.4960089 197.818182 93.1404244 128 145.504061"></polygon>
+            <path d="M197.818182,17.5040608 L197.818182,93.1404244 L256,49.5040608 L256,26.2313335 C256,4.64587897 231.36,-7.65957557 214.109091,5.28587897 L197.818182,17.5040608 Z" fill="#FBBC04"></path>
+            <path d="M0,49.5040608 L26.7588051,69.5731646 L58.1818182,93.1404244 L58.1818182,17.5040608 L41.8909091,5.28587897 C24.6109091,-7.65957557 0,4.64587897 0,26.2313335 L0,49.5040608 Z" fill="#C5221F"></path>
+        </g>
+    </svg>
+);
+
 export default function ProspectoDetalle({
     prospecto: initialProspecto,
     rolePath,
@@ -47,6 +65,28 @@ export default function ProspectoDetalle({
 
     const [prospectoSeleccionado, setProspectoSeleccionado] = useState(initialProspecto);
     const pid = prospectoSeleccionado?.id || prospectoSeleccionado?._id;
+
+    const cleanPhone = (phone) => {
+        if (!phone) return '';
+        // Only digits for WhatsApp URL
+        return phone.replace(/\D/g, '');
+    };
+
+    const handleWhatsApp = () => {
+        const tel = [prospectoSeleccionado.telefono, prospectoSeleccionado.telefono2]
+            .filter(Boolean)
+            .flatMap(t => t.split(',').map(s => s.trim()))
+            .filter(Boolean)[0];
+
+        if (!tel) return toast.error('No hay teléfono disponible');
+        const cleanTel = cleanPhone(tel);
+        window.open(`https://wa.me/${cleanTel}`, '_blank');
+    };
+
+    const handleGmail = () => {
+        if (!prospectoSeleccionado.correo) return toast.error('No hay correo disponible');
+        window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${prospectoSeleccionado.correo}`, '_blank');
+    };
 
     const [actividadesContext, setActividadesContext] = useState([]);
     const [loadingContext, setLoadingContext] = useState(false);
@@ -93,10 +133,14 @@ export default function ProspectoDetalle({
 
     const cargarRecordatorios = async (prospectoId) => {
         try {
-            const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos/${prospectoId}/recordatorios`, { headers: getAuthHeaders() });
+            const url = `${API_URL}/api/${rolePath}/prospectos/${prospectoId}/recordatorios`;
+            console.log('🔍 Cargando recordatorios desde:', url);
+            const res = await axios.get(url, { headers: getAuthHeaders() });
+            console.log('✅ Recordatorios obtenidos:', res.data);
             setRecordatoriosLlamada(res.data || []);
         } catch (err) {
-            console.error('Error al cargar recordatorios:', err);
+            console.error('❌ Error al cargar recordatorios:', err.response?.data || err.message);
+            setRecordatoriosLlamada([]);
         }
     };
 
@@ -355,7 +399,16 @@ export default function ProspectoDetalle({
     const descartarRecordatorio = async (recId) => {
         try {
             await axios.delete(`${API_URL}/api/${rolePath}/recordatorios/${recId}`, { headers: getAuthHeaders() });
-            setRecordatoriosLlamada(prev => prev.filter(r => r.id !== recId));
+            setRecordatoriosLlamada(prev => {
+                const nuevaLista = prev.filter(r => r.id !== recId);
+                // Si no hay más recordatorios, limpiar proximaLlamada
+                if (nuevaLista.length === 0) {
+                    const prospectoActualizado = { ...prospectoSeleccionado, proximaLlamada: null };
+                    setProspectoSeleccionado(prospectoActualizado);
+                    if (onActualizado) onActualizado(prospectoActualizado);
+                }
+                return nuevaLista;
+            });
             toast.success('Recordatorio eliminado');
         } catch (err) {
             console.error(err);
@@ -405,10 +458,10 @@ export default function ProspectoDetalle({
             }
 
             // Actualizar contexto local
-            setActividadesContext(prev => prev.map(a => 
-                (a.id || a._id) === id 
-                ? { ...a, fecha: editDataCita.fecha, notas: editDataCita.notas } 
-                : a
+            setActividadesContext(prev => prev.map(a =>
+                (a.id || a._id) === id
+                    ? { ...a, fecha: editDataCita.fecha, notas: editDataCita.notas }
+                    : a
             ));
 
             toast.success('Reunión actualizada');
@@ -676,7 +729,7 @@ export default function ProspectoDetalle({
                             <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Antigüedad</p>
                                 <p className="text-2xl font-black text-(--theme-600)">
-                                    {prospectoSeleccionado.fechaRegistro || prospectoSeleccionado.createdAt 
+                                    {prospectoSeleccionado.fechaRegistro || prospectoSeleccionado.createdAt
                                         ? `${Math.max(1, Math.ceil(Math.abs(new Date() - new Date(prospectoSeleccionado.fechaRegistro || prospectoSeleccionado.createdAt)) / (1000 * 60 * 60 * 24)))} días`
                                         : 'N/A'}
                                 </p>
@@ -738,7 +791,30 @@ export default function ProspectoDetalle({
                         {/* ==================== ÁRBOL DE LLAMADA ==================== */}
                         <div className="space-y-3">
                             <div className="grid grid-cols-3 gap-3">
-                                {/* Llamar */}
+                                {/* Fused Messaging (WhatsApp & Gmail) */}
+                                <div className="flex bg-white border-2 border-slate-200 rounded-xl overflow-hidden shadow-sm h-full group hover:border-(--theme-500) transition-all">
+                                    <button 
+                                        onClick={handleWhatsApp}
+                                        className="flex-1 flex flex-col items-center justify-center p-4 text-gray-700 hover:text-green-600 hover:bg-green-50 transition-all border-r border-slate-100"
+                                        title="WhatsApp"
+                                    >
+                                        <div className="hover:scale-110 transition-transform">
+                                            <WhatsAppIcon size={46} />
+                                        </div>
+                                    </button>
+                                    <button 
+                                        onClick={handleGmail}
+                                        className="flex-1 flex flex-col items-center justify-center p-4 text-gray-700 hover:text-red-600 hover:bg-rose-50 transition-all"
+                                        title="Gmail"
+                                    >
+                                        <div className="hover:scale-110 transition-transform">
+                                            <GmailIcon size={46} />
+                                        </div>
+                                    </button>
+                                </div>
+
+                                {/* Llamar - Hidden for now */}
+                                {/* 
                                 <button
                                     onClick={() => setLlamadaFlow({ paso: 'contesto', notas: '', fechaProxima: '', interesado: null })}
                                     className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm"
@@ -746,6 +822,8 @@ export default function ProspectoDetalle({
                                     <Phone className="w-6 h-6" />
                                     Llamar
                                 </button>
+                                */}
+
                                 {/* Recordatorio de llamada */}
                                 <button
                                     onClick={abrirNuevoRecordatorio}
@@ -784,7 +862,7 @@ export default function ProspectoDetalle({
                                                             {new Date(fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
                                                         </p>
                                                     </div>
-                                                    
+
                                                     <div className="flex gap-1.5">
                                                         <button
                                                             onClick={() => handleMarcarCitaRealizada(cita)}
@@ -1326,6 +1404,10 @@ export default function ProspectoDetalle({
                                             }, { headers: getAuthHeaders() });
                                             const updated = res.data.recordatorio;
                                             setRecordatoriosLlamada(prev => prev.map(r => r.id === recordatorio.editandoId ? updated : r));
+                                            // Actualizar proximaLlamada en el prospecto
+                                            const prospectoActualizado = { ...prospectoSeleccionado, proximaLlamada: recordatorio.fechaProxima };
+                                            setProspectoSeleccionado(prospectoActualizado);
+                                            if (onActualizado) onActualizado(prospectoActualizado);
                                             toast.success('📞 Recordatorio actualizado');
                                         } else {
                                             // Crear nuevo recordatorio
@@ -1334,6 +1416,10 @@ export default function ProspectoDetalle({
                                                 descripcion: recordatorio.notas || ''
                                             }, { headers: getAuthHeaders() });
                                             setRecordatoriosLlamada(prev => [...prev, res.data.recordatorio]);
+                                            // Actualizar proximaLlamada en el prospecto
+                                            const prospectoActualizado = { ...prospectoSeleccionado, proximaLlamada: recordatorio.fechaProxima };
+                                            setProspectoSeleccionado(prospectoActualizado);
+                                            if (onActualizado) onActualizado(prospectoActualizado);
                                             toast.success('📞 Recordatorio programado');
                                         }
 
@@ -1445,7 +1531,7 @@ export default function ProspectoDetalle({
                                             </div>
                                         )}
                                     </div>
-                                    
+
                                     <div className="flex items-center gap-3 p-3 bg-(--theme-50) border border-(--theme-100) rounded-xl">
                                         <div className="p-2 bg-white rounded-lg shadow-sm">
                                             <Star className="w-4 h-4 text-(--theme-500)" />

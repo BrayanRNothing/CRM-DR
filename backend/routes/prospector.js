@@ -235,7 +235,7 @@ router.get('/prospectos', [auth, esProspector], async (req, res) => {
                  INNER JOIN (
                    SELECT cliente, MAX(fecha) as maxFecha FROM actividades WHERE cliente IN (${ids.map(() => '?').join(',')}) GROUP BY cliente
                  ) ult ON a.cliente = ult.cliente AND a.fecha = ult.maxFecha`
-              ).all(...ids)
+            ).all(...ids)
             : [];
 
         const actMap = {};
@@ -617,9 +617,9 @@ router.get('/prospectos/:id/recordatorios', auth, async (req, res) => {
         const vendedorId = parseInt(req.usuario.id);
         const rows = await db.prepare(`
             SELECT * FROM tareas
-            WHERE cliente = ? AND titulo = 'Recordatorio de llamada' AND estado = 'pendiente'
+            WHERE cliente = ? AND vendedor = ? AND titulo = 'Recordatorio de llamada' AND estado = 'pendiente'
             ORDER BY fechaLimite ASC
-        `).all(clienteId);
+        `).all(clienteId, vendedorId);
         res.json(rows);
     } catch (error) {
         console.error('Error al obtener recordatorios:', error);
@@ -641,6 +641,10 @@ router.post('/prospectos/:id/recordatorios', auth, async (req, res) => {
             VALUES ('Recordatorio de llamada', ?, ?, ?, 'pendiente', 'media', ?)
         `).run(descripcion || '', vendedorId, clienteId, new Date(fechaLimite).toISOString());
 
+        // Actualizar proximaLlamada en clientes
+        await db.prepare('UPDATE clientes SET proximaLlamada = ? WHERE id = ?')
+            .run(new Date(fechaLimite).toISOString(), clienteId);
+
         const row = await db.prepare('SELECT * FROM tareas WHERE id = ?').get(result.lastInsertRowid);
         res.status(201).json({ msg: 'Recordatorio creado', recordatorio: row });
     } catch (error) {
@@ -654,9 +658,25 @@ router.delete('/recordatorios/:recordatorioId', auth, async (req, res) => {
     try {
         const id = parseInt(req.params.recordatorioId);
         const vendedorId = parseInt(req.usuario.id);
-        const tarea = await db.prepare('SELECT id FROM tareas WHERE id = ? AND vendedor = ?').get(id, vendedorId);
+        const tarea = await db.prepare('SELECT id, cliente FROM tareas WHERE id = ? AND vendedor = ?').get(id, vendedorId);
         if (!tarea) return res.status(404).json({ msg: 'Recordatorio no encontrado' });
+        
         await db.prepare('DELETE FROM tareas WHERE id = ?').run(id);
+        
+        // Limpiar proximaLlamada si no hay más recordatorios pendientes para ese cliente
+        const proximoRecordatorio = await db.prepare(`
+            SELECT fechaLimite FROM tareas 
+            WHERE cliente = ? AND titulo = 'Recordatorio de llamada' AND estado = 'pendiente' 
+            ORDER BY fechaLimite ASC LIMIT 1
+        `).get(tarea.cliente);
+        
+        if (!proximoRecordatorio) {
+            await db.prepare('UPDATE clientes SET proximaLlamada = NULL WHERE id = ?').run(tarea.cliente);
+        } else {
+            await db.prepare('UPDATE clientes SET proximaLlamada = ? WHERE id = ?')
+                .run(proximoRecordatorio.fechaLimite, tarea.cliente);
+        }
+        
         res.json({ msg: 'Recordatorio eliminado' });
     } catch (error) {
         console.error('Error al eliminar recordatorio:', error);
@@ -670,7 +690,7 @@ router.put('/recordatorios/:recordatorioId', auth, async (req, res) => {
         const id = parseInt(req.params.recordatorioId);
         const vendedorId = parseInt(req.usuario.id);
         const { fechaLimite, descripcion } = req.body;
-        const tarea = await db.prepare('SELECT id FROM tareas WHERE id = ? AND vendedor = ?').get(id, vendedorId);
+        const tarea = await db.prepare('SELECT id, cliente FROM tareas WHERE id = ? AND vendedor = ?').get(id, vendedorId);
         if (!tarea) return res.status(404).json({ msg: 'Recordatorio no encontrado' });
         const updates = [];
         const params = [];
@@ -680,6 +700,13 @@ router.put('/recordatorios/:recordatorioId', auth, async (req, res) => {
             params.push(id);
             await db.prepare(`UPDATE tareas SET ${updates.join(', ')} WHERE id = ?`).run(...params);
         }
+        
+        // Actualizar proximaLlamada si se cambió la fecha
+        if (fechaLimite !== undefined) {
+            await db.prepare('UPDATE clientes SET proximaLlamada = ? WHERE id = ?')
+                .run(new Date(fechaLimite).toISOString(), tarea.cliente);
+        }
+        
         const row = await db.prepare('SELECT * FROM tareas WHERE id = ?').get(id);
         res.json({ msg: 'Recordatorio actualizado', recordatorio: row });
     } catch (error) {
