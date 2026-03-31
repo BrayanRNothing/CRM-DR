@@ -15,6 +15,11 @@ const VendedorLayout = () => {
             window.location.href = '/'; // Force redirect if no session
             return;
         }
+        // Protección de rol: si el usuario no es vendedor, redirigir a su dashboard correcto
+        if (userGuardado.rol && userGuardado.rol !== 'vendedor') {
+            if (userGuardado.rol === 'prospector') { window.location.href = '/prospector'; return; }
+            if (userGuardado.rol === 'closer') { window.location.href = '/closer'; return; }
+        }
         setUsuario(userGuardado);
     }, []);
 

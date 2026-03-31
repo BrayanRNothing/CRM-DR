@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
     Phone,
     MessageSquare,
@@ -124,6 +124,7 @@ const getEtapaColor = (etapa) => ETAPAS_EMBUDO[etapa]?.color || 'bg-gray-100 tex
 const ProspectorSeguimiento = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const rolePath = location.pathname.startsWith('/closer') ? 'closer' : 'prospector';
     const [prospectos, setProspectos] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -233,9 +234,11 @@ const ProspectorSeguimiento = () => {
         try {
             const resProspectos = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
             setProspectos(resProspectos.data);
+            return resProspectos.data; // Retornar datos para el init
         } catch (error) {
             console.error('Error al cargar:', error);
             setProspectos([]);
+            return null;
         } finally {
             setLoading(false);
         }
@@ -243,12 +246,14 @@ const ProspectorSeguimiento = () => {
 
     useEffect(() => {
         const init = async () => {
-            await cargarDatos();
-            // Si venimos de otra página con un ID seleccionado
-            if (location.state?.selectedId) {
-                const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
+            const data = await cargarDatos();
+            // 1. Prioridad: Parámetro 'p' en la URL (para recargas F5 o enlaces directos)
+            const urlId = searchParams.get('p');
+            // 2. Fallback: location.state.selectedId (para navegación interna desde otra página)
+            const selectedId = urlId || location.state?.selectedId;
 
-                const found = res.data.find(p => p.id == location.state.selectedId || p._id == location.state.selectedId);
+            if (selectedId && data) {
+                const found = data.find(p => (p.id || p._id) == selectedId);
                 if (found) {
                     handleSeleccionarProspecto(found);
                 }
@@ -257,14 +262,15 @@ const ProspectorSeguimiento = () => {
         init();
         const interval = setInterval(cargarDatos, 5 * 60 * 1000);
 
-        socket.on('prospectos_actualizados', (obj) => {
+        const handleSocketUpdate = (obj) => {
             console.log('socket: prospectos actualizados detectado', obj);
             cargarDatos();
-        });
+        };
+        socket.on('prospectos_actualizados', handleSocketUpdate);
 
         return () => {
             clearInterval(interval);
-            socket.off('prospectos_actualizados');
+            socket.off('prospectos_actualizados', handleSocketUpdate);
         };
     }, []);
 
@@ -461,6 +467,11 @@ const ProspectorSeguimiento = () => {
 
     const handleSeleccionarProspecto = (p) => {
         setProspectoSeleccionado(p);
+        if (p) {
+            setSearchParams({ p: p.id || p._id });
+        } else {
+            setSearchParams({});
+        }
     };
 
     
@@ -492,53 +503,71 @@ const ProspectorSeguimiento = () => {
     // Shared Modals Render Function
     const renderModales = () => (
         <>
-            {/* Modal Crear Prospecto */}
+            {/* Modal Crear Prospecto - Rediseño Premium */}
             {modalCrearAbierto && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-lg max-w-3xl w-full flex flex-col max-h-[90vh]">
-                        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
-                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                <UserPlus className="w-6 h-6 text-(--theme-600)" />
-                                Nuevo prospecto
-                            </h2>
-                            <button onClick={resetImportModal} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col max-h-[85vh] overflow-hidden animate-in fade-in zoom-in duration-300">
+                        {/* Header Moderno con Gradiente */}
+                        <div className="px-6 py-5 bg-linear-to-r from-(--theme-50) to-white border-b border-slate-100 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-(--theme-100) rounded-2xl flex items-center justify-center shadow-inner">
+                                    <UserPlus className="w-6 h-6 text-(--theme-600)" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black text-gray-900 tracking-tight">Nuevo Prospecto</h2>
+                                    <p className="text-xs text-slate-500 font-medium">Ingresa los datos para iniciar el seguimiento</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    setModalCrearAbierto(false);
+                                    setFormCrear({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '' });
+                                }} 
+                                className="p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-400 hover:text-slate-600"
+                            >
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
-                        <div className="p-6 space-y-6 overflow-y-auto">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Sección: Datos Personales */}
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Información Personal</h3>
-                                    <div className="grid grid-cols-1 gap-4">
+
+                        {/* Contenido del Formulario */}
+                        <div className="p-8 space-y-8 overflow-y-auto scrollbar-hide">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                
+                                {/* Columna 1: Identidad */}
+                                <div className="space-y-5">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <div className="w-1 h-3 bg-(--theme-500) rounded-full"></div>
+                                        Identidad
+                                    </h3>
+                                    <div className="space-y-4">
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Nombres *</label>
+                                            <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wider">Nombres *</label>
                                             <input
                                                 type="text"
                                                 value={formCrear.nombres}
                                                 onChange={(e) => setFormCrear((f) => ({ ...f, nombres: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
-                                                placeholder="Ej: Juan"
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
+                                                placeholder="Juan"
                                             />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 gap-4">
                                             <div>
-                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Apellido Paterno</label>
+                                                <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wider">Apellido Paterno</label>
                                                 <input
                                                     type="text"
                                                     value={formCrear.apellidoPaterno}
                                                     onChange={(e) => setFormCrear((f) => ({ ...f, apellidoPaterno: e.target.value }))}
-                                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
                                                     placeholder="García"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Apellido Materno</label>
+                                                <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wider">Apellido Materno</label>
                                                 <input
                                                     type="text"
                                                     value={formCrear.apellidoMaterno}
                                                     onChange={(e) => setFormCrear((f) => ({ ...f, apellidoMaterno: e.target.value }))}
-                                                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
                                                     placeholder="López"
                                                 />
                                             </div>
@@ -546,37 +575,40 @@ const ProspectorSeguimiento = () => {
                                     </div>
                                 </div>
 
-                                {/* Sección: Contacto */}
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Contacto y Empresa</h3>
+                                {/* Columna 2: Contacto */}
+                                <div className="space-y-5">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <div className="w-1 h-3 bg-indigo-500 rounded-full"></div>
+                                        Contacto
+                                    </h3>
                                     <div className="space-y-4">
                                         <div>
                                             <div className="flex items-center justify-between mb-1.5">
-                                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Teléfonos *</label>
+                                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Teléfonos *</label>
                                                 <button
                                                     type="button"
                                                     onClick={() => setFormCrear((f) => ({ ...f, telefonos: [...f.telefonos, ''] }))}
-                                                    className="flex items-center gap-1 text-xs text-(--theme-600) hover:text-(--theme-700) font-bold"
+                                                    className="text-[10px] text-(--theme-600) hover:text-(--theme-700) font-black uppercase tracking-tighter"
                                                 >
-                                                    <Plus className="w-3.5 h-3.5" /> Agregar
+                                                    + Añadir otro
                                                 </button>
                                             </div>
                                             <div className="space-y-2">
                                                 {formCrear.telefonos.map((tel, idx) => (
-                                                    <div key={idx} className="flex gap-2 items-center bg-slate-50 p-1.5 rounded-lg border border-slate-100">
-                                                        <Phone className="w-3.5 h-3.5 text-slate-400 ml-1" />
+                                                    <div key={idx} className="relative group">
+                                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-(--theme-500) transition-colors" />
                                                         <input
                                                             type="tel"
                                                             value={tel}
                                                             onChange={(e) => setFormCrear((f) => { const t = [...f.telefonos]; t[idx] = e.target.value; return { ...f, telefonos: t }; })}
-                                                            className="flex-1 bg-transparent border-0 focus:ring-0 text-sm py-1"
+                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-10 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
                                                             placeholder="55 1234 5678"
                                                         />
                                                         {formCrear.telefonos.length > 1 && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setFormCrear((f) => ({ ...f, telefonos: f.telefonos.filter((_, i) => i !== idx) }))}
-                                                                className="text-red-400 hover:text-red-600 p-1"
+                                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-red-300 hover:text-red-500 transition-colors"
                                                             >
                                                                 <X className="w-4 h-4" />
                                                             </button>
@@ -586,73 +618,104 @@ const ProspectorSeguimiento = () => {
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Correo Electrónico</label>
-                                            <input
-                                                type="email"
-                                                value={formCrear.correo}
-                                                onChange={(e) => setFormCrear((f) => ({ ...f, correo: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
-                                                placeholder="correo@ejemplo.com"
-                                            />
+                                            <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wider">Correo Electrónico</label>
+                                            <div className="relative group">
+                                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-(--theme-500) transition-colors" />
+                                                <input
+                                                    type="email"
+                                                    value={formCrear.correo}
+                                                    onChange={(e) => setFormCrear((f) => ({ ...f, correo: e.target.value }))}
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
+                                                    placeholder="ejemplo@correo.com"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Sección: Empresa y Web */}
-                                <div className="space-y-4">
-                                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1">Detalles de Empresa</h3>
+                                {/* Columna 3: Empresa y Lugar */}
+                                <div className="space-y-5">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <div className="w-1 h-3 bg-emerald-500 rounded-full"></div>
+                                        Empresa & Sitio
+                                    </h3>
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Empresa</label>
-                                            <input
-                                                type="text"
-                                                value={formCrear.empresa}
-                                                onChange={(e) => setFormCrear((f) => ({ ...f, empresa: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
-                                                placeholder="Nombre de la empresa"
-                                            />
+                                            <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wider">Nombre de Empresa</label>
+                                            <div className="relative group">
+                                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-(--theme-500) transition-colors" />
+                                                <input
+                                                    type="text"
+                                                    value={formCrear.empresa}
+                                                    onChange={(e) => setFormCrear((f) => ({ ...f, empresa: e.target.value }))}
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
+                                                    placeholder="Empresa S.A."
+                                                />
+                                            </div>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Sitio Web</label>
-                                            <input
-                                                type="url"
-                                                value={formCrear.sitioWeb}
-                                                onChange={(e) => setFormCrear((f) => ({ ...f, sitioWeb: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
-                                                placeholder="https://empresa.com"
-                                            />
+                                            <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wider">Sitio Web</label>
+                                            <div className="relative group">
+                                                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-(--theme-500) transition-colors" />
+                                                <input
+                                                    type="url"
+                                                    value={formCrear.sitioWeb}
+                                                    onChange={(e) => setFormCrear((f) => ({ ...f, sitioWeb: e.target.value }))}
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
+                                                    placeholder="https://google.com"
+                                                />
+                                            </div>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Ubicación</label>
-                                            <input
-                                                type="text"
-                                                value={formCrear.ubicacion}
-                                                onChange={(e) => setFormCrear((f) => ({ ...f, ubicacion: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-500) transition-all outline-none"
-                                                placeholder="Ciudad, Estado"
-                                            />
+                                            <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wider">Ubicación</label>
+                                            <div className="relative group">
+                                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-(--theme-500) transition-colors" />
+                                                <input
+                                                    type="text"
+                                                    value={formCrear.ubicacion}
+                                                    onChange={(e) => setFormCrear((f) => ({ ...f, ubicacion: e.target.value }))}
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
+                                                    placeholder="CDMX, México"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
+                                {/* Fila Inferior: Notas de Ancho Completo */}
+                                <div className="md:col-span-3 space-y-4 pt-4 border-t border-slate-100">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <div className="w-1 h-3 bg-amber-500 rounded-full"></div>
+                                        Notas & Contexto Inicial
+                                    </h3>
+                                    <textarea
+                                        rows={3}
+                                        value={formCrear.notas}
+                                        onChange={(e) => setFormCrear((f) => ({ ...f, notas: e.target.value }))}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium resize-none"
+                                        placeholder="Escribe aquí cualquier detalle relevante sobre el prospecto antes de crearlo..."
+                                    />
+                                </div>
                             </div>
                         </div>
-                        <div className="flex gap-3 p-6 border-t border-slate-100 bg-slate-50 rounded-b-xl">
+
+                        {/* Footer con Botones Premium */}
+                        <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex gap-4">
                             <button
                                 onClick={() => {
                                     setModalCrearAbierto(false);
                                     setFormCrear({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '' });
                                 }}
-                                className="px-6 py-2.5 border border-slate-200 text-gray-700 rounded-lg text-sm hover:bg-white font-bold transition-all"
+                                className="flex-1 px-6 py-3.5 bg-white border border-slate-200 text-slate-500 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 hover:text-slate-700 transition-all shadow-sm"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleCrearProspecto}
                                 disabled={loadingCrear}
-                                className="flex-1 px-6 py-2.5 bg-(--theme-600) text-white rounded-lg text-sm hover:bg-(--theme-700) font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all shadow-(--theme-500)/20"
+                                className="flex-2 px-6 py-3.5 bg-linear-to-r from-(--theme-600) to-(--theme-700) text-white rounded-xl text-xs font-black uppercase tracking-widest hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-(--theme-500)/25"
                             >
-                                {loadingCrear ? 'Creando...' : 'Crear Prospecto'}
+                                {loadingCrear ? 'Procesando...' : 'Confirmar y Crear Prospecto'}
                             </button>
                         </div>
                     </div>
@@ -663,7 +726,7 @@ const ProspectorSeguimiento = () => {
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 transition-all duration-300">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col max-h-[82vh] overflow-hidden animate-fadeIn">
                         {/* Header */}
-                        <div className="px-6 py-4 bg-gradient-to-r from-(--theme-50) to-white border-b border-slate-100 flex justify-between items-center">
+                        <div className="px-6 py-4 bg-linear-to-r from-(--theme-50) to-white border-b border-slate-100 flex justify-between items-center">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-(--theme-100) rounded-xl flex items-center justify-center">
                                     <Edit2 className="w-5 h-5 text-(--theme-600)" />
@@ -739,8 +802,8 @@ const ProspectorSeguimiento = () => {
                                         </div>
                                         <div className="space-y-2">
                                             {(prospectoAEditar.telefonos || ['']).map((tel, idx) => (
-                                                <div key={idx} className="flex gap-3 items-center bg-gradient-to-r from-slate-50 to-white p-3 rounded-lg border border-slate-200 hover:border-slate-300 transition-all group">
-                                                    <Phone className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors flex-shrink-0" />
+                                                <div key={idx} className="flex gap-3 items-center bg-linear-to-r from-slate-50 to-white p-3 rounded-lg border border-slate-200 hover:border-slate-300 transition-all group">
+                                                    <Phone className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
                                                     <input
                                                         type="tel"
                                                         value={tel}
@@ -1031,7 +1094,7 @@ const ProspectorSeguimiento = () => {
                 <ProspectoDetalle
                     prospecto={prospectoSeleccionado}
                     rolePath={rolePath}
-                    onVolver={() => setProspectoSeleccionado(null)}
+                    onVolver={() => handleSeleccionarProspecto(null)}
                     onActualizado={cargarDatos}
                     abrirModalEditar={abrirModalEditar}
                     setModalPasarClienteAbierto={setModalPasarClienteAbierto}
@@ -1151,7 +1214,41 @@ const ProspectorSeguimiento = () => {
                 </div>
 
                 {/* Lista de Prospectos (Tarjetas o Tabla simplificada) */}
-                {prospectosFiltrados.length === 0 ? (
+                {loading ? (
+                    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full text-sm">
+                                <thead className="bg-slate-50 text-slate-400 uppercase">
+                                    <tr>
+                                        <th className="px-4 py-4"><div className="h-3 bg-slate-100 rounded w-20 animate-pulse"></div></th>
+                                        <th className="px-4 py-4"><div className="h-3 bg-slate-100 rounded w-24 animate-pulse"></div></th>
+                                        <th className="px-4 py-4"><div className="h-3 bg-slate-100 rounded w-20 animate-pulse"></div></th>
+                                        <th className="px-4 py-4 text-center"><div className="h-3 bg-slate-100 rounded w-16 mx-auto animate-pulse"></div></th>
+                                        <th className="px-4 py-4"><div className="h-3 bg-slate-100 rounded w-32 animate-pulse"></div></th>
+                                        <th className="px-4 py-4 text-center"><div className="h-3 bg-slate-100 rounded w-12 mx-auto animate-pulse"></div></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {[1, 2, 3, 4, 5, 6].map((idx) => (
+                                        <tr key={idx}>
+                                            <td className="px-4 py-5 font-medium">
+                                                <div className="space-y-2">
+                                                    <div className="h-4 bg-slate-100 rounded w-32 animate-pulse"></div>
+                                                    <div className="h-3 bg-slate-50 rounded w-20 animate-pulse"></div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-5"><div className="h-4 bg-slate-50 rounded w-24 animate-pulse"></div></td>
+                                            <td className="px-4 py-5"><div className="h-4 bg-slate-50 rounded w-28 animate-pulse"></div></td>
+                                            <td className="px-4 py-5 text-center"><div className="h-5 bg-slate-100 rounded-full w-20 mx-auto animate-pulse"></div></td>
+                                            <td className="px-4 py-5"><div className="h-4 bg-slate-50 rounded w-40 animate-pulse"></div></td>
+                                            <td className="px-4 py-5 text-center"><div className="h-4 bg-slate-50 rounded w-24 mx-auto animate-pulse"></div></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ) : prospectosFiltrados.length === 0 ? (
                     <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
                         <User className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                         <p className="text-gray-500 font-medium">No se encontraron prospectos.</p>

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Search, DollarSign, Calendar, TrendingUp, RefreshCw, AlertCircle, Trash2, X } from 'lucide-react';
+import { Search, DollarSign, Calendar, TrendingUp, RefreshCw, AlertCircle, Trash2, X, Eye } from 'lucide-react';
 import axios from 'axios';
 
 import API_URL from '../../config/api';
+import ClienteDetalle from '../../components/ClienteDetalle';
 
 const CloserClientes = () => {
     const [clientes, setClientes] = useState([]);
     const [busqueda, setBusqueda] = useState('');
     const [clienteAEliminar, setClienteAEliminar] = useState(null);
+    const [clienteFocus, setClienteFocus] = useState(null);
     const [eliminando, setEliminando] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -23,15 +25,14 @@ const CloserClientes = () => {
                     headers: { 'x-auth-token': token }
                 });
 
-                // Mapeo seguro de datos que vienen de la tabla clientes (y tal vez ventas en un futuro)
+                // Mapeo seguro de datos conservando las propiedades originales completas
                 const dataMapeada = res.data.map(c => ({
+                    ...c,
                     id: c.id || c._id,
-                    nombres: c.nombres || '',
-                    apellidoPaterno: c.apellidoPaterno || '',
                     empresa: c.empresa || 'Sin empresa',
                     telefono: c.telefono || 'Sin teléfono',
                     correo: c.correo || 'Sin correo',
-                    montoVenta: c.montoVenta || 0, // Nota: montoVenta podría requerir join con tabla ventas
+                    montoVenta: c.montoVenta || 0,
                     fechaCierre: c.fechaUltimaEtapa ? new Date(c.fechaUltimaEtapa).toLocaleDateString('es-MX') : 'Fecha no disp.',
                     prospector: c.prospectorAsignado?.nombre || 'Desconocido'
                 }));
@@ -159,7 +160,7 @@ const CloserClientes = () => {
                             </thead>
                             <tbody>
                                 {clientesFiltrados.map((cliente) => (
-                                    <tr key={cliente.id} className="border-b border-gray-800 hover:bg-gray-800/30 transition-colors">
+                                    <tr key={cliente.id} className="border-b border-gray-800 hover:bg-gray-800/60 transition-colors cursor-pointer" onClick={() => setClienteFocus(cliente)}>
                                         <td className="p-4">
                                             <p className="text-white font-semibold">
                                                 {cliente.nombres} {cliente.apellidoPaterno}
@@ -180,14 +181,16 @@ const CloserClientes = () => {
                                         </td>
                                         <td className="p-4 text-gray-300">{cliente.prospector}</td>
                                         <td className="p-4 text-center">
-                                            <button
-                                                onClick={() => setClienteAEliminar(cliente)}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors font-medium text-xs"
-                                                title="Eliminar cliente"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                                Eliminar
-                                            </button>
+                                            <div className="flex justify-center gap-2">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setClienteAEliminar(cliente); }}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors font-medium text-xs"
+                                                    title="Eliminar cliente"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                    Eliminar
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -230,6 +233,14 @@ const CloserClientes = () => {
                     </div>
                 </div>
             </div>
+        )}
+        {clienteFocus && (
+            <ClienteDetalle 
+                Cliente={clienteFocus}
+                rolePath="closer"
+                onVolver={() => setClienteFocus(null)}
+                abrirModalEditar={() => { /* Implement editable if needed */ }}
+            />
         )}
     </>
     );

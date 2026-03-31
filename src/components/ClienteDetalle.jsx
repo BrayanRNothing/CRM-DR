@@ -14,7 +14,7 @@ import HistorialInteracciones from './HistorialInteracciones';
 import GmailIcon from '../assets/google-gmail-svgrepo-com.svg';
 
 const ETAPAS_EMBUDO = {
-    'prospecto_nuevo': { label: 'Sin contacto', color: 'bg-red-100 text-red-600' },
+    'Cliente_nuevo': { label: 'Sin contacto', color: 'bg-red-100 text-red-600' },
     'en_contacto': { label: 'En contacto', color: 'bg-[var(--theme-100)] text-[var(--theme-600)]' },
     'reunion_agendada': { label: 'Cita agendada', color: 'bg-[var(--theme-100)] text-[var(--theme-600)]' },
     'reunion_realizada': { label: 'Cita realizada', color: 'bg-[var(--theme-100)] text-[var(--theme-600)]' },
@@ -35,24 +35,22 @@ const formatHora = (date) => {
     return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 };
 
-export default function ProspectoDetalle({
-    prospecto: initialProspecto,
+export default function ClienteDetalle({
+    Cliente: initialCliente,
     rolePath,
     onVolver,
     onActualizado,
-    abrirModalEditar,
-    setModalPasarClienteAbierto,
-    setModalDescartarAbierto
+    abrirModalEditar
 }) {
     const navigate = useNavigate();
 
-    const [prospectoSeleccionado, setProspectoSeleccionado] = useState(initialProspecto);
-    const pid = prospectoSeleccionado?.id || prospectoSeleccionado?._id;
+    const [ClienteSeleccionado, setClienteSeleccionado] = useState(initialCliente);
+    const pid = ClienteSeleccionado?.id || ClienteSeleccionado?._id;
 
     const [actividadesContext, setActividadesContext] = useState([]);
     const [loadingContext, setLoadingContext] = useState(false);
 
-    const [notasRapidas, setNotasRapidas] = useState(initialProspecto?.notas || '');
+    const [notasRapidas, setNotasRapidas] = useState(initialCliente?.notas || '');
     const [loadingNotas, setLoadingNotas] = useState(false);
 
     const [muralTexto, setMuralTexto] = useState('');
@@ -69,44 +67,44 @@ export default function ProspectoDetalle({
     const [loadingCitaId, setLoadingCitaId] = useState(null);
     const [modalCita, setModalCita] = useState({ abierto: false, cita: null, editando: false });
     const [editDataCita, setEditDataCita] = useState({ fecha: '', notas: '' });
-    const [monedaSeleccionada, setMonedaSeleccionada] = useState(initialProspecto?.customMetricLabel || 'MXN');
-    const [valorProspecto, setValorProspecto] = useState(initialProspecto?.customMetricValue || '');
+    const [monedaSeleccionada, setMonedaSeleccionada] = useState(initialCliente?.customMetricLabel || 'MXN');
+    const [valorCliente, setValorCliente] = useState(initialCliente?.customMetricValue || '');
     const [guardandoMetrica, setGuardandoMetrica] = useState(false);
 
     // SECCIONES PERSONALIZADAS
-    const [customSections, setCustomSections] = useState(initialProspecto?.customSections || []);
+    const [customSections, setCustomSections] = useState(initialCliente?.customSections || []);
     const [modalNuevaSeccion, setModalNuevaSeccion] = useState(false);
 
     // Solo actualizar estado local al recibir nuevos datos
     useEffect(() => {
-        if (initialProspecto) {
-            setProspectoSeleccionado(initialProspecto);
-            setNotasRapidas(initialProspecto.notas || '');
-            setMonedaSeleccionada(initialProspecto.customMetricLabel || 'MXN');
-            setValorProspecto(initialProspecto.customMetricValue || '');
-            setCustomSections(initialProspecto.customSections || []);
+        if (initialCliente) {
+            setClienteSeleccionado(initialCliente);
+            setNotasRapidas(initialCliente.notas || '');
+            setMonedaSeleccionada(initialCliente.customMetricLabel || 'MXN');
+            setValorCliente(initialCliente.customMetricValue || '');
+            setCustomSections(initialCliente.customSections || []);
         }
-    }, [initialProspecto]);
+    }, [initialCliente]);
 
-    // Solo cargar el historial cuando cambie el ID del prospecto
+    // Solo cargar el historial cuando cambie el ID del Cliente
     useEffect(() => {
-        if (initialProspecto && (initialProspecto.id || initialProspecto._id)) {
-            handleSeleccionarProspectoProp(initialProspecto);
-            cargarRecordatorios(initialProspecto.id || initialProspecto._id);
+        if (initialCliente && (initialCliente.id || initialCliente._id)) {
+            handleSeleccionarClienteProp(initialCliente);
+            cargarRecordatorios(initialCliente.id || initialCliente._id);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialProspecto?.id, initialProspecto?._id]);
+    }, [initialCliente?.id, initialCliente?._id]);
 
-    const cargarRecordatorios = async (prospectoId) => {
+    const cargarRecordatorios = async (ClienteId) => {
         try {
-            const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos/${prospectoId}/recordatorios`, { headers: getAuthHeaders() });
+            const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos/${ClienteId}/recordatorios`, { headers: getAuthHeaders() });
             setRecordatoriosLlamada(res.data || []);
         } catch (err) {
             console.error('Error al cargar recordatorios:', err);
         }
     };
 
-    const handleSeleccionarProspectoProp = async (p) => {
+    const handleSeleccionarClienteProp = async (p) => {
         setLoadingContext(true);
         try {
             const endpoint = `${API_URL}/api/${rolePath}/prospecto/${p.id || p._id}/historial-completo`;
@@ -134,15 +132,15 @@ export default function ProspectoDetalle({
             }
         } catch (error) {
             console.error(error);
-            toast.error('Error al cargar historial del prospecto');
+            toast.error('Error al cargar historial del Cliente');
             setActividadesContext([]);
         } finally {
             setLoadingContext(false);
         }
     };
 
-    const handleSeleccionarProspecto = () => {
-        handleSeleccionarProspectoProp(prospectoSeleccionado);
+    const handleSeleccionarCliente = () => {
+        handleSeleccionarClienteProp(ClienteSeleccionado);
     };
 
     const handleDeleteActividadContext = async (actividadId) => {
@@ -161,7 +159,7 @@ export default function ProspectoDetalle({
         try {
             await axios.put(`${API_URL}/api/${rolePath}/prospectos/${id}`, { interes: nuevoInteres }, { headers: getAuthHeaders() });
             toast.success('Interés actualizado');
-            setProspectoSeleccionado({ ...prospectoSeleccionado, interes: nuevoInteres });
+            setClienteSeleccionado({ ...ClienteSeleccionado, interes: nuevoInteres });
             if (onActualizado) onActualizado();
         } catch (error) {
             console.error(error);
@@ -170,25 +168,25 @@ export default function ProspectoDetalle({
     };
 
     const handleGuardarNotasRapidas = async () => {
-        if (!prospectoSeleccionado) return;
+        if (!ClienteSeleccionado) return;
         setLoadingNotas(true);
         try {
-            const pidLoc = prospectoSeleccionado.id || prospectoSeleccionado._id;
+            const pidLoc = ClienteSeleccionado.id || ClienteSeleccionado._id;
             await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLoc}/editar`, {
-                nombres: prospectoSeleccionado.nombres || '',
-                apellidoPaterno: prospectoSeleccionado.apellidoPaterno || '',
-                apellidoMaterno: prospectoSeleccionado.apellidoMaterno || '',
-                telefono: prospectoSeleccionado.telefono || '',
-                telefono2: prospectoSeleccionado.telefono2 || '',
-                correo: prospectoSeleccionado.correo || '',
-                empresa: prospectoSeleccionado.empresa || '',
-                sitioWeb: prospectoSeleccionado.sitioWeb || '',
-                ubicacion: prospectoSeleccionado.ubicacion || '',
+                nombres: ClienteSeleccionado.nombres || '',
+                apellidoPaterno: ClienteSeleccionado.apellidoPaterno || '',
+                apellidoMaterno: ClienteSeleccionado.apellidoMaterno || '',
+                telefono: ClienteSeleccionado.telefono || '',
+                telefono2: ClienteSeleccionado.telefono2 || '',
+                correo: ClienteSeleccionado.correo || '',
+                empresa: ClienteSeleccionado.empresa || '',
+                sitioWeb: ClienteSeleccionado.sitioWeb || '',
+                ubicacion: ClienteSeleccionado.ubicacion || '',
                 notas: notasRapidas
             }, { headers: getAuthHeaders() });
 
             toast.success('Notas guardadas');
-            setProspectoSeleccionado(prev => ({ ...prev, notas: notasRapidas }));
+            setClienteSeleccionado(prev => ({ ...prev, notas: notasRapidas }));
             if (onActualizado) onActualizado();
         } catch (error) {
             console.error(error);
@@ -199,15 +197,15 @@ export default function ProspectoDetalle({
     };
 
     const handleGuardarMetricaPersonalizada = async () => {
-        if (!prospectoSeleccionado) return;
+        if (!ClienteSeleccionado) return;
         setGuardandoMetrica(true);
         try {
-            const pidLoc = prospectoSeleccionado.id || prospectoSeleccionado._id;
+            const pidLoc = ClienteSeleccionado.id || ClienteSeleccionado._id;
             await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLoc}`, {
                 customMetricLabel: monedaSeleccionada,
-                customMetricValue: valorProspecto
+                customMetricValue: valorCliente
             }, { headers: getAuthHeaders() });
-            setProspectoSeleccionado(prev => ({ ...prev, customMetricLabel: monedaSeleccionada, customMetricValue: valorProspecto }));
+            setClienteSeleccionado(prev => ({ ...prev, customMetricLabel: monedaSeleccionada, customMetricValue: valorCliente }));
             if (onActualizado) onActualizado();
         } catch (error) {
             console.error('Error al guardar métrica personalizada:', error);
@@ -217,13 +215,13 @@ export default function ProspectoDetalle({
     };
 
     const handleGuardarSeccionesPersonalizadas = async (nuevasSecciones) => {
-        if (!prospectoSeleccionado) return;
+        if (!ClienteSeleccionado) return;
         try {
-            const pidLoc = prospectoSeleccionado.id || prospectoSeleccionado._id;
+            const pidLoc = ClienteSeleccionado.id || ClienteSeleccionado._id;
             await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLoc}`, {
                 customSections: nuevasSecciones
             }, { headers: getAuthHeaders() });
-            setProspectoSeleccionado(prev => ({ ...prev, customSections: nuevasSecciones }));
+            setClienteSeleccionado(prev => ({ ...prev, customSections: nuevasSecciones }));
             if (onActualizado) onActualizado();
         } catch (error) {
             console.error('Error al guardar secciones personalizadas:', error);
@@ -231,8 +229,8 @@ export default function ProspectoDetalle({
         }
     };
 
-    const addSeccion = (tipo) => {
-        const titulo = tipo === 'list' ? 'Nueva Lista' : 'Nuevas Notas';
+    const addSeccion = (tipo, tituloSugerido) => {
+        const titulo = tituloSugerido || (tipo === 'list' ? 'Nueva Lista' : 'Nuevas Notas');
         const nueva = { id: Date.now().toString(), tipo, titulo, contenido: tipo === 'list' ? [] : '' };
         const updated = [...customSections, nueva];
         setCustomSections(updated);
@@ -255,7 +253,7 @@ export default function ProspectoDetalle({
         handleGuardarSeccionesPersonalizadas(updated);
     };
 
-    const setProspectos = () => {
+    const setClientes = () => {
         if (onActualizado) onActualizado();
     };
 
@@ -316,14 +314,14 @@ export default function ProspectoDetalle({
             if (
                 payload.tipo === 'llamada' &&
                 payload.resultado === 'exitoso' &&
-                prospectoSeleccionado.etapaEmbudo === 'prospecto_nuevo'
+                ClienteSeleccionado.etapaEmbudo === 'Cliente_nuevo'
             ) {
                 payloadFinal.etapaEmbudo = 'en_contacto';
             }
 
             // Al registrar cualquier llamada, limpiar el seguimiento pendiente
             // (si se agenda nueva fecha, el flujo "Llamar después" la sobreescribe)
-            if (payload.tipo === 'llamada' && prospectoSeleccionado.proximaLlamada) {
+            if (payload.tipo === 'llamada' && ClienteSeleccionado.proximaLlamada) {
                 await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}`, {
                     proximaLlamada: null
                 }, { headers: getAuthHeaders() });
@@ -332,15 +330,15 @@ export default function ProspectoDetalle({
             await axios.post(`${API_URL}/api/${rolePath}/registrar-actividad`, { clienteId: pid, ...payloadFinal }, { headers: getAuthHeaders() });
             toast.success('Interacción registrada');
 
-            // Recargar prospecto fresco desde el servidor (evitar estado obsoleto)
+            // Recargar Cliente fresco desde el servidor (evitar estado obsoleto)
             const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
             const updated = res.data.find(p => p.id === pid || p._id === pid);
             if (updated) {
-                setProspectoSeleccionado(updated);
-                setProspectos(res.data);
+                setClienteSeleccionado(updated);
+                setClientes(res.data);
             }
             // Recargar historial
-            handleSeleccionarProspecto(updated || prospectoSeleccionado);
+            handleSeleccionarCliente(updated || ClienteSeleccionado);
         } catch { toast.error('Error al registrar'); }
     };
 
@@ -477,26 +475,26 @@ export default function ProspectoDetalle({
             }, { headers: getAuthHeaders() });
 
             const quedanPendientes = citasPendientes.some((c) => c.id !== cita.id);
-            if (!quedanPendientes && prospectoSeleccionado.etapaEmbudo === 'reunion_agendada') {
+            if (!quedanPendientes && ClienteSeleccionado.etapaEmbudo === 'reunion_agendada') {
                 await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}/editar`, {
-                    nombres: prospectoSeleccionado.nombres || '',
-                    apellidoPaterno: prospectoSeleccionado.apellidoPaterno || '',
-                    apellidoMaterno: prospectoSeleccionado.apellidoMaterno || '',
-                    telefono: prospectoSeleccionado.telefono || '',
-                    telefono2: prospectoSeleccionado.telefono2 || '',
-                    correo: prospectoSeleccionado.correo || '',
-                    empresa: prospectoSeleccionado.empresa || '',
-                    sitioWeb: prospectoSeleccionado.sitioWeb || '',
-                    ubicacion: prospectoSeleccionado.ubicacion || '',
-                    notas: prospectoSeleccionado.notas || '',
+                    nombres: ClienteSeleccionado.nombres || '',
+                    apellidoPaterno: ClienteSeleccionado.apellidoPaterno || '',
+                    apellidoMaterno: ClienteSeleccionado.apellidoMaterno || '',
+                    telefono: ClienteSeleccionado.telefono || '',
+                    telefono2: ClienteSeleccionado.telefono2 || '',
+                    correo: ClienteSeleccionado.correo || '',
+                    empresa: ClienteSeleccionado.empresa || '',
+                    sitioWeb: ClienteSeleccionado.sitioWeb || '',
+                    ubicacion: ClienteSeleccionado.ubicacion || '',
+                    notas: ClienteSeleccionado.notas || '',
                     etapaEmbudo: 'reunion_realizada'
                 }, { headers: getAuthHeaders() });
-                setProspectoSeleccionado(prev => ({ ...prev, etapaEmbudo: 'reunion_realizada' }));
+                setClienteSeleccionado(prev => ({ ...prev, etapaEmbudo: 'reunion_realizada' }));
             }
 
             toast.success('Cita marcada como realizada');
             if (onActualizado) onActualizado();
-            handleSeleccionarProspecto(prospectoSeleccionado);
+            handleSeleccionarCliente(ClienteSeleccionado);
         } catch (error) {
             console.error(error);
             toast.error('Error al actualizar la cita');
@@ -509,23 +507,23 @@ export default function ProspectoDetalle({
         setLoadingEtapa(true);
         try {
             await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}/editar`, {
-                nombres: prospectoSeleccionado.nombres || '',
-                apellidoPaterno: prospectoSeleccionado.apellidoPaterno || '',
-                apellidoMaterno: prospectoSeleccionado.apellidoMaterno || '',
-                telefono: prospectoSeleccionado.telefono || '',
-                telefono2: prospectoSeleccionado.telefono2 || '',
-                correo: prospectoSeleccionado.correo || '',
-                empresa: prospectoSeleccionado.empresa || '',
-                sitioWeb: prospectoSeleccionado.sitioWeb || '',
-                ubicacion: prospectoSeleccionado.ubicacion || '',
-                notas: prospectoSeleccionado.notas || '',
+                nombres: ClienteSeleccionado.nombres || '',
+                apellidoPaterno: ClienteSeleccionado.apellidoPaterno || '',
+                apellidoMaterno: ClienteSeleccionado.apellidoMaterno || '',
+                telefono: ClienteSeleccionado.telefono || '',
+                telefono2: ClienteSeleccionado.telefono2 || '',
+                correo: ClienteSeleccionado.correo || '',
+                empresa: ClienteSeleccionado.empresa || '',
+                sitioWeb: ClienteSeleccionado.sitioWeb || '',
+                ubicacion: ClienteSeleccionado.ubicacion || '',
+                notas: ClienteSeleccionado.notas || '',
                 etapaEmbudo: nuevaEtapa
             }, { headers: getAuthHeaders() });
             toast.success(`Etapa actualizada: ${getEtapaLabel(nuevaEtapa)}`);
             setEditandoEtapa(false);
             const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
             const updated = res.data.find(p => p.id === pid || p._id === pid);
-            if (updated) { setProspectoSeleccionado(updated); }
+            if (updated) { setClienteSeleccionado(updated); }
             if (onActualizado) onActualizado();
         } catch (error) {
             console.error(error);
@@ -562,95 +560,37 @@ export default function ProspectoDetalle({
                                     <div className="flex flex-col gap-2">
                                         <div className="flex items-center gap-3 flex-wrap">
                                             <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-                                                {prospectoSeleccionado.nombres} {prospectoSeleccionado.apellidoPaterno}
+                                                {ClienteSeleccionado.nombres} {ClienteSeleccionado.apellidoPaterno}
                                             </h1>
                                             <button
-                                                onClick={() => abrirModalEditar(prospectoSeleccionado)}
+                                                onClick={() => abrirModalEditar(ClienteSeleccionado)}
                                                 className="p-1.5 text-slate-400 hover:text-(--theme-600) hover:bg-(--theme-50) rounded-full transition-all"
-                                                title="Editar información del prospecto"
+                                                title="Editar información del Cliente"
                                             >
                                                 <Edit2 className="w-5 h-5" />
                                             </button>
                                         </div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            {editandoEtapa ? (
-                                                <div className="flex items-center gap-1">
-                                                    <select
-                                                        autoFocus
-                                                        defaultValue={prospectoSeleccionado.etapaEmbudo}
-                                                        onChange={(e) => handleCambiarEtapa(e.target.value)}
-                                                        disabled={loadingEtapa}
-                                                        className="border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold bg-white focus:ring-2 focus:ring-(--theme-500) outline-none"
-                                                    >
-                                                        {Object.entries(ETAPAS_EMBUDO).map(([key, val]) => (
-                                                            <option key={key} value={key}>{val.label}</option>
-                                                        ))}
-                                                    </select>
-                                                    <button
-                                                        onClick={() => setEditandoEtapa(false)}
-                                                        className="p-1 text-slate-400 hover:text-slate-600 rounded"
-                                                        title="Cancelar"
-                                                    >
-                                                        <X className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-1">
-                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEtapaColor(prospectoSeleccionado.etapaEmbudo)}`}>
-                                                        {getEtapaLabel(prospectoSeleccionado.etapaEmbudo)}
-                                                    </span>
-                                                    <button
-                                                        onClick={() => setEditandoEtapa(true)}
-                                                        className="p-1 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded transition-all"
-                                                        title="Cambiar etapa"
-                                                    >
-                                                        <Edit2 className="w-3 h-3" />
-                                                    </button>
-                                                </div>
-                                            )}
-                                            {prospectoSeleccionado.empresa && (
-                                                <span className="text-gray-500 text-sm font-medium flex items-center gap-1.5 border-l border-slate-200 pl-2">
+                                        <div className="flex items-center gap-3 flex-wrap">
+                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-black uppercase tracking-widest border border-green-200">
+                                                <Star className="w-4 h-4 fill-green-500 text-green-500" />
+                                                Cliente Ganado
+                                            </div>
+                                            {ClienteSeleccionado.empresa && (
+                                                <span className="text-gray-500 text-sm font-medium flex items-center gap-1.5 border-l border-slate-200 pl-3">
                                                     <Building2 className="w-4 h-4 text-slate-400" />
-                                                    {prospectoSeleccionado.empresa}
+                                                    {ClienteSeleccionado.empresa}
                                                 </span>
                                             )}
                                         </div>
                                     </div>
-
-                                    {/* Derecha: Interés + Cierre */}
-                                    <div className="flex flex-col items-end gap-2">
-                                        <div className="flex items-center gap-2 py-1">
-                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Interés:</span>
-                                            <div className="flex items-center gap-0.5 text-yellow-500">
-                                                {[1, 2, 3, 4, 5].map((value) => (
-                                                    <button
-                                                        key={value}
-                                                        type="button"
-                                                        onClick={() => actualizarInteres(pid, prospectoSeleccionado.interes === value ? 0 : value)}
-                                                        className="hover:scale-110 transition-transform active:scale-95 px-0.5"
-                                                        title={`Nivel de interés: ${value} de 5`}
-                                                    >
-                                                        <Star className={`w-5.5 h-5.5 ${prospectoSeleccionado.interes >= value ? 'fill-yellow-400' : 'fill-slate-100 text-slate-300'}`} />
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => setModalAccionesCierreAbierto(true)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-[10px] font-extrabold uppercase tracking-widest transition-all border border-slate-200"
-                                        >
-                                            <CheckCircle2 className="w-3.5 h-3.5" />
-                                            Acciones de cierre
-                                        </button>
-                                    </div>
                                 </div>
 
                                 {/* Grid de Información de Contacto (Solo si hay datos) - Ahora más compacto */}
-                                {(prospectoSeleccionado.telefono || prospectoSeleccionado.correo || prospectoSeleccionado.ubicacion || prospectoSeleccionado.sitioWeb) && (
+                                {(ClienteSeleccionado.telefono || ClienteSeleccionado.correo || ClienteSeleccionado.ubicacion || ClienteSeleccionado.sitioWeb) && (
                                     <div className="pt-3 border-t border-slate-100">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                                             {/* Teléfonos */}
-                                            {(prospectoSeleccionado.telefono || prospectoSeleccionado.telefono2) && (
+                                            {(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) && (
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
                                                         <Phone className="w-3.5 h-3.5" />
@@ -658,10 +598,10 @@ export default function ProspectoDetalle({
                                                     <div className="flex flex-col overflow-hidden">
                                                         <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Teléfono</span>
                                                         <div className="flex flex-wrap text-xs font-bold text-slate-700 truncate">
-                                                            {[prospectoSeleccionado.telefono, prospectoSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).slice(0, 1).map((tel, idx) => (
+                                                            {[ClienteSeleccionado.telefono, ClienteSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).slice(0, 1).map((tel, idx) => (
                                                                 <span key={idx}>{tel}</span>
                                                             ))}
-                                                            {[prospectoSeleccionado.telefono, prospectoSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).length > 1 && (
+                                                            {[ClienteSeleccionado.telefono, ClienteSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).length > 1 && (
                                                                 <span className="ml-1 text-slate-400 text-[10px]">...</span>
                                                             )}
                                                         </div>
@@ -670,22 +610,22 @@ export default function ProspectoDetalle({
                                             )}
 
                                             {/* Correo */}
-                                            {prospectoSeleccionado.correo && (
+                                            {ClienteSeleccionado.correo && (
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
                                                         <Mail className="w-3.5 h-3.5" />
                                                     </div>
                                                     <div className="flex flex-col overflow-hidden">
                                                         <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Correo</span>
-                                                        <span className="text-xs font-bold text-slate-700 truncate" title={prospectoSeleccionado.correo}>
-                                                            {prospectoSeleccionado.correo}
+                                                        <span className="text-xs font-bold text-slate-700 truncate" title={ClienteSeleccionado.correo}>
+                                                            {ClienteSeleccionado.correo}
                                                         </span>
                                                     </div>
                                                 </div>
                                             )}
 
                                             {/* Ubicación */}
-                                            {prospectoSeleccionado.ubicacion && (
+                                            {ClienteSeleccionado.ubicacion && (
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
                                                         <MapPin className="w-3.5 h-3.5" />
@@ -693,14 +633,14 @@ export default function ProspectoDetalle({
                                                     <div className="flex flex-col overflow-hidden">
                                                         <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Ubicación</span>
                                                         <span className="text-xs font-bold text-slate-700 truncate">
-                                                            {prospectoSeleccionado.ubicacion}
+                                                            {ClienteSeleccionado.ubicacion}
                                                         </span>
                                                     </div>
                                                 </div>
                                             )}
 
                                             {/* Sitio Web */}
-                                            {prospectoSeleccionado.sitioWeb && (
+                                            {ClienteSeleccionado.sitioWeb && (
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
                                                         <Globe className="w-3.5 h-3.5" />
@@ -708,12 +648,12 @@ export default function ProspectoDetalle({
                                                     <div className="flex flex-col overflow-hidden">
                                                         <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Web</span>
                                                         <a
-                                                            href={prospectoSeleccionado.sitioWeb.startsWith('http') ? prospectoSeleccionado.sitioWeb : `https://${prospectoSeleccionado.sitioWeb}`}
+                                                            href={ClienteSeleccionado.sitioWeb.startsWith('http') ? ClienteSeleccionado.sitioWeb : `https://${ClienteSeleccionado.sitioWeb}`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="text-xs font-bold text-(--theme-600) hover:underline truncate"
                                                         >
-                                                            {prospectoSeleccionado.sitioWeb.replace(/^https?:\/\//, '')}
+                                                            {ClienteSeleccionado.sitioWeb.replace(/^https?:\/\//, '')}
                                                         </a>
                                                     </div>
                                                 </div>
@@ -730,13 +670,13 @@ export default function ProspectoDetalle({
                             <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Antigüedad</p>
                                 <p className="text-2xl font-black text-(--theme-600)">
-                                    {prospectoSeleccionado.fechaRegistro || prospectoSeleccionado.createdAt 
-                                        ? `${Math.max(1, Math.ceil(Math.abs(new Date() - new Date(prospectoSeleccionado.fechaRegistro || prospectoSeleccionado.createdAt)) / (1000 * 60 * 60 * 24)))} días`
+                                    {ClienteSeleccionado.fechaRegistro || ClienteSeleccionado.createdAt 
+                                        ? `${Math.max(1, Math.ceil(Math.abs(new Date() - new Date(ClienteSeleccionado.fechaRegistro || ClienteSeleccionado.createdAt)) / (1000 * 60 * 60 * 24)))} días`
                                         : 'N/A'}
                                 </p>
                                 <p className="text-[10px] text-gray-400 mt-1">
-                                    {prospectoSeleccionado.fechaRegistro || prospectoSeleccionado.createdAt
-                                        ? `Desde: ${new Date(prospectoSeleccionado.fechaRegistro || prospectoSeleccionado.createdAt).toLocaleDateString('es-MX')}`
+                                    {ClienteSeleccionado.fechaRegistro || ClienteSeleccionado.createdAt
+                                        ? `Desde: ${new Date(ClienteSeleccionado.fechaRegistro || ClienteSeleccionado.createdAt).toLocaleDateString('es-MX')}`
                                         : 'Sin fecha'}
                                 </p>
                             </div>
@@ -761,24 +701,24 @@ export default function ProspectoDetalle({
                                 <p className="text-[10px] text-gray-400 mt-1 font-bold">Realizadas</p>
                             </div>
 
-                            {/* Cuadro 4: Valor del Prospecto (Editable) */}
+                            {/* Cuadro 4: Valor del Cliente (Editable) */}
                             <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center relative min-h-[100px] overflow-hidden group">
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Valor del Prospecto</p>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Valor del Cliente</p>
                                 
                                 <div className="flex items-center justify-center gap-1 w-full">
                                     <div className="flex items-center gap-0.5 px-2 py-1 rounded-xl bg-white focus-within:bg-slate-50 transition-colors border border-transparent focus-within:border-slate-200">
                                         <span className="text-xl font-black text-(--theme-600) opacity-50">$</span>
                                         <input
                                             type="text"
-                                            value={valorProspecto}
+                                            value={valorCliente}
                                             onChange={(e) => {
                                                 const val = e.target.value.replace(/[^0-9.,]/g, '');
-                                                setValorProspecto(val);
+                                                setValorCliente(val);
                                             }}
                                             onBlur={handleGuardarMetricaPersonalizada}
                                             placeholder="0.00"
                                             className="text-2xl font-black text-(--theme-600) bg-transparent border-none text-center outline-none focus:ring-0 p-0"
-                                            style={{ width: `${Math.max((valorProspecto || '').length, 4)}ch`, minWidth: '4ch', maxWidth: '14ch' }}
+                                            style={{ width: `${Math.max((valorCliente || '').length, 4)}ch`, minWidth: '4ch', maxWidth: '14ch' }}
                                         />
                                         
                                         <div className="relative flex items-center bg-slate-50 border border-slate-100 rounded-md px-1 py-0.5 group/moneda hover:bg-white transition-all cursor-pointer ml-1">
@@ -808,7 +748,7 @@ export default function ProspectoDetalle({
                                 {/* Mensajería Directa */}
                                 <div className="flex bg-white border-2 border-slate-200 rounded-xl overflow-hidden shadow-sm hover:border-slate-300 transition-all h-full group">
                                     <a
-                                        href={`https://wa.me/${[prospectoSeleccionado.telefono, prospectoSeleccionado.telefono2].filter(Boolean).join(',').replace(/\D/g, '')}`}
+                                        href={`https://wa.me/${[ClienteSeleccionado.telefono, ClienteSeleccionado.telefono2].filter(Boolean).join(',').replace(/\D/g, '')}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex-1 flex flex-col items-center justify-center gap-2 p-3 hover:bg-green-50 text-gray-700 hover:text-green-600 border-r border-slate-200 transition-all cursor-pointer"
@@ -822,7 +762,7 @@ export default function ProspectoDetalle({
                                         <span className="font-bold text-[10px] text-gray-500 uppercase tracking-wider">WhatsApp</span>
                                     </a>
                                     <a
-                                        href={`mailto:${prospectoSeleccionado.correo}`}
+                                        href={`mailto:${ClienteSeleccionado.correo}`}
                                         className="flex-1 flex flex-col items-center justify-center gap-2 p-3 hover:bg-(--theme-50) text-gray-700 hover:text-(--theme-600) transition-all cursor-pointer"
                                         title="Enviar correo por Gmail"
                                     >
@@ -842,7 +782,7 @@ export default function ProspectoDetalle({
                                 </button>
                                 {/* Agendar reunión */}
                                 <button
-                                    onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })}
+                                    onClick={() => navigate(`/${rolePath}/calendario`, { state: { Cliente: ClienteSeleccionado } })}
                                     className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm text-center leading-tight"
                                 >
                                     <Calendar className="w-6 h-6" />
@@ -956,7 +896,7 @@ export default function ProspectoDetalle({
                                 {/* ========= CUADRO DE NOTAS EDITABLE ========= */}
                                 <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-2 shadow-sm">
                                     <div className="flex items-center justify-between">
-                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Notas del Prospecto</p>
+                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Notas del Cliente</p>
                                         <button
                                             onClick={handleGuardarNotasRapidas}
                                             disabled={loadingNotas}
@@ -1248,7 +1188,7 @@ export default function ProspectoDetalle({
                                             onClick={async () => {
                                                 await registrarActividad({ tipo: 'llamada', resultado: 'exitoso', notas: 'Agendó reunión' });
                                                 setLlamadaFlow(null);
-                                                navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } });
+                                                navigate(`/${rolePath}/calendario`, { state: { Cliente: ClienteSeleccionado } });
                                             }}
                                             className="py-2.5 bg-(--theme-500) text-white rounded-lg font-bold hover:bg-(--theme-600) transition-colors text-sm"
                                         >📅 Agendó reunión</button>
@@ -1287,7 +1227,7 @@ export default function ProspectoDetalle({
                                         <button
                                             onClick={async () => {
                                                 try {
-                                                    const pidLocal = prospectoSeleccionado.id || prospectoSeleccionado._id;
+                                                    const pidLocal = ClienteSeleccionado.id || ClienteSeleccionado._id;
                                                     if (llamadaFlow.fechaProxima) {
                                                         await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLocal}`, {
                                                             proximaLlamada: llamadaFlow.fechaProxima
@@ -1297,7 +1237,7 @@ export default function ProspectoDetalle({
                                                     setLlamadaFlow(null);
                                                     const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
                                                     const updated = res.data.find(p => p.id === pidLocal || p._id === pidLocal);
-                                                    if (updated) { setProspectoSeleccionado(updated); setProspectos(res.data); }
+                                                    if (updated) { setClienteSeleccionado(updated); setClientes(res.data); }
                                                 } catch { toast.error('Error al programar reintento'); }
                                             }}
                                             className="flex-1 py-2 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700"
@@ -1375,7 +1315,7 @@ export default function ProspectoDetalle({
                                         onClick={async () => {
                                             try {
                                                 const notasFin = llamadaFlow.notas || 'Interesado, llamar después';
-                                                const pidLocal = prospectoSeleccionado.id || prospectoSeleccionado._id;
+                                                const pidLocal = ClienteSeleccionado.id || ClienteSeleccionado._id;
 
                                                 // 1. Registrar Actividad (usa el helper que auto-promueve la etapa)
                                                 await registrarActividad({
@@ -1418,7 +1358,7 @@ export default function ProspectoDetalle({
                                         <Clock className="w-5 h-5 text-(--theme-600)" />
                                         <h2 className="text-lg font-bold text-gray-900">{recordatorio.editandoId ? 'Editar recordatorio' : 'Crear recordatorio'}</h2>
                                     </div>
-                                    <p className="text-sm text-slate-600">Configura una fecha rápida para volver a llamar a {prospectoSeleccionado.nombres}.</p>
+                                    <p className="text-sm text-slate-600">Configura una fecha rápida para volver a llamar a {ClienteSeleccionado.nombres}.</p>
                                 </div>
                                 <button
                                     onClick={() => { setModalRecordatorioAbierto(false); setRecordatorio({ fechaProxima: '', notas: '', editandoId: null }); }}
@@ -1477,7 +1417,7 @@ export default function ProspectoDetalle({
                                             toast.error('Selecciona una fecha');
                                             return;
                                         }
-                                        const pid = prospectoSeleccionado.id || prospectoSeleccionado._id;
+                                        const pid = ClienteSeleccionado.id || ClienteSeleccionado._id;
 
                                         if (recordatorio.editandoId) {
                                             // Editar recordatorio existente
@@ -1612,8 +1552,8 @@ export default function ProspectoDetalle({
                                             <Star className="w-4 h-4 text-(--theme-500)" />
                                         </div>
                                         <div className="text-xs">
-                                            <p className="font-bold text-(--theme-700)">Reunión con {prospectoSeleccionado.nombres}</p>
-                                            <p className="text-(--theme-600)">Empresa: {prospectoSeleccionado.empresa || 'No especificada'}</p>
+                                            <p className="font-bold text-(--theme-700)">Reunión con {ClienteSeleccionado.nombres}</p>
+                                            <p className="text-(--theme-600)">Empresa: {ClienteSeleccionado.empresa || 'No especificada'}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1640,72 +1580,6 @@ export default function ProspectoDetalle({
                 </div>
             )}
             
-            {/* MODAL ACCIONES DE CIERRE */}
-            {modalAccionesCierreAbierto && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="px-6 py-5 border-b border-slate-100 bg-linear-to-r from-(--theme-50) to-white flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
-                                <div className="p-1.5 bg-(--theme-100) text-(--theme-600) rounded-lg">
-                                    <CheckCircle2 className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h2 className="text-lg font-black text-gray-900 leading-tight">Gestión de Cierre</h2>
-                                    <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mt-0.5">Define el fin del proceso</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setModalAccionesCierreAbierto(false)}
-                                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                            >
-                                <X className="w-5 h-5 text-slate-400" />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-3">
-                            <button
-                                onClick={() => { setModalPasarClienteAbierto(true); setModalAccionesCierreAbierto(false); }}
-                                className="w-full flex items-center justify-between p-4 border-2 border-(--theme-100) hover:border-(--theme-500) bg-white hover:bg-(--theme-50) rounded-xl transition-all group"
-                            >
-                                <div className="flex items-center gap-3 text-left">
-                                    <div className="bg-(--theme-100) group-hover:bg-(--theme-500) text-(--theme-600) group-hover:text-white p-2 rounded-lg transition-colors">
-                                        <Star className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-gray-900">Pasar a Cliente</p>
-                                        <p className="text-xs text-slate-500">Convierte y envía a producción</p>
-                                    </div>
-                                </div>
-                                <ArrowLeft className="w-5 h-5 text-(--theme-400) transform rotate-180 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </button>
-
-                            <button
-                                onClick={() => { setModalDescartarAbierto(true); setModalAccionesCierreAbierto(false); }}
-                                className="w-full flex items-center justify-between p-4 border-2 border-rose-100 hover:border-rose-300 bg-white hover:bg-rose-50 rounded-xl transition-all group"
-                            >
-                                <div className="flex items-center gap-3 text-left">
-                                    <div className="bg-rose-100 group-hover:bg-rose-500 text-rose-600 group-hover:text-white p-2 rounded-lg transition-colors">
-                                        <XCircle className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-gray-900">Descartar Prospecto</p>
-                                        <p className="text-xs text-slate-500">Marca como perdido o sin éxito</p>
-                                    </div>
-                                </div>
-                                <ArrowLeft className="w-5 h-5 text-rose-400 transform rotate-180 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </button>
-                        </div>
-                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
-                            <button
-                                onClick={() => setModalAccionesCierreAbierto(false)}
-                                className="w-full py-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors"
-                            >
-                                Volver atrás
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            
             {/* MODAL NUEVA SECCIÓN */}
             {modalNuevaSeccion && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -1716,7 +1590,34 @@ export default function ProspectoDetalle({
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="p-5 grid grid-cols-2 gap-3">
+                        <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-3">
+                            <button
+                                onClick={() => addSeccion('list', '💰 Historial de Pagos / Ventas')}
+                                className="flex flex-col items-center gap-2 p-4 border border-slate-200 hover:border-green-400 hover:bg-green-50 rounded-xl transition-all group"
+                            >
+                                <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg text-slate-500 group-hover:text-green-600 transition-colors">
+                                    <DollarSign className="w-6 h-6" />
+                                </div>
+                                <span className="text-sm font-semibold text-gray-700 text-center leading-tight">Pagos y<br/>Ventas</span>
+                            </button>
+                            <button
+                                onClick={() => addSeccion('note', '🔄 Detalles de la Suscripción')}
+                                className="flex flex-col items-center gap-2 p-4 border border-slate-200 hover:border-blue-400 hover:bg-blue-50 rounded-xl transition-all group"
+                            >
+                                <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg text-slate-500 group-hover:text-blue-600 transition-colors">
+                                    <RefreshCw className="w-6 h-6" />
+                                </div>
+                                <span className="text-sm font-semibold text-gray-700 text-center leading-tight">Gestión de<br/>Suscripción</span>
+                            </button>
+                            <button
+                                onClick={() => addSeccion('note', '📝 Notas del Contrato')}
+                                className="flex flex-col items-center gap-2 p-4 border border-slate-200 hover:border-purple-400 hover:bg-purple-50 rounded-xl transition-all group"
+                            >
+                                <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg text-slate-500 group-hover:text-purple-600 transition-colors">
+                                    <FileText className="w-6 h-6" />
+                                </div>
+                                <span className="text-sm font-semibold text-gray-700 text-center leading-tight">Notas de<br/>Contratos</span>
+                            </button>
                             <button
                                 onClick={() => addSeccion('note')}
                                 className="flex flex-col items-center gap-2 p-4 border border-slate-200 hover:border-(--theme-400) hover:bg-(--theme-50) rounded-xl transition-all group"
@@ -1724,7 +1625,7 @@ export default function ProspectoDetalle({
                                 <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg text-slate-500 group-hover:text-(--theme-600) transition-colors">
                                     <FileText className="w-6 h-6" />
                                 </div>
-                                <span className="text-sm font-semibold text-gray-700">Notas</span>
+                                <span className="text-sm font-semibold text-gray-700">Notas libres</span>
                             </button>
                             <button
                                 onClick={() => addSeccion('list')}
@@ -1733,11 +1634,8 @@ export default function ProspectoDetalle({
                                 <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg text-slate-500 group-hover:text-(--theme-600) transition-colors">
                                     <CheckCircle2 className="w-6 h-6" />
                                 </div>
-                                <span className="text-sm font-semibold text-gray-700">Lista</span>
+                                <span className="text-sm font-semibold text-gray-700">Lista simple</span>
                             </button>
-                        </div>
-                        <div className="px-5 pb-5 pt-2 text-center">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">Más módulos próximamente</p>
                         </div>
                     </div>
                 </div>

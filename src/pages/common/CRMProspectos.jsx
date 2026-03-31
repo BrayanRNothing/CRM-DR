@@ -141,14 +141,15 @@ const CRMProspectos = () => {
         const interval = setInterval(cargar, 5 * 60 * 1000);
 
         // 🚀 WEBSOCKETS REFRESH AUTOMÁTICO
-        socket.on('prospectos_actualizados', (obj) => {
+        const handleSocketUpdate = (obj) => {
             console.log('socket: prospectos actualizados detectado', obj);
             cargar();
-        });
+        };
+        socket.on('prospectos_actualizados', handleSocketUpdate);
 
         return () => {
             clearInterval(interval);
-            socket.off('prospectos_actualizados');
+            socket.off('prospectos_actualizados', handleSocketUpdate);
         };
     }, [esProspector]);
 

@@ -171,16 +171,17 @@ const CloserDashboard = () => {
             cargarRecordatorios(true);
         }, 5 * 60 * 1000);
 
-        socket.on('prospectos_actualizados', (obj) => {
+        const handleSocketUpdate = (obj) => {
             console.log('socket: prospectos actualizados detectado', obj);
             cargarDatos(true);
             cargarProximasReuniones(true);
             cargarRecordatorios(true);
-        });
+        };
+        socket.on('prospectos_actualizados', handleSocketUpdate);
 
         return () => {
             clearInterval(interval);
-            socket.off('prospectos_actualizados');
+            socket.off('prospectos_actualizados', handleSocketUpdate);
         };
     }, []);
 

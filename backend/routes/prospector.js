@@ -235,7 +235,7 @@ router.get('/prospectos', [auth, esProspector], async (req, res) => {
                  INNER JOIN (
                    SELECT cliente, MAX(fecha) as maxFecha FROM actividades WHERE cliente IN (${ids.map(() => '?').join(',')}) GROUP BY cliente
                  ) ult ON a.cliente = ult.cliente AND a.fecha = ult.maxFecha`
-              ).all(...ids)
+            ).all(...ids)
             : [];
 
         const actMap = {};
