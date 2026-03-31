@@ -512,8 +512,9 @@ router.put('/prospectos/:id', auth, async (req, res) => {
 
 
 // GET /api/closer/prospecto/:id/historial-completo
+// COMPATIBILIDAD: También sirve para /api/closer/Cliente/:id/historial-completo
 // REUTILIZADO: Historial COMPLETO visible para prospector o closer
-router.get('/prospecto/:id/historial-completo', auth, async (req, res) => {
+router.get(['/prospecto/:id/historial-completo', '/Cliente/:id/historial-completo'], auth, async (req, res) => {
     try {
         const prospectoId = parseInt(req.params.id);
         const usuarioId = parseInt(req.usuario.id);
@@ -994,7 +995,8 @@ router.get('/google-events-completados', [auth, esCloser], async (req, res) => {
 // ============ RECORDATORIOS DE LLAMADA (múltiples) ============
 
 // GET /api/closer/prospectos/:id/recordatorios
-router.get('/prospectos/:id/recordatorios', auth, async (req, res) => {
+// COMPATIBILIDAD: También sirve para /api/closer/Clientes/:id/recordatorios
+router.get(['/prospectos/:id/recordatorios', '/Clientes/:id/recordatorios'], auth, async (req, res) => {
     try {
         const clienteId = parseInt(req.params.id);
         const rows = await db.prepare(`
@@ -1010,7 +1012,8 @@ router.get('/prospectos/:id/recordatorios', auth, async (req, res) => {
 });
 
 // POST /api/closer/prospectos/:id/recordatorios
-router.post('/prospectos/:id/recordatorios', auth, async (req, res) => {
+// COMPATIBILIDAD: También sirve para /api/closer/Clientes/:id/recordatorios
+router.post(['/prospectos/:id/recordatorios', '/Clientes/:id/recordatorios'], auth, async (req, res) => {
     try {
         const clienteId = parseInt(req.params.id);
         const vendedorId = parseInt(req.usuario.id);
