@@ -393,9 +393,9 @@ export default function ProspectoDetalle({
             if (updated) {
                 setProspectoSeleccionado(updated);
                 setProspectos(res.data);
+                // Recargar historial con el prospecto actualizado
+                handleSeleccionarProspectoProp(updated);
             }
-            // Recargar historial
-            handleSeleccionarProspecto(updated || prospectoSeleccionado);
         } catch { toast.error('Error al registrar'); }
     };
 
