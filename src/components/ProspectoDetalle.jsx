@@ -384,7 +384,6 @@ export default function ProspectoDetalle({
 
     const abrirNuevoRecordatorio = () => {
         const fechaDefault = new Date();
-        fechaDefault.setDate(fechaDefault.getDate() + 3);
         const isoDefault = toLocalDateTimeInput(fechaDefault);
         setRecordatorio({ fechaProxima: isoDefault, notas: '', editandoId: null });
         setModalRecordatorioAbierto(true);

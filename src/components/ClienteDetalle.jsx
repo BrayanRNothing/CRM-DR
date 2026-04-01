@@ -380,7 +380,6 @@ export default function ClienteDetalle({
 
     const abrirNuevoRecordatorio = () => {
         const fechaDefault = new Date();
-        fechaDefault.setDate(fechaDefault.getDate() + 3);
         const isoDefault = toLocalDateTimeInput(fechaDefault);
         setRecordatorio({ fechaProxima: isoDefault, notas: '', editandoId: null });
         setModalRecordatorioAbierto(true);
@@ -414,6 +413,7 @@ export default function ClienteDetalle({
         try {
             await axios.delete(`${API_URL}/api/${rolePath}/recordatorios/${recId}`, { headers: getAuthHeaders() });
             setRecordatoriosLlamada(prev => prev.filter(r => r.id !== recId));
+            if (onActualizado) await onActualizado();
             toast.success('Recordatorio eliminado');
         } catch (err) {
             console.error(err);
@@ -1454,6 +1454,8 @@ export default function ClienteDetalle({
                                             setRecordatoriosLlamada(prev => [...prev, res.data.recordatorio]);
                                             toast.success('📞 Recordatorio programado');
                                         }
+
+                                        if (onActualizado) await onActualizado();
 
                                         setModalRecordatorioAbierto(false);
                                         setRecordatorio({ fechaProxima: '', notas: '', editandoId: null });
