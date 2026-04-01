@@ -28,7 +28,7 @@ const CAMEL_COLS = [
   'cambioEtapa', 'etapaAnterior', 'etapaNueva', 'fechaLimite', 'fechaCreacion',
   'googleRefreshToken', 'googleAccessToken', 'googleTokenExpiry',
   'vendedorNombre', 'vendedorRol', 'closerNombre', 'sitioWeb', 'googleMeetLink',
-  'customMetricLabel', 'customMetricValue'
+  'customMetricLabel', 'customMetricValue', 'createdAt', 'tipoActividad'
 ];
 
 // Helper: convierte '?' a '$1', '$2', etc. para Postgres y añade comillas dobles a columnas camelCase
