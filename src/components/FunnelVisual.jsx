@@ -41,11 +41,11 @@ const FunnelVisual = ({ stages }) => {
                                     </div>
                                 </div>
 
-                                {/* Contador Hoy */}
+                                {/* Contador Hoy - Posicionado absoluto para no mover el layout */}
                                 {stage.contadorHoy > 0 && (
-                                    <div className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-md rounded-full px-2 py-0.5 mb-3 border border-white/10 self-start">
-                                        <TrendingUp className="w-3 h-3 text-white" />
-                                        <span className="text-white text-xs font-bold">
+                                    <div className="absolute top-11 right-3 z-20 inline-flex items-center gap-1 bg-white/20 backdrop-blur-md rounded-full px-2 py-0.5 border border-white/10">
+                                        <TrendingUp className="w-2.5 h-2.5 text-white" />
+                                        <span className="text-white text-[10px] font-bold">
                                             +{stage.contadorHoy} {stage.labelContador || 'hoy'}
                                         </span>
                                     </div>

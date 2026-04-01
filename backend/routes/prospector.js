@@ -744,10 +744,10 @@ router.put('/prospectos/:id/editar', [auth, esProspector], async (req, res) => {
             (notas || '').trim(),
             (sitioWeb || '').trim(),
             (ubicacion || '').trim(),
-            req.body.interes !== undefined ? req.body.interes : 0,
+            req.body.interes !== undefined ? req.body.interes : cliente.interes,
             req.body.proximaLlamada || null,
-            customMetricLabel || '',
-            customMetricValue || ''
+            customMetricLabel !== undefined ? customMetricLabel : cliente.customMetricLabel,
+            customMetricValue !== undefined ? customMetricValue : cliente.customMetricValue
         ];
 
         // Manejo de cambio de etapa
