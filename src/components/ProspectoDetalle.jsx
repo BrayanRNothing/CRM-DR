@@ -35,6 +35,21 @@ const formatHora = (date) => {
     return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 };
 
+const toLocalDateTimeInput = (value = new Date()) => {
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const toUtcIsoFromLocalInput = (localValue) => {
+    if (!localValue) return null;
+    const d = new Date(localValue);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString();
+};
+
 export default function ProspectoDetalle({
     prospecto: initialProspecto,
     rolePath,
@@ -370,14 +385,14 @@ export default function ProspectoDetalle({
     const abrirNuevoRecordatorio = () => {
         const fechaDefault = new Date();
         fechaDefault.setDate(fechaDefault.getDate() + 3);
-        const isoDefault = fechaDefault.toISOString().slice(0, 16);
+        const isoDefault = toLocalDateTimeInput(fechaDefault);
         setRecordatorio({ fechaProxima: isoDefault, notas: '', editandoId: null });
         setModalRecordatorioAbierto(true);
     };
 
     const handleEditarRecordatorio = (rec) => {
         setRecordatorio({
-            fechaProxima: rec.fechaLimite ? rec.fechaLimite.slice(0, 16) : '',
+            fechaProxima: rec.fechaLimite ? toLocalDateTimeInput(rec.fechaLimite) : '',
             notas: rec.descripcion || '',
             editandoId: rec.id
         });
@@ -386,9 +401,9 @@ export default function ProspectoDetalle({
 
     const syncRecordatorioFechaHora = (key, value) => {
         setRecordatorio((prev) => {
-            const baseFecha = prev.fechaProxima || new Date().toISOString().slice(0, 16);
+            const baseFecha = prev.fechaProxima || toLocalDateTimeInput();
             const [fechaActual = '', horaActual = '09:00'] = baseFecha.split('T');
-            const siguienteFecha = key === 'fecha' ? value : (fechaActual || new Date().toISOString().slice(0, 10));
+            const siguienteFecha = key === 'fecha' ? value : (fechaActual || toLocalDateTimeInput().slice(0, 10));
             const siguienteHora = key === 'hora' ? value : (horaActual || '09:00');
 
             if (!siguienteFecha || !siguienteHora) {
@@ -1260,7 +1275,7 @@ export default function ProspectoDetalle({
                                             onClick={() => {
                                                 const hoy = new Date();
                                                 hoy.setDate(hoy.getDate() + 3);
-                                                const defaultDate = hoy.toISOString().slice(0, 16);
+                                                const defaultDate = toLocalDateTimeInput(hoy);
                                                 setLlamadaFlow(f => ({ ...f, paso: 'llamarDespues', interesado: true, fechaProxima: defaultDate }));
                                             }}
                                             className="py-2.5 bg-(--theme-500) text-white rounded-lg font-bold hover:bg-(--theme-600) transition-colors text-sm"
@@ -1293,7 +1308,7 @@ export default function ProspectoDetalle({
                                                     const pidLocal = prospectoSeleccionado.id || prospectoSeleccionado._id;
                                                     if (llamadaFlow.fechaProxima) {
                                                         await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLocal}`, {
-                                                            proximaLlamada: llamadaFlow.fechaProxima
+                                                            proximaLlamada: toUtcIsoFromLocalInput(llamadaFlow.fechaProxima)
                                                         }, { headers: getAuthHeaders() });
                                                     }
                                                     toast.success('Reintento programado');
@@ -1390,7 +1405,7 @@ export default function ProspectoDetalle({
                                                 if (llamadaFlow.fechaProxima) {
                                                     // 2. Actualizar solo proximaLlamada (ruta simple, no requiere nombres/telefono)
                                                     await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLocal}`, {
-                                                        proximaLlamada: llamadaFlow.fechaProxima
+                                                        proximaLlamada: toUtcIsoFromLocalInput(llamadaFlow.fechaProxima)
                                                     }, { headers: getAuthHeaders() });
                                                 }
 
@@ -1484,8 +1499,9 @@ export default function ProspectoDetalle({
 
                                         if (recordatorio.editandoId) {
                                             // Editar recordatorio existente
+                                            const fechaLimiteIso = toUtcIsoFromLocalInput(recordatorio.fechaProxima);
                                             const res = await axios.put(`${API_URL}/api/${rolePath}/recordatorios/${recordatorio.editandoId}`, {
-                                                fechaLimite: recordatorio.fechaProxima,
+                                                fechaLimite: fechaLimiteIso,
                                                 descripcion: recordatorio.notas || ''
                                             }, { headers: getAuthHeaders() });
                                             const updated = res.data.recordatorio;
@@ -1493,8 +1509,9 @@ export default function ProspectoDetalle({
                                             toast.success('📞 Recordatorio actualizado');
                                         } else {
                                             // Crear nuevo recordatorio
+                                            const fechaLimiteIso = toUtcIsoFromLocalInput(recordatorio.fechaProxima);
                                             const res = await axios.post(`${API_URL}/api/${rolePath}/prospectos/${pid}/recordatorios`, {
-                                                fechaLimite: recordatorio.fechaProxima,
+                                                fechaLimite: fechaLimiteIso,
                                                 descripcion: recordatorio.notas || ''
                                             }, { headers: getAuthHeaders() });
                                             setRecordatoriosLlamada(prev => [...prev, res.data.recordatorio]);
@@ -1544,7 +1561,7 @@ export default function ProspectoDetalle({
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha y Hora</label>
                                         <input
                                             type="datetime-local"
-                                            value={editDataCita.fecha ? new Date(editDataCita.fecha).toISOString().slice(0, 16) : ''}
+                                            value={editDataCita.fecha ? toLocalDateTimeInput(editDataCita.fecha) : ''}
                                             onChange={(e) => setEditDataCita({ ...editDataCita, fecha: e.target.value })}
                                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-400) outline-none transition-all"
                                         />
