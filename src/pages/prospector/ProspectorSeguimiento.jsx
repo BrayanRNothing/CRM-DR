@@ -307,7 +307,17 @@ const ProspectorSeguimiento = () => {
             clearInterval(interval);
             socket.off('prospectos_actualizados', handleSocketUpdate);
         };
-    }, []);
+    }, [searchParams]);
+
+    // Escuchar cambios en location.state para navegación interna
+    useEffect(() => {
+        if (location.state?.selectedId && prospectos.length > 0) {
+            const found = prospectos.find(p => (p.id || p._id) == location.state.selectedId);
+            if (found) {
+                handleSeleccionarProspecto(found);
+            }
+        }
+    }, [location.state?.selectedId, prospectos]);
 
     // Orden de prioridad de etapas (más avanzadas primero, perdido al fondo)
     const ORDEN_ETAPA = {

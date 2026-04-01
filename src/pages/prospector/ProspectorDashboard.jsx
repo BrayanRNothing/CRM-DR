@@ -299,7 +299,11 @@ const ProspectorDashboard = () => {
                                                 <div 
                                                     key={p.id || p._id} 
                                                     className="bg-rose-50 border border-rose-100 rounded-xl p-4 flex items-center justify-between group hover:border-rose-300 transition-colors shadow-sm cursor-pointer"
-                                                    onClick={() => navigate('/prospector/prospectos', { state: { selectedId: p.id || p._id } })}
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        navigate(`/prospector/prospectos?p=${p.id || p._id}`);
+                                                    }}
                                                 >
                                                     <div className="flex-1 min-w-0 pr-3">
                                                         <div className="font-bold text-gray-900 truncate">{p.nombre || `${p.nombres || ''} ${p.apellidoPaterno || ''}`.trim()}</div>
@@ -380,7 +384,7 @@ const ProspectorDashboard = () => {
                                                 try {
                                                     await axios.put(`${API_URL}/api/tareas/${tareaId}`, { estado: 'completada' }, { headers: getAuthHeaders() });
                                                 } catch (e) { console.error('Error al completar tarea:', e); }
-                                                navigate('/prospector/prospectos', { state: { selectedId: prospectoId } });
+                                                navigate(`/prospector/prospectos?p=${prospectoId}`);
                                             }
                                             : null;
                                         return (

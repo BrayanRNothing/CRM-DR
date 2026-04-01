@@ -334,7 +334,11 @@ const CloserDashboard = () => {
                                                 <div 
                                                     key={p.id || p._id} 
                                                     className="bg-rose-50/50 border border-rose-100 rounded-xl p-3 flex items-center justify-between group hover:border-rose-300 transition-colors shadow-sm cursor-pointer"
-                                                    onClick={() => navigate('/closer/prospectos', { state: { selectedId: p.id || p._id } })}
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        navigate(`/closer/prospectos?p=${p.id || p._id}`);
+                                                    }}
                                                 >
                                                     <div className="flex-1 min-w-0 pr-3">
                                                         <div className="font-bold text-gray-900 text-sm truncate">{p.nombre || `${p.nombres || ''} ${p.apellidoPaterno || ''}`.trim()}</div>
