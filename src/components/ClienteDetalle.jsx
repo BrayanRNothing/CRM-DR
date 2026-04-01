@@ -391,9 +391,9 @@ export default function ClienteDetalle({
             if (updated) {
                 setClienteSeleccionado(updated);
                 setClientes(res.data);
-                // Recargar historial con el cliente actualizado
-                handleSeleccionarClienteProp(updated);
             }
+            // Recargar historial
+            handleSeleccionarCliente(updated || ClienteSeleccionado);
         } catch { toast.error('Error al registrar'); }
     };
 
