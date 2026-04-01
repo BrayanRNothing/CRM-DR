@@ -202,8 +202,8 @@ const ProspectorCalendario = () => {
 
     // Auto-seleccionar prospecto si viene del Seguimiento
     useEffect(() => {
-        if (location.state?.prospecto) {
-            const p = location.state.prospecto;
+        const p = location.state?.prospecto || location.state?.Cliente || location.state?.cliente;
+        if (p) {
             const id = String(p.id || p._id || '');
             if (id) setSelectedProspect(id);
         }

@@ -234,14 +234,15 @@ router.get('/prospectos', [auth, esProspector], async (req, res) => {
         const rows = await db.prepare(sql).all(...params);
 
         // Traer última actividad de cada prospecto en una sola query
+        // Usamos createdAt para evitar que una cita futura tape una interacción más reciente.
         const ids = rows.map(r => r.id).filter(Boolean);
         const ultimasActs = ids.length > 0
             ? await db.prepare(
                 `SELECT a.cliente, a.tipo, COALESCE(NULLIF(a.notas, ''), a.descripcion) as texto
                  FROM actividades a
                  INNER JOIN (
-                   SELECT cliente, MAX(fecha) as maxFecha FROM actividades WHERE cliente IN (${ids.map(() => '?').join(',')}) GROUP BY cliente
-                 ) ult ON a.cliente = ult.cliente AND a.fecha = ult.maxFecha`
+                   SELECT cliente, MAX(createdAt) as maxCreatedAt FROM actividades WHERE cliente IN (${ids.map(() => '?').join(',')}) GROUP BY cliente
+                 ) ult ON a.cliente = ult.cliente AND a.createdAt = ult.maxCreatedAt`
             ).all(...ids)
             : [];
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -7,7 +7,7 @@ import {
     XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown
 } from 'lucide-react';
 
-import { getToken } from '../utils/authUtils';
+import { getToken, getUser } from '../utils/authUtils';
 import API_URL from '../config/api';
 import TimeWheelPicker from './TimeWheelPicker';
 import HistorialInteracciones from './HistorialInteracciones';
@@ -29,6 +29,14 @@ const getEtapaColor = (etapa) => ETAPAS_EMBUDO[etapa]?.color || 'bg-gray-100 tex
 const getAuthHeaders = () => ({
     'x-auth-token': getToken() || ''
 });
+
+const getCalendarRolePath = () => {
+    const user = getUser();
+    const role = String(user?.rol || '').toLowerCase();
+    if (role === 'vendedor') return 'vendedor';
+    if (role === 'closer') return 'closer';
+    return 'prospector';
+};
 
 const formatHora = (date) => {
     const d = new Date(date);
@@ -60,6 +68,7 @@ export default function ProspectoDetalle({
     setModalDescartarAbierto
 }) {
     const navigate = useNavigate();
+    const calendarRolePath = getCalendarRolePath();
 
     const [prospectoSeleccionado, setProspectoSeleccionado] = useState(initialProspecto);
     const pid = prospectoSeleccionado?.id || prospectoSeleccionado?._id;
@@ -324,7 +333,36 @@ export default function ProspectoDetalle({
         .filter(a => a.tipo === 'cita' && a.resultado === 'pendiente' && new Date(a.fechaCita || a.fecha) >= new Date())
         .sort((a, b) => new Date(a.fechaCita || a.fecha) - new Date(b.fechaCita || b.fecha));
 
-    const totalAlertas = citasPendientes.length + recordatoriosLlamada.length;
+    const alertasOrdenadas = useMemo(() => {
+        const mapaPrioridad = {
+            cita: 0,
+            llamada: 1
+        };
+
+        const alertas = [
+            ...citasPendientes.map((cita) => ({
+                tipo: 'cita',
+                id: cita.id || cita._id,
+                fecha: new Date(cita.fechaCita || cita.fecha),
+                data: cita
+            })),
+            ...recordatoriosLlamada.map((rec) => ({
+                tipo: 'llamada',
+                id: rec.id || rec._id,
+                fecha: new Date(rec.fechaLimite),
+                data: rec
+            }))
+        ];
+
+        return alertas.sort((a, b) => {
+            const prioridadA = mapaPrioridad[a.tipo] ?? 99;
+            const prioridadB = mapaPrioridad[b.tipo] ?? 99;
+            if (prioridadA !== prioridadB) return prioridadA - prioridadB;
+            return a.fecha - b.fecha;
+        });
+    }, [citasPendientes, recordatoriosLlamada]);
+
+    const totalAlertas = alertasOrdenadas.length;
 
     const registrarActividad = async (payload) => {
         try {
@@ -859,7 +897,7 @@ export default function ProspectoDetalle({
                                 </button>
                                 {/* Agendar reunión */}
                                 <button
-                                    onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })}
+                                    onClick={() => navigate(`/${calendarRolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })}
                                     className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm text-center leading-tight"
                                 >
                                     <Calendar className="w-6 h-6" />
@@ -877,83 +915,87 @@ export default function ProspectoDetalle({
                                     {/* Contenido con altura fija y scroll */}
                                     <div className="overflow-y-auto hide-scrollbar flex flex-col gap-2 shrink-0" style={{ maxHeight: '200px', height: '200px' }}>
 
-                                        {citasPendientes.map((cita) => {
-                                            const fechaCita = cita.fechaCita || cita.fecha;
+                                        {alertasOrdenadas.map((alerta) => {
+                                            if (alerta.tipo === 'cita') {
+                                                const cita = alerta.data;
+                                                const fechaCita = cita.fechaCita || cita.fecha;
+                                                return (
+                                                    <div key={`cita-${alerta.id}`} className="bg-white border border-slate-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <p className="text-xs font-semibold text-gray-800">📅 Reunión agendada</p>
+                                                            <p className="text-[10px] text-gray-400 shrink-0">
+                                                                {new Date(fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="flex gap-1.5">
+                                                            <button
+                                                                onClick={() => handleMarcarCitaRealizada(cita)}
+                                                                disabled={loadingCitaId === cita.id}
+                                                                title="Marcar como realizada"
+                                                                className="flex-1 flex items-center justify-center gap-1.5 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded py-1.5 text-[10px] font-bold transition-colors disabled:opacity-50"
+                                                            >
+                                                                <CheckCircle2 className="w-3 h-3" />
+                                                                {loadingCitaId === cita.id ? '...' : 'Realizada'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setModalCita({ abierto: true, cita, editando: false })}
+                                                                className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                                title="Ver"
+                                                            >
+                                                                <Eye className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditDataCita({ fecha: fechaCita, notas: cita.notas || '' });
+                                                                    setModalCita({ abierto: true, cita, editando: true });
+                                                                }}
+                                                                className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                                title="Editar"
+                                                            >
+                                                                <Edit2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDescartarCita(cita)}
+                                                                className="flex items-center justify-center bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                                title="Descartar"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            const rec = alerta.data;
                                             return (
-                                                <div key={`cita-${cita.id || fechaCita}`} className="bg-white border border-slate-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
+                                                <div key={`rec-${alerta.id}`} className="bg-white border border-slate-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <p className="text-xs font-semibold text-gray-800">📅 Reunión agendada</p>
+                                                        <p className="text-xs font-semibold text-gray-800">📞 Recordatorio de llamada</p>
                                                         <p className="text-[10px] text-gray-400 shrink-0">
-                                                            {new Date(fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                                                            {new Date(rec.fechaLimite).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
                                                         </p>
                                                     </div>
-                                                    
+                                                    {rec.descripcion && (
+                                                        <p className="text-[10px] text-slate-500 italic">{rec.descripcion}</p>
+                                                    )}
                                                     <div className="flex gap-1.5">
                                                         <button
-                                                            onClick={() => handleMarcarCitaRealizada(cita)}
-                                                            disabled={loadingCitaId === cita.id}
-                                                            title="Marcar como realizada"
-                                                            className="flex-1 flex items-center justify-center gap-1.5 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded py-1.5 text-[10px] font-bold transition-colors disabled:opacity-50"
+                                                            onClick={() => handleEditarRecordatorio(rec)}
+                                                            className="flex-1 flex items-center justify-center gap-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded py-1.5 text-[10px] font-bold transition-colors"
                                                         >
-                                                            <CheckCircle2 className="w-3 h-3" />
-                                                            {loadingCitaId === cita.id ? '...' : 'Realizada'}
+                                                            <Edit2 className="w-3 h-3" /> Editar
                                                         </button>
                                                         <button
-                                                            onClick={() => setModalCita({ abierto: true, cita, editando: false })}
-                                                            className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
-                                                            title="Ver"
+                                                            onClick={() => descartarRecordatorio(rec.id)}
+                                                            className="flex-1 flex items-center justify-center gap-1 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded py-1.5 text-[10px] font-bold transition-colors"
                                                         >
-                                                            <Eye className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => {
-                                                                setEditDataCita({ fecha: fechaCita, notas: cita.notas || '' });
-                                                                setModalCita({ abierto: true, cita, editando: true });
-                                                            }}
-                                                            className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
-                                                            title="Editar"
-                                                        >
-                                                            <Edit2 className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDescartarCita(cita)}
-                                                            className="flex items-center justify-center bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded px-2 py-1.5 transition-colors shadow-sm"
-                                                            title="Descartar"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                            <Trash2 className="w-3 h-3" /> Quitar
                                                         </button>
                                                     </div>
                                                 </div>
                                             );
                                         })}
-
-                                        {recordatoriosLlamada.map(rec => (
-                                            <div key={rec.id} className="bg-white border border-slate-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <p className="text-xs font-semibold text-gray-800">📞 Recordatorio de llamada</p>
-                                                    <p className="text-[10px] text-gray-400 shrink-0">
-                                                        {new Date(rec.fechaLimite).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
-                                                    </p>
-                                                </div>
-                                                {rec.descripcion && (
-                                                    <p className="text-[10px] text-slate-500 italic">{rec.descripcion}</p>
-                                                )}
-                                                <div className="flex gap-1.5">
-                                                    <button
-                                                        onClick={() => handleEditarRecordatorio(rec)}
-                                                        className="flex-1 flex items-center justify-center gap-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded py-1.5 text-[10px] font-bold transition-colors"
-                                                    >
-                                                        <Edit2 className="w-3 h-3" /> Editar
-                                                    </button>
-                                                    <button
-                                                        onClick={() => descartarRecordatorio(rec.id)}
-                                                        className="flex-1 flex items-center justify-center gap-1 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded py-1.5 text-[10px] font-bold transition-colors"
-                                                    >
-                                                        <Trash2 className="w-3 h-3" /> Quitar
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
 
                                         {totalAlertas === 0 && (
                                             <p className="text-[11px] text-slate-500 px-1 italic">Sin alertas por ahora.</p>
@@ -1265,7 +1307,7 @@ export default function ProspectoDetalle({
                                             onClick={async () => {
                                                 await registrarActividad({ tipo: 'llamada', resultado: 'exitoso', notas: 'Agendó reunión' });
                                                 setLlamadaFlow(null);
-                                                navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } });
+                                                navigate(`/${calendarRolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } });
                                             }}
                                             className="py-2.5 bg-(--theme-500) text-white rounded-lg font-bold hover:bg-(--theme-600) transition-colors text-sm"
                                         >📅 Agendó reunión</button>
