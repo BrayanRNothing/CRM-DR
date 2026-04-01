@@ -937,9 +937,12 @@ export default function ProspectoDetalle({
                                                 const cita = alerta.data;
                                                 const fechaCita = cita.fechaCita || cita.fecha;
                                                 return (
-                                                    <div key={`cita-${alerta.id}`} className="bg-white border border-slate-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
+                                                    <div key={`cita-${alerta.id}`} className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
                                                         <div className="flex items-center justify-between gap-2">
-                                                            <p className="text-xs font-semibold text-gray-800">📅 Reunión agendada</p>
+                                                            <div className="flex items-center gap-2">
+                                                                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                                                                <p className="text-xs font-semibold text-blue-900">Reunión agendada</p>
+                                                            </div>
                                                             <p className="text-[10px] text-gray-400 shrink-0">
                                                                 {new Date(fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
                                                             </p>
@@ -986,9 +989,12 @@ export default function ProspectoDetalle({
 
                                             const rec = alerta.data;
                                             return (
-                                                <div key={`rec-${alerta.id}`} className="bg-white border border-slate-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
+                                                <div key={`rec-${alerta.id}`} className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <p className="text-xs font-semibold text-gray-800">📞 Recordatorio de llamada</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <Phone className="w-3.5 h-3.5 text-amber-600" />
+                                                            <p className="text-xs font-semibold text-amber-900">Recordatorio de llamada</p>
+                                                        </div>
                                                         <p className="text-[10px] text-gray-400 shrink-0">
                                                             {new Date(rec.fechaLimite).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
                                                         </p>
