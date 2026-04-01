@@ -209,7 +209,14 @@ router.get('/prospectos', [auth, esProspector], async (req, res) => {
         const prospectorId = parseInt(req.usuario.id);
         const { etapa, busqueda } = req.query;
 
-        let sql = `SELECT c.*, u.nombre as closerNombre
+        let sql = `SELECT c.*, u.nombre as closerNombre,
+            (
+                SELECT MIN(t.fechaLimite)
+                FROM tareas t
+                WHERE t.cliente = c.id
+                  AND t.titulo = 'Recordatorio de llamada'
+                  AND t.estado = 'pendiente'
+            ) as proximoRecordatorio
             FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE c.prospectorAsignado = ? AND c.etapaEmbudo NOT IN (?, ?)`;
         const params = [prospectorId, 'venta_ganada', 'perdido'];
 
@@ -248,6 +255,8 @@ router.get('/prospectos', [auth, esProspector], async (req, res) => {
             if (out && closerNombre) out.closerAsignado = { nombre: closerNombre };
             const act = actMap[r.id];
             if (out) {
+                // Unificar fuente de seguimiento para la UI: proximaLlamada propia o recordatorio pendiente.
+                out.proximaLlamada = out.proximaLlamada || out.proximallamada || out.proximoRecordatorio || out.proximorecordatorio || null;
                 out.ultimaActTipo = act?.tipo || null;
                 out.ultimaActNotas = act?.notas || null;
             }

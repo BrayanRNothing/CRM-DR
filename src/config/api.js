@@ -2,7 +2,18 @@
 // Replace this with your actual backend URL when you connect your API
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://crmupdm-production.up.railway.app';
+const rawEnvApiUrl = (import.meta.env.VITE_API_URL || '').trim();
+const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+const currentHost = typeof window !== 'undefined' ? window.location.hostname : '';
+
+const normalizeBaseUrl = (url) => (url || '').replace(/\/+$/, '');
+
+// In Railway production we serve frontend + backend from the same host.
+// This prevents stale env values (e.g. old domains) from breaking auth calls.
+const forceSameOriginHosts = new Set(['crm-dr-production.up.railway.app']);
+const API_URL = forceSameOriginHosts.has(currentHost)
+    ? normalizeBaseUrl(currentOrigin)
+    : normalizeBaseUrl(rawEnvApiUrl || currentOrigin || 'https://crm-dr-production.up.railway.app');
 
 // Global interceptor: auto-logout when token is expired or invalid  
 axios.interceptors.response.use(

@@ -24,6 +24,7 @@ const EMPTY_DATA = {
 import { getToken } from '../../utils/authUtils';
 
 const getAuthHeaders = () => ({ 'x-auth-token': getToken() || '' });
+const getProximaLlamada = (p) => p?.proximaLlamada || p?.proximallamada || p?.proximoRecordatorio || p?.proximorecordatorio || null;
 
 const ProspectorDashboard = () => {
     const [data, setData] = useState(null);
@@ -64,7 +65,9 @@ const ProspectorDashboard = () => {
     const cargarRecordatorios = async () => {
         try {
             const response = await axios.get(`${API_URL}/api/prospector/prospectos`, { headers: getAuthHeaders() });
-            const conRecordatorio = (response.data || []).filter(p => !!p.proximaLlamada);
+            const conRecordatorio = (response.data || [])
+                .map(p => ({ ...p, proximaLlamada: getProximaLlamada(p) }))
+                .filter(p => !!p.proximaLlamada);
             conRecordatorio.sort((a, b) => new Date(a.proximaLlamada) - new Date(b.proximaLlamada));
             setRecordatorios(conRecordatorio);
         } catch (error) {

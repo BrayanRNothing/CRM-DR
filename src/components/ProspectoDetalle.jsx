@@ -309,6 +309,17 @@ export default function ProspectoDetalle({
         .filter(a => a.tipo === 'cita' && a.resultado === 'pendiente' && new Date(a.fechaCita || a.fecha) >= new Date())
         .sort((a, b) => new Date(a.fechaCita || a.fecha) - new Date(b.fechaCita || b.fecha));
 
+    const proximaLlamadaSeguimiento = prospectoSeleccionado?.proximaLlamada || prospectoSeleccionado?.proximallamada;
+    const recordatorioSeguimiento = proximaLlamadaSeguimiento
+        ? {
+            id: 'seguimiento-proxima-llamada',
+            fechaLimite: proximaLlamadaSeguimiento,
+            descripcion: 'Seguimiento pendiente desde flujo de llamada'
+        }
+        : null;
+
+    const totalAlertas = citasPendientes.length + recordatoriosLlamada.length + (recordatorioSeguimiento ? 1 : 0);
+
     const registrarActividad = async (payload) => {
         try {
             // Promover etapa automáticamente si corresponde
@@ -405,6 +416,24 @@ export default function ProspectoDetalle({
         } catch (err) {
             console.error(err);
             toast.error('No se pudo eliminar el recordatorio');
+        }
+    };
+
+    const descartarSeguimientoPendiente = async () => {
+        try {
+            const pidLocal = prospectoSeleccionado?.id || prospectoSeleccionado?._id;
+            if (!pidLocal) return;
+
+            await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLocal}`, {
+                proximaLlamada: null
+            }, { headers: getAuthHeaders() });
+
+            setProspectoSeleccionado(prev => ({ ...prev, proximaLlamada: null }));
+            if (onActualizado) onActualizado();
+            toast.success('Seguimiento removido');
+        } catch (err) {
+            console.error(err);
+            toast.error('No se pudo remover el seguimiento');
         }
     };
 
@@ -938,13 +967,39 @@ export default function ProspectoDetalle({
                                             </div>
                                         ))}
 
-                                        {citasPendientes.length === 0 && recordatoriosLlamada.length === 0 && (
+                                        {recordatorioSeguimiento && (
+                                            <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <p className="text-xs font-semibold text-gray-800">📌 Seguimiento de prospecto</p>
+                                                    <p className="text-[10px] text-gray-400 shrink-0">
+                                                        {new Date(recordatorioSeguimiento.fechaLimite).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                                                    </p>
+                                                </div>
+                                                <p className="text-[10px] text-slate-500 italic">{recordatorioSeguimiento.descripcion}</p>
+                                                <div className="flex gap-1.5">
+                                                    <button
+                                                        onClick={() => navigate(`/${rolePath}/prospectos`, { state: { selectedId: pid } })}
+                                                        className="flex-1 flex items-center justify-center gap-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded py-1.5 text-[10px] font-bold transition-colors"
+                                                    >
+                                                        <ExternalLink className="w-3 h-3" /> Abrir
+                                                    </button>
+                                                    <button
+                                                        onClick={descartarSeguimientoPendiente}
+                                                        className="flex-1 flex items-center justify-center gap-1 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded py-1.5 text-[10px] font-bold transition-colors"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" /> Quitar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {totalAlertas === 0 && (
                                             <p className="text-[11px] text-slate-500 px-1 italic">Sin alertas por ahora.</p>
                                         )}
                                     </div>
 
                                     {/* Indicador de scroll discreto */}
-                                    {(citasPendientes.length + recordatoriosLlamada.length > 2) && (
+                                    {(totalAlertas > 2) && (
                                         <div className="absolute left-0 right-0 flex justify-center pointer-events-none" style={{ bottom: '-6px' }}>
                                             <svg className="w-5 h-5 text-slate-400 animate-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                                 <path d="M7 10l5 5 5-5z" />
