@@ -310,7 +310,7 @@ export default function ProspectoDetalle({
             if (act.notas?.includes('WhatsApp')) return { icon: '💬', color: 'bg-green-500', label: 'WhatsApp / Correo' };
             if (act.notas?.includes('llamar después')) return { icon: '⏰', color: 'bg-(--theme-500)', label: 'Llamar después' };
             if (act.notas?.toLowerCase().includes('sin interés')) return { icon: '👎', color: 'bg-gray-500', label: 'Sin interés' };
-            if (act.notas?.includes('Agendó reunión')) return { icon: '🎥', color: 'bg-(--theme-500)', label: 'Cita Agendada' };
+            if (act.notas?.includes('Agendó reunión')) return { icon: '📅', color: 'bg-(--theme-500)', label: 'Cita Agendada' };
 
             if (act.resultado === 'exitoso') return { icon: '☎️', color: 'bg-(--theme-500)', label: 'Llamada exitosa' };
             if (act.resultado === 'fallido') return { icon: '📵', color: 'bg-rose-500', label: 'Sin respuesta' };
@@ -318,13 +318,13 @@ export default function ProspectoDetalle({
 
         if (act.tipo === 'cita') {
             const desc = act.descripcion || '';
-            if (act.resultado === 'pendiente') return { icon: '🎥', color: 'bg-(--theme-500)', label: 'Cita Agendada' };
+            if (act.resultado === 'pendiente') return { icon: '📅', color: 'bg-(--theme-500)', label: 'Cita Agendada' };
             if (desc.includes('no asistió') || desc.includes('No asistió')) return { icon: '❌', color: 'bg-red-500', label: desc };
             if (desc.includes('Venta cerrada') || desc.includes('¡Venta')) return { icon: '🎉', color: 'bg-green-500', label: desc };
             if (desc.includes('cotización') || desc.includes('Cotización')) return { icon: '💰', color: 'bg-(--theme-600)', label: desc };
-            if (desc.includes('otra reunión') || desc.includes('Otra reunión')) return { icon: '🎥', color: 'bg-yellow-500', label: desc };
+            if (desc.includes('otra reunión') || desc.includes('Otra reunión')) return { icon: '📅', color: 'bg-yellow-500', label: desc };
             if (desc.includes('No le interesó') || desc.includes('no le interesó')) return { icon: '😐', color: 'bg-gray-500', label: desc };
-            return { icon: '🎥', color: 'bg-(--theme-500)', label: desc || 'Reunión' };
+            return { icon: '📅', color: 'bg-(--theme-500)', label: desc || 'Reunión' };
         }
         if (act.tipo === 'whatsapp') return { icon: '💬', color: 'bg-green-500', label: 'WhatsApp' };
         if (act.tipo === 'cliente') return { icon: '🏆', color: 'bg-yellow-500', label: 'Convertido a cliente' };
