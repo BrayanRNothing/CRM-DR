@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Calendar as CalendarIcon, Clock, User, Phone, CheckCircle2, ChevronLeft, ChevronRight, UserPlus, Briefcase, Mail, MapPin, LogIn, Link as LinkIcon, Copy, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import socket from '../../config/socket';
 import API_URL from '../../config/api';
 import { getToken, getUser } from '../../utils/authUtils';
 
@@ -383,6 +384,8 @@ const ProspectorCalendario = () => {
                 } else if (closerLinkedToGoogle) {
                     toast.error("Se agendó, pero Google falló en crear la liga de Meet");
                 }
+                // Notificar que el prospecto fue actualizado para que ProspectoDetalle se recargue
+                socket.emit('prospectos_actualizados', { clienteId: prospect.id });
             }
 
             toast.dismiss(loadingToast);

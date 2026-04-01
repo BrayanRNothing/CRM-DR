@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import socket from '../config/socket';
 import {
     Phone, MessageSquare, Mail, Calendar, CheckCircle2,
     XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown
@@ -119,6 +120,22 @@ export default function ProspectoDetalle({
             cargarRecordatorios(initialProspecto.id || initialProspecto._id);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialProspecto?.id, initialProspecto?._id]);
+
+    // Escuchar socket events para recargar cuando el prospecto se actualiza (ej: agendar reunión)
+    useEffect(() => {
+        const handleProspectoActualizado = () => {
+            if (initialProspecto && (initialProspecto.id || initialProspecto._id)) {
+                handleSeleccionarProspectoProp(initialProspecto);
+                cargarRecordatorios(initialProspecto.id || initialProspecto._id);
+            }
+        };
+
+        socket.on('prospectos_actualizados', handleProspectoActualizado);
+
+        return () => {
+            socket.off('prospectos_actualizados', handleProspectoActualizado);
+        };
     }, [initialProspecto?.id, initialProspecto?._id]);
 
     const cargarRecordatorios = async (prospectoId) => {
