@@ -902,12 +902,6 @@ router.post('/agendar-reunion', [auth, esProspector], async (req, res) => {
             VALUES (?, ?, ?, ?, ?, 'pendiente', ?, 1, 'en_contacto', 'reunion_agendada')
         `).run('cita', prospectorId, cid, fechaReunionISO, `Reunión agendada para el ${fechaDisplayMX} por prospector ${req.usuario.nombre} → Asignada a closer`, notas || '');
 
-        // Crear una tarea recordatorio para que aparezca en la sección de recordatorios
-        await db.prepare(`
-            INSERT INTO tareas (titulo, descripcion, vendedor, cliente, estado, prioridad, fechaLimite)
-            VALUES ('Recordatorio de llamada', ?, ?, ?, 'pendiente', 'alta', ?)
-        `).run(`Reunión agendada para ${fechaDisplayMX}. ${notas ? 'Notas: ' + notas : ''}`, prospectorId, cid, fechaReunionISO);
-
         const clienteActualizado = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(cid);
         const actividadRow = await db.prepare('SELECT * FROM actividades WHERE cliente = ? ORDER BY id DESC LIMIT 1').get(cid);
 
