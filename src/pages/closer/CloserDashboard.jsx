@@ -154,8 +154,14 @@ const CloserDashboard = () => {
 
     const cargarRecordatorios = async (silent = false) => {
         try {
-            const response = await axios.get(`${API_URL}/api/prospector/prospectos`, { headers: getAuthHeaders() });
-            const conRecordatorio = (response.data || []).filter(p => !!p.proximaLlamada);
+            // Obtener prospectos asignados al closer
+            const prospectos = await axios.get(`${API_URL}/api/closer/prospectos`, { headers: getAuthHeaders() });
+            // Obtener clientes ganados (que el closer está siguiendo)
+            const clientes = await axios.get(`${API_URL}/api/closer/clientes-ganados`, { headers: getAuthHeaders() });
+            
+            // Combinar ambos y filtrar los que tienen proximaLlamada
+            const todos = [...(prospectos.data || []), ...(clientes.data || [])];
+            const conRecordatorio = todos.filter(p => !!p.proximaLlamada);
             conRecordatorio.sort((a, b) => new Date(a.proximaLlamada) - new Date(b.proximaLlamada));
             setRecordatorios(conRecordatorio);
         } catch (error) {
