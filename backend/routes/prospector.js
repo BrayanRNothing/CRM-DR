@@ -821,9 +821,9 @@ router.post('/agendar-reunion', [auth, esProspector], async (req, res) => {
         hist.push({ etapa: 'reunion_agendada', fecha: now, vendedor: prospectorId });
 
         await db.prepare(`
-            UPDATE clientes SET etapaEmbudo = ?, closerAsignado = ?, fechaTransferencia = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?
+            UPDATE clientes SET etapaEmbudo = ?, closerAsignado = ?, fechaTransferencia = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, proximaLlamada = ?
             WHERE id = ?
-        `).run('reunion_agendada', closerIdNum, now, now, now, JSON.stringify(hist), cid);
+        `).run('reunion_agendada', closerIdNum, now, now, now, JSON.stringify(hist), fechaReunion, cid);
 
         const fechaReunionISO = new Date(fechaReunion).toISOString();
         const finReunionISO = new Date(new Date(fechaReunion).getTime() + 45 * 60000).toISOString();
