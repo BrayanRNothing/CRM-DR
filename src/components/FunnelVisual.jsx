@@ -6,11 +6,22 @@ const FunnelVisual = ({ stages }) => {
     const getGradientClasses = (color) => {
         const colorMap = {
             'bg-gray-500': 'from-gray-400 to-gray-600',
+            'bg-slate-600': 'from-slate-500 to-slate-700',
+            'bg-slate-500': 'from-slate-400 to-slate-600',
+            'bg-slate-400': 'from-slate-300 to-slate-500',
+            'bg-blue-500': 'from-blue-400 to-blue-600',
+            'bg-indigo-500': 'from-indigo-400 to-indigo-600',
             'bg-purple-500': 'from-purple-400 to-purple-600',
             'bg-green-500': 'from-green-400 to-green-600',
+            'bg-emerald-500': 'from-emerald-400 to-emerald-600',
+            'bg-teal-500': 'from-teal-400 to-teal-600',
+            'bg-(--theme-600)': 'from-(--theme-500) to-(--theme-700)',
             'bg-(--theme-500)': 'from-(--theme-400) to-(--theme-600)',
+            'bg-(--theme-400)': 'from-(--theme-300) to-(--theme-500)',
+            'bg-(--theme-300)': 'from-(--theme-200) to-(--theme-400)',
             'bg-cyan-500': 'from-cyan-400 to-cyan-600',
             'bg-orange-500': 'from-orange-400 to-orange-600',
+            'bg-amber-400': 'from-amber-300 to-amber-500',
             'bg-red-500': 'from-red-400 to-red-500',
             'bg-yellow-500': 'from-yellow-400 to-yellow-600'
         };

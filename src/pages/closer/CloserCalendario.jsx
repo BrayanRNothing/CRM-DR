@@ -378,19 +378,19 @@ const CloserCalendario = () => {
                     headers: { 'x-auth-token': token }
                 });
 
-                if (res.status === 400 || res.status === 404) {
+                const data = await res.json();
+
+                if (!res.ok || data.notLinked) {
                     // El backend confirma que no hay tokens guardados para este usuario
                     setGoogleLinked(false);
                     localStorage.removeItem('google_linked');
                     return;
                 }
 
-                if (!res.ok) throw new Error('Error fetching events');
-
                 // El backend confirmó tokens válidos — marcar como vinculado
                 setGoogleLinked(true);
                 localStorage.setItem('google_linked', 'true');
-                const googleEvents = await res.json();
+                const googleEvents = data; // Original behavior expects the array, but now it's data
 
                 // Traer lista de eventos completados
                 let eventosCompletados = [];

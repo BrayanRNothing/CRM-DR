@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, UserPlus, Calendar, TrendingUp, RefreshCw, Clock, CheckCircle2, Target, MessageSquare, ExternalLink, BarChart3, Users, Award, DollarSign, AlertTriangle, TrendingDown, Zap, Bell, ArrowRightLeft, PercentCircle } from 'lucide-react';
+import { Phone, UserPlus, Calendar, TrendingUp, RefreshCw, Clock, CheckCircle2, Target, MessageSquare, ExternalLink, Users, Award, DollarSign, AlertTriangle, TrendingDown, Zap, Bell, ArrowRightLeft, PercentCircle, BarChart3, Search, FileText } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import FunnelVisual from '../../components/FunnelVisual';
@@ -43,6 +43,7 @@ const VendedorDashboard = () => {
     const [reuniones, setReuniones] = useState([]);
     const [loadingReuniones, setLoadingReuniones] = useState(true);
     const [periodo, setPeriodo] = useState('dia');
+    const [healthTab, setHealthTab] = useState('resumen');
     const navigate = useNavigate();
 
     const sanitizeCloserData = (rawData) => {
@@ -155,7 +156,7 @@ const VendedorDashboard = () => {
                     const leadsCloser = (resCloser.value.data || []).filter(p => !!p.proximaLlamada && (p.nombres || p.nombre));
                     todosLosPendientes = [...todosLosPendientes, ...leadsCloser];
                 }
-                
+
                 if (resProspector.status === 'fulfilled') {
                     // Filtrar duplicados por ID (Prospectos)
                     const leadsP = (resProspector.value.data || []).filter(p => !!p.proximaLlamada && (p.nombres || p.nombre));
@@ -165,7 +166,7 @@ const VendedorDashboard = () => {
                         }
                     });
                 }
-                
+
                 if (resClientes.status === 'fulfilled') {
                     const clientesConRec = (resClientes.value.data || []).filter(c => !!c.proximaLlamada && (c.nombres || c.nombre));
                     // Marcamos que son clientes ganados para identificarlos
@@ -180,7 +181,7 @@ const VendedorDashboard = () => {
                 if (resTareas.status === 'fulfilled') {
                     // Solo consideramos tareas huérfanas si aún tienen el nombre del cliente (clienteNombre válido). Si clienteNombre es null, el cliente fue borrado
                     const tareasRecordatorios = (resTareas.value.data || []).filter(t => t.titulo === 'Recordatorio de llamada' && t.estado === 'pendiente' && t.clienteNombre);
-                    
+
                     tareasRecordatorios.forEach(t => {
                         // Verificamos si ese cliente ya tiene un recordatorio cargado en la lista (para no duplicar)
                         const yaExiste = todosLosPendientes.find(existing => (existing.id || existing._id) === t.cliente);
@@ -191,7 +192,7 @@ const VendedorDashboard = () => {
                                 nombres: t.clienteNombre,
                                 apellidoPaterno: t.clienteApellido || '',
                                 proximaLlamada: t.fechaLimite,
-                                esTarea: true 
+                                esTarea: true
                             });
                         }
                     });
@@ -296,7 +297,7 @@ const VendedorDashboard = () => {
                             {
                                 etapa: 'Contacto',
                                 cantidad: enContacto,
-                                color: 'bg-blue-500',
+                                color: 'bg-slate-500',
                                 contadorHoy: prospectorData.periodos?.[periodo]?.llamadas ?? 0,
                                 labelContador: `esfuerzos ${periodoSuffix}`,
                                 cantidadExito: negociacion,
@@ -309,7 +310,7 @@ const VendedorDashboard = () => {
                             {
                                 etapa: 'Negociación',
                                 cantidad: negociacion,
-                                color: 'bg-amber-500',
+                                color: 'bg-slate-600',
                                 contadorHoy: (prospectorData.periodos?.[periodo]?.reuniones ?? 0) + (closerData.metricas.reuniones.realizadasHoy || 0),
                                 labelContador: `citas ${periodoSuffix}`,
                                 cantidadExito: ganadas,
@@ -335,34 +336,63 @@ const VendedorDashboard = () => {
             </div>
 
             <div className="flex-1 flex gap-4 min-h-0">
-                
-                <div className="flex-1 flex flex-col gap-4 min-w-0">
-                    <div className="flex items-center justify-between shrink-0">
-                        <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                            <BarChart3 className="w-4 h-4 text-(--theme-600)" />
-                            Métricas de Salud
-                        </h2>
+
+                <div className="flex-1 flex flex-col min-w-0">
+                    <div className="shrink-0 relative z-20">
+                        <div className="flex items-end gap-2.5 overflow-x-auto pb-px -mb-px" style={{ scrollbarWidth: 'thin' }}>
+                            {[
+                                { key: 'resumen', label: 'Resumen', Icon: TrendingUp },
+                                { key: 'kpis', label: 'Métricas', Icon: BarChart3 },
+                                { key: 'tareas', label: 'Tareas', Icon: Bell },
+                                { key: 'buscar', label: 'Buscar', Icon: Search },
+                                { key: 'documentos', label: 'Documentos', Icon: FileText },
+                                { key: 'mensajes', label: 'Mensajes', Icon: MessageSquare }
+                            ].map(tab => (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => setHealthTab(tab.key)}
+                                    className={`px-3.5 py-2 text-xs font-extrabold transition-all border whitespace-nowrap flex items-center gap-1.5 ${healthTab === tab.key
+                                        ? 'bg-white text-(--theme-700) border-gray-200 border-b-white rounded-t-xl rounded-b-none -mb-px relative z-20'
+                                        : 'bg-white text-gray-500 border-gray-200 rounded-xl shadow-sm mb-1 hover:-translate-y-0.5 hover:bg-gray-50 hover:text-gray-700'
+                                        }`}
+                                >
+                                    <tab.Icon className="w-3.5 h-3.5" />
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-3">
-                        {[
-                            { Icon: UserPlus, value: sinContactar, label: 'Nuevos sin contactar', color: 'text-rose-500' },
-                            { Icon: Target, value: negociacion, label: 'En Negociación', color: 'text-amber-500' },
-                            { Icon: TrendingUp, value: `${tasaGlobal}%`, label: 'Conversión Global', color: 'text-cyan-500' },
-                            { Icon: DollarSign, value: `$${(closerData.metricas.ventas.montoMes || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`, label: 'Vendido este mes', color: 'text-green-500' }
-                        ].map(({ Icon, value, label, color }, i) => (
-                            <div key={i} className="bg-white border border-gray-200 rounded-xl px-4 py-4 shadow-sm flex flex-col items-center justify-center text-center">
-                                <Icon className={`w-6 h-6 ${color} mx-auto mb-2`} />
-                                <div className="font-black text-gray-900 text-2xl tracking-tight leading-none">{value}</div>
-                                <div className="text-[11px] text-gray-500 uppercase font-bold tracking-widest mt-1.5">{label}</div>
-                            </div>
-                        ))}
+                    <div className={`flex-1 min-h-0 relative z-10 bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col ${healthTab === 'resumen' ? 'rounded-tl-none' : ''}`}>
+                        <div className="flex-1 min-h-0 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                             <div className="flex flex-col items-center justify-center h-full py-12 text-center">
+                                 <div className="bg-gray-50 p-6 rounded-full mb-4">
+                                     {healthTab === 'resumen' && <TrendingUp className="w-12 h-12 text-gray-300" />}
+                                     {healthTab === 'kpis' && <BarChart3 className="w-12 h-12 text-gray-300" />}
+                                     {healthTab === 'tareas' && <Bell className="w-12 h-12 text-gray-300" />}
+                                     {healthTab === 'buscar' && <Search className="w-12 h-12 text-gray-300" />}
+                                     {healthTab === 'documentos' && <FileText className="w-12 h-12 text-gray-300" />}
+                                     {healthTab === 'mensajes' && <MessageSquare className="w-12 h-12 text-gray-300" />}
+                                 </div>
+                                 <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tighter">
+                                     {healthTab === 'resumen' && 'Resumen Ejecutivo'}
+                                     {healthTab === 'kpis' && 'Métricas de Rendimiento'}
+                                     {healthTab === 'tareas' && 'Gestión de Tareas'}
+                                     {healthTab === 'buscar' && 'Buscador Avanzado'}
+                                     {healthTab === 'documentos' && 'Repositorio de Documentos'}
+                                     {healthTab === 'mensajes' && 'Centro de Mensajería'}
+                                 </h2>
+                                 <p className="text-gray-400 font-medium mt-2 max-w-sm">
+                                     Contenido en desarrollo. Próximamente visualizarás aquí toda la información relevante de esta sección.
+                                 </p>
+                             </div>
+                        </div>
                     </div>
                 </div>
 
                 <div className="w-80 shrink-0 flex flex-col gap-3 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-                    
-                    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col flex-1 min-h-0">
+
+                    <div className="bg-(--theme-50)/40 border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col flex-1 min-h-0">
                         <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 shrink-0 uppercase tracking-widest">
                             <Phone className="w-4 h-4 text-rose-500" /> Recordatorios Pendientes
                         </h3>
@@ -373,9 +403,9 @@ const VendedorDashboard = () => {
                                 recordatorios.map((p, idx) => {
                                     const esVencido = new Date(p.proximaLlamada) < new Date();
                                     return (
-                                        <div 
-                                            key={p.id || p._id || `rec-${idx}`} 
-                                            className={`${esVencido ? 'bg-rose-50/60 border-rose-100' : 'bg-(--theme-50)/40 border-(--theme-100)'} border rounded-lg p-2.5 transition-all hover:translate-x-1 cursor-pointer`}
+                                        <div
+                                            key={p.id || p._id || `rec-${idx}`}
+                                            className={`relative overflow-hidden group ${esVencido ? 'bg-linear-to-br from-rose-500 to-rose-600' : 'bg-linear-to-br from-(--theme-500) to-(--theme-600)'} rounded-lg p-2 shadow-sm hover:shadow-md transition-all cursor-pointer`}
                                             onClick={() => {
                                                 if (p.esCliente) {
                                                     navigate('/vendedor/clientes', { state: { selectedId: p.id || p._id } });
@@ -384,21 +414,32 @@ const VendedorDashboard = () => {
                                                 }
                                             }}
                                         >
-                                            <div className="flex items-center justify-between gap-2 overflow-hidden">
-                                                <div className="text-xs font-extrabold text-gray-900 truncate">
-                                                    {p.nombre || `${p.nombres || ''} ${p.apellidoPaterno || ''}`.trim()}
+                                            {/* Fondo decorativo */}
+                                            <div className="absolute right-0 top-0 h-full w-1/4 bg-white/10 skew-x-12 transform origin-top-right transition-transform duration-500"></div>
+
+                                            <div className="relative z-10">
+                                                <div className="flex items-center justify-between gap-1 overflow-hidden">
+                                                    <div className="text-[11px] font-bold text-white truncate max-w-[70%]">
+                                                        {p.nombre || `${p.nombres || ''} ${p.apellidoPaterno || ''}`.trim()}
+                                                    </div>
+                                                    {p.esCliente && (
+                                                        <span className="text-[7px] font-black bg-white/20 text-white px-1 py-0.5 rounded backdrop-blur-sm uppercase tracking-tighter border border-white/10">Cliente</span>
+                                                    )}
                                                 </div>
-                                                {p.esCliente && (
-                                                    <span className="text-[8px] font-black bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded shrink-0 uppercase tracking-tighter">Cliente</span>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center justify-between mt-1.5">
-                                                <div className={`text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 ${esVencido ? 'bg-rose-100 text-rose-700' : 'bg-(--theme-100) text-(--theme-700)'}`}>
-                                                    <Clock className="w-2.5 h-2.5" />
-                                                    {new Date(p.proximaLlamada).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                                    {esVencido && <span className="ml-1">⚠ VENCIDO</span>}
+
+                                                <div className="flex items-center justify-between mt-1 gap-1">
+                                                    <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 bg-white/20 text-white backdrop-blur-sm border border-white/10 shrink-0`}>
+                                                        <Clock className="w-2 h-2" />
+                                                        {new Date(p.proximaLlamada).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                        {esVencido && <span className="ml-0.5 font-black opacity-80">⚠</span>}
+                                                    </div>
+                                                    {p.telefono && (
+                                                        <div className="flex items-center gap-0.5 text-[9px] text-white/80 font-medium truncate">
+                                                            <Phone className="w-2 h-2" />
+                                                            {p.telefono}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                {p.telefono && <div className="text-[10px] text-gray-400 font-bold">{p.telefono}</div>}
                                             </div>
                                         </div>
                                     );
@@ -407,9 +448,9 @@ const VendedorDashboard = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col flex-1 min-h-0">
+                    <div className="bg-(--theme-50)/40 border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col flex-1 min-h-0">
                         <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 shrink-0 uppercase tracking-widest">
-                            <Clock className="w-4 h-4 text-amber-500" /> Próximas Citas
+                            <Calendar className="w-4 h-4 text-(--theme-500)" /> Próximas Citas
                         </h3>
                         <div className="flex-1 overflow-y-auto space-y-2" style={{ scrollbarWidth: 'thin' }}>
                             {loadingReuniones ? (
@@ -417,17 +458,40 @@ const VendedorDashboard = () => {
                             ) : reuniones.length === 0 ? (
                                 <p className="text-xs text-gray-400 text-center py-3">Libre de reuniones.</p>
                             ) : (
-                                reuniones.map(r => (
-                                    <div key={r.id || r._id} className="bg-amber-50/50 border border-amber-100 rounded-lg p-2">
-                                        <div className="text-xs font-bold text-gray-900 truncate">{r.cliente?.nombres} {r.cliente?.apellidoPaterno}</div>
-                                        <div className="flex justify-between items-center mt-1">
-                                            <div className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
-                                                {new Date(r.fecha).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                reuniones.map(r => {
+                                    const rFecha = new Date(r.fecha);
+                                    const esHoy = rFecha.toDateString() === new Date().toDateString();
+
+                                    return (
+                                        <div key={r.id || r._id} className={`relative overflow-hidden group ${esHoy ? 'bg-linear-to-br from-emerald-500 to-emerald-600' : 'bg-linear-to-br from-(--theme-500) to-(--theme-600)'} rounded-lg p-2 shadow-sm hover:shadow-md transition-all cursor-pointer`}>
+                                            {/* Fondo decorativo */}
+                                            <div className="absolute right-0 top-0 h-full w-1/4 bg-white/10 skew-x-12 transform origin-top-right transition-transform duration-500"></div>
+
+                                            <div className="relative z-10">
+                                                <div className="flex items-center justify-between gap-1 overflow-hidden">
+                                                    <div className="text-[11px] font-bold text-white truncate mb-1">
+                                                        {r.cliente?.nombres} {r.cliente?.apellidoPaterno}
+                                                    </div>
+                                                    {esHoy && (
+                                                        <span className="text-[7px] font-black bg-white/20 text-white px-1 py-0.5 rounded backdrop-blur-sm uppercase tracking-tighter border border-white/10 whitespace-nowrap">Hoy</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex justify-between items-center gap-1">
+                                                    <div className="text-[9px] font-bold text-white bg-white/20 backdrop-blur-sm border border-white/10 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                                                        <Clock className="w-2 h-2" />
+                                                        {rFecha.toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                    {r.cliente?.telefono && (
+                                                        <div className="text-[9px] text-white/80 font-medium flex items-center gap-0.5 truncate">
+                                                            <Phone className="w-2 h-2" />
+                                                            {r.cliente.telefono}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                            {r.cliente?.telefono && <div className="text-[10px] text-gray-400">📞 {r.cliente.telefono}</div>}
                                         </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
                     </div>

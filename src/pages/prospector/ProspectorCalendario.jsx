@@ -240,6 +240,9 @@ const ProspectorCalendario = () => {
                         console.warn("No se pudo obtener disponibilidad:", data.msg);
                     }
                     setBusySlots([]);
+                } else if (data.notLinked) {
+                    setCloserLinkedToGoogle(false);
+                    setBusySlots([]);
                 } else {
                     setCloserLinkedToGoogle(true);
 

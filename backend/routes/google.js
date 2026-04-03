@@ -5,11 +5,14 @@ const { google } = require('googleapis');
 const { db } = require('../config/database');
 const { auth } = require('../middleware/auth');
 
-const oAuth2Client = new OAuth2Client(
-    process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    'postmessage'
-);
+// Helper: Crea una instancia fresca de OAuth2Client para evitar colisiones entre usuarios
+function getOAuthClient() {
+    return new OAuth2Client(
+        process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        'postmessage'
+    );
+}
 
 // Validación de variables de entorno
 if (!process.env.GOOGLE_CLIENT_SECRET) {
@@ -62,7 +65,8 @@ router.post('/save-tokens', auth, async (req, res) => {
         }
 
         console.log('🔄 Intercambiando código por tokens...');
-        const { tokens } = await oAuth2Client.getToken(code);
+        const client = getOAuthClient();
+        const { tokens } = await client.getToken(code);
         console.log('✅ Tokens obtenidos exitosamente');
 
         const userId = parseInt(req.usuario.id);
@@ -109,14 +113,12 @@ router.get('/freebusy/:closerId', auth, async (req, res) => {
 
         if (!closer) return res.status(404).json({ msg: 'Closer no encontrado' });
         if (!closer.googleRefreshToken && !closer.googleAccessToken) {
-            return res.status(400).json({ msg: 'Closer no ha vinculado Google Calendar', notLinked: true });
+            // Devolvemos 200 con flag de no vinculado para evitar errores ruidosos en logs si es esperado
+            return res.status(200).json({ msg: 'Closer no ha vinculado Google Calendar', notLinked: true });
         }
 
-        // Configurar cliente con credenciales actuales
-        const client = new OAuth2Client(
-            process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID,
-            process.env.GOOGLE_CLIENT_SECRET
-        );
+        // Configurar cliente con credenciales actuales (Instancia fresca)
+        const client = getOAuthClient();
 
         client.setCredentials({
             refresh_token: closer.googleRefreshToken,
@@ -139,10 +141,10 @@ router.get('/freebusy/:closerId', auth, async (req, res) => {
             }
         });
 
-        const { timeMin, timeMax } = req.query;
-        if (!timeMin || !timeMax) return res.status(400).json({ msg: 'Faltan parámetros timeMin o timeMax' });
+        const now = new Date();
+        const timeMin = req.query.timeMin || new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const timeMax = req.query.timeMax || new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
-        const { google } = require('googleapis');
         const calendar = google.calendar({ version: 'v3', auth: client });
 
         const response = await calendar.freebusy.query({
@@ -361,15 +363,16 @@ router.patch('/mark-completed/:eventId', auth, async (req, res) => {
             return res.status(400).json({ msg: 'No hay token de Google Calendar disponible' });
         }
 
-        // Configurar cliente OAuth con tokens del usuario
-        oAuth2Client.setCredentials({
+        // Configurar cliente OAuth con tokens del usuario (Instancia fresca)
+        const client = getOAuthClient();
+        client.setCredentials({
             access_token: usuario.googleAccessToken,
             refresh_token: usuario.googleRefreshToken,
             expiry_date: usuario.googleTokenExpiry
         });
 
         // Obtener el evento actual
-        const calendar = google.calendar({ version: 'v3', auth: oAuth2Client });
+        const calendar = google.calendar({ version: 'v3', auth: client });
 
         let event;
         try {
