@@ -25,6 +25,25 @@ if (cidCheck) {
     console.error('❌ CRITICAL: Google Client ID is not defined in environment variables!');
 }
 
+const parseGoogleExpiryToMillis = (value) => {
+    if (value === null || value === undefined) return undefined;
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value.getTime();
+
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (/^\d+$/.test(trimmed)) {
+            const numeric = Number(trimmed);
+            if (Number.isFinite(numeric)) return numeric;
+        }
+        const parsed = Date.parse(trimmed);
+        if (!Number.isNaN(parsed)) return parsed;
+    }
+
+    return undefined;
+};
+
+
 // Helper: detecta si el error de Google es por token revocado/expirado (invalid_grant)
 function isGoogleAuthError(error) {
     const code = error?.code || error?.status || error?.response?.status;
@@ -126,7 +145,7 @@ router.get('/freebusy/:closerId', auth, async (req, res) => {
         client.setCredentials({
             refresh_token: closer.googleRefreshToken,
             access_token: closer.googleAccessToken,
-            expiry_date: closer.googleTokenExpiry
+            expiry_date: parseGoogleExpiryToMillis(closer.googleTokenExpiry)
         });
 
         // Verificar si necesita refresh (auth-library handlea auto-refresh si hay refresh_token)
@@ -137,7 +156,7 @@ router.get('/freebusy/:closerId', auth, async (req, res) => {
                 let params = [];
                 if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
                 if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
+                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(tokens.expiry_date); }
 
                 if (updateStr.length > 0) {
                     params.push(closerId);
@@ -200,7 +219,7 @@ router.get('/events', auth, async (req, res) => {
         client.setCredentials({
             refresh_token: user.googleRefreshToken,
             access_token: user.googleAccessToken,
-            expiry_date: user.googleTokenExpiry
+            expiry_date: parseGoogleExpiryToMillis(user.googleTokenExpiry)
         });
 
         client.on('tokens', async (tokens) => {
@@ -209,7 +228,7 @@ router.get('/events', auth, async (req, res) => {
                 let params = [];
                 if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
                 if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
+                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(tokens.expiry_date); }
 
                 if (updateStr.length > 0) {
                     params.push(userId);
@@ -289,7 +308,7 @@ router.post('/create-event', auth, async (req, res) => {
         client.setCredentials({
             refresh_token: user.googleRefreshToken,
             access_token: user.googleAccessToken,
-            expiry_date: user.googleTokenExpiry
+            expiry_date: parseGoogleExpiryToMillis(user.googleTokenExpiry)
         });
 
         client.on('tokens', async (tokens) => {
@@ -298,7 +317,7 @@ router.post('/create-event', auth, async (req, res) => {
                 const params = [];
                 if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
                 if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
+                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(tokens.expiry_date); }
                 if (updateStr.length > 0) {
                     params.push(userId);
                     await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
@@ -399,7 +418,7 @@ router.patch('/mark-completed/:eventId', auth, async (req, res) => {
         client.setCredentials({
             access_token: usuario.googleAccessToken,
             refresh_token: usuario.googleRefreshToken,
-            expiry_date: usuario.googleTokenExpiry
+            expiry_date: parseGoogleExpiryToMillis(usuario.googleTokenExpiry)
         });
 
         // Obtener el evento actual
@@ -511,7 +530,7 @@ router.get('/account-info', auth, async (req, res) => {
         client.setCredentials({
             refresh_token: user.googleRefreshToken,
             access_token: user.googleAccessToken,
-            expiry_date: user.googleTokenExpiry
+            expiry_date: parseGoogleExpiryToMillis(user.googleTokenExpiry)
         });
 
         // Configurar listener para actualizar tokens si se refrescan
@@ -521,7 +540,7 @@ router.get('/account-info', auth, async (req, res) => {
                 const params = [];
                 if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
                 if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
+                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(tokens.expiry_date); }
                 if (updateStr.length > 0) {
                     params.push(userId);
                     await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
@@ -635,7 +654,7 @@ router.delete('/event-by-activity/:activityId', auth, async (req, res) => {
         client.setCredentials({
             access_token: usuario.googleAccessToken,
             refresh_token: usuario.googleRefreshToken,
-            expiry_date: usuario.googleTokenExpiry
+            expiry_date: parseGoogleExpiryToMillis(usuario.googleTokenExpiry)
         });
 
         // Configurar listener para actualizar tokens si se refrescan
@@ -645,7 +664,7 @@ router.delete('/event-by-activity/:activityId', auth, async (req, res) => {
                 const params = [];
                 if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
                 if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
+                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(tokens.expiry_date); }
                 if (updateStr.length > 0) {
                     params.push(userId);
                     await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
@@ -659,11 +678,18 @@ router.delete('/event-by-activity/:activityId', auth, async (req, res) => {
         const event = await findEventByActivity(calendar, activity);
 
         if (event) {
-            await calendar.events.delete({
-                calendarId: 'primary',
-                eventId: event.id
-            });
-            return res.json({ msg: 'Evento eliminado de Google Calendar', eventId: event.id });
+            try {
+                await calendar.events.delete({
+                    calendarId: 'primary',
+                    eventId: event.id
+                });
+                return res.json({ msg: 'Evento eliminado de Google Calendar', eventId: event.id });
+            } catch (googleErr) {
+                if (googleErr.response?.status === 404 || googleErr.response?.status === 410) {
+                    return res.json({ msg: 'El evento ya estaba eliminado en Google Calendar', eventId: event.id });
+                }
+                throw googleErr;
+            }
         }
 
         res.json({ msg: 'No se encontró evento coincidente en Google Calendar' });
@@ -701,7 +727,7 @@ router.patch('/event-by-activity/:activityId', auth, async (req, res) => {
         client.setCredentials({
             access_token: usuario.googleAccessToken,
             refresh_token: usuario.googleRefreshToken,
-            expiry_date: usuario.googleTokenExpiry
+            expiry_date: parseGoogleExpiryToMillis(usuario.googleTokenExpiry)
         });
 
         // Configurar listener para actualizar tokens si se refrescan
@@ -711,7 +737,7 @@ router.patch('/event-by-activity/:activityId', auth, async (req, res) => {
                 const params = [];
                 if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
                 if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
+                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(tokens.expiry_date); }
                 if (updateStr.length > 0) {
                     params.push(userId);
                     await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
@@ -731,12 +757,19 @@ router.patch('/event-by-activity/:activityId', auth, async (req, res) => {
             if (startDateTime) resource.start = { dateTime: startDateTime, timeZone: 'America/Mexico_City' };
             if (endDateTime) resource.end = { dateTime: endDateTime, timeZone: 'America/Mexico_City' };
 
-            const updated = await calendar.events.patch({
-                calendarId: 'primary',
-                eventId: event.id,
-                resource
-            });
-            return res.json({ msg: 'Evento actualizado en Google Calendar', event: updated.data });
+            try {
+                const updated = await calendar.events.patch({
+                    calendarId: 'primary',
+                    eventId: event.id,
+                    resource
+                });
+                return res.json({ msg: 'Evento actualizado en Google Calendar', event: updated.data });
+            } catch (googleErr) {
+                if (googleErr.response?.status === 404 || googleErr.response?.status === 410) {
+                    return res.json({ msg: 'El evento ya estaba eliminado en Google Calendar. No se efectuaron cambios.' });
+                }
+                throw googleErr;
+            }
         }
 
         res.json({ msg: 'No se encontró evento coincidente en Google Calendar' });

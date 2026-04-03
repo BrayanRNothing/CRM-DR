@@ -210,10 +210,9 @@ router.get('/calendario', [auth, esCloser], async (req, res) => {
                         let params = [];
                         if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
                         if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-                        const expiryIso = parseGoogleExpiryToIso(tokens.expiry_date);
-                        if (expiryIso) {
+                        if (tokens.expiry_date) {
                             updateStr.push('googleTokenExpiry = ?');
-                            params.push(expiryIso);
+                            params.push(tokens.expiry_date);
                         }
 
                         if (updateStr.length > 0) {
