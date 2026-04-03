@@ -88,6 +88,7 @@ export default function VendedorAjustes() {
         prompt: 'consent',
         include_granted_scopes: false,
         onSuccess: async (codeResponse) => {
+            console.log('📦 Google Code Response:', codeResponse);
             const tid = toast.loading('Vinculando cuenta de Google...');
             try {
                 const res = await fetch(`${API_URL}/api/google/save-tokens`, {
@@ -95,16 +96,22 @@ export default function VendedorAjustes() {
                     headers: { 'Content-Type': 'application/json', 'x-auth-token': getToken() },
                     body: JSON.stringify({ code: codeResponse.code })
                 });
+
+                const data = await res.json();
+
                 if (res.ok) {
                     setGoogleConnected(true);
                     localStorage.setItem('google_linked', 'true');
                     toast.success('¡Google vinculado correctamente!', { id: tid });
                     fetchGoogleInfo();
                 } else {
-                    toast.error('Ocurrió un error al guardar credenciales.', { id: tid });
+                    console.error('❌ Error vinculando Google:', data);
+                    const errorMsg = data.error || data.msg || 'Error desconocido';
+                    toast.error(`Error: ${errorMsg}`, { id: tid, duration: 6000 });
                 }
             } catch (err) {
-                toast.error('Error de red', { id: tid });
+                console.error('❌ Error de red vinculando Google:', err);
+                toast.error('Error de red al conectar con el servidor', { id: tid });
             }
         },
         onError: () => toast.error('Error al conectar Google'),
