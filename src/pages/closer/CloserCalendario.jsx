@@ -109,7 +109,7 @@ const CloserCalendario = () => {
 
     // Detectar si llegamos desde Seguimiento con un prospecto pre-seleccionado
     useEffect(() => {
-        const prospecto = location.state?.prospecto;
+        const prospecto = location.state?.prospecto || location.state?.Cliente || location.state?.cliente;
         if (prospecto) {
             const enSemana = new Date();
             enSemana.setDate(enSemana.getDate() + 7);
@@ -343,7 +343,7 @@ const CloserCalendario = () => {
                         body: JSON.stringify({
                             clienteId: modalRegistrar.clienteId,
                             tipo: 'cita',
-                            resultado: 'exitoso',
+                            resultado: 'pendiente',
                             descripcion: `Nueva reunión agendada — ${clienteNombre}`,
                             notas: nuevaReunionForm.notas || '',
                             fechaCita: startDT.toISOString()

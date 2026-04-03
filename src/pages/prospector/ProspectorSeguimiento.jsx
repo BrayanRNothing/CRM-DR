@@ -120,6 +120,26 @@ const ETAPAS_EMBUDO = {
 
 const getEtapaLabel = (etapa) => ETAPAS_EMBUDO[etapa]?.label || etapa;
 const getEtapaColor = (etapa) => ETAPAS_EMBUDO[etapa]?.color || 'bg-gray-100 text-gray-600';
+const normalizeProspectoRecordatorio = (p) => ({
+    ...p,
+    proximaLlamada: p?.proximaLlamada || p?.proximallamada || p?.proximoRecordatorio || p?.proximorecordatorio || null
+});
+
+const buildReminderByClienteMap = (tareas = []) => {
+    const map = new Map();
+    for (const t of tareas) {
+        if (t?.estado !== 'pendiente') continue;
+        if (t?.titulo !== 'Recordatorio de llamada') continue;
+        if (!t?.cliente || !t?.fechaLimite) continue;
+
+        const clienteId = String(t.cliente);
+        const actual = map.get(clienteId);
+        if (!actual || new Date(t.fechaLimite) < new Date(actual)) {
+            map.set(clienteId, t.fechaLimite);
+        }
+    }
+    return map;
+};
 
 const ProspectorSeguimiento = () => {
     const navigate = useNavigate();
@@ -208,9 +228,10 @@ const ProspectorSeguimiento = () => {
             setModalEditarAbierto(false);
             // Recargar datos y actualizar el panel de detalle si está abierto
             const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
-            setProspectos(res.data);
+            const normalizados = (res.data || []).map(normalizeProspectoRecordatorio);
+            setProspectos(normalizados);
             if (prospectoSeleccionado && (prospectoSeleccionado.id === prospectoAEditar.id || prospectoSeleccionado._id === prospectoAEditar.id)) {
-                const updated = res.data.find(p => p.id === prospectoAEditar.id || p._id === prospectoAEditar.id);
+                const updated = normalizados.find(p => p.id === prospectoAEditar.id || p._id === prospectoAEditar.id);
                 if (updated) setProspectoSeleccionado(updated);
             }
         } catch (error) {
@@ -232,9 +253,23 @@ const ProspectorSeguimiento = () => {
     const cargarDatos = async () => {
         setLoading(true);
         try {
-            const resProspectos = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
-            setProspectos(resProspectos.data);
-            return resProspectos.data; // Retornar datos para el init
+            const [resProspectos, resTareas] = await Promise.all([
+                axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() }),
+                axios.get(`${API_URL}/api/tareas`, { headers: getAuthHeaders() })
+            ]);
+
+            const remindersByCliente = buildReminderByClienteMap(resTareas.data || []);
+            const normalizados = (resProspectos.data || []).map((raw) => {
+                const p = normalizeProspectoRecordatorio(raw);
+                if (p.proximaLlamada) return p;
+
+                const clienteId = String(p.id || p._id || '');
+                const fechaTarea = remindersByCliente.get(clienteId) || null;
+                return { ...p, proximaLlamada: fechaTarea };
+            });
+
+            setProspectos(normalizados);
+            return normalizados; // Retornar datos para el init
         } catch (error) {
             console.error('Error al cargar:', error);
             setProspectos([]);
@@ -272,7 +307,17 @@ const ProspectorSeguimiento = () => {
             clearInterval(interval);
             socket.off('prospectos_actualizados', handleSocketUpdate);
         };
-    }, []);
+    }, [searchParams]);
+
+    // Escuchar cambios en location.state para navegación interna
+    useEffect(() => {
+        if (location.state?.selectedId && prospectos.length > 0) {
+            const found = prospectos.find(p => (p.id || p._id) == location.state.selectedId);
+            if (found) {
+                handleSeleccionarProspecto(found);
+            }
+        }
+    }, [location.state?.selectedId, prospectos]);
 
     // Orden de prioridad de etapas (más avanzadas primero, perdido al fondo)
     const ORDEN_ETAPA = {
@@ -1339,8 +1384,13 @@ const ProspectorSeguimiento = () => {
                                                     return (
                                                         <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-(--theme-600)'}`}>
                                                             <div className={`w-2 h-2 rounded-full animate-pulse ${esVencido ? 'bg-red-500' : 'bg-(--theme-500)'}`}></div>
-                                                            <span className="text-xs font-semibold">
-                                                                {new Date(p.proximaLlamada).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                                                            <span className="text-xs font-semibold leading-tight">
+                                                                {new Date(p.proximaLlamada).toLocaleString('es-MX', {
+                                                                    day: 'numeric',
+                                                                    month: 'short',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                })}
                                                                 {esVencido && ' ⚠'}
                                                             </span>
                                                             <Phone className="w-3 h-3" />

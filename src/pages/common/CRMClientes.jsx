@@ -10,6 +10,32 @@ import ClienteDetalle from '../../components/ClienteDetalle';
 
 import API_URL from '../../config/api';
 
+const normalizeClienteRecordatorio = (cliente) => ({
+    ...cliente,
+    proximaLlamada:
+        cliente?.proximaLlamada ||
+        cliente?.proximallamada ||
+        cliente?.proximoRecordatorio ||
+        cliente?.proximorecordatorio ||
+        null
+});
+
+const buildReminderByClienteMap = (tareas = []) => {
+    const map = new Map();
+    for (const t of tareas) {
+        if (t?.estado !== 'pendiente') continue;
+        if (t?.titulo !== 'Recordatorio de llamada') continue;
+        if (!t?.cliente || !t?.fechaLimite) continue;
+
+        const clienteId = String(t.cliente);
+        const actual = map.get(clienteId);
+        if (!actual || new Date(t.fechaLimite) < new Date(actual)) {
+            map.set(clienteId, t.fechaLimite);
+        }
+    }
+    return map;
+};
+
 const CRMClientes = () => {
     const location = useLocation();
     const esMenuSeguimiento = location.pathname.endsWith('/clientes/seguimiento');
@@ -65,11 +91,21 @@ const CRMClientes = () => {
         setLoading(true);
         try {
             const rol = getRolePath();
-            const res = await axios.get(
-                `${API_URL}/api/${rol}/clientes-ganados`,
-                { headers: getAuthHeaders() }
-            );
-            const data = res.data || [];
+            const [resClientes, resTareas] = await Promise.all([
+                axios.get(`${API_URL}/api/${rol}/clientes-ganados`, { headers: getAuthHeaders() }),
+                axios.get(`${API_URL}/api/tareas`, { headers: getAuthHeaders() })
+            ]);
+
+            const remindersByCliente = buildReminderByClienteMap(resTareas.data || []);
+            const data = (resClientes.data || []).map((raw) => {
+                const cliente = normalizeClienteRecordatorio(raw);
+                if (cliente.proximaLlamada) return cliente;
+
+                const clienteId = String(cliente.id || cliente._id || '');
+                const fechaTarea = remindersByCliente.get(clienteId) || null;
+                return { ...cliente, proximaLlamada: fechaTarea };
+            });
+
             setClientes(data);
             return data;
         } catch (error) {
@@ -585,8 +621,13 @@ const CRMClientes = () => {
                                                     return (
                                                         <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-(--theme-600)'}`}>
                                                             <div className={`w-2 h-2 rounded-full animate-pulse ${esVencido ? 'bg-red-500' : 'bg-(--theme-500)'}`}></div>
-                                                            <span className="text-xs font-semibold">
-                                                                {new Date(cliente.proximaLlamada).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                                                            <span className="text-xs font-semibold leading-tight">
+                                                                {new Date(cliente.proximaLlamada).toLocaleString('es-MX', {
+                                                                    day: 'numeric',
+                                                                    month: 'short',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                })}
                                                                 {esVencido && ' ⚠'}
                                                             </span>
                                                             <Phone className="w-3 h-3" />

@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import socket from '../config/socket';
 import {
     Phone, MessageSquare, Mail, Calendar, CheckCircle2,
-    XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown
+    XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown, VideoIcon
 } from 'lucide-react';
 
-import { getToken } from '../utils/authUtils';
+import { getToken, getUser } from '../utils/authUtils';
 import API_URL from '../config/api';
 import TimeWheelPicker from './TimeWheelPicker';
 import HistorialInteracciones from './HistorialInteracciones';
@@ -30,9 +31,32 @@ const getAuthHeaders = () => ({
     'x-auth-token': getToken() || ''
 });
 
+const getCalendarRolePath = () => {
+    const user = getUser();
+    const role = String(user?.rol || '').toLowerCase();
+    if (role === 'vendedor') return 'vendedor';
+    if (role === 'closer') return 'closer';
+    return 'prospector';
+};
+
 const formatHora = (date) => {
     const d = new Date(date);
     return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+};
+
+const toLocalDateTimeInput = (value = new Date()) => {
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const toUtcIsoFromLocalInput = (localValue) => {
+    if (!localValue) return null;
+    const d = new Date(localValue);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString();
 };
 
 export default function ProspectoDetalle({
@@ -45,6 +69,7 @@ export default function ProspectoDetalle({
     setModalDescartarAbierto
 }) {
     const navigate = useNavigate();
+    const calendarRolePath = getCalendarRolePath();
 
     const [prospectoSeleccionado, setProspectoSeleccionado] = useState(initialProspecto);
     const pid = prospectoSeleccionado?.id || prospectoSeleccionado?._id;
@@ -95,6 +120,22 @@ export default function ProspectoDetalle({
             cargarRecordatorios(initialProspecto.id || initialProspecto._id);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialProspecto?.id, initialProspecto?._id]);
+
+    // Escuchar socket events para recargar cuando el prospecto se actualiza (ej: agendar reunión)
+    useEffect(() => {
+        const handleProspectoActualizado = () => {
+            if (initialProspecto && (initialProspecto.id || initialProspecto._id)) {
+                handleSeleccionarProspectoProp(initialProspecto);
+                cargarRecordatorios(initialProspecto.id || initialProspecto._id);
+            }
+        };
+
+        socket.on('prospectos_actualizados', handleProspectoActualizado);
+
+        return () => {
+            socket.off('prospectos_actualizados', handleProspectoActualizado);
+        };
     }, [initialProspecto?.id, initialProspecto?._id]);
 
     const cargarRecordatorios = async (prospectoId) => {
@@ -267,11 +308,11 @@ export default function ProspectoDetalle({
         // Evaluamos primero notas para las opciones personalizables de llamadas
         if (act.tipo === 'llamada') {
             if (act.notas?.includes('WhatsApp')) return { icon: '💬', color: 'bg-green-500', label: 'WhatsApp / Correo' };
-            if (act.notas?.includes('llamar después')) return { icon: '📅', color: 'bg-(--theme-500)', label: 'Llamar después' };
+            if (act.notas?.includes('llamar después')) return { icon: '⏰', color: 'bg-(--theme-500)', label: 'Llamar después' };
             if (act.notas?.toLowerCase().includes('sin interés')) return { icon: '👎', color: 'bg-gray-500', label: 'Sin interés' };
-            if (act.notas?.includes('Agendó reunión')) return { icon: '🤝', color: 'bg-(--theme-500)', label: 'Cita Agendada' };
+            if (act.notas?.includes('Agendó reunión')) return { icon: '📅', color: 'bg-(--theme-500)', label: 'Cita Agendada' };
 
-            if (act.resultado === 'exitoso') return { icon: '📞', color: 'bg-(--theme-500)', label: 'Llamada exitosa' };
+            if (act.resultado === 'exitoso') return { icon: '☎️', color: 'bg-(--theme-500)', label: 'Llamada exitosa' };
             if (act.resultado === 'fallido') return { icon: '📵', color: 'bg-rose-500', label: 'Sin respuesta' };
         }
 
@@ -308,6 +349,37 @@ export default function ProspectoDetalle({
     const citasPendientes = actividadesContext
         .filter(a => a.tipo === 'cita' && a.resultado === 'pendiente' && new Date(a.fechaCita || a.fecha) >= new Date())
         .sort((a, b) => new Date(a.fechaCita || a.fecha) - new Date(b.fechaCita || b.fecha));
+
+    const alertasOrdenadas = useMemo(() => {
+        const mapaPrioridad = {
+            cita: 0,
+            llamada: 1
+        };
+
+        const alertas = [
+            ...citasPendientes.map((cita) => ({
+                tipo: 'cita',
+                id: cita.id || cita._id,
+                fecha: new Date(cita.fechaCita || cita.fecha),
+                data: cita
+            })),
+            ...recordatoriosLlamada.map((rec) => ({
+                tipo: 'llamada',
+                id: rec.id || rec._id,
+                fecha: new Date(rec.fechaLimite),
+                data: rec
+            }))
+        ];
+
+        return alertas.sort((a, b) => {
+            const prioridadA = mapaPrioridad[a.tipo] ?? 99;
+            const prioridadB = mapaPrioridad[b.tipo] ?? 99;
+            if (prioridadA !== prioridadB) return prioridadA - prioridadB;
+            return a.fecha - b.fecha;
+        });
+    }, [citasPendientes, recordatoriosLlamada]);
+
+    const totalAlertas = alertasOrdenadas.length;
 
     const registrarActividad = async (payload) => {
         try {
@@ -367,15 +439,14 @@ export default function ProspectoDetalle({
 
     const abrirNuevoRecordatorio = () => {
         const fechaDefault = new Date();
-        fechaDefault.setDate(fechaDefault.getDate() + 3);
-        const isoDefault = fechaDefault.toISOString().slice(0, 16);
+        const isoDefault = toLocalDateTimeInput(fechaDefault);
         setRecordatorio({ fechaProxima: isoDefault, notas: '', editandoId: null });
         setModalRecordatorioAbierto(true);
     };
 
     const handleEditarRecordatorio = (rec) => {
         setRecordatorio({
-            fechaProxima: rec.fechaLimite ? rec.fechaLimite.slice(0, 16) : '',
+            fechaProxima: rec.fechaLimite ? toLocalDateTimeInput(rec.fechaLimite) : '',
             notas: rec.descripcion || '',
             editandoId: rec.id
         });
@@ -384,9 +455,9 @@ export default function ProspectoDetalle({
 
     const syncRecordatorioFechaHora = (key, value) => {
         setRecordatorio((prev) => {
-            const baseFecha = prev.fechaProxima || new Date().toISOString().slice(0, 16);
+            const baseFecha = prev.fechaProxima || toLocalDateTimeInput();
             const [fechaActual = '', horaActual = '09:00'] = baseFecha.split('T');
-            const siguienteFecha = key === 'fecha' ? value : (fechaActual || new Date().toISOString().slice(0, 10));
+            const siguienteFecha = key === 'fecha' ? value : (fechaActual || toLocalDateTimeInput().slice(0, 10));
             const siguienteHora = key === 'hora' ? value : (horaActual || '09:00');
 
             if (!siguienteFecha || !siguienteHora) {
@@ -401,6 +472,7 @@ export default function ProspectoDetalle({
         try {
             await axios.delete(`${API_URL}/api/${rolePath}/recordatorios/${recId}`, { headers: getAuthHeaders() });
             setRecordatoriosLlamada(prev => prev.filter(r => r.id !== recId));
+            if (onActualizado) await onActualizado();
             toast.success('Recordatorio eliminado');
         } catch (err) {
             console.error(err);
@@ -842,7 +914,7 @@ export default function ProspectoDetalle({
                                 </button>
                                 {/* Agendar reunión */}
                                 <button
-                                    onClick={() => navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })}
+                                    onClick={() => navigate(`/${calendarRolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } })}
                                     className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm text-center leading-tight"
                                 >
                                     <Calendar className="w-6 h-6" />
@@ -860,91 +932,101 @@ export default function ProspectoDetalle({
                                     {/* Contenido con altura fija y scroll */}
                                     <div className="overflow-y-auto hide-scrollbar flex flex-col gap-2 shrink-0" style={{ maxHeight: '200px', height: '200px' }}>
 
-                                        {citasPendientes.map((cita) => {
-                                            const fechaCita = cita.fechaCita || cita.fecha;
+                                        {alertasOrdenadas.map((alerta) => {
+                                            if (alerta.tipo === 'cita') {
+                                                const cita = alerta.data;
+                                                const fechaCita = cita.fechaCita || cita.fecha;
+                                                return (
+                                                    <div key={`cita-${alerta.id}`} className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                                                                <p className="text-xs font-semibold text-blue-900">Reunión agendada</p>
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-400 shrink-0">
+                                                                {new Date(fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="flex gap-1.5">
+                                                            <button
+                                                                onClick={() => handleMarcarCitaRealizada(cita)}
+                                                                disabled={loadingCitaId === cita.id}
+                                                                title="Marcar como realizada"
+                                                                className="flex-1 flex items-center justify-center gap-1.5 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded py-1.5 text-[10px] font-bold transition-colors disabled:opacity-50"
+                                                            >
+                                                                <CheckCircle2 className="w-3 h-3" />
+                                                                {loadingCitaId === cita.id ? '...' : 'Realizada'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setModalCita({ abierto: true, cita, editando: false })}
+                                                                className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                                title="Ver"
+                                                            >
+                                                                <Eye className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditDataCita({ fecha: fechaCita, notas: cita.notas || '' });
+                                                                    setModalCita({ abierto: true, cita, editando: true });
+                                                                }}
+                                                                className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                                title="Editar"
+                                                            >
+                                                                <Edit2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDescartarCita(cita)}
+                                                                className="flex items-center justify-center bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                                title="Descartar"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            const rec = alerta.data;
                                             return (
-                                                <div key={`cita-${cita.id || fechaCita}`} className="bg-white border border-slate-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
+                                                <div key={`rec-${alerta.id}`} className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <p className="text-xs font-semibold text-gray-800">📅 Reunión agendada</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <Phone className="w-3.5 h-3.5 text-amber-600" />
+                                                            <p className="text-xs font-semibold text-amber-900">Recordatorio de llamada</p>
+                                                        </div>
                                                         <p className="text-[10px] text-gray-400 shrink-0">
-                                                            {new Date(fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                                                            {new Date(rec.fechaLimite).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
                                                         </p>
                                                     </div>
-                                                    
+                                                    {rec.descripcion && (
+                                                        <p className="text-[10px] text-slate-500 italic">{rec.descripcion}</p>
+                                                    )}
                                                     <div className="flex gap-1.5">
                                                         <button
-                                                            onClick={() => handleMarcarCitaRealizada(cita)}
-                                                            disabled={loadingCitaId === cita.id}
-                                                            title="Marcar como realizada"
-                                                            className="flex-1 flex items-center justify-center gap-1.5 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded py-1.5 text-[10px] font-bold transition-colors disabled:opacity-50"
+                                                            onClick={() => handleEditarRecordatorio(rec)}
+                                                            className="flex-1 flex items-center justify-center gap-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded py-1.5 text-[10px] font-bold transition-colors"
                                                         >
-                                                            <CheckCircle2 className="w-3 h-3" />
-                                                            {loadingCitaId === cita.id ? '...' : 'Realizada'}
+                                                            <Edit2 className="w-3 h-3" /> Editar
                                                         </button>
                                                         <button
-                                                            onClick={() => setModalCita({ abierto: true, cita, editando: false })}
-                                                            className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
-                                                            title="Ver"
+                                                            onClick={() => descartarRecordatorio(rec.id)}
+                                                            className="flex-1 flex items-center justify-center gap-1 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded py-1.5 text-[10px] font-bold transition-colors"
                                                         >
-                                                            <Eye className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => {
-                                                                setEditDataCita({ fecha: fechaCita, notas: cita.notas || '' });
-                                                                setModalCita({ abierto: true, cita, editando: true });
-                                                            }}
-                                                            className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
-                                                            title="Editar"
-                                                        >
-                                                            <Edit2 className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDescartarCita(cita)}
-                                                            className="flex items-center justify-center bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded px-2 py-1.5 transition-colors shadow-sm"
-                                                            title="Descartar"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                            <Trash2 className="w-3 h-3" /> Quitar
                                                         </button>
                                                     </div>
                                                 </div>
                                             );
                                         })}
 
-                                        {recordatoriosLlamada.map(rec => (
-                                            <div key={rec.id} className="bg-white border border-slate-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <p className="text-xs font-semibold text-gray-800">📞 Recordatorio de llamada</p>
-                                                    <p className="text-[10px] text-gray-400 shrink-0">
-                                                        {new Date(rec.fechaLimite).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
-                                                    </p>
-                                                </div>
-                                                {rec.descripcion && (
-                                                    <p className="text-[10px] text-slate-500 italic">{rec.descripcion}</p>
-                                                )}
-                                                <div className="flex gap-1.5">
-                                                    <button
-                                                        onClick={() => handleEditarRecordatorio(rec)}
-                                                        className="flex-1 flex items-center justify-center gap-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded py-1.5 text-[10px] font-bold transition-colors"
-                                                    >
-                                                        <Edit2 className="w-3 h-3" /> Editar
-                                                    </button>
-                                                    <button
-                                                        onClick={() => descartarRecordatorio(rec.id)}
-                                                        className="flex-1 flex items-center justify-center gap-1 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded py-1.5 text-[10px] font-bold transition-colors"
-                                                    >
-                                                        <Trash2 className="w-3 h-3" /> Quitar
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-
-                                        {citasPendientes.length === 0 && recordatoriosLlamada.length === 0 && (
+                                        {totalAlertas === 0 && (
                                             <p className="text-[11px] text-slate-500 px-1 italic">Sin alertas por ahora.</p>
                                         )}
                                     </div>
 
                                     {/* Indicador de scroll discreto */}
-                                    {(citasPendientes.length + recordatoriosLlamada.length > 2) && (
+                                    {(totalAlertas > 2) && (
                                         <div className="absolute left-0 right-0 flex justify-center pointer-events-none" style={{ bottom: '-6px' }}>
                                             <svg className="w-5 h-5 text-slate-400 animate-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                                                 <path d="M7 10l5 5 5-5z" />
@@ -1248,7 +1330,7 @@ export default function ProspectoDetalle({
                                             onClick={async () => {
                                                 await registrarActividad({ tipo: 'llamada', resultado: 'exitoso', notas: 'Agendó reunión' });
                                                 setLlamadaFlow(null);
-                                                navigate(`/${rolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } });
+                                                navigate(`/${calendarRolePath}/calendario`, { state: { prospecto: prospectoSeleccionado } });
                                             }}
                                             className="py-2.5 bg-(--theme-500) text-white rounded-lg font-bold hover:bg-(--theme-600) transition-colors text-sm"
                                         >📅 Agendó reunión</button>
@@ -1257,7 +1339,7 @@ export default function ProspectoDetalle({
                                             onClick={() => {
                                                 const hoy = new Date();
                                                 hoy.setDate(hoy.getDate() + 3);
-                                                const defaultDate = hoy.toISOString().slice(0, 16);
+                                                const defaultDate = toLocalDateTimeInput(hoy);
                                                 setLlamadaFlow(f => ({ ...f, paso: 'llamarDespues', interesado: true, fechaProxima: defaultDate }));
                                             }}
                                             className="py-2.5 bg-(--theme-500) text-white rounded-lg font-bold hover:bg-(--theme-600) transition-colors text-sm"
@@ -1290,7 +1372,7 @@ export default function ProspectoDetalle({
                                                     const pidLocal = prospectoSeleccionado.id || prospectoSeleccionado._id;
                                                     if (llamadaFlow.fechaProxima) {
                                                         await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLocal}`, {
-                                                            proximaLlamada: llamadaFlow.fechaProxima
+                                                            proximaLlamada: toUtcIsoFromLocalInput(llamadaFlow.fechaProxima)
                                                         }, { headers: getAuthHeaders() });
                                                     }
                                                     toast.success('Reintento programado');
@@ -1387,7 +1469,7 @@ export default function ProspectoDetalle({
                                                 if (llamadaFlow.fechaProxima) {
                                                     // 2. Actualizar solo proximaLlamada (ruta simple, no requiere nombres/telefono)
                                                     await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLocal}`, {
-                                                        proximaLlamada: llamadaFlow.fechaProxima
+                                                        proximaLlamada: toUtcIsoFromLocalInput(llamadaFlow.fechaProxima)
                                                     }, { headers: getAuthHeaders() });
                                                 }
 
@@ -1481,8 +1563,9 @@ export default function ProspectoDetalle({
 
                                         if (recordatorio.editandoId) {
                                             // Editar recordatorio existente
+                                            const fechaLimiteIso = toUtcIsoFromLocalInput(recordatorio.fechaProxima);
                                             const res = await axios.put(`${API_URL}/api/${rolePath}/recordatorios/${recordatorio.editandoId}`, {
-                                                fechaLimite: recordatorio.fechaProxima,
+                                                fechaLimite: fechaLimiteIso,
                                                 descripcion: recordatorio.notas || ''
                                             }, { headers: getAuthHeaders() });
                                             const updated = res.data.recordatorio;
@@ -1490,13 +1573,16 @@ export default function ProspectoDetalle({
                                             toast.success('📞 Recordatorio actualizado');
                                         } else {
                                             // Crear nuevo recordatorio
+                                            const fechaLimiteIso = toUtcIsoFromLocalInput(recordatorio.fechaProxima);
                                             const res = await axios.post(`${API_URL}/api/${rolePath}/prospectos/${pid}/recordatorios`, {
-                                                fechaLimite: recordatorio.fechaProxima,
+                                                fechaLimite: fechaLimiteIso,
                                                 descripcion: recordatorio.notas || ''
                                             }, { headers: getAuthHeaders() });
                                             setRecordatoriosLlamada(prev => [...prev, res.data.recordatorio]);
                                             toast.success('📞 Recordatorio programado');
                                         }
+
+                                        if (onActualizado) await onActualizado();
 
                                         setModalRecordatorioAbierto(false);
                                         setRecordatorio({ fechaProxima: '', notas: '', editandoId: null });
@@ -1539,7 +1625,7 @@ export default function ProspectoDetalle({
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha y Hora</label>
                                         <input
                                             type="datetime-local"
-                                            value={editDataCita.fecha ? new Date(editDataCita.fecha).toISOString().slice(0, 16) : ''}
+                                            value={editDataCita.fecha ? toLocalDateTimeInput(editDataCita.fecha) : ''}
                                             onChange={(e) => setEditDataCita({ ...editDataCita, fecha: e.target.value })}
                                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-400) outline-none transition-all"
                                         />

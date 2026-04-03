@@ -324,10 +324,30 @@ router.get('/clientes-ganados', [auth, esCloser], async (req, res) => {
             WHERE c.closerAsignado = ? AND c.etapaEmbudo = ?
             ORDER BY c.fechaUltimaEtapa DESC
         `).all(closerId, 'venta_ganada');
+
+        const ids = rows.map(r => r.id).filter(Boolean);
+        const ultimasActs = ids.length > 0
+            ? await db.prepare(
+                `SELECT a.cliente, a.tipo, COALESCE(NULLIF(a.notas, ''), a.descripcion) as texto
+                 FROM actividades a
+                 INNER JOIN (
+                   SELECT cliente, MAX(createdAt) as maxCreatedAt FROM actividades WHERE cliente IN (${ids.map(() => '?').join(',')}) GROUP BY cliente
+                 ) ult ON a.cliente = ult.cliente AND a.createdAt = ult.maxCreatedAt`
+            ).all(...ids)
+            : [];
+
+        const actMap = {};
+        for (const a of ultimasActs) actMap[a.cliente] = { tipo: a.tipo, notas: a.texto };
+
         res.json(rows.map(r => {
             const { prospectorNombre, ...c } = r;
             const out = toMongoFormat(c);
             if (out) out.prospectorAsignado = { nombre: prospectorNombre };
+            if (out) {
+                const act = actMap[r.id];
+                out.ultimaActTipo = act?.tipo || null;
+                out.ultimaActNotas = act?.notas || null;
+            }
             return out;
         }));
     } catch (error) {

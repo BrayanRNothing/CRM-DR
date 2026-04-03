@@ -24,6 +24,7 @@ const EMPTY_DATA = {
 import { getToken } from '../../utils/authUtils';
 
 const getAuthHeaders = () => ({ 'x-auth-token': getToken() || '' });
+const getProximaLlamada = (p) => p?.proximaLlamada || p?.proximallamada || p?.proximoRecordatorio || p?.proximorecordatorio || null;
 
 const ProspectorDashboard = () => {
     const [data, setData] = useState(null);
@@ -64,7 +65,9 @@ const ProspectorDashboard = () => {
     const cargarRecordatorios = async () => {
         try {
             const response = await axios.get(`${API_URL}/api/prospector/prospectos`, { headers: getAuthHeaders() });
-            const conRecordatorio = (response.data || []).filter(p => !!p.proximaLlamada);
+            const conRecordatorio = (response.data || [])
+                .map(p => ({ ...p, proximaLlamada: getProximaLlamada(p) }))
+                .filter(p => !!p.proximaLlamada);
             conRecordatorio.sort((a, b) => new Date(a.proximaLlamada) - new Date(b.proximaLlamada));
             setRecordatorios(conRecordatorio);
         } catch (error) {
@@ -296,7 +299,11 @@ const ProspectorDashboard = () => {
                                                 <div 
                                                     key={p.id || p._id} 
                                                     className="bg-rose-50 border border-rose-100 rounded-xl p-4 flex items-center justify-between group hover:border-rose-300 transition-colors shadow-sm cursor-pointer"
-                                                    onClick={() => navigate('/prospector/prospectos', { state: { selectedId: p.id || p._id } })}
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        navigate(`/prospector/prospectos?p=${p.id || p._id}`);
+                                                    }}
                                                 >
                                                     <div className="flex-1 min-w-0 pr-3">
                                                         <div className="font-bold text-gray-900 truncate">{p.nombre || `${p.nombres || ''} ${p.apellidoPaterno || ''}`.trim()}</div>
@@ -377,7 +384,7 @@ const ProspectorDashboard = () => {
                                                 try {
                                                     await axios.put(`${API_URL}/api/tareas/${tareaId}`, { estado: 'completada' }, { headers: getAuthHeaders() });
                                                 } catch (e) { console.error('Error al completar tarea:', e); }
-                                                navigate('/prospector/prospectos', { state: { selectedId: prospectoId } });
+                                                navigate(`/prospector/prospectos?p=${prospectoId}`);
                                             }
                                             : null;
                                         return (
