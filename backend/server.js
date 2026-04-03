@@ -8,27 +8,18 @@ require('./config/database');
 
 const app = express();
 
-// ✅ CORS HANDLER - DEBE SER LO PRIMERO
-app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-auth-token');
-
-    // Preflight
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
-
-    next();
-});
-
-// Middleware CORS adicional
+// ✅ CORS CONFIGURATION - MUST BE FIRST
 app.use(cors({
-    origin: '*',
+    origin: '*', // Allows all origins. For production, you might want to restrict this later.
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
-    exposedHeaders: ['x-auth-token']
+    exposedHeaders: ['x-auth-token'],
+    credentials: true
 }));
+
+// Preflight manually handles OPTIONS if needed, but cors middleware usually does it.
+app.options('*', cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

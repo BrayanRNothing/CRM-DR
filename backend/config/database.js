@@ -28,7 +28,8 @@ const CAMEL_COLS = [
   'cambioEtapa', 'etapaAnterior', 'etapaNueva', 'fechaLimite', 'fechaCreacion',
   'googleRefreshToken', 'googleAccessToken', 'googleTokenExpiry',
   'vendedorNombre', 'vendedorRol', 'closerNombre', 'sitioWeb', 'googleMeetLink',
-  'customMetricLabel', 'customMetricValue', 'createdAt', 'tipoActividad'
+  'customMetricLabel', 'customMetricValue', 'createdAt', 'tipoActividad',
+  'ultimaInteraccion', 'proximaLlamada'
 ];
 
 // Helper: convierte '?' a '$1', '$2', etc. para Postgres y añade comillas dobles a columnas camelCase
@@ -214,9 +215,9 @@ const initDb = async () => {
     telefono TEXT,
     activo INTEGER DEFAULT 1,
     fechaCreacion TEXT DEFAULT CURRENT_TIMESTAMP,
-    googleRefreshToken TEXT,
-    googleAccessToken TEXT,
-    googleTokenExpiry DOUBLE PRECISION
+    "googleRefreshToken" TEXT,
+    "googleAccessToken" TEXT,
+    "googleTokenExpiry" DOUBLE PRECISION
   );
 
   CREATE TABLE IF NOT EXISTS clientes (
@@ -439,7 +440,7 @@ const initDb = async () => {
     const colsMissingPg = [
       ['usuarios',  '"googleRefreshToken"', 'TEXT'],
       ['usuarios',  '"googleAccessToken"',  'TEXT'],
-      ['usuarios',  '"googleTokenExpiry"',  'TIMESTAMPTZ'],
+      ['usuarios',  '"googleTokenExpiry"',  'DOUBLE PRECISION'],
       ['clientes',  'ubicacion',            'TEXT'],
       ['clientes',  '"sitioWeb"',           'TEXT'],
       ['clientes',  'telefono2',            'TEXT'],

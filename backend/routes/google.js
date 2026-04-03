@@ -132,15 +132,19 @@ router.get('/freebusy/:closerId', auth, async (req, res) => {
         // Verificar si necesita refresh (auth-library handlea auto-refresh si hay refresh_token)
         // Para estar seguros, forzamos el token si se renueva:
         client.on('tokens', async (tokens) => {
-            let updateStr = [];
-            let params = [];
-            if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
-            if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-            if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
+            try {
+                let updateStr = [];
+                let params = [];
+                if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
+                if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
+                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
 
-            if (updateStr.length > 0) {
-                params.push(closerId);
-                await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
+                if (updateStr.length > 0) {
+                    params.push(closerId);
+                    await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
+                }
+            } catch (err) {
+                console.error(`❌ Error actualizando tokens para closer ${closerId}:`, err.message);
             }
         });
 
@@ -200,15 +204,19 @@ router.get('/events', auth, async (req, res) => {
         });
 
         client.on('tokens', async (tokens) => {
-            let updateStr = [];
-            let params = [];
-            if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
-            if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-            if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
+            try {
+                let updateStr = [];
+                let params = [];
+                if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
+                if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
+                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
 
-            if (updateStr.length > 0) {
-                params.push(userId);
-                await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
+                if (updateStr.length > 0) {
+                    params.push(userId);
+                    await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
+                }
+            } catch (err) {
+                console.error(`❌ Error actualizando tokens para usuario ${userId}:`, err.message);
             }
         });
 
@@ -285,14 +293,18 @@ router.post('/create-event', auth, async (req, res) => {
         });
 
         client.on('tokens', async (tokens) => {
-            const updateStr = [];
-            const params = [];
-            if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
-            if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-            if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
-            if (updateStr.length > 0) {
-                params.push(userId);
-                await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
+            try {
+                const updateStr = [];
+                const params = [];
+                if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
+                if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
+                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
+                if (updateStr.length > 0) {
+                    params.push(userId);
+                    await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
+                }
+            } catch (err) {
+                console.error(`❌ Error actualizando tokens para usuario ${userId}:`, err.message);
             }
         });
 
@@ -313,13 +325,24 @@ router.post('/create-event', auth, async (req, res) => {
             conferenceDataVersion: 1
         });
 
+        const eventData = event.data;
+        let meetLink = eventData.hangoutLink || '';
+
+        // Extraer Meet link de conferenceData si hangoutLink está vacío
+        if (!meetLink && eventData.conferenceData && eventData.conferenceData.entryPoints) {
+            const meetEntryPoint = eventData.conferenceData.entryPoints.find(ep => ep.entryPointType === 'video');
+            if (meetEntryPoint) {
+                meetLink = meetEntryPoint.uri;
+            }
+        }
+
         // Si hay clienteId, registrar la cita en actividades
         if (clienteId) {
             const cid = parseInt(clienteId);
             const now = new Date().toISOString();
             try {
                 await db.prepare('INSERT INTO actividades (tipo, vendedor, cliente, fecha, descripcion, resultado, notas, "googleMeetLink") VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-                    .run('cita', userId, cid, new Date(startDateTime).toISOString(), `Próxima reunión agendada: ${title}`, 'pendiente', description || '', event.data.hangoutLink || '');
+                    .run('cita', userId, cid, new Date(startDateTime).toISOString(), `Próxima reunión agendada: ${title}`, 'pendiente', description || '', meetLink || '');
                 await db.prepare('UPDATE clientes SET "ultimaInteraccion" = ? WHERE id = ?').run(now, cid);
             } catch (dbErr) {
                 console.error('Error registrando actividad:', dbErr);
@@ -328,10 +351,11 @@ router.post('/create-event', auth, async (req, res) => {
 
         res.status(201).json({
             msg: 'Evento creado exitosamente',
-            eventId: event.data.id,
-            htmlLink: event.data.htmlLink,
-            meetLink: event.data.hangoutLink
+            eventId: eventData.id,
+            htmlLink: eventData.htmlLink,
+            meetLink: meetLink
         });
+
     } catch (error) {
         console.error('Error al crear evento:', error);
         if (isGoogleAuthError(error)) {
@@ -488,14 +512,18 @@ router.get('/account-info', auth, async (req, res) => {
 
         // Configurar listener para actualizar tokens si se refrescan
         client.on('tokens', async (tokens) => {
-            const updateStr = [];
-            const params = [];
-            if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
-            if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-            if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
-            if (updateStr.length > 0) {
-                params.push(userId);
-                await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
+            try {
+                const updateStr = [];
+                const params = [];
+                if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
+                if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
+                if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(new Date(tokens.expiry_date).toISOString()); }
+                if (updateStr.length > 0) {
+                    params.push(userId);
+                    await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
+                }
+            } catch (err) {
+                console.error(`❌ Error actualizando tokens para usuario ${userId}:`, err.message);
             }
         });
 

@@ -205,21 +205,26 @@ router.get('/calendario', [auth, esCloser], async (req, res) => {
 
                 // Actualizar tokens si se refrescan
                 client.on('tokens', async (tokens) => {
-                    let updateStr = [];
-                    let params = [];
-                    if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
-                    if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-                    const expiryIso = parseGoogleExpiryToIso(tokens.expiry_date);
-                    if (expiryIso) {
-                        updateStr.push('googleTokenExpiry = ?');
-                        params.push(expiryIso);
-                    }
+                    try {
+                        let updateStr = [];
+                        let params = [];
+                        if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
+                        if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
+                        const expiryIso = parseGoogleExpiryToIso(tokens.expiry_date);
+                        if (expiryIso) {
+                            updateStr.push('googleTokenExpiry = ?');
+                            params.push(expiryIso);
+                        }
 
-                    if (updateStr.length > 0) {
-                        params.push(closerId);
-                        await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
+                        if (updateStr.length > 0) {
+                            params.push(closerId);
+                            await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
+                        }
+                    } catch (err) {
+                        console.error(`❌ Error actualizando tokens para closer ${closerId}:`, err.message);
                     }
                 });
+
 
                 const calendar = google.calendar({ version: 'v3', auth: client });
 
