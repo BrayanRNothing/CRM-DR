@@ -7,16 +7,20 @@ const { auth } = require('../middleware/auth');
 
 // Helper: Crea una instancia fresca de OAuth2Client para evitar colisiones entre usuarios
 function getOAuthClient() {
+    // Prioritize standard backend variable and clean any accidental spaces/newlines
+    const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '').trim();
+    const clientSecret = (process.env.GOOGLE_CLIENT_SECRET || '').trim();
+    
     return new OAuth2Client(
-        process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID,
-        process.env.GOOGLE_CLIENT_SECRET,
+        clientId,
+        clientSecret,
         'postmessage'
     );
 }
 
-if (process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID) {
-    const cid = process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
-    console.log(`✅ Google Client ID cargado: ${cid.substring(0, 10)}...`);
+const cidCheck = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '').trim();
+if (cidCheck) {
+    console.log(`✅ Google Client ID cargado: ${cidCheck.substring(0, 10)}...`);
 } else {
     console.error('❌ CRITICAL: Google Client ID is not defined in environment variables!');
 }
