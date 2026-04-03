@@ -34,6 +34,7 @@ const ProspectorCalendario = () => {
         notas: ''
     });
     const [activeTab, setActiveTab] = useState('agendar'); // 'agendar' o 'reuniones'
+    const [loadingInitial, setLoadingInitial] = useState(true);
 
     const cargarMisReuniones = async () => {
         if (!isVendedor) return;
@@ -176,8 +177,8 @@ const ProspectorCalendario = () => {
                     const text = await res.text();
                     console.error("Response:", text);
                 }
-            } catch (error) {
-                console.error("Error fetching closers:", error);
+            } finally {
+                setLoadingInitial(false);
             }
         };
 
@@ -197,8 +198,12 @@ const ProspectorCalendario = () => {
             }
         };
 
-        fetchClosers();
-        fetchProspectos();
+        const init = async () => {
+            setLoadingInitial(true);
+            await Promise.all([fetchClosers(), fetchProspectos()]);
+            setLoadingInitial(false);
+        };
+        init();
     }, []);
 
     // Auto-seleccionar prospecto si viene del Seguimiento

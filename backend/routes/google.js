@@ -4,6 +4,7 @@ const { OAuth2Client } = require('google-auth-library');
 const { google } = require('googleapis');
 const { db } = require('../config/database');
 const { auth } = require('../middleware/auth');
+const { parseGoogleExpiryToMillis } = require('../lib/helpers');
 
 // Helper: Crea una instancia fresca de OAuth2Client para evitar colisiones entre usuarios
 function getOAuthClient() {
@@ -25,23 +26,6 @@ if (cidCheck) {
     console.error('❌ CRITICAL: Google Client ID is not defined in environment variables!');
 }
 
-const parseGoogleExpiryToMillis = (value) => {
-    if (value === null || value === undefined) return undefined;
-    if (typeof value === 'number' && Number.isFinite(value)) return value;
-    if (value instanceof Date && !Number.isNaN(value.getTime())) return value.getTime();
-
-    if (typeof value === 'string') {
-        const trimmed = value.trim();
-        if (/^\d+$/.test(trimmed)) {
-            const numeric = Number(trimmed);
-            if (Number.isFinite(numeric)) return numeric;
-        }
-        const parsed = Date.parse(trimmed);
-        if (!Number.isNaN(parsed)) return parsed;
-    }
-
-    return undefined;
-};
 
 
 // Helper: detecta si el error de Google es por token revocado/expirado (invalid_grant)

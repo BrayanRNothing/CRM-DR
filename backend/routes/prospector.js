@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../config/database');
 const { auth } = require('../middleware/auth');
-const { toMongoFormat, toMongoFormatMany } = require('../lib/helpers');
+const { toMongoFormat, toMongoFormatMany, parseGoogleExpiryToMillis } = require('../lib/helpers');
 
 const esProspector = (req, res, next) => {
     const rol = String(req.usuario.rol).toLowerCase();
@@ -845,7 +845,7 @@ router.post('/agendar-reunion', [auth, esProspector], async (req, res) => {
                 client.setCredentials({
                     refresh_token: closerDetails.googleRefreshToken,
                     access_token: closerDetails.googleAccessToken,
-                    expiry_date: closerDetails.googleTokenExpiry
+                    expiry_date: parseGoogleExpiryToMillis(closerDetails.googleTokenExpiry)
                 });
 
                 client.on('tokens', async (tokens) => {
@@ -875,7 +875,10 @@ router.post('/agendar-reunion', [auth, esProspector], async (req, res) => {
                     end: { dateTime: finReunionISO, timeZone: 'America/Mexico_City' },
                     attendees: attendeesList,
                     conferenceData: {
-                        createRequest: { requestId: 'meeting-' + Date.now().toString() }
+                        createRequest: { 
+                            requestId: 'meeting-' + Date.now().toString(),
+                            conferenceSolutionKey: { type: 'hangoutsMeet' }
+                        }
                     }
                 };
 
@@ -885,8 +888,11 @@ router.post('/agendar-reunion', [auth, esProspector], async (req, res) => {
                     requestBody: event
                 });
 
-                if (createdEvent.data && createdEvent.data.hangoutLink) {
-                    hangoutLink = createdEvent.data.hangoutLink;
+                // ✅ Robust extraction: check both hangoutLink and entryPoints
+                hangoutLink = createdEvent.data.hangoutLink;
+                if (!hangoutLink && createdEvent.data.conferenceData?.entryPoints) {
+                    const ep = createdEvent.data.conferenceData.entryPoints.find(e => e.entryPointType === 'video');
+                    if (ep) hangoutLink = ep.uri;
                 }
             }
         } catch (calendarError) {

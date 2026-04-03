@@ -422,6 +422,13 @@ const CloserCalendario = () => {
                     const estadoEvento = completadoGuardado ? 'realizada' : 'pendiente';
                     const resultadoExacto = typeof completadoGuardado === 'object' ? completadoGuardado.resultado : null;
 
+                    // Extract Meet link robustly
+                    let meetLink = event.hangoutLink;
+                    if (!meetLink && event.conferenceData?.entryPoints) {
+                        const ep = event.conferenceData.entryPoints.find(e => e.entryPointType === 'video');
+                        if (ep) meetLink = ep.uri;
+                    }
+
                     return {
                         id: event.id,
                         fecha: event.start.dateTime || event.start.date,
@@ -434,7 +441,7 @@ const CloserCalendario = () => {
                         },
                         prospector: agendadoPor,
                         notas: notas,
-                        meetLink: event.hangoutLink,
+                        meetLink: meetLink,
                         estado: estadoEvento,
                         resultadoExacto
                     };
@@ -442,8 +449,8 @@ const CloserCalendario = () => {
                 setReuniones(mappedEvents);
             } catch (error) {
                 console.error("Error fetching events:", error);
-                // En caso de error de red, no cambiar el estado de vinculación
-                if (googleLinked === null) setGoogleLinked(false);
+                // En caso de error (red, 502, etc.), marcarlo como no vinculado para detener el loading
+                setGoogleLinked(false);
             }
         };
 
