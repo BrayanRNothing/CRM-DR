@@ -385,12 +385,14 @@ const ProspectorCalendario = () => {
                 })
             });
 
-            if (resBackend.status === 201) {
+            if (resBackend.ok) {
                 const dataBackend = await resBackend.json();
                 toast.success('Cita agendada con éxito');
                 
-                if (dataBackend.meetLink) {
-                    setCreatedEventLink(dataBackend.meetLink);
+                // El link puede venir como hangoutLink o meetLink según la ruta
+                const finalLink = dataBackend.hangoutLink || dataBackend.meetLink;
+                if (finalLink) {
+                    setCreatedEventLink(finalLink);
                 }
             } else {
                 const dataError = await resBackend.json();
