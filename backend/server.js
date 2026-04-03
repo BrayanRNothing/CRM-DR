@@ -138,3 +138,17 @@ process.on('SIGINT', () => {
     });
 });
 
+// ✅ ANTI-CRASH: Atrapar cualquier promesa rechazada sin manejar para que el servidor NUNCA se caiga
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('⚠️ [unhandledRejection] Promesa rechazada no manejada:');
+    console.error('  Reason:', reason?.message || reason);
+    // No llamamos process.exit() – el servidor sigue en pie
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('⚠️ [uncaughtException] Excepción no capturada:');
+    console.error('  Error:', err.message);
+    console.error('  Stack:', err.stack?.split('\n')[1]);
+    // No llamamos process.exit() – el servidor sigue en pie
+    // Si en el futuro quieres que algunos errores fatales sí maten el proceso, añade lógica aquí
+});
