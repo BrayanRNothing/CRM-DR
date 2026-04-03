@@ -21,9 +21,7 @@ import {
     Send,
     Download,
     Upload,
-    Trash2,
-    AlertCircle,
-    FileText,
+    Video,
     X,
     Building2,
     MapPin,
@@ -1385,6 +1383,7 @@ const ProspectorSeguimiento = () => {
                                                         <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-(--theme-600)'}`}>
                                                             <div className={`w-2 h-2 rounded-full animate-pulse ${esVencido ? 'bg-red-500' : 'bg-(--theme-500)'}`}></div>
                                                             <span className="text-xs font-semibold leading-tight">
+                                                                {['reunion_agendada', 'reunion_realizada'].includes(p.etapaEmbudo) && 'Cita: '}
                                                                 {new Date(p.proximaLlamada).toLocaleString('es-MX', {
                                                                     day: 'numeric',
                                                                     month: 'short',
@@ -1393,7 +1392,11 @@ const ProspectorSeguimiento = () => {
                                                                 })}
                                                                 {esVencido && ' ⚠'}
                                                             </span>
-                                                            <Phone className="w-3 h-3" />
+                                                            {['reunion_agendada', 'reunion_realizada'].includes(p.etapaEmbudo) ? (
+                                                                <Video className="w-3 h-3" />
+                                                            ) : (
+                                                                <Phone className="w-3 h-3" />
+                                                            )}
                                                         </div>
                                                     );
                                                 })() : (

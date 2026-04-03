@@ -198,8 +198,14 @@ const VendedorDashboard = () => {
                     });
                 }
 
-                todosLosPendientes.sort((a, b) => new Date(a.proximaLlamada) - new Date(b.proximaLlamada));
-                setRecordatorios(todosLosPendientes.slice(0, 15));
+                // DEDUPLICACIÓN: Si un prospecto/cliente ya tiene una REUNIÓN PRÓXIMA (CITA), 
+                // lo quitamos de la lista de Recordatorios de Llamada para evitar ruido.
+                const idsEnReuniones = reuniones.map(r => r.cliente?.id || r.clienteId);
+                
+                const recordatoriosFiltrados = todosLosPendientes.filter(p => !idsEnReuniones.includes(p.id || p._id));
+
+                recordatoriosFiltrados.sort((a, b) => new Date(a.proximaLlamada) - new Date(b.proximaLlamada));
+                setRecordatorios(recordatoriosFiltrados.slice(0, 15));
 
             } catch (e) {
                 console.error('Error general en recordatorios:', e);
@@ -463,7 +469,18 @@ const VendedorDashboard = () => {
                                     const esHoy = rFecha.toDateString() === new Date().toDateString();
 
                                     return (
-                                        <div key={r.id || r._id} className={`relative overflow-hidden group ${esHoy ? 'bg-linear-to-br from-emerald-500 to-emerald-600' : 'bg-linear-to-br from-blue-600 to-blue-700'} rounded-lg p-2.5 shadow-sm hover:shadow-md transition-all`}>
+                                        <div 
+                                            key={r.id || r._id} 
+                                            className={`relative overflow-hidden group ${esHoy ? 'bg-linear-to-br from-emerald-500 to-emerald-600' : 'bg-linear-to-br from-indigo-600 to-indigo-700'} rounded-lg p-2.5 shadow-sm hover:shadow-md transition-all cursor-pointer`}
+                                            onClick={() => {
+                                                // Navegar al perfil del cliente/prospecto
+                                                if (r.esCliente) {
+                                                    navigate('/vendedor/clientes', { state: { selectedId: r.cliente?.id || r.clienteId } });
+                                                } else {
+                                                    navigate('/prospector/prospectos', { state: { selectedId: r.cliente?.id || r.clienteId } });
+                                                }
+                                            }}
+                                        >
                                             {/* Fondo decorativo */}
                                             <div className="absolute right-0 top-0 h-full w-1/4 bg-white/10 skew-x-12 transform origin-top-right transition-transform duration-500 group-hover:w-1/3"></div>
 
@@ -484,7 +501,7 @@ const VendedorDashboard = () => {
                                                     <div className="flex justify-between items-center gap-1">
                                                         <div className="text-[9px] font-bold text-white bg-white/20 backdrop-blur-sm border border-white/10 px-1.5 py-0.5 rounded-full flex items-center gap-1">
                                                             <Clock className="w-2 h-2" />
-                                                            {rFecha.toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                                            {rFecha.toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                                         </div>
                                                         {r.cliente?.telefono && (
                                                             <div className="text-[9px] text-white/90 font-medium flex items-center gap-0.5 mt-0.5">
@@ -499,7 +516,7 @@ const VendedorDashboard = () => {
                                                             href={r.googleMeetLink.startsWith('http') ? r.googleMeetLink : `https://${r.googleMeetLink}`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="flex items-center justify-center gap-1.5 py-1.5 px-3 bg-white text-blue-700 rounded-lg text-[9px] font-black hover:bg-blue-50 transition-colors shadow-sm active:scale-95"
+                                                            className="flex items-center justify-center gap-1.5 py-1.5 px-3 bg-white text-indigo-700 rounded-lg text-[9px] font-black hover:bg-indigo-50 transition-colors shadow-sm active:scale-95"
                                                             onClick={(e) => e.stopPropagation()}
                                                         >
                                                             <Video className="w-2.5 h-2.5" />
