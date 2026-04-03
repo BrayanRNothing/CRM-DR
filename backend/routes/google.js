@@ -42,7 +42,10 @@ function isGoogleAuthError(error) {
         combined.includes('insufficient authentication scopes') ||
         combined.includes('insufficientscopeerror') ||
         combined.includes('authError') ||
-        combined.includes('forbidden')
+        combined.includes('forbidden') ||
+        combined.includes('access_denied') ||
+        combined.includes('not have permission') ||
+        combined.includes('has not been used in project')
     );
 }
 
@@ -263,7 +266,8 @@ router.get('/events', auth, async (req, res) => {
         }
         res.status(500).json({
             msg: 'Error al consultar eventos',
-            error: error.message
+            error: error.message,
+            googleError: error.response?.data?.error || undefined
         });
     }
 });
@@ -374,7 +378,12 @@ router.post('/create-event', auth, async (req, res) => {
                 code: 'google_auth_expired'
             });
         }
-        res.status(500).json({ msg: 'Error al crear evento en Google Calendar', error: error.message });
+        res.status(500).json({ 
+            msg: 'Error al crear evento en Google Calendar', 
+            error: error.message,
+            googleError: error.response?.data?.error || undefined,
+            details: error.response?.data?.error_description || undefined
+        });
     }
 });
 

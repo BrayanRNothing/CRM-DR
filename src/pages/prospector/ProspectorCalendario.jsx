@@ -200,8 +200,13 @@ const ProspectorCalendario = () => {
 
         const init = async () => {
             setLoadingInitial(true);
-            await Promise.all([fetchClosers(), fetchProspectos()]);
-            setLoadingInitial(false);
+            try {
+                await Promise.all([fetchClosers(), fetchProspectos()]);
+            } catch (err) {
+                console.error("Error en inicialización:", err);
+            } finally {
+                setLoadingInitial(false);
+            }
         };
         init();
     }, []);
@@ -380,20 +385,20 @@ const ProspectorCalendario = () => {
                 })
             });
 
-            const dataBackend = await resBackend.json();
-
-            if (!resBackend.ok) {
-                console.error("Error agendando:", dataBackend);
-                toast.error(dataBackend.msg || "Error agendando cita");
-            } else {
-                toast.success(`Cita agendada exitosamente con ${closer.nombre}`);
-                if (dataBackend.hangoutLink) {
-                    setCreatedEventLink(dataBackend.hangoutLink);
-                } else if (closerLinkedToGoogle) {
-                    toast.error("Se agendó, pero Google falló en crear la liga de Meet");
+            if (resBackend.status === 201) {
+                const dataBackend = await resBackend.json();
+                toast.success('Cita agendada con éxito');
+                
+                if (dataBackend.meetLink) {
+                    setCreatedEventLink(dataBackend.meetLink);
                 }
-                // Notificar que el prospecto fue actualizado para que ProspectoDetalle se recargue
-                socket.emit('prospectos_actualizados', { clienteId: prospect.id });
+            } else {
+                const dataError = await resBackend.json();
+                if (dataError.code === 'google_config_error') {
+                    toast.error(`Error de configuración Google: ${dataError.googleError?.message || dataError.msg}. Revisa los permisos en Ajustes.`, { duration: 6000 });
+                } else {
+                    toast.error(dataError.msg || 'Error al agendar cita');
+                }
             }
 
             toast.dismiss(loadingToast);

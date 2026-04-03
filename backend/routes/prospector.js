@@ -896,8 +896,17 @@ router.post('/agendar-reunion', [auth, esProspector], async (req, res) => {
                 }
             }
         } catch (calendarError) {
-            console.error('Error al intentar crear cita en Google Calendar:', calendarError);
-            // No detenemos el flujo del CRM si google falla, solo registramos log
+            console.error('❌ Error detallado al crear evento en Google Calendar:', calendarError.response?.data || calendarError.message);
+            // Si el error es de permisos/configuración de Google, informarlo
+            if (isGoogleAuthError(calendarError)) {
+                return res.status(400).json({ 
+                    msg: 'Error con Google Calendar (API deshabilitada o Sin Permisos)', 
+                    googleError: calendarError.response?.data?.error || calendarError.message,
+                    details: calendarError.response?.data?.error_description || undefined,
+                    code: 'google_config_error'
+                });
+            }
+            // Para otros errores, seguimos permitiendo la creación local pero avisamos
         }
         // ** END GOOGLE CALENDAR INTEGRATION **
 
