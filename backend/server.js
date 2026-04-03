@@ -17,6 +17,12 @@ app.use(cors({
     credentials: true
 }));
 
+// ✅ Google Identity Services Popup Fix
+app.use((req, res, next) => {
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    next();
+});
+
 // Preflight manually handles OPTIONS if needed, but cors middleware usually does it.
 app.options('*', cors());
 

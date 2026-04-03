@@ -58,6 +58,9 @@ export default function VendedorAjustes() {
         if (gLinked === 'true') {
             setGoogleConnected(true);
             fetchGoogleInfo();
+        } else {
+            // Check session just in case
+            fetchGoogleInfo();
         }
     }, []);
 
@@ -70,9 +73,12 @@ export default function VendedorAjustes() {
             if (res.ok) {
                 const data = await res.json();
                 setGoogleAccountInfo(data);
-            } else if (res.status === 401) {
+                setGoogleConnected(true);
+                localStorage.setItem('google_linked', 'true');
+            } else if (res.status === 401 || res.status === 404) {
                 setGoogleConnected(false);
                 localStorage.removeItem('google_linked');
+                setGoogleAccountInfo(null);
             }
         } catch (err) {
             console.error('Error fetching google info:', err);

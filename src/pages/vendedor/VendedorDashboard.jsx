@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, UserPlus, Calendar, TrendingUp, RefreshCw, Clock, CheckCircle2, Target, MessageSquare, ExternalLink, Users, Award, DollarSign, AlertTriangle, TrendingDown, Zap, Bell, ArrowRightLeft, PercentCircle, BarChart3, Search, FileText } from 'lucide-react';
+import { Phone, UserPlus, Calendar, TrendingUp, RefreshCw, Clock, CheckCircle2, Target, MessageSquare, ExternalLink, Users, Award, DollarSign, AlertTriangle, TrendingDown, Zap, Bell, ArrowRightLeft, PercentCircle, BarChart3, Search, FileText, Video } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import FunnelVisual from '../../components/FunnelVisual';
@@ -463,29 +463,48 @@ const VendedorDashboard = () => {
                                     const esHoy = rFecha.toDateString() === new Date().toDateString();
 
                                     return (
-                                        <div key={r.id || r._id} className={`relative overflow-hidden group ${esHoy ? 'bg-linear-to-br from-emerald-500 to-emerald-600' : 'bg-linear-to-br from-(--theme-500) to-(--theme-600)'} rounded-lg p-2 shadow-sm hover:shadow-md transition-all cursor-pointer`}>
+                                        <div key={r.id || r._id} className={`relative overflow-hidden group ${esHoy ? 'bg-linear-to-br from-emerald-500 to-emerald-600' : 'bg-linear-to-br from-blue-600 to-blue-700'} rounded-lg p-2.5 shadow-sm hover:shadow-md transition-all`}>
                                             {/* Fondo decorativo */}
-                                            <div className="absolute right-0 top-0 h-full w-1/4 bg-white/10 skew-x-12 transform origin-top-right transition-transform duration-500"></div>
+                                            <div className="absolute right-0 top-0 h-full w-1/4 bg-white/10 skew-x-12 transform origin-top-right transition-transform duration-500 group-hover:w-1/3"></div>
 
                                             <div className="relative z-10">
-                                                <div className="flex items-center justify-between gap-1 overflow-hidden">
-                                                    <div className="text-[11px] font-bold text-white truncate mb-1">
+                                                <div className="flex items-center justify-between gap-1 overflow-hidden mb-1.5">
+                                                    <div className="text-[11px] font-bold text-white truncate flex items-center gap-1.5">
+                                                        <div className="w-5 h-5 rounded-md bg-white/20 flex items-center justify-center shrink-0">
+                                                            <Video className="w-3 h-3 text-white" />
+                                                        </div>
                                                         {r.cliente?.nombres} {r.cliente?.apellidoPaterno}
                                                     </div>
                                                     {esHoy && (
-                                                        <span className="text-[7px] font-black bg-white/20 text-white px-1 py-0.5 rounded backdrop-blur-sm uppercase tracking-tighter border border-white/10 whitespace-nowrap">Hoy</span>
+                                                        <span className="text-[7px] font-black bg-white/30 text-white px-1.5 py-0.5 rounded-full backdrop-blur-sm uppercase tracking-tighter border border-white/10 whitespace-nowrap animate-pulse">Hoy</span>
                                                     )}
                                                 </div>
-                                                <div className="flex justify-between items-center gap-1">
-                                                    <div className="text-[9px] font-bold text-white bg-white/20 backdrop-blur-sm border border-white/10 px-1.5 py-0.5 rounded-full flex items-center gap-1">
-                                                        <Clock className="w-2 h-2" />
-                                                        {rFecha.toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                                    </div>
-                                                    {r.cliente?.telefono && (
-                                                        <div className="text-[9px] text-white/80 font-medium flex items-center gap-0.5 truncate">
-                                                            <Phone className="w-2 h-2" />
-                                                            {r.cliente.telefono}
+
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex justify-between items-center gap-1">
+                                                        <div className="text-[9px] font-bold text-white bg-white/20 backdrop-blur-sm border border-white/10 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                                                            <Clock className="w-2 h-2" />
+                                                            {rFecha.toLocaleString('es-MX', { hour: '2-digit', minute: '2-digit' })}
                                                         </div>
+                                                        {r.cliente?.telefono && (
+                                                            <div className="text-[9px] text-white/90 font-medium flex items-center gap-0.5 mt-0.5">
+                                                                <Phone className="w-2 h-2" />
+                                                                {r.cliente.telefono}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {r.googleMeetLink && (
+                                                        <a
+                                                            href={r.googleMeetLink.startsWith('http') ? r.googleMeetLink : `https://${r.googleMeetLink}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center justify-center gap-1.5 py-1.5 px-3 bg-white text-blue-700 rounded-lg text-[9px] font-black hover:bg-blue-50 transition-colors shadow-sm active:scale-95"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            <Video className="w-2.5 h-2.5" />
+                                                            UNIRSE A GOOGLE MEET
+                                                        </a>
                                                     )}
                                                 </div>
                                             </div>

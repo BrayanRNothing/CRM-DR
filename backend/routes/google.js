@@ -89,7 +89,8 @@ router.post('/save-tokens', auth, async (req, res) => {
         }
         if (tokens.expiry_date) {
             updates.push('googleTokenExpiry = ?');
-            params.push(new Date(tokens.expiry_date).toISOString());
+            // Store as numeric timestamp (milliseconds)
+            params.push(Number(tokens.expiry_date));
         }
 
         if (updates.length > 0) {
