@@ -198,14 +198,8 @@ const VendedorDashboard = () => {
                     });
                 }
 
-                // DEDUPLICACIÓN: Si un prospecto/cliente ya tiene una REUNIÓN PRÓXIMA (CITA), 
-                // lo quitamos de la lista de Recordatorios de Llamada para evitar ruido.
-                const idsEnReuniones = reuniones.map(r => r.cliente?.id || r.clienteId);
-                
-                const recordatoriosFiltrados = todosLosPendientes.filter(p => !idsEnReuniones.includes(p.id || p._id));
-
-                recordatoriosFiltrados.sort((a, b) => new Date(a.proximaLlamada) - new Date(b.proximaLlamada));
-                setRecordatorios(recordatoriosFiltrados.slice(0, 15));
+                todosLosPendientes.sort((a, b) => new Date(a.proximaLlamada) - new Date(b.proximaLlamada));
+                setRecordatorios(todosLosPendientes.slice(0, 15));
 
             } catch (e) {
                 console.error('Error general en recordatorios:', e);

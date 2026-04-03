@@ -216,7 +216,15 @@ router.get('/prospectos', [auth, esProspector], async (req, res) => {
                 WHERE t.cliente = c.id
                   AND t.titulo = 'Recordatorio de llamada'
                   AND t.estado = 'pendiente'
-            ) as proximoRecordatorio
+            ) as proximoRecordatorio,
+            (
+                SELECT MIN(a.fecha)
+                FROM actividades a
+                WHERE a.cliente = c.id
+                  AND a.tipo = 'cita'
+                  AND (a.resultado = 'pendiente' OR a.resultado IS NULL)
+                  AND a.fecha >= CURRENT_TIMESTAMP
+            ) as proximaCita
             FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE c.prospectorAsignado = ? AND c.etapaEmbudo NOT IN (?, ?)`;
         const params = [prospectorId, 'venta_ganada', 'perdido'];
 
@@ -277,7 +285,16 @@ router.get('/clientes-ganados', [auth, esProspector], async (req, res) => {
         const prospectorId = parseInt(req.usuario.id);
         const { busqueda } = req.query;
 
-        let sql = 'SELECT c.*, u.nombre as closerNombre FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE c.prospectorAsignado = ? AND c.etapaEmbudo = ?';
+        let sql = `SELECT c.*, u.nombre as closerNombre,
+            (
+                SELECT MIN(a.fecha)
+                FROM actividades a
+                WHERE a.cliente = c.id
+                  AND a.tipo = 'cita'
+                  AND (a.resultado = 'pendiente' OR a.resultado IS NULL)
+                  AND a.fecha >= CURRENT_TIMESTAMP
+            ) as proximaCita
+            FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE c.prospectorAsignado = ? AND c.etapaEmbudo = ?`;
         const params = [prospectorId, 'venta_ganada'];
 
         if (busqueda) {

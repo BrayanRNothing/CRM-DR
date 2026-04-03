@@ -1377,32 +1377,49 @@ const ProspectorSeguimiento = () => {
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
-                                                {p.proximaLlamada ? (() => {
-                                                    const esVencido = new Date(p.proximaLlamada) < new Date();
-                                                    return (
-                                                        <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-(--theme-600)'}`}>
-                                                            <div className={`w-2 h-2 rounded-full animate-pulse ${esVencido ? 'bg-red-500' : 'bg-(--theme-500)'}`}></div>
-                                                            <span className="text-xs font-semibold leading-tight">
-                                                                {['reunion_agendada', 'reunion_realizada'].includes(p.etapaEmbudo) && 'Cita: '}
-                                                                {new Date(p.proximaLlamada).toLocaleString('es-MX', {
-                                                                    day: 'numeric',
-                                                                    month: 'short',
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit'
-                                                                })}
-                                                                {esVencido && ' ⚠'}
-                                                            </span>
-                                                            {['reunion_agendada', 'reunion_realizada'].includes(p.etapaEmbudo) ? (
-                                                                <Video className="w-3 h-3" />
-                                                            ) : (
-                                                                <Phone className="w-3 h-3" />
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })() : (
-                                                    <span className="text-xs text-slate-400 italic">Sin pendiente</span>
-                                                )}
-                                            </td>
+                                                 <div className="flex flex-col gap-1.5">
+                                                     {/* Recordatorio de Llamada */}
+                                                     {p.proximaLlamada && (() => {
+                                                         const esVencido = new Date(p.proximaLlamada) < new Date();
+                                                         return (
+                                                             <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-emerald-600'}`}>
+                                                                 <Phone className="w-3 h-3 shrink-0" />
+                                                                 <span className="text-[10px] font-bold leading-tight">
+                                                                     {new Date(p.proximaLlamada).toLocaleString('es-MX', {
+                                                                         day: 'numeric',
+                                                                         month: 'short',
+                                                                         hour: '2-digit',
+                                                                         minute: '2-digit'
+                                                                     })}
+                                                                     {esVencido && ' ⚠'}
+                                                                 </span>
+                                                             </div>
+                                                         );
+                                                     })()}
+
+                                                     {/* Próxima Cita (Meeting) */}
+                                                     {p.proximaCita && (() => {
+                                                         const esVencido = new Date(p.proximaCita) < new Date();
+                                                         return (
+                                                             <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-indigo-600'}`}>
+                                                                 <Video className="w-3 h-3 shrink-0" />
+                                                                 <span className="text-[10px] font-bold leading-tight uppercase tracking-tighter">
+                                                                     Cita: {new Date(p.proximaCita).toLocaleString('es-MX', {
+                                                                         day: 'numeric',
+                                                                         month: 'short',
+                                                                         hour: '2-digit',
+                                                                         minute: '2-digit'
+                                                                     })}
+                                                                 </span>
+                                                             </div>
+                                                         );
+                                                     })()}
+
+                                                     {!p.proximaLlamada && !p.proximaCita && (
+                                                         <span className="text-xs text-slate-400 italic">Sin pendiente</span>
+                                                     )}
+                                                 </div>
+                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <div className="flex items-center justify-center gap-3">
                                                     <button
