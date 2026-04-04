@@ -302,7 +302,15 @@ router.get('/prospectos', [auth, esCloser], async (req, res) => {
     try {
         const closerId = parseInt(req.usuario.id);
         const rows = await db.prepare(`
-            SELECT c.*, u.nombre as prospectorNombre FROM clientes c
+            SELECT c.*, u.nombre as prospectorNombre,
+            (
+                SELECT MIN(a.fecha)
+                FROM actividades a
+                WHERE a.cliente = c.id
+                  AND a.tipo = 'cita'
+                  AND (a.resultado = 'pendiente' OR a.resultado IS NULL)
+            ) as proximaCita
+            FROM clientes c
             LEFT JOIN usuarios u ON c.prospectorAsignado = u.id
             WHERE c.closerAsignado = ? AND c.etapaEmbudo != ?
             ORDER BY c.fechaTransferencia DESC
@@ -310,7 +318,11 @@ router.get('/prospectos', [auth, esCloser], async (req, res) => {
         res.json(rows.map(r => {
             const { prospectorNombre, ...c } = r;
             const out = toMongoFormat(c);
-            if (out) out.prospectorAsignado = { nombre: prospectorNombre };
+            if (out) {
+                out.prospectorAsignado = { nombre: prospectorNombre };
+                // Asegurar proximaLlamada unificada
+                out.proximaLlamada = out.proximaLlamada || out.proximallamada || null;
+            }
             return out;
         }));
     } catch (error) {
@@ -323,7 +335,15 @@ router.get('/clientes-ganados', [auth, esCloser], async (req, res) => {
     try {
         const closerId = parseInt(req.usuario.id);
         const rows = await db.prepare(`
-            SELECT c.*, u.nombre as prospectorNombre FROM clientes c
+            SELECT c.*, u.nombre as prospectorNombre,
+            (
+                SELECT MIN(a.fecha)
+                FROM actividades a
+                WHERE a.cliente = c.id
+                  AND a.tipo = 'cita'
+                  AND (a.resultado = 'pendiente' OR a.resultado IS NULL)
+            ) as proximaCita
+            FROM clientes c
             LEFT JOIN usuarios u ON c.prospectorAsignado = u.id
             WHERE c.closerAsignado = ? AND c.etapaEmbudo = ?
             ORDER BY c.fechaUltimaEtapa DESC
@@ -346,11 +366,13 @@ router.get('/clientes-ganados', [auth, esCloser], async (req, res) => {
         res.json(rows.map(r => {
             const { prospectorNombre, ...c } = r;
             const out = toMongoFormat(c);
-            if (out) out.prospectorAsignado = { nombre: prospectorNombre };
             if (out) {
+                out.prospectorAsignado = { nombre: prospectorNombre };
                 const act = actMap[r.id];
                 out.ultimaActTipo = act?.tipo || null;
                 out.ultimaActNotas = act?.notas || null;
+                // Asegurar proximaLlamada unificada
+                out.proximaLlamada = out.proximaLlamada || out.proximallamada || null;
             }
             return out;
         }));
