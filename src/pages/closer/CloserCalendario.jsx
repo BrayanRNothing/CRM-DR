@@ -1126,7 +1126,3 @@ const CloserCalendario = () => {
 };
 
 export default CloserCalendario;
-    );
-};
-
-export default CloserCalendario;
