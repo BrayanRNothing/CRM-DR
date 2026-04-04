@@ -27,6 +27,7 @@ const ProspectorCalendario = () => {
     const [createdEventLink, setCreatedEventLink] = useState(null);
     const [closerLinkedToGoogle, setCloserLinkedToGoogle] = useState(true);
     const [googleLinked, setGoogleLinked] = useState(null);
+    const [showSyncPrompt, setShowSyncPrompt] = useState(false);
     const [loadingFreeBusy, setLoadingFreeBusy] = useState(false);
     const [misReuniones, setMisReuniones] = useState([]);
     const [loadingMisReuniones, setLoadingMisReuniones] = useState(false);
@@ -268,6 +269,10 @@ const ProspectorCalendario = () => {
                 const data = await res.json();
                 if (!res.ok || data.notLinked) {
                     setGoogleLinked(false);
+                    // Mostrar prompt pantalla completa si no ha sido omitido esta sesión
+                    if (!sessionStorage.getItem('dismissedSyncPrompt')) {
+                        setShowSyncPrompt(true);
+                    }
                 } else {
                     setGoogleLinked(true);
                 }
@@ -579,8 +584,49 @@ const ProspectorCalendario = () => {
         );
     };
 
+    const SyncPromptModal = () => {
+        if (!showSyncPrompt) return null;
+        return (
+            <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 backdrop-blur-md bg-slate-900/40">
+                <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden transform animate-in zoom-in-95 duration-200">
+                    <div className="p-8 text-center">
+                        <div className="w-20 h-20 bg-(--theme-50) rounded-full flex items-center justify-center mx-auto mb-6">
+                            <div className="w-14 h-14 bg-(--theme-500) rounded-2xl flex items-center justify-center rotate-12 shadow-lg shadow-(--theme-500)/30">
+                                <LinkIcon className="w-8 h-8 text-white -rotate-12" />
+                            </div>
+                        </div>
+                        <h3 className="text-2xl font-black text-slate-900 mb-2">Vincula tu Calendario</h3>
+                        <p className="text-sm text-slate-500 leading-relaxed mb-8">
+                            Para poder crear salas de <span className="font-bold text-slate-700">Google Meet</span> y gestionar tus citas automáticamente, necesitamos conectar con tu cuenta de Google.
+                        </p>
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => navigate('/vendedor/ajustes')}
+                                className="w-full py-4 bg-(--theme-500) text-white rounded-2xl font-black text-sm hover:bg-[#7cb342] transition-all shadow-lg shadow-(--theme-500)/20"
+                            >
+                                IR A VINCULAR AHORA
+                            </button>
+                            <button
+                                onClick={() => {
+                                    sessionStorage.setItem('dismissedSyncPrompt', 'true');
+                                    setShowSyncPrompt(false);
+                                }}
+                                className="w-full py-3 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                Omitir por ahora
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="h-full flex flex-col p-5 overflow-hidden">
+            <ResultModal />
+            <EditMeetingModal />
+            <SyncPromptModal />
             <div className="flex-1 flex flex-col space-y-4 overflow-hidden min-h-0">
                 {/* Main Grid */}
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
