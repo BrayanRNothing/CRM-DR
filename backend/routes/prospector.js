@@ -890,7 +890,7 @@ router.post('/agendar-reunion', [auth, esProspector], async (req, res) => {
                     end: { dateTime: finReunionISO, timeZone: 'America/Mexico_City' },
                     attendees: attendeesList,
                     conferenceData: {
-                        createRequest: { 
+                        createRequest: {
                             requestId: 'meeting-' + Date.now().toString(),
                             conferenceSolutionKey: { type: 'hangoutsMeet' }
                         }
@@ -914,8 +914,8 @@ router.post('/agendar-reunion', [auth, esProspector], async (req, res) => {
             console.error('❌ Error detallado al crear evento en Google Calendar:', calendarError.response?.data || calendarError.message);
             // Si el error es de permisos/configuración de Google, informarlo
             if (isGoogleAuthError(calendarError)) {
-                return res.status(400).json({ 
-                    msg: 'Error con Google Calendar (API deshabilitada o Sin Permisos)', 
+                return res.status(400).json({
+                    msg: 'Error con Google Calendar (API deshabilitada o Sin Permisos)',
                     googleError: calendarError.response?.data?.error || calendarError.message,
                     details: calendarError.response?.data?.error_description || undefined,
                     code: 'google_config_error'
@@ -928,9 +928,9 @@ router.post('/agendar-reunion', [auth, esProspector], async (req, res) => {
 
         const fechaDisplayMX = new Date(fechaReunion).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', dateStyle: 'short', timeStyle: 'short' });
         await db.prepare(`
-            INSERT INTO actividades (tipo, vendedor, cliente, fecha, descripcion, resultado, notas, cambioEtapa, etapaAnterior, etapaNueva)
-            VALUES (?, ?, ?, ?, ?, 'pendiente', ?, 1, 'en_contacto', 'reunion_agendada')
-        `).run('cita', prospectorId, cid, fechaReunionISO, `Reunión agendada para el ${fechaDisplayMX} por prospector ${req.usuario.nombre} → Asignada a closer`, notas || '');
+            INSERT INTO actividades (tipo, vendedor, cliente, fecha, descripcion, resultado, notas, cambioEtapa, etapaAnterior, etapaNueva, "googleMeetLink")
+            VALUES (?, ?, ?, ?, ?, 'pendiente', ?, 1, 'en_contacto', 'reunion_agendada', ?)
+        `).run('cita', prospectorId, cid, fechaReunionISO, `Reunión agendada para el ${fechaDisplayMX} por prospector ${req.usuario.nombre} → Asignada a closer`, notas || '', hangoutLink || '');
 
         const clienteActualizado = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(cid);
         const actividadRow = await db.prepare('SELECT * FROM actividades WHERE cliente = ? ORDER BY id DESC LIMIT 1').get(cid);

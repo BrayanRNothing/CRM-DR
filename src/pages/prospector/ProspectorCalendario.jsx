@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Calendar as CalendarIcon, Clock, User, Phone, CheckCircle2, ChevronLeft, ChevronRight, UserPlus, Briefcase, Mail, MapPin, LogIn, Link as LinkIcon, Copy, AlertCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, User, Phone, CheckCircle2, ChevronLeft, ChevronRight, UserPlus, Briefcase, Mail, MapPin, LogIn, Link as LinkIcon, Copy, AlertCircle, Trash2, Pencil, VideoOff, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import socket from '../../config/socket';
 import API_URL from '../../config/api';
@@ -10,19 +10,9 @@ const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 
-const GoogleIcon = ({ size = 20 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24">
-        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
-        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-    </svg>
-);
 
 const ProspectorCalendario = () => {
     const location = useLocation();
-    const navigate = useNavigate();
-    const [showGoogleAd, setShowGoogleAd] = useState(false);
     const currentUser = getUser();
     const isVendedor = String(currentUser?.rol || '').toLowerCase() === 'vendedor';
     const currentUserId = String(currentUser?.id || currentUser?._id || '');
@@ -45,6 +35,18 @@ const ProspectorCalendario = () => {
     });
     const [activeTab, setActiveTab] = useState('agendar'); // 'agendar' o 'reuniones'
     const [loadingInitial, setLoadingInitial] = useState(true);
+
+    // Modal: registrar resultado
+    const [showResultModal, setShowResultModal] = useState(false);
+    const [selectedMeetingForResult, setSelectedMeetingForResult] = useState(null);
+    const [resultNotes, setResultNotes] = useState('');
+    // Modal: editar reunión
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedMeetingForEdit, setSelectedMeetingForEdit] = useState(null);
+    const [editMeetingData, setEditMeetingData] = useState({ fecha: '', notas: '' });
+    const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+
+    const navigate = useNavigate();
 
     const cargarMisReuniones = async () => {
         if (!isVendedor) return;
@@ -136,6 +138,39 @@ const ProspectorCalendario = () => {
         }
     };
 
+    const handleEliminarReunion = async (id) => {
+        if (!window.confirm('¿Eliminar esta reunión?')) return;
+        const t = toast.loading('Eliminando...');
+        try {
+            const res = await fetch(`${API_URL}/api/actividades/${id}`, {
+                method: 'DELETE',
+                headers: { 'x-auth-token': getToken() }
+            });
+            if (!res.ok) { const d = await res.json(); throw new Error(d.mensaje); }
+            toast.success('Reunión eliminada');
+            await cargarMisReuniones();
+        } catch (e) { toast.error(e.message || 'Error al eliminar'); }
+        finally { toast.dismiss(t); }
+    };
+
+    const handleActualizarReunion = async () => {
+        if (!editMeetingData.fecha) { toast.error('La fecha es obligatoria'); return; }
+        setGuardandoEdicion(true);
+        const t = toast.loading('Actualizando...');
+        try {
+            const res = await fetch(`${API_URL}/api/actividades/${selectedMeetingForEdit.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'x-auth-token': getToken() },
+                body: JSON.stringify({ fecha: new Date(editMeetingData.fecha).toISOString(), notas: editMeetingData.notas })
+            });
+            if (!res.ok) { const d = await res.json(); throw new Error(d.mensaje); }
+            toast.success('Reunión actualizada');
+            setShowEditModal(false);
+            await cargarMisReuniones();
+        } catch (e) { toast.error(e.message || 'Error al actualizar'); }
+        finally { setGuardandoEdicion(false); toast.dismiss(t); }
+    };
+
     React.useEffect(() => {
         const fetchClosers = async () => {
             try {
@@ -155,11 +190,11 @@ const ProspectorCalendario = () => {
                     console.log("All Users Data:", data);
                     const OCULTAR_USERS = ['brayan', '@brayan', 'closer'];
                     let closersList = data.filter(u => {
-                        const isMe = (currentUserId && (String(u.id) === currentUserId || String(u._id) === currentUserId)) || 
-                                     (currentUser?.usuario && u.usuario && String(currentUser.usuario).toLowerCase() === String(u.usuario).toLowerCase());
+                        const isMe = (currentUserId && (String(u.id) === currentUserId || String(u._id) === currentUserId)) ||
+                            (currentUser?.usuario && u.usuario && String(currentUser.usuario).toLowerCase() === String(u.usuario).toLowerCase());
                         const roleMatch = String(u.rol).toLowerCase() === 'closer' || String(u.rol).toLowerCase() === 'vendedor';
                         const isHidden = OCULTAR_USERS.includes(String(u.usuario || '').toLowerCase());
-                        
+
                         if (isMe) return roleMatch;
                         return roleMatch && !isHidden;
                     });
@@ -176,7 +211,7 @@ const ProspectorCalendario = () => {
 
                     // Si el usuario actual es vendedor, autoasigna sus reuniones a sí mismo.
                     if (isVendedor && currentUserId) {
-                        const yo = closersList.find(u => 
+                        const yo = closersList.find(u =>
                             (String(u.id) === currentUserId || String(u._id) === currentUserId) ||
                             (currentUser?.usuario && u.usuario && String(currentUser.usuario).toLowerCase() === String(u.usuario).toLowerCase())
                         );
@@ -220,20 +255,6 @@ const ProspectorCalendario = () => {
         };
         init();
     }, []);
-
-    useEffect(() => {
-        const isDismissed = localStorage.getItem('google_ad_dismissed') === 'true';
-        
-        // Mostrar anuncio solo si:
-        // 1. EsVendedor (estamos viendo nuestro propio calendario)
-        // 2. Sabemos que no está vinculado (closerLinkedToGoogle === false)
-        // 3. No lo hemos omitido ya
-        if (!isDismissed && isVendedor && closerLinkedToGoogle === false) {
-            setShowGoogleAd(true);
-        } else {
-            setShowGoogleAd(false);
-        }
-    }, [isVendedor, closerLinkedToGoogle]);
 
     // Auto-seleccionar prospecto si viene del Seguimiento
     useEffect(() => {
@@ -301,7 +322,7 @@ const ProspectorCalendario = () => {
     useEffect(() => {
         // En rol vendedor, mantener asignación por defecto a sí mismo si aún no está elegida.
         if (!isVendedor || selectedCloser || !currentUserId || closers.length === 0) return;
-        const yo = closers.find(u => 
+        const yo = closers.find(u =>
             (String(u.id) === currentUserId || String(u._id) === currentUserId) ||
             (currentUser?.usuario && u.usuario && String(currentUser.usuario).toLowerCase() === String(u.usuario).toLowerCase())
         );
@@ -412,7 +433,7 @@ const ProspectorCalendario = () => {
             if (resBackend.ok) {
                 const dataBackend = await resBackend.json();
                 toast.success('Cita agendada con éxito');
-                
+
                 // El link puede venir como hangoutLink o meetLink según la ruta
                 const finalLink = dataBackend.hangoutLink || dataBackend.meetLink;
                 if (finalLink) {
@@ -439,46 +460,102 @@ const ProspectorCalendario = () => {
         }
     };
 
-    return (
-        <div className="h-full flex flex-col p-5 overflow-hidden relative">
-            {/* Overlay Ad Google */}
-            {showGoogleAd && (
-                <div className="absolute inset-0 z-100 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-gray-100 animate-in zoom-in-95 duration-300">
-                        <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <GoogleIcon size={40} />
+    // ── MODALES ───────────────────────────────────────────────────────────
+    const OUTCOMES = [
+        { id: 'venta',        label: 'Venta Cerrada',     emoji: '🏆', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
+        { id: 'cotizacion',   label: 'Propuesta Enviada', emoji: '📄', bg: 'bg-blue-50',    border: 'border-blue-200',    text: 'text-blue-700'    },
+        { id: 'otra_reunion', label: 'Reagendar',          emoji: '📅', bg: 'bg-amber-50',   border: 'border-amber-200',   text: 'text-amber-700'   },
+        { id: 'no_asistio',  label: 'No Asistió',         emoji: '👻', bg: 'bg-red-50',     border: 'border-red-200',     text: 'text-red-700'     },
+        { id: 'no_venta',    label: 'No Interesado',      emoji: '❌', bg: 'bg-slate-50',   border: 'border-slate-200',   text: 'text-slate-600'   },
+    ];
+
+    const ResultModal = () => {
+        if (!showResultModal || !selectedMeetingForResult) return null;
+        const cliente = selectedMeetingForResult?.cliente;
+        return (
+            <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-4" style={{background:'rgba(15,23,42,0.55)',backdropFilter:'blur(8px)'}}>
+                <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" style={{animation:'slideUp 0.25s cubic-bezier(.16,1,.3,1)'}}>
+                    <div className="px-6 pt-6 pb-4 flex justify-between items-start border-b border-slate-50">
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] mb-0.5">Registrar resultado</p>
+                            <h3 className="text-lg font-black text-slate-900">{cliente?.nombres} {cliente?.apellidoPaterno}</h3>
+                            {cliente?.empresa && <p className="text-xs text-slate-400 font-medium mt-0.5">{cliente.empresa}</p>}
                         </div>
-                        <h3 className="text-xl font-black text-gray-900 mb-2">Potencia tu Calendario</h3>
-                        <p className="text-gray-600 mb-8 leading-relaxed">
-                            Para mejor funcionalidad vincula tu cuenta a Google en <span className="font-bold text-(--theme-600)">Ajustes &gt; Google</span>. Podrás ver tu disponibilidad real y crear salas de Meet automáticamente.
-                        </p>
-                        <div className="flex flex-col gap-3">
-                            <button 
-                                onClick={() => navigate('../ajustes')} 
-                                className="w-full py-3 bg-(--theme-500) text-white rounded-xl font-bold hover:bg-(--theme-600) transition-all shadow-lg shadow-(--theme-500)/20"
-                            >
-                                Vincular Cuenta
+                        <button onClick={() => setShowResultModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition-colors mt-0.5">
+                            <X className="w-4 h-4 text-slate-500" />
+                        </button>
+                    </div>
+                    <div className="px-5 pt-4 pb-2 grid grid-cols-2 gap-2">
+                        {OUTCOMES.map(o => (
+                            <button key={o.id} onClick={() => { registrarResultado(selectedMeetingForResult, o.id, resultNotes); setShowResultModal(false); }}
+                                className={`flex items-center gap-3 p-3.5 rounded-2xl border ${o.bg} ${o.border} ${o.text} font-bold text-xs transition-all hover:scale-[1.02] active:scale-[0.98] text-left`}>
+                                <span className="text-xl">{o.emoji}</span>
+                                <span>{o.label}</span>
                             </button>
-                            <button 
-                                onClick={() => {
-                                    setShowGoogleAd(false);
-                                    localStorage.setItem('google_ad_dismissed', 'true');
-                                }} 
-                                className="w-full py-3 bg-gray-50 text-gray-500 rounded-xl font-bold hover:bg-gray-100 transition-all border border-gray-100"
-                            >
-                                Omitir por ahora
-                            </button>
-                        </div>
+                        ))}
+                    </div>
+                    <div className="px-5 pt-3 pb-2">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Notas (opcional)</p>
+                        <textarea value={resultNotes} onChange={e => setResultNotes(e.target.value)}
+                            placeholder="Agrega detalles importantes de la reunión..."
+                            className="w-full text-sm p-3 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-300 resize-none bg-slate-50/50" rows={3} />
+                    </div>
+                    <div className="px-5 pb-5 pt-2">
+                        <button onClick={() => setShowResultModal(false)} className="w-full py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors">Cancelar</button>
                     </div>
                 </div>
-            )}
+            </div>
+        );
+    };
+
+    const EditMeetingModal = () => {
+        if (!showEditModal || !selectedMeetingForEdit) return null;
+        return (
+            <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-4" style={{background:'rgba(15,23,42,0.55)',backdropFilter:'blur(8px)'}}>
+                <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" style={{animation:'slideUp 0.25s cubic-bezier(.16,1,.3,1)'}}>
+                    <div className="px-6 pt-6 pb-4 flex justify-between items-start border-b border-slate-50">
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] mb-0.5">Editar reunión</p>
+                            <h3 className="text-lg font-black text-slate-900">{selectedMeetingForEdit?.cliente?.nombres} {selectedMeetingForEdit?.cliente?.apellidoPaterno}</h3>
+                        </div>
+                        <button onClick={() => setShowEditModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition-colors">
+                            <X className="w-4 h-4 text-slate-500" />
+                        </button>
+                    </div>
+                    <div className="px-5 pt-4 space-y-4 pb-4">
+                        <div>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Fecha y hora</label>
+                            <input type="datetime-local" value={editMeetingData.fecha} onChange={e => setEditMeetingData({...editMeetingData, fecha: e.target.value})}
+                                className="w-full p-3 text-sm border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-300 bg-slate-50/50" />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Notas</label>
+                            <textarea value={editMeetingData.notas} onChange={e => setEditMeetingData({...editMeetingData, notas: e.target.value})}
+                                placeholder="Notas o ajustes sobre el cambio..." rows={3}
+                                className="w-full p-3 text-sm border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-300 resize-none bg-slate-50/50" />
+                        </div>
+                    </div>
+                    <div className="px-5 pb-6 flex gap-3">
+                        <button onClick={() => setShowEditModal(false)} className="flex-1 py-3 text-sm font-bold text-slate-500 border border-slate-200 rounded-2xl hover:bg-slate-50 transition-colors">Cancelar</button>
+                        <button onClick={handleActualizarReunion} disabled={guardandoEdicion}
+                            className="flex-1 py-3 text-sm font-bold text-white bg-slate-900 rounded-2xl hover:bg-slate-800 transition-colors disabled:opacity-50">
+                            {guardandoEdicion ? 'Guardando...' : 'Guardar'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div className="h-full flex flex-col p-5 overflow-hidden">
             <div className="flex-1 flex flex-col space-y-4 overflow-hidden min-h-0">
                 {/* Main Grid */}
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
 
                     {/* Calendar Section (Left Side - 2 Cols) */}
-                    <div className="lg:col-span-2 flex flex-col min-h-0 bg-white rounded-3xl shadow-xl border border-gray-100 premium-reflejo">
-                        <div className="flex-1 p-8 flex flex-col min-h-0 relative z-10">
+                    <div className="lg:col-span-2 flex flex-col min-h-0">
+                        <div className="flex-1 p-8 flex flex-col min-h-0">
                             {/* Header */}
                             <div className="flex items-center justify-between mb-6">
                                 <button onClick={previousMonth} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
@@ -561,7 +638,7 @@ const ProspectorCalendario = () => {
                     {/* Scheduling Panel (Right Side - 1 Col) */}
                     <div className="lg:col-span-1 flex flex-col min-h-0">
                         <div className="flex-1 bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col overflow-hidden">
-                            
+
                             {/* Tabs Headers */}
                             <div className="flex border-b border-gray-100 mb-4 shrink-0">
                                 <button
@@ -745,62 +822,120 @@ const ProspectorCalendario = () => {
                                             <p className="text-xs text-gray-400 text-center py-8 italic bg-slate-50 rounded-xl border border-dashed border-slate-200">No hay reuniones próximas.</p>
                                         ) : (
                                             <div className="space-y-3">
-                                                {misReuniones.map((r) => (
-                                                    <div key={r.id} className="border border-slate-100 rounded-xl p-3 bg-white hover:border-slate-200 transition-colors shadow-sm">
-                                                        <div className="mb-2">
-                                                            <p className="text-sm font-bold text-gray-900 line-clamp-1">
-                                                                {r?.cliente?.nombres || 'Cliente'} {r?.cliente?.apellidoPaterno || ''}
-                                                            </p>
-                                                            <p className="text-[11px] font-semibold text-(--theme-600) flex items-center gap-1">
-                                                                <Clock className="w-3 h-3" />
-                                                                {new Date(r.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} - {new Date(r.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                                                            </p>
-                                                        </div>
+                                                {misReuniones.map((r) => {
+                                                    const hasMeet = !!r.googleMeetLink;
+                                                    const fecha = new Date(r.fecha);
+                                                    return (
+                                                        <div key={r.id} className="group relative bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-200 transition-all duration-300">
+                                                            {/* Colored top accent bar */}
+                                                            <div className="h-1 w-full bg-gradient-to-r from-(--theme-400) to-(--theme-600)"></div>
 
-                                                        <div className="grid grid-cols-2 gap-1.5">
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => registrarResultado(r, 'venta')} 
-                                                                disabled={guardandoResultadoId === r.id}
-                                                                className="px-2 py-1.5 text-[10px] font-bold rounded-lg bg-green-50 text-green-700 border border-green-100 hover:bg-green-100 disabled:opacity-60 transition-colors"
-                                                            >
-                                                                Venta
-                                                            </button>
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => registrarResultado(r, 'cotizacion')} 
-                                                                disabled={guardandoResultadoId === r.id}
-                                                                className="px-2 py-1.5 text-[10px] font-bold rounded-lg bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100 disabled:opacity-60 transition-colors"
-                                                            >
-                                                                Propuesta
-                                                            </button>
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => registrarResultado(r, 'otra_reunion')} 
-                                                                disabled={guardandoResultadoId === r.id}
-                                                                className="px-2 py-1.5 text-[10px] font-bold rounded-lg bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 disabled:opacity-60 transition-colors"
-                                                            >
-                                                                Reagendar
-                                                            </button>
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => registrarResultado(r, 'no_asistio')} 
-                                                                disabled={guardandoResultadoId === r.id}
-                                                                className="px-2 py-1.5 text-[10px] font-bold rounded-lg bg-red-50 text-red-700 border border-red-100 hover:bg-red-100 disabled:opacity-60 transition-colors"
-                                                            >
-                                                                No asistió
-                                                            </button>
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => registrarResultado(r, 'no_venta')} 
-                                                                disabled={guardandoResultadoId === r.id}
-                                                                className="col-span-2 px-2 py-1.5 text-[10px] font-bold rounded-lg bg-slate-50 text-slate-700 border border-slate-100 hover:bg-slate-100 disabled:opacity-60 transition-colors"
-                                                            >
-                                                                No interesado / Otros
-                                                            </button>
+                                                            <div className="p-4">
+                                                                {/* Header row */}
+                                                                <div className="flex items-start justify-between mb-3">
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="text-sm font-black text-slate-900 truncate leading-tight">
+                                                                            {r?.cliente?.nombres || 'Cliente'} {r?.cliente?.apellidoPaterno || ''}
+                                                                        </p>
+                                                                        {r?.cliente?.empresa && (
+                                                                            <p className="text-[10px] font-semibold text-slate-400 truncate mt-0.5 uppercase tracking-wide">{r.cliente.empresa}</p>
+                                                                        )}
+                                                                    </div>
+                                                                    {/* Action icons — always visible on mobile, hover on desktop */}
+                                                                    <div className="flex gap-1 ml-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+                                                                        <button
+                                                                            type="button"
+                                                                            title="Editar reunión"
+                                                                            onClick={() => {
+                                                                                setSelectedMeetingForEdit(r);
+                                                                                setEditMeetingData({ fecha: fecha.toISOString().slice(0, 16), notas: r.notas || '' });
+                                                                                setShowEditModal(true);
+                                                                            }}
+                                                                            className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-100 transition-all"
+                                                                        >
+                                                                            <Pencil className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            title="Eliminar reunión"
+                                                                            onClick={() => handleEliminarReunion(r.id)}
+                                                                            className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 border border-slate-100 transition-all"
+                                                                        >
+                                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Date/time pill */}
+                                                                <div className="flex items-center gap-2 mb-3">
+                                                                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-2.5 py-1.5">
+                                                                        <CalendarIcon className="w-3.5 h-3.5 text-(--theme-500)" />
+                                                                        <span className="text-[11px] font-bold text-slate-700">
+                                                                            {fecha.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1.5 bg-(--theme-50) border border-(--theme-100) rounded-xl px-2.5 py-1.5">
+                                                                        <Clock className="w-3.5 h-3.5 text-(--theme-600)" />
+                                                                        <span className="text-[11px] font-black text-(--theme-700)">
+                                                                            {fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Contact row */}
+                                                                {(r?.cliente?.telefono || r?.cliente?.correo) && (
+                                                                    <div className="flex gap-2 mb-3">
+                                                                        {r?.cliente?.telefono && (
+                                                                            <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-500 truncate">
+                                                                                <Phone className="w-3 h-3 shrink-0" />
+                                                                                <span className="truncate">{r.cliente.telefono}</span>
+                                                                            </div>
+                                                                        )}
+                                                                        {r?.cliente?.correo && (
+                                                                            <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-500 truncate">
+                                                                                <Mail className="w-3 h-3 shrink-0" />
+                                                                                <span className="truncate">{r.cliente.correo}</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Action buttons */}
+                                                                <div className="flex gap-2 pt-3 border-t border-slate-50">
+                                                                    {/* Meet button */}
+                                                                    {hasMeet ? (
+                                                                        <a href={r.googleMeetLink} target="_blank" rel="noopener noreferrer"
+                                                                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black tracking-wide transition-colors shadow-sm shadow-blue-200 active:scale-95">
+                                                                            <LogIn className="w-3.5 h-3.5" />
+                                                                            Meet
+                                                                        </a>
+                                                                    ) : (
+                                                                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 text-slate-300 text-[10px] font-bold border border-slate-100 cursor-default">
+                                                                            <VideoOff className="w-3.5 h-3.5" />
+                                                                            Sin Meet
+                                                                        </div>
+                                                                    )}
+
+                                                                    {hasMeet && (
+                                                                        <button type="button" title="Copiar enlace"
+                                                                            onClick={() => { navigator.clipboard.writeText(r.googleMeetLink); toast.success('Enlace copiado'); }}
+                                                                            className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+                                                                            <Copy className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                    )}
+
+                                                                    {/* Registrar resultado — takes remaining space */}
+                                                                    <button type="button"
+                                                                        onClick={() => { setSelectedMeetingForResult(r); setResultNotes(r.notas || ''); setShowResultModal(true); }}
+                                                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black tracking-wide transition-colors shadow-sm active:scale-95">
+                                                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                                                        Resultado
+                                                                    </button>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>
@@ -809,8 +944,10 @@ const ProspectorCalendario = () => {
                         </div>
                     </div>
                 </div>
-
             </div>
+            <style>{`@keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }`}</style>
+            <ResultModal />
+            <EditMeetingModal />
         </div>
     );
 };
