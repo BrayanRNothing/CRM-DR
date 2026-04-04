@@ -26,6 +26,7 @@ const ProspectorCalendario = () => {
     const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
     const [createdEventLink, setCreatedEventLink] = useState(null);
     const [closerLinkedToGoogle, setCloserLinkedToGoogle] = useState(true);
+    const [googleLinked, setGoogleLinked] = useState(null);
     const [loadingFreeBusy, setLoadingFreeBusy] = useState(false);
     const [misReuniones, setMisReuniones] = useState([]);
     const [loadingMisReuniones, setLoadingMisReuniones] = useState(false);
@@ -255,6 +256,37 @@ const ProspectorCalendario = () => {
         };
         init();
     }, []);
+
+    // Verificar conexión Google del usuario actual (Vendedor)
+    React.useEffect(() => {
+        if (!isVendedor) return;
+        const checkMyConnection = async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/google/events?timeMin=${new Date().toISOString()}&maxResults=1`, {
+                    headers: { 'x-auth-token': getToken() }
+                });
+                const data = await res.json();
+                if (!res.ok || data.notLinked) {
+                    setGoogleLinked(false);
+                } else {
+                    setGoogleLinked(true);
+                }
+            } catch (err) {
+                setGoogleLinked(false);
+            }
+        };
+        checkMyConnection();
+    }, [isVendedor]);
+
+    // Verificar conexión Google del Closer seleccionado
+    React.useEffect(() => {
+        if (selectedCloser && closers.length > 0) {
+            const closer = closers.find(c => String(c.id) === String(selectedCloser) || String(c._id) === String(selectedCloser));
+            setCloserLinkedToGoogle(!!closer?.googleLinked);
+        } else {
+            setCloserLinkedToGoogle(true);
+        }
+    }, [selectedCloser, closers]);
 
     // Auto-seleccionar prospecto si viene del Seguimiento
     useEffect(() => {
@@ -813,6 +845,16 @@ const ProspectorCalendario = () => {
                                                 <LogIn className="w-4 h-4 text-slate-500" />
                                             </button>
                                         </div>
+
+                                        {googleLinked === false && (
+                                            <div className="mb-4 flex flex-col p-3 bg-orange-50 border border-orange-200 rounded-2xl space-y-1 animate-in fade-in slide-in-from-top-2">
+                                                <div className="flex items-center gap-2 text-orange-800">
+                                                    <AlertCircle className="w-4 h-4 shrink-0" />
+                                                    <p className="font-bold text-xs">Calendario no vinculado</p>
+                                                </div>
+                                                <p className="text-[10px] text-orange-700 leading-tight">Vincula tu cuenta de Google en <span className="font-bold">Ajustes &gt; Google</span> para sincronizar tus reuniones.</p>
+                                            </div>
+                                        )}
 
                                         {loadingMisReuniones ? (
                                             <div className="flex items-center justify-center p-8">
