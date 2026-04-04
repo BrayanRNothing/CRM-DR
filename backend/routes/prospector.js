@@ -223,7 +223,6 @@ router.get('/prospectos', [auth, esProspector], async (req, res) => {
                 WHERE a.cliente = c.id
                   AND a.tipo = 'cita'
                   AND (a.resultado = 'pendiente' OR a.resultado IS NULL)
-                  AND a.fecha >= CURRENT_TIMESTAMP
             ) as proximaCita
             FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE c.prospectorAsignado = ? AND c.etapaEmbudo NOT IN (?, ?)`;
         const params = [prospectorId, 'venta_ganada', 'perdido'];
@@ -292,7 +291,6 @@ router.get('/clientes-ganados', [auth, esProspector], async (req, res) => {
                 WHERE a.cliente = c.id
                   AND a.tipo = 'cita'
                   AND (a.resultado = 'pendiente' OR a.resultado IS NULL)
-                  AND a.fecha >= CURRENT_TIMESTAMP
             ) as proximaCita
             FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE c.prospectorAsignado = ? AND c.etapaEmbudo = ?`;
         const params = [prospectorId, 'venta_ganada'];

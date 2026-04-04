@@ -1381,7 +1381,7 @@ const ProspectorSeguimiento = () => {
                                             </td>
                                             <td className="px-4 py-3">
                                                  <div className="flex flex-col gap-1.5">
-                                                     {/* Próxima Cita (Meeting) - PRIORIDAD */}
+                                                     {/* Próxima Cita (Meeting) */}
                                                      {p.proximaCita && (() => {
                                                          const esVencido = new Date(p.proximaCita) < new Date();
                                                          return (
@@ -1400,22 +1400,17 @@ const ProspectorSeguimiento = () => {
                                                          );
                                                      })()}
 
-                                                     {/* Recordatorio de Llamada - Solo se muestra si NO COINCIDE con la cita o si no hay cita */}
+                                                     {/* Recordatorio de Llamada */}
                                                      {p.proximaLlamada && (() => {
-                                                         // Si ya mostramos proximaCita y es la misma fecha/hora, no duplicamos como llamada
-                                                         const sameDate = p.proximaCita && (new Date(p.proximaLlamada).getTime() === new Date(p.proximaCita).getTime());
-                                                         if (sameDate) return null;
+                                                         // Si ya mostramos la cita y la fecha es la misma, no duplicamos como llamada
+                                                         const citaMismaFecha = p.proximaCita && (new Date(p.proximaLlamada).getTime() === new Date(p.proximaCita).getTime());
+                                                         if (citaMismaFecha) return null;
 
                                                          const esVencido = new Date(p.proximaLlamada) < new Date();
-                                                         
-                                                         // Caso especial: El prospecto ya tiene cita agendada, pero la fecha está en proximaLlamada (viejo comportamiento)
-                                                         const esCitaEncubierta = p.etapaEmbudo === 'reunion_agendada' && !p.proximaCita;
-
                                                          return (
-                                                             <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : esCitaEncubierta ? 'text-indigo-600' : 'text-emerald-600'}`}>
-                                                                 {esCitaEncubierta ? <Video className="w-3 h-3 shrink-0" /> : <Phone className="w-3 h-3 shrink-0" />}
+                                                             <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-emerald-00'}`}>
+                                                                 <Phone className="w-3 h-3 shrink-0" />
                                                                  <span className="text-[10px] font-bold leading-tight uppercase tracking-tighter">
-                                                                     {esCitaEncubierta ? 'Cita: ' : ''}
                                                                      {new Date(p.proximaLlamada).toLocaleString('es-MX', {
                                                                          day: 'numeric',
                                                                          month: 'short',
