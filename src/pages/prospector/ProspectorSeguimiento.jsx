@@ -25,7 +25,10 @@ import {
     X,
     Building2,
     MapPin,
-    Globe
+    Globe,
+    Trash2,
+    AlertCircle,
+    FileText
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
