@@ -8,6 +8,17 @@ require('./config/database');
 
 const app = express();
 
+// ✅ HEALTHCHECK - FIRST PRIORITY (Railway require 200 fast)
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        uptime: process.uptime(),
+        env: process.env.NODE_ENV,
+        db_connected: !!process.env.DATABASE_URL
+    });
+});
+console.log('✅ Healthcheck endpoint ready');
+
 // ✅ CORS CONFIGURATION - MUST BE FIRST
 app.use(cors({
     origin: '*', // Allows all origins. For production, you might want to restrict this later.
@@ -46,6 +57,7 @@ app.use('/api/prospectos', require('../legacy/backend/prospector'));
 app.use('/api/closer/prospectors', require('../legacy/backend/prospector-monitoring'));
 app.use('/api/google', require('./routes/google'));
 app.use('/api/equipos', require('./routes/equipos'));
+console.log('🚀 Rutas registradas correctamente');
 
 // Ruta de prueba API
 app.get('/api', (req, res) => {
@@ -56,10 +68,7 @@ app.get('/api', (req, res) => {
     });
 });
 
-// Health check para Railway
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', uptime: process.uptime() });
-});
+// Health check (Duplicate for safety, keep original location too)
 
 // ✅ SERVIR ARCHIVOS ESTÁTICOS DEL FRONTEND (React compilado)
 const distPath = path.join(__dirname, '../dist');

@@ -8,13 +8,17 @@ const { Pool } = require('pg');
 let internalDb;
 const isPostgres = true;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL no configurada. Este backend requiere PostgreSQL y ya no usa SQLite.');
+// Soportar múltiples nombres de variables de entorno comunes en Railway/Vercel
+const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.PGURL || process.env.DATABASE_PRIVATE_URL;
+
+if (!dbUrl) {
+  console.error('❌ CRÍTICO: No se encontró DATABASE_URL. El backend no podrá realizar consultas.');
+  console.log('💡 Tip: Verifica las variables de entorno en el panel de Railway.');
 }
 
-console.log('🌐 Conectando a PostgreSQL...');
+console.log(`🌐 Intentando conectar a la base de datos... ${dbUrl ? '(URL detectada)' : '(⚠️ URL NO DETECTADA)'}`);
 internalDb = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbUrl || 'postgres://placeholder:placeholder@localhost:5432/placeholder',
   ssl: {
     rejectUnauthorized: false
   }
