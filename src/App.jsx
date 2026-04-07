@@ -47,8 +47,6 @@ const Seguimiento = lazyWithRetry(() => import('./pages/Seguimiento.jsx'));
 const Clientes = lazyWithRetry(() => import('./pages/Clientes.jsx'));
 
 // Shared Components
-const Usuarios = lazyWithRetry(() => import('./pages/Usuarios.jsx'));
-const Perfil = lazyWithRetry(() => import('./pages/Perfil.jsx'));
 const Equipo = lazyWithRetry(() => import('./pages/Equipo.jsx'));
 
 function App() {
@@ -145,12 +143,11 @@ function App() {
             <Route path="calendario" element={<Calendario />} />
             <Route path="prospectos" element={<Seguimiento />} />
             <Route path="clientes" element={<Clientes />} />
-            <Route path="usuarios/prospectors" element={<Usuarios initialRole="prospector" />} />
-            <Route path="usuarios/closers" element={<Usuarios initialRole="closer" />} />
-            <Route path="usuarios/vendedores" element={<Usuarios initialRole="vendedor" />} />
-            <Route path="users/:id" element={<Perfil />} />
-            <Route path="ajustes" element={<Ajustes />} />
             <Route path="equipo" element={<Equipo />} />
+            <Route path="usuarios" element={<Navigate to="/vendedor/equipo" replace />} />
+            <Route path="usuarios/*" element={<Navigate to="/vendedor/equipo" replace />} />
+            <Route path="users/:id" element={<Navigate to="/vendedor/equipo" replace />} />
+            <Route path="ajustes" element={<Ajustes />} />
           </Route>
 
 

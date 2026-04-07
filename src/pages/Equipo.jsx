@@ -18,6 +18,13 @@ const getRolBadge = (rol) => {
   );
 };
 
+const inferRoleKey = (rol) => {
+  const normalized = String(rol || '').toLowerCase();
+  if (normalized === 'vendedor') return 'vendedor';
+  if (normalized === 'closer') return 'closer';
+  return 'prospector';
+};
+
 const initialForm = { usuario: '', contraseña: '', nombre: '', email: '', telefono: '', rol: 'prospector' };
 
 export default function Equipo() {
@@ -150,6 +157,10 @@ export default function Equipo() {
         .ge-btn-danger { background: #fef2f2; color: #ef4444; }
         .ge-btn-danger:hover { background: #fee2e2; }
         .ge-section-title { font-size: 0.7rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: #94a3b8; margin-bottom: 1rem; }
+        .ge-summary-box { background: #fafbff; border: 1.5px solid #eef2ff; border-radius: 16px; padding: 1rem; }
+        .ge-summary-label { font-size: 0.68rem; font-weight: 900; color: #64748b; letter-spacing: 0.08em; text-transform: uppercase; }
+        .ge-summary-value { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.04em; color: #0f172a; margin-top: 0.35rem; }
+        .ge-summary-hint { font-size: 0.76rem; color: #94a3b8; font-weight: 600; margin-top: 0.2rem; }
         .ge-members-grid { display: grid; gap: 0.75rem; }
         .ge-member-row { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; border-radius: 14px; border: 1.5px solid #f1f5f9; background: #fafbff; transition: all 0.2s; }
         .ge-member-row:hover { border-color: #e0e7ff; background: white; box-shadow: 0 2px 12px -2px rgba(0,0,0,.06); }
@@ -179,8 +190,8 @@ export default function Equipo() {
           <Users size={26} color="white" />
         </div>
         <div>
-          <div className="ge-title">Mi Equipo</div>
-          <div className="ge-subtitle">Gestión de miembros y configuración</div>
+          <div className="ge-title">Equipo y usuarios</div>
+          <div className="ge-subtitle">Gestión unificada de miembros, roles y configuración</div>
         </div>
         <div style={{ marginLeft: 'auto' }}>
           <button className="ge-btn ge-btn-ghost" onClick={fetchEquipo} title="Actualizar">
@@ -201,6 +212,43 @@ export default function Equipo() {
 
       {!loading && !error && equipo && (
         <>
+          {(() => {
+            const totales = miembros.reduce((acc, miembro) => {
+              acc.total += 1;
+              acc.activos += miembro.activo ? 1 : 0;
+              acc[inferRoleKey(miembro.rol)] += 1;
+              return acc;
+            }, { total: 0, activos: 0, prospector: 0, closer: 0, vendedor: 0 });
+
+            return (
+              <div className="ge-card">
+                <div className="ge-section-title">Resumen rápido</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
+                  <div className="ge-summary-box">
+                    <div className="ge-summary-label">Miembros</div>
+                    <div className="ge-summary-value">{totales.total}</div>
+                    <div className="ge-summary-hint">Usuarios dentro del equipo</div>
+                  </div>
+                  <div className="ge-summary-box">
+                    <div className="ge-summary-label">Activos</div>
+                    <div className="ge-summary-value">{totales.activos}</div>
+                    <div className="ge-summary-hint">Disponibles para operar</div>
+                  </div>
+                  <div className="ge-summary-box">
+                    <div className="ge-summary-label">Prospectores</div>
+                    <div className="ge-summary-value">{totales.prospector}</div>
+                    <div className="ge-summary-hint">Captación y seguimiento</div>
+                  </div>
+                  <div className="ge-summary-box">
+                    <div className="ge-summary-label">Closers / Vendedores</div>
+                    <div className="ge-summary-value">{totales.closer + totales.vendedor}</div>
+                    <div className="ge-summary-hint">Cierre y gestión comercial</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Info del Equipo */}
           <div className="ge-card">
             <div className="ge-section-title">Información del Equipo</div>
