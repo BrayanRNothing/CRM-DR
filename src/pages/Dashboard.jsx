@@ -127,6 +127,25 @@ const Dashboard = () => {
             setLoadingReuniones(true);
         }
         try {
+            const getItemKey = (item, fallbackFields = []) => {
+                const directId = item?.id || item?._id;
+                if (directId !== null && directId !== undefined && directId !== '') {
+                    return String(directId);
+                }
+
+                return fallbackFields
+                    .map((field) => {
+                        const value = item?.[field];
+                        if (value === null || value === undefined) return '';
+                        if (field === 'fecha' || field === 'proximaLlamada') {
+                            const dateValue = new Date(value);
+                            return Number.isNaN(dateValue.getTime()) ? String(value) : dateValue.toISOString();
+                        }
+                        return String(value);
+                    })
+                    .join('|');
+            };
+
             try {
                 const resR = await axios.get(`${API_URL}/api/vendedor/calendario`, { headers: getAuthHeaders() });
                 const ahora = new Date();
@@ -135,36 +154,43 @@ const Dashboard = () => {
                     const esPendiente = r.resultado === 'pendiente' || !r.resultado;
                     return fecha >= ahora && esPendiente;
                 });
-                proximas.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-                setReuniones(proximas.slice(0, 3));
+                const reunionesUnicas = [];
+                const reunionesVistas = new Set();
+
+                proximas
+                    .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+                    .forEach((reunion) => {
+                        const key = getItemKey(reunion, ['fecha', 'clienteId', 'resultado']);
+                        if (!reunionesVistas.has(key)) {
+                            reunionesVistas.add(key);
+                            reunionesUnicas.push(reunion);
+                        }
+                    });
+
+                setReuniones(reunionesUnicas.slice(0, 3));
             } catch (e) {
                 console.error('Error calendario data:', e);
             }
             if (!silent) setLoadingReuniones(false);
 
             try {
-                // 1. Obtener prospectos con recordatorio (Ruta Closer y Prospector), clientes ganados, y recordatorios de la base de tareas
-                const [resCloser, resProspector, resClientes, resTareas] = await Promise.allSettled([
-                    axios.get(`${API_URL}/api/vendedor/prospectos`, { headers: getAuthHeaders() }),
+                // 1. Obtener prospectos con recordatorio, clientes ganados, y recordatorios de la base de tareas
+                const [resProspectos, resClientes, resTareas] = await Promise.allSettled([
                     axios.get(`${API_URL}/api/vendedor/prospectos`, { headers: getAuthHeaders() }),
                     axios.get(`${API_URL}/api/vendedor/clientes-ganados`, { headers: getAuthHeaders() }),
                     axios.get(`${API_URL}/api/tareas`, { headers: getAuthHeaders() })
                 ]);
 
-                let todosLosPendientes = [];
+                const todosLosPendientes = [];
+                const pendientesVistos = new Set();
 
-                if (resCloser.status === 'fulfilled') {
-                    // Filtrar los que tengan llamada próxima Y tengan nombre/nombres
-                    const leadsCloser = (resCloser.value.data || []).filter(p => !!p.proximaLlamada && (p.nombres || p.nombre));
-                    todosLosPendientes = [...todosLosPendientes, ...leadsCloser];
-                }
-
-                if (resProspector.status === 'fulfilled') {
-                    // Filtrar duplicados por ID (Prospectos)
-                    const leadsP = (resProspector.value.data || []).filter(p => !!p.proximaLlamada && (p.nombres || p.nombre));
-                    leadsP.forEach(lp => {
-                        if (!todosLosPendientes.find(existing => (existing.id || existing._id) === (lp.id || lp._id))) {
-                            todosLosPendientes.push(lp);
+                if (resProspectos.status === 'fulfilled') {
+                    const leads = (resProspectos.value.data || []).filter(p => !!p.proximaLlamada && (p.nombres || p.nombre));
+                    leads.forEach((lead) => {
+                        const key = getItemKey(lead, ['proximaLlamada', 'nombres', 'apellidoPaterno', 'telefono']);
+                        if (!pendientesVistos.has(key)) {
+                            pendientesVistos.add(key);
+                            todosLosPendientes.push(lead);
                         }
                     });
                 }
@@ -173,7 +199,9 @@ const Dashboard = () => {
                     const clientesConRec = (resClientes.value.data || []).filter(c => !!c.proximaLlamada && (c.nombres || c.nombre));
                     // Marcamos que son clientes ganados para identificarlos
                     clientesConRec.forEach(c => {
-                        if (!todosLosPendientes.find(existing => (existing.id || existing._id) === (c.id || c._id))) {
+                        const key = getItemKey(c, ['proximaLlamada', 'nombres', 'apellidoPaterno', 'telefono']);
+                        if (!pendientesVistos.has(key)) {
+                            pendientesVistos.add(key);
                             todosLosPendientes.push({ ...c, esCliente: true });
                         }
                     });
@@ -186,8 +214,9 @@ const Dashboard = () => {
 
                     tareasRecordatorios.forEach(t => {
                         // Verificamos si ese cliente ya tiene un recordatorio cargado en la lista (para no duplicar)
-                        const yaExiste = todosLosPendientes.find(existing => (existing.id || existing._id) === t.cliente);
-                        if (!yaExiste) {
+                        const key = getItemKey(t, ['cliente', 'fechaLimite', 'titulo']);
+                        if (!pendientesVistos.has(key) && !todosLosPendientes.find(existing => (existing.id || existing._id) === t.cliente)) {
+                            pendientesVistos.add(key);
                             // Construir un objeto simulando ser un prospecto/cliente para unificar formato
                             todosLosPendientes.push({
                                 id: t.cliente,
@@ -200,8 +229,20 @@ const Dashboard = () => {
                     });
                 }
 
-                todosLosPendientes.sort((a, b) => new Date(a.proximaLlamada) - new Date(b.proximaLlamada));
-                setRecordatorios(todosLosPendientes.slice(0, 15));
+                const recordatoriosUnicos = [];
+                const recordatoriosVistos = new Set();
+
+                todosLosPendientes
+                    .sort((a, b) => new Date(a.proximaLlamada) - new Date(b.proximaLlamada))
+                    .forEach((recordatorio) => {
+                        const key = getItemKey(recordatorio, ['proximaLlamada', 'nombres', 'apellidoPaterno', 'telefono']);
+                        if (!recordatoriosVistos.has(key)) {
+                            recordatoriosVistos.add(key);
+                            recordatoriosUnicos.push(recordatorio);
+                        }
+                    });
+
+                setRecordatorios(recordatoriosUnicos.slice(0, 15));
 
             } catch (e) {
                 console.error('Error general en recordatorios:', e);
