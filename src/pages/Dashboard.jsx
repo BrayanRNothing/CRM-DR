@@ -6,6 +6,8 @@ import FunnelVisual from '../components/FunnelVisual';
 
 import API_URL from '../config/api';
 import socket from '../config/socket';
+import StatCard from '../components/ui/StatCard';
+import WeakStageAlert from '../components/WeakStageAlert';
 
 const PERIODOS = [
     { key: 'dia', label: 'Hoy', suffix: 'hoy' },
@@ -245,6 +247,8 @@ const Dashboard = () => {
 
     const mP = vendedorData.periodos?.[periodo] || EMPTY_PERIODO;
     const periodoSuffix = PERIODOS.find(p => p.key === periodo)?.suffix || 'hoy';
+    const formatMoney = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
+    const formatNumber = new Intl.NumberFormat('es-MX');
 
     const totalEntrada = vendedorData.embudo.total || 0;
     const enContacto = vendedorData.embudo.en_contacto || 0;
@@ -252,6 +256,28 @@ const Dashboard = () => {
     const negociacion = (vendedorData.embudo.reunion_agendada || 0) + (closerData.embudo.reunion_realizada || 0) + (closerData.embudo.propuesta_enviada || 0);
     const ganadas = closerData.embudo.venta_ganada || 0;
     const tasaGlobal = totalEntrada > 0 ? Math.round((ganadas / totalEntrada) * 100) : 0;
+    const tasaContacto = Number(vendedorData.tasasConversion.contacto || 0);
+    const tasaAgendamiento = enContacto > 0 ? Math.round((negociacion / enContacto) * 100) : 0;
+    const tasaCierre = negociacion > 0 ? Math.round((ganadas / negociacion) * 100) : 0;
+    const etapasDebiles = [
+        { etapa: 'Contacto Inicial → Llamadas', tasa: tasaContacto },
+        { etapa: 'Llamadas → Citas', tasa: tasaAgendamiento },
+        { etapa: 'Negociación → Venta', tasa: tasaCierre }
+    ].filter(item => item.tasa < 30);
+
+    const cardsResumen = [
+        { title: 'Prospectos activos', value: formatNumber.format(totalEntrada), icon: '👥', color: 'blue', subtext: `${mP.prospectos || 0} recibidos ${periodoSuffix}` },
+        { title: 'En contacto', value: formatNumber.format(enContacto), icon: '📞', color: 'green', subtext: `${sinContactar} todavía sin tocar` },
+        { title: 'En negociación', value: formatNumber.format(negociacion), icon: '🤝', color: 'purple', subtext: `${closerData.metricas.reuniones.realizadasHoy || 0} citas realizadas hoy` },
+        { title: 'Ventas ganadas', value: formatNumber.format(ganadas), icon: '🏆', color: 'yellow', subtext: `${tasaGlobal}% de conversión global` }
+    ];
+
+    const panelesActividad = [
+        { label: 'Llamadas hoy', value: mP.llamadas || 0, detail: `+${mP.llamadas || 0} esfuerzos en ${periodoSuffix}` },
+        { label: 'Mensajes hoy', value: mP.mensajes || 0, detail: 'Seguimientos, WhatsApp o correos enviados' },
+        { label: 'Reuniones hoy', value: (mP.reuniones || 0) + (closerData.metricas.reuniones.realizadasHoy || 0), detail: `Pendientes: ${closerData.metricas.reuniones.pendientes || 0}` },
+        { label: 'Ventas del mes', value: formatMoney.format(closerData.metricas.ventas.montoMes || 0), detail: `${closerData.metricas.ventas.mes || 0} cierres este mes` }
+    ];
 
     return (
         <div className="h-full flex flex-col gap-4 p-4 overflow-hidden bg-gray-50/50">
@@ -344,9 +370,7 @@ const Dashboard = () => {
                                 { key: 'resumen', label: 'Resumen', Icon: TrendingUp },
                                 { key: 'kpis', label: 'Métricas', Icon: BarChart3 },
                                 { key: 'tareas', label: 'Tareas', Icon: Bell },
-                                { key: 'buscar', label: 'Buscar', Icon: Search },
-                                { key: 'documentos', label: 'Documentos', Icon: FileText },
-                                { key: 'mensajes', label: 'Mensajes', Icon: MessageSquare }
+                                { key: 'alertas', label: 'Alertas', Icon: AlertTriangle }
                             ].map(tab => (
                                 <button
                                     key={tab.key}
@@ -365,27 +389,214 @@ const Dashboard = () => {
 
                     <div className={`flex-1 min-h-0 relative z-10 bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col ${healthTab === 'resumen' ? 'rounded-tl-none' : ''}`}>
                         <div className="flex-1 min-h-0 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
-                             <div className="flex flex-col items-center justify-center h-full py-12 text-center">
-                                 <div className="bg-gray-50 p-6 rounded-full mb-4">
-                                     {healthTab === 'resumen' && <TrendingUp className="w-12 h-12 text-gray-300" />}
-                                     {healthTab === 'kpis' && <BarChart3 className="w-12 h-12 text-gray-300" />}
-                                     {healthTab === 'tareas' && <Bell className="w-12 h-12 text-gray-300" />}
-                                     {healthTab === 'buscar' && <Search className="w-12 h-12 text-gray-300" />}
-                                     {healthTab === 'documentos' && <FileText className="w-12 h-12 text-gray-300" />}
-                                     {healthTab === 'mensajes' && <MessageSquare className="w-12 h-12 text-gray-300" />}
-                                 </div>
-                                 <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tighter">
-                                     {healthTab === 'resumen' && 'Resumen Ejecutivo'}
-                                     {healthTab === 'kpis' && 'Métricas de Rendimiento'}
-                                     {healthTab === 'tareas' && 'Gestión de Tareas'}
-                                     {healthTab === 'buscar' && 'Buscador Avanzado'}
-                                     {healthTab === 'documentos' && 'Repositorio de Documentos'}
-                                     {healthTab === 'mensajes' && 'Centro de Mensajería'}
-                                 </h2>
-                                 <p className="text-gray-400 font-medium mt-2 max-w-sm">
-                                     Contenido en desarrollo. Próximamente visualizarás aquí toda la información relevante de esta sección.
-                                 </p>
-                             </div>
+                            {healthTab === 'resumen' && (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                                        {cardsResumen.map(card => (
+                                            <StatCard
+                                                key={card.title}
+                                                title={card.title}
+                                                value={card.value}
+                                                icon={card.icon}
+                                                color={card.color}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                                        <div className="xl:col-span-2 bg-gray-50 border border-gray-200 rounded-xl p-4">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div>
+                                                    <h3 className="text-sm font-bold uppercase tracking-widest text-gray-700">Lectura rápida</h3>
+                                                    <p className="text-xs text-gray-400 mt-1">Lo más importante del día y del mes en una sola vista.</p>
+                                                </div>
+                                                <span className="text-xs font-bold text-(--theme-600) bg-(--theme-50) px-3 py-1 rounded-full border border-(--theme-100)">
+                                                    {tasaGlobal}% cierre global
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                {panelesActividad.map(panel => (
+                                                    <div key={panel.label} className="bg-white border border-gray-200 rounded-lg p-3">
+                                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{panel.label}</p>
+                                                        <div className="mt-2 text-2xl font-black text-gray-800">{panel.value}</div>
+                                                        <p className="text-xs text-gray-400 mt-1">{panel.detail}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-(--theme-50)/50 border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
+                                            <div>
+                                                <h3 className="text-sm font-bold uppercase tracking-widest text-gray-700">Estado actual</h3>
+                                                <p className="text-xs text-gray-400 mt-1">Indicadores clave del pipeline.</p>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <div className="flex items-center justify-between text-xs font-bold text-gray-600 mb-1">
+                                                        <span>Contacto</span>
+                                                        <span>{tasaContacto}%</span>
+                                                    </div>
+                                                    <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+                                                        <div className="h-full bg-(--theme-500)" style={{ width: `${Math.min(tasaContacto, 100)}%` }} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center justify-between text-xs font-bold text-gray-600 mb-1">
+                                                        <span>Agendamiento</span>
+                                                        <span>{tasaAgendamiento}%</span>
+                                                    </div>
+                                                    <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+                                                        <div className="h-full bg-slate-500" style={{ width: `${Math.min(tasaAgendamiento, 100)}%` }} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center justify-between text-xs font-bold text-gray-600 mb-1">
+                                                        <span>Cierre</span>
+                                                        <span>{tasaCierre}%</span>
+                                                    </div>
+                                                    <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+                                                        <div className="h-full bg-green-500" style={{ width: `${Math.min(tasaCierre, 100)}%` }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="mt-auto rounded-lg bg-white border border-gray-200 p-3">
+                                                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Pendientes hoy</p>
+                                                <p className="text-2xl font-black text-gray-800 mt-1">{recordatorios.length}</p>
+                                                <p className="text-xs text-gray-400">Recordatorios activos y oportunidades de seguimiento.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {healthTab === 'kpis' && (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        <div className="bg-white border border-gray-200 rounded-xl p-4">
+                                            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Contacto inicial</p>
+                                            <p className="text-3xl font-black text-gray-800 mt-2">{tasaContacto}%</p>
+                                            <p className="text-xs text-gray-400 mt-1">De prospectos activos a contacto real</p>
+                                        </div>
+                                        <div className="bg-white border border-gray-200 rounded-xl p-4">
+                                            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Agendamiento</p>
+                                            <p className="text-3xl font-black text-gray-800 mt-2">{tasaAgendamiento}%</p>
+                                            <p className="text-xs text-gray-400 mt-1">De contacto a cita o negociación</p>
+                                        </div>
+                                        <div className="bg-white border border-gray-200 rounded-xl p-4">
+                                            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Cierre</p>
+                                            <p className="text-3xl font-black text-gray-800 mt-2">{tasaCierre}%</p>
+                                            <p className="text-xs text-gray-400 mt-1">De negociación a venta ganada</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                                        <h3 className="text-sm font-bold uppercase tracking-widest text-gray-700 mb-4">Desglose del embudo</h3>
+                                        <div className="space-y-3">
+                                            {[
+                                                { label: 'Entrada', value: totalEntrada, helper: `${mP.prospectos || 0} nuevos ${periodoSuffix}` },
+                                                { label: 'Contacto', value: enContacto, helper: `${sinContactar} sin tocar` },
+                                                { label: 'Negociación', value: negociacion, helper: `${closerData.metricas.reuniones.realizadasHoy || 0} realizadas hoy` },
+                                                { label: 'Cierre', value: ganadas, helper: `${closerData.metricas.ventas.mes || 0} ventas en el mes` }
+                                            ].map(item => (
+                                                <div key={item.label} className="bg-white border border-gray-200 rounded-lg p-3">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <div>
+                                                            <p className="text-sm font-bold text-gray-800">{item.label}</p>
+                                                            <p className="text-xs text-gray-400 mt-1">{item.helper}</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-2xl font-black text-gray-800">{formatNumber.format(item.value)}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <WeakStageAlert etapasDebiles={etapasDebiles} />
+                                </div>
+                            )}
+
+                            {healthTab === 'tareas' && (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="text-sm font-bold uppercase tracking-widest text-gray-700">Recordatorios prioritarios</h3>
+                                                <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-100">{recordatorios.length}</span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {recordatorios.slice(0, 6).map((p, idx) => {
+                                                    const esVencido = new Date(p.proximaLlamada) < new Date();
+                                                    return (
+                                                        <div
+                                                            key={p.id || p._id || `task-${idx}`}
+                                                            className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 ${esVencido ? 'border-rose-200 bg-rose-50' : 'border-gray-200 bg-white'}`}
+                                                        >
+                                                            <div className="min-w-0">
+                                                                <p className="text-sm font-semibold text-gray-800 truncate">{p.nombre || `${p.nombres || ''} ${p.apellidoPaterno || ''}`.trim()}</p>
+                                                                <p className="text-xs text-gray-500 truncate">{p.esCliente ? 'Cliente ganado' : 'Prospecto'} · {p.telefono || 'Sin teléfono'}</p>
+                                                            </div>
+                                                            <div className="text-right shrink-0">
+                                                                <p className={`text-xs font-bold ${esVencido ? 'text-rose-600' : 'text-gray-600'}`}>{new Date(p.proximaLlamada).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                                                                <p className="text-[10px] uppercase tracking-widest text-gray-400">{esVencido ? 'vencido' : 'pendiente'}</p>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                                {recordatorios.length === 0 && <p className="text-sm text-gray-400 text-center py-6">Sin recordatorios pendientes.</p>}
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="text-sm font-bold uppercase tracking-widest text-gray-700">Próximas citas</h3>
+                                                <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">{reuniones.length}</span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {reuniones.slice(0, 6).map((r, idx) => (
+                                                    <div key={r.id || r._id || `meet-${idx}`} className="rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <div className="min-w-0">
+                                                                <p className="text-sm font-semibold text-gray-800 truncate">{r.cliente?.nombres} {r.cliente?.apellidoPaterno}</p>
+                                                                <p className="text-xs text-gray-500 truncate">{r.esCliente ? 'Cliente' : 'Prospecto'} · {r.cliente?.telefono || 'Sin teléfono'}</p>
+                                                            </div>
+                                                            <div className="text-right shrink-0">
+                                                                <p className="text-xs font-bold text-gray-700">{new Date(r.fecha).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                                                                <p className="text-[10px] uppercase tracking-widest text-gray-400">{new Date(r.fecha).toDateString() === new Date().toDateString() ? 'hoy' : 'próxima'}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {reuniones.length === 0 && <p className="text-sm text-gray-400 text-center py-6">No hay citas próximas.</p>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {healthTab === 'alertas' && (
+                                <div className="space-y-4">
+                                    <WeakStageAlert etapasDebiles={etapasDebiles} />
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        <div className="bg-white border border-gray-200 rounded-xl p-4">
+                                            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Prioridad 1</p>
+                                            <p className="text-lg font-black text-gray-800 mt-2">Reactivar prospectos sin contacto</p>
+                                            <p className="text-sm text-gray-500 mt-1">{sinContactar} oportunidades siguen sin seguimiento.</p>
+                                        </div>
+                                        <div className="bg-white border border-gray-200 rounded-xl p-4">
+                                            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Prioridad 2</p>
+                                            <p className="text-lg font-black text-gray-800 mt-2">Cerrar citas abiertas</p>
+                                            <p className="text-sm text-gray-500 mt-1">{closerData.metricas.reuniones.pendientes || 0} reuniones aún pendientes de atender.</p>
+                                        </div>
+                                        <div className="bg-white border border-gray-200 rounded-xl p-4">
+                                            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Prioridad 3</p>
+                                            <p className="text-lg font-black text-gray-800 mt-2">Revisar cierres del mes</p>
+                                            <p className="text-sm text-gray-500 mt-1">{closerData.metricas.ventas.mes || 0} ventas y {formatMoney.format(closerData.metricas.ventas.montoMes || 0)} acumulados.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
