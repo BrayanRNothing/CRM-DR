@@ -99,10 +99,10 @@ const Dashboard = () => {
                         total: { llamadas: rawP.metricas?.llamadas?.totales || 0, mensajes: 0, prospectos: rawP.embudo?.total || 0, reuniones: rawP.metricas?.reunionesAgendadas?.totales || 0 }
                     };
                 }
-                setProspectorData(rawP);
+                setVendedorData(rawP);
             } catch (e) {
                 console.error('Error prospector data:', e);
-                setProspectorData(INITIAL_PROSPECTOR_DATA);
+                setVendedorData(INITIAL_VENDEDOR_DATA);
             }
 
             try {
@@ -232,7 +232,7 @@ const Dashboard = () => {
         };
     }, []);
 
-    if (loading || !prospectorData || !closerData) {
+    if (loading || !vendedorData || !closerData) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
@@ -243,13 +243,13 @@ const Dashboard = () => {
         );
     }
 
-    const mP = prospectorData.periodos?.[periodo] || EMPTY_PERIODO;
+    const mP = vendedorData.periodos?.[periodo] || EMPTY_PERIODO;
     const periodoSuffix = PERIODOS.find(p => p.key === periodo)?.suffix || 'hoy';
 
-    const totalEntrada = prospectorData.embudo.total || 0;
-    const enContacto = prospectorData.embudo.en_contacto || 0;
+    const totalEntrada = vendedorData.embudo.total || 0;
+    const enContacto = vendedorData.embudo.en_contacto || 0;
     const sinContactar = Math.max(0, totalEntrada - enContacto);
-    const negociacion = (prospectorData.embudo.reunion_agendada || 0) + (closerData.embudo.reunion_realizada || 0) + (closerData.embudo.propuesta_enviada || 0);
+    const negociacion = (vendedorData.embudo.reunion_agendada || 0) + (closerData.embudo.reunion_realizada || 0) + (closerData.embudo.propuesta_enviada || 0);
     const ganadas = closerData.embudo.venta_ganada || 0;
     const tasaGlobal = totalEntrada > 0 ? Math.round((ganadas / totalEntrada) * 100) : 0;
 
@@ -285,12 +285,12 @@ const Dashboard = () => {
                                 etapa: 'Entrada',
                                 cantidad: totalEntrada,
                                 color: 'bg-(--theme-500)',
-                                contadorHoy: prospectorData.periodos?.[periodo]?.prospectos ?? 0,
+                                contadorHoy: vendedorData.periodos?.[periodo]?.prospectos ?? 0,
                                 labelContador: `recibidos ${periodoSuffix}`,
                                 cantidadExito: enContacto,
                                 cantidadPerdida: sinContactar,
-                                porcentajeExito: prospectorData.tasasConversion.contacto,
-                                porcentajePerdida: (100 - (prospectorData.tasasConversion.contacto || 0)).toFixed(1),
+                                porcentajeExito: vendedorData.tasasConversion.contacto,
+                                porcentajePerdida: (100 - (vendedorData.tasasConversion.contacto || 0)).toFixed(1),
                                 labelExito: 'a contacto',
                                 labelPerdida: 'sin tocar'
                             },
@@ -298,7 +298,7 @@ const Dashboard = () => {
                                 etapa: 'Contacto',
                                 cantidad: enContacto,
                                 color: 'bg-slate-500',
-                                contadorHoy: prospectorData.periodos?.[periodo]?.llamadas ?? 0,
+                                contadorHoy: vendedorData.periodos?.[periodo]?.llamadas ?? 0,
                                 labelContador: `esfuerzos ${periodoSuffix}`,
                                 cantidadExito: negociacion,
                                 cantidadPerdida: Math.max(0, enContacto - negociacion),
@@ -311,7 +311,7 @@ const Dashboard = () => {
                                 etapa: 'Negociación',
                                 cantidad: negociacion,
                                 color: 'bg-slate-600',
-                                contadorHoy: (prospectorData.periodos?.[periodo]?.reuniones ?? 0) + (closerData.metricas.reuniones.realizadasHoy || 0),
+                                contadorHoy: (vendedorData.periodos?.[periodo]?.reuniones ?? 0) + (closerData.metricas.reuniones.realizadasHoy || 0),
                                 labelContador: `citas ${periodoSuffix}`,
                                 cantidadExito: ganadas,
                                 cantidadPerdida: Math.max(0, negociacion - ganadas),

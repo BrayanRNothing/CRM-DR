@@ -40,6 +40,21 @@ app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+function mountOptionalRoute(basePath, modulePath) {
+    try {
+        app.use(basePath, require(modulePath));
+    } catch (error) {
+        console.warn(`⚠️ No se pudo cargar módulo opcional ${modulePath}. Se activa fallback para ${basePath}`);
+        console.warn(`   Motivo: ${error?.message || 'Error desconocido'}`);
+        app.use(basePath, (req, res) => {
+            res.status(503).json({
+                mensaje: `Módulo no disponible en este entorno: ${basePath}`,
+                codigo: 'MODULE_DISABLED'
+            });
+        });
+    }
+}
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/usuarios', require('./routes/usuarios'));
@@ -49,12 +64,12 @@ app.use('/api/ventas', require('./routes/ventas'));
 app.use('/api/tareas', require('./routes/tareas'));
 app.use('/api/metricas', require('./routes/metricas'));
 app.use('/api/embudo', require('./routes/embudo'));
-app.use('/api/prospector', require('../legacy/backend/prospector'));
-app.use('/api/closer', require('../legacy/backend/closer'));
+mountOptionalRoute('/api/prospector', '../legacy/backend/prospector');
+mountOptionalRoute('/api/closer', '../legacy/backend/closer');
 // Nuevo backend unificado para vendedor
 app.use('/api/vendedor', require('./routes/vendedor'));
-app.use('/api/prospectos', require('../legacy/backend/prospector'));
-app.use('/api/closer/prospectors', require('../legacy/backend/prospector-monitoring'));
+mountOptionalRoute('/api/prospectos', '../legacy/backend/prospector');
+mountOptionalRoute('/api/closer/prospectors', '../legacy/backend/prospector-monitoring');
 app.use('/api/google', require('./routes/google'));
 app.use('/api/equipos', require('./routes/equipos'));
 console.log('🚀 Rutas registradas correctamente');
