@@ -3,9 +3,8 @@ import { Users, UserPlus, Edit2, Power, Crown, Shield, ChevronRight, X, Check, L
 import { getUser, getToken } from '../utils/authUtils';
 import API_URL from '../config/api';
 
+// Rol único: vendedor
 const ROLES = [
-  { value: 'prospector', label: 'Prospector', color: '#6366f1', bg: '#eef2ff' },
-  { value: 'closer', label: 'Closer', color: '#0ea5e9', bg: '#e0f2fe' },
   { value: 'vendedor', label: 'Vendedor', color: '#10b981', bg: '#d1fae5' },
 ];
 
@@ -25,7 +24,7 @@ const inferRoleKey = (rol) => {
   return 'prospector';
 };
 
-const initialForm = { usuario: '', contraseña: '', nombre: '', email: '', telefono: '', rol: 'prospector' };
+const initialForm = { usuario: '', contraseña: '', nombre: '', email: '', telefono: '', rol: 'vendedor' };
 
 export default function Equipo() {
   const userAuth = getUser();
