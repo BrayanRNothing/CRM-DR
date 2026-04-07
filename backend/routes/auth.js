@@ -53,7 +53,8 @@ router.post('/login', async (req, res) => {
         // Crear Payload
         const payload = {
             id: row.id,
-            rol: row.rol
+            rol: row.rol,
+            equipo_id: row.equipo_id || null
         };
 
         // Firmar Token
@@ -71,7 +72,8 @@ router.post('/login', async (req, res) => {
                         nombre: row.nombre,
                         rol: row.rol,
                         email: row.email,
-                        telefono: row.telefono
+                        telefono: row.telefono,
+                        equipo_id: row.equipo_id || null
                     }
                 });
             }
@@ -113,9 +115,19 @@ router.post('/register', async (req, res) => {
         const stmt = await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono) VALUES (?, ?, ?, ?, ?, ?)');
         const result = await stmt.run(usuario.trim(), hash, rol, nombre.trim(), (email || '').trim(), (telefono || '').trim());
 
-        const newUser = await db.prepare('SELECT id, usuario, nombre, rol, email FROM usuarios WHERE id = ?').get(result.lastInsertRowid);
+        const nuevoUserId = result.lastInsertRowid;
 
-        console.log('✅ Usuario registrado con éxito:', newUser.usuario);
+        // Crear equipo personal automáticamente para el nuevo usuario
+        const equipoStmt = await db.prepare('INSERT INTO equipos (nombre, owner_id) VALUES (?, ?)');
+        const equipoResult = await equipoStmt.run(`Equipo de ${nombre.trim()}`, nuevoUserId);
+        const nuevoEquipoId = equipoResult.lastInsertRowid;
+
+        // Asignar el equipo al usuario
+        await db.prepare('UPDATE usuarios SET "equipo_id" = ? WHERE id = ?').run(nuevoEquipoId, nuevoUserId);
+
+        const newUser = await db.prepare('SELECT id, usuario, nombre, rol, email, "equipo_id" FROM usuarios WHERE id = ?').get(nuevoUserId);
+
+        console.log(`✅ Usuario registrado con éxito: ${newUser.usuario} (equipo_id: ${newUser.equipo_id})`);
         res.status(201).json({
             mensaje: 'Usuario registrado exitosamente',
             usuario: newUser
@@ -131,7 +143,7 @@ router.post('/register', async (req, res) => {
 // @access  Private
 router.get('/me', auth, async (req, res) => {
     try {
-        const user = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo FROM usuarios WHERE id = ?').get(req.usuario.id);
+        const user = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo, "equipo_id" FROM usuarios WHERE id = ?').get(req.usuario.id);
         res.json(user);
     } catch (error) {
         console.error('Error en auth/me:', error);

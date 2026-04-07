@@ -45,6 +45,7 @@ app.use('/api/vendedor', require('./routes/prospector'));
 app.use('/api/prospectos', require('./routes/prospector'));
 app.use('/api/closer/prospectors', require('./routes/prospector-monitoring'));
 app.use('/api/google', require('./routes/google'));
+app.use('/api/equipos', require('./routes/equipos'));
 
 // Ruta de prueba API
 app.get('/api', (req, res) => {
@@ -121,6 +122,20 @@ app.set('io', io);
 
 io.on('connection', (socket) => {
     console.log(`⚡ Cliente conectado a WebSockets: ${socket.id}`);
+
+    // Unirse a la sala del equipo (el frontend debe emitir este evento tras el login)
+    socket.on('join_team', (equipoId) => {
+        if (equipoId) {
+            socket.join(`team_${equipoId}`);
+            console.log(`👥 Socket ${socket.id} unió al equipo: team_${equipoId}`);
+        }
+    });
+
+    socket.on('leave_team', (equipoId) => {
+        if (equipoId) {
+            socket.leave(`team_${equipoId}`);
+        }
+    });
 
     socket.on('disconnect', () => {
         console.log(`🔌 Cliente desconectado: ${socket.id}`);

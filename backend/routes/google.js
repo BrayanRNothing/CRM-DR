@@ -30,22 +30,16 @@ if (cidCheck) {
 
 // Helper: detecta si el error de Google es por token revocado/expirado (invalid_grant)
 function isGoogleAuthError(error) {
-    const code = error?.code || error?.status || error?.response?.status;
     const msg = (error?.message || '').toLowerCase();
     const dataError = (error?.response?.data?.error || '').toLowerCase();
     const dataDesc = (error?.response?.data?.error_description || '').toLowerCase();
     const combined = `${msg} ${dataError} ${dataDesc}`;
+
+    // Solo desconectar si Google dice explícitamente que el token es inválido o fue revocado
     return (
-        code === 400 || code === 401 || code === 403 ||
         combined.includes('invalid_grant') ||
         combined.includes('token has been expired or revoked') ||
-        combined.includes('insufficient authentication scopes') ||
-        combined.includes('insufficientscopeerror') ||
-        combined.includes('authError') ||
-        combined.includes('forbidden') ||
-        combined.includes('access_denied') ||
-        combined.includes('not have permission') ||
-        combined.includes('has not been used in project')
+        combined.includes('access_denied')
     );
 }
 

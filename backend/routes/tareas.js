@@ -27,8 +27,9 @@ router.post('/', auth, async (req, res) => {
         const { titulo, descripcion, vendedor, cliente, estado, prioridad, fechaLimite } = req.body;
         if (!titulo) return res.status(400).json({ mensaje: 'Título requerido' });
         const vendedorId = vendedor ? parseInt(vendedor) : parseInt(req.usuario.id);
-        await db.prepare('INSERT INTO tareas (titulo, descripcion, vendedor, cliente, estado, prioridad, fechaLimite) VALUES (?, ?, ?, ?, ?, ?, ?)')
-            .run(titulo, descripcion || '', vendedorId, cliente ? parseInt(cliente) : null, estado || 'pendiente', prioridad || 'media', fechaLimite || null);
+        const equipoId = req.usuario.equipo_id || null;
+        await db.prepare('INSERT INTO tareas (titulo, descripcion, vendedor, cliente, estado, prioridad, fechaLimite, "equipo_id") VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+            .run(titulo, descripcion || '', vendedorId, cliente ? parseInt(cliente) : null, estado || 'pendiente', prioridad || 'media', fechaLimite || null, equipoId);
         const row = await db.prepare('SELECT * FROM tareas ORDER BY id DESC LIMIT 1').get();
         res.status(201).json({ mensaje: 'Tarea creada', tarea: toMongoFormat(row) || row });
     } catch (error) {

@@ -207,6 +207,7 @@ router.get('/dashboard', [auth, esProspector], async (req, res) => {
 router.get('/prospectos', [auth, esProspector], async (req, res) => {
     try {
         const prospectorId = parseInt(req.usuario.id);
+        const equipoId = req.usuario.equipo_id;
         const { etapa, busqueda } = req.query;
 
         let sql = `SELECT c.*, u.nombre as closerNombre,
@@ -224,8 +225,19 @@ router.get('/prospectos', [auth, esProspector], async (req, res) => {
                   AND a.tipo = 'cita'
                   AND (a.resultado = 'pendiente' OR a.resultado IS NULL)
             ) as proximaCita
-            FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE c.prospectorAsignado = ? AND c.etapaEmbudo NOT IN (?, ?)`;
-        const params = [prospectorId, 'venta_ganada', 'perdido'];
+            FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE`;
+
+        const params = [];
+
+        if (equipoId) {
+            // Con equipo: ver todos los prospectos del equipo (colaborativo)
+            sql += ` c."equipo_id" = ? AND c.etapaEmbudo NOT IN (?, ?)`;
+            params.push(equipoId, 'venta_ganada', 'perdido');
+        } else {
+            // Fallback: solo los propios
+            sql += ` c.prospectorAsignado = ? AND c.etapaEmbudo NOT IN (?, ?)`;
+            params.push(prospectorId, 'venta_ganada', 'perdido');
+        }
 
         if (etapa && etapa !== 'todos') {
             sql += ' AND c.etapaEmbudo = ?';
@@ -282,6 +294,7 @@ router.get('/prospectos', [auth, esProspector], async (req, res) => {
 router.get('/clientes-ganados', [auth, esProspector], async (req, res) => {
     try {
         const prospectorId = parseInt(req.usuario.id);
+        const equipoId = req.usuario.equipo_id;
         const { busqueda } = req.query;
 
         let sql = `SELECT c.*, u.nombre as closerNombre,
@@ -292,8 +305,17 @@ router.get('/clientes-ganados', [auth, esProspector], async (req, res) => {
                   AND a.tipo = 'cita'
                   AND (a.resultado = 'pendiente' OR a.resultado IS NULL)
             ) as proximaCita
-            FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE c.prospectorAsignado = ? AND c.etapaEmbudo = ?`;
-        const params = [prospectorId, 'venta_ganada'];
+            FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE`;
+
+        const params = [];
+
+        if (equipoId) {
+            sql += ` c."equipo_id" = ? AND c.etapaEmbudo = ?`;
+            params.push(equipoId, 'venta_ganada');
+        } else {
+            sql += ` c.prospectorAsignado = ? AND c.etapaEmbudo = ?`;
+            params.push(prospectorId, 'venta_ganada');
+        }
 
         if (busqueda) {
             sql += ' AND (c.nombres LIKE ? OR c.apellidoPaterno LIKE ? OR c.empresa LIKE ? OR c.telefono LIKE ?)';
@@ -325,11 +347,12 @@ router.post('/crear-prospecto', [auth, esProspector], async (req, res) => {
         const prospectorId = parseInt(req.usuario.id);
         const rol = String(req.usuario.rol).toLowerCase();
         const closerId = rol === 'closer' ? prospectorId : null;
+        const equipoId = req.usuario.equipo_id || null;
         const now = new Date().toISOString();
 
         const stmt = await db.prepare(`
-            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, sitioWeb, ubicacion, customMetricLabel, customMetricValue, vendedorAsignado, prospectorAsignado, closerAsignado, etapaEmbudo, fechaRegistro, fechaUltimaEtapa)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prospecto_nuevo', ?, ?)
+            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, sitioWeb, ubicacion, customMetricLabel, customMetricValue, vendedorAsignado, prospectorAsignado, closerAsignado, etapaEmbudo, fechaRegistro, fechaUltimaEtapa, "equipo_id")
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prospecto_nuevo', ?, ?, ?)
         `);
         const result = await stmt.run(
             (nombres || '').trim(),
@@ -348,15 +371,22 @@ router.post('/crear-prospecto', [auth, esProspector], async (req, res) => {
             prospectorId,
             closerId,
             now,
-            now
+            now,
+            equipoId
         );
 
         const row = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(result.lastInsertRowid);
         const cliente = toMongoFormat(row);
         if (cliente) cliente.prospectorAsignado = { nombre: req.usuario.nombre };
 
-        // 🚀 Web Sockets: Emitir evento de actualización
-        if (req.app.get('io')) {
+        // 🚀 Web Sockets: Emitir evento solo al equipo
+        if (req.app.get('io') && equipoId) {
+            req.app.get('io').to(`team_${equipoId}`).emit('prospectos_actualizados', {
+                origen: prospectorId,
+                accion: 'crear',
+                mensaje: 'Se ha creado un nuevo prospecto'
+            });
+        } else if (req.app.get('io')) {
             req.app.get('io').emit('prospectos_actualizados', {
                 origen: prospectorId,
                 accion: 'crear',
@@ -885,7 +915,7 @@ router.post('/agendar-reunion', [auth, esProspector], async (req, res) => {
 
                 const event = {
                     summary: `[CITA AGENDADA] - ${cliente.nombres} ${cliente.apellidoPaterno}`,
-                    description: `Cliente: ${cliente.telefono} - ${cliente.empresa || 'Sin empresa'}\nNotas: ${notas || 'Sin notas'}\nAgendado por Prospecter ${req.usuario.nombre}.`,
+                    description: `[SISTEMA-CRM]\nCliente: ${cliente.telefono} - ${cliente.empresa || 'Sin empresa'}\nNotas: ${notas || 'Sin notas'}\nAgendado por Prospecter ${req.usuario.nombre}.`,
                     start: { dateTime: fechaReunionISO, timeZone: 'America/Mexico_City' },
                     end: { dateTime: finReunionISO, timeZone: 'America/Mexico_City' },
                     attendees: attendeesList,

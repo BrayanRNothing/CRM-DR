@@ -20,13 +20,22 @@ const formatUser = (row) => ({
 });
 
 // @route   GET api/usuarios
-// @desc    Obtener todos los usuarios (Solo Admin o para listar en sidebar si se permite)
-// @access  Private (Admin o usuarios autenticados para ver equipo)
+// @desc    Obtener usuarios del mismo equipo
+// @access  Private
 router.get('/', auth, async (req, res) => {
     try {
-        // Permitir a todos los autenticados ver la lista de usuarios (para el sidebar)
-        // O restringir si es necesario. Por ahora abierto a autenticados.
-        const rows = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo, fechaCreacion, googleRefreshToken, googleAccessToken FROM usuarios WHERE activo = 1 ORDER BY nombre ASC').all();
+        let rows;
+        if (req.usuario.equipo_id) {
+            // Devolver solo los usuarios del mismo equipo
+            rows = await db.prepare(
+                'SELECT id, usuario, nombre, rol, email, telefono, activo, fechaCreacion, googleRefreshToken, googleAccessToken FROM usuarios WHERE activo = 1 AND "equipo_id" = ? ORDER BY nombre ASC'
+            ).all(req.usuario.equipo_id);
+        } else {
+            // Fallback para usuarios sin equipo asignado (no debería ocurrir tras la migración)
+            rows = await db.prepare(
+                'SELECT id, usuario, nombre, rol, email, telefono, activo, fechaCreacion, googleRefreshToken, googleAccessToken FROM usuarios WHERE activo = 1 ORDER BY nombre ASC'
+            ).all();
+        }
         res.json(rows.map(formatUser));
     } catch (error) {
         console.error("Error in GET /api/usuarios:", error);
@@ -35,8 +44,8 @@ router.get('/', auth, async (req, res) => {
 });
 
 // @route   POST api/usuarios
-// @desc    Crear nuevo usuario
-// @access  Private (Admin)
+// @desc    Crear nuevo usuario (asignado al equipo del solicitante)
+// @access  Private (Admin / Team Owner)
 router.post('/', auth, esSuperUser, async (req, res) => {
     try {
         const { usuario, contraseña, nombre, email, telefono, rol } = req.body;
@@ -54,8 +63,10 @@ router.post('/', auth, esSuperUser, async (req, res) => {
 
         const hash = await bcrypt.hash(contraseña, 10);
 
-        const stmt = await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono) VALUES (?, ?, ?, ?, ?, ?)');
-        const info = await stmt.run(usuario.trim(), hash, rol, nombre.trim(), (email || '').trim(), (telefono || '').trim());
+        // Asignar al equipo del usuario que crea (Team Owner)
+        const equipoId = req.usuario.equipo_id || null;
+        const stmt = await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono, "equipo_id") VALUES (?, ?, ?, ?, ?, ?, ?)');
+        const info = await stmt.run(usuario.trim(), hash, rol, nombre.trim(), (email || '').trim(), (telefono || '').trim(), equipoId);
 
         const row = await db.prepare('SELECT * FROM usuarios WHERE id = ?').get(info.lastInsertRowid);
         res.status(201).json({ mensaje: 'Usuario creado', usuario: formatUser(row) });

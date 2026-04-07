@@ -69,56 +69,8 @@ function ModalUsuario({ modoEdicion, formData, setFormData, handleSubmit, cerrar
                 <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden h-full">
                     <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6 scrollbar-thin">
 
-                        {/* Role Selection Cards */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 pl-1">Seleccionar Rol</label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <button type="button"
-                                    onClick={() => setFormData(p => ({ ...p, rol: 'prospector' }))}
-                                    className={`relative flex flex-col items-center justify-center p-4 border-2 rounded-2xl transition-all duration-300 group ${(!isCloser && !isVendedor)
-                                        ? 'border-[#8bc34a] bg-green-50 shadow-md shadow-green-100 scale-[1.02]'
-                                        : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50 opacity-60 hover:opacity-100'
-                                        }`}>
-                                    {formData.rol === 'prospector' && (
-                                        <div className="absolute top-3 right-3 text-[#8bc34a]"><CheckCircle2 size={18} fill="#8bc34a" className="text-white" /></div>
-                                    )}
-                                    <div className={`p-3 rounded-2xl mb-3 transition-colors ${(!isCloser && !isVendedor) ? 'bg-[#8bc34a] text-white shadow-lg shadow-green-200' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
-                                        <Search size={24} strokeWidth={2.5} />
-                                    </div>
-                                    <span className={`font-black text-sm tracking-wide ${(!isCloser && !isVendedor) ? 'text-[#8bc34a]' : 'text-slate-500'}`}>PROSPECTOR</span>
-                                </button>
-
-                                <button type="button"
-                                    onClick={() => setFormData(p => ({ ...p, rol: 'closer' }))}
-                                    className={`relative flex flex-col items-center justify-center p-4 border-2 rounded-2xl transition-all duration-300 group ${isCloser
-                                        ? 'border-(--theme-600) bg-(--theme-50) shadow-(--theme-100) scale-[1.02]'
-                                        : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50 opacity-60 hover:opacity-100'
-                                        }`}>
-                                    {formData.rol === 'closer' && (
-                                        <div className="absolute top-3 right-3 text-(--theme-600)"><CheckCircle2 size={18} fill="#2563eb" className="text-white" /></div>
-                                    )}
-                                    <div className={`p-3 rounded-2xl mb-3 transition-colors ${isCloser ? 'bg-(--theme-600) text-white shadow-(--theme-200)' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
-                                        <Target size={24} strokeWidth={2.5} />
-                                    </div>
-                                    <span className={`font-black text-sm tracking-wide ${isCloser ? 'text-(--theme-600)' : 'text-slate-500'}`}>CLOSER</span>
-                                </button>
-
-                                <button type="button"
-                                    onClick={() => setFormData(p => ({ ...p, rol: 'vendedor' }))}
-                                    className={`relative flex flex-col items-center justify-center p-4 border-2 rounded-2xl transition-all duration-300 group ${isVendedor
-                                        ? 'border-amber-500 bg-amber-50 shadow-amber-100 scale-[1.02]'
-                                        : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50 opacity-60 hover:opacity-100'
-                                        }`}>
-                                    {formData.rol === 'vendedor' && (
-                                        <div className="absolute top-3 right-3 text-amber-500"><CheckCircle2 size={18} fill="#f59e0b" className="text-white" /></div>
-                                    )}
-                                    <div className={`p-3 rounded-2xl mb-3 transition-colors ${isVendedor ? 'bg-amber-500 text-white shadow-amber-200' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}`}>
-                                        <Shield size={24} strokeWidth={2.5} />
-                                    </div>
-                                    <span className={`font-black text-sm tracking-wide ${isVendedor ? 'text-amber-500' : 'text-slate-500'}`}>VENDEDOR</span>
-                                </button>
-                            </div>
-                        </div>
+                        {/* Role selection hidden as requested - only Vendedores are managed now */}
+                        <input type="hidden" name="rol" value="vendedor" />
 
                         {/* Inputs Grid */}
                         <div className="grid grid-cols-2 gap-5">
@@ -229,7 +181,7 @@ function UserManagement({ initialRole }) {
     const [modalAbierto, setModalAbierto] = useState(false);
     const [modoEdicion, setModoEdicion] = useState(false);
     const [usuarioEditando, setUsuarioEditando] = useState(null);
-    const [formData, setFormData] = useState({ username: '', nombre: '', email: '', telefono: '', password: '', rol: initialRole || 'prospector' });
+    const [formData, setFormData] = useState({ username: '', nombre: '', email: '', telefono: '', password: '', rol: 'vendedor' });
     const [confirmarEliminar, setConfirmarEliminar] = useState({ visible: false, id: null, nombre: '' });
     const [eliminando, setEliminando] = useState(false);
 
@@ -258,7 +210,7 @@ function UserManagement({ initialRole }) {
     };
 
     const abrirModal = () => {
-        setFormData({ username: '', nombre: '', email: '', telefono: '', password: '', rol: initialRole || 'prospector' });
+        setFormData({ username: '', nombre: '', email: '', telefono: '', password: '', rol: 'vendedor' });
         setModoEdicion(false);
         setUsuarioEditando(null);
         setModalAbierto(true);
@@ -273,7 +225,7 @@ function UserManagement({ initialRole }) {
 
     const cerrarModal = () => {
         setModalAbierto(false);
-        setFormData({ username: '', nombre: '', email: '', telefono: '', password: '', rol: initialRole || 'prospector' });
+        setFormData({ username: '', nombre: '', email: '', telefono: '', password: '', rol: 'vendedor' });
         setModoEdicion(false);
         setUsuarioEditando(null);
     };
@@ -329,7 +281,7 @@ function UserManagement({ initialRole }) {
     };
 
     const filtered = usuarios.filter(u => {
-        const matchRole = initialRole ? u.rol === initialRole : true;
+        const matchRole = u.rol === 'vendedor';
         const q = searchTerm.toLowerCase();
         return matchRole && (u.nombre.toLowerCase().includes(q) || u.usuario?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q));
     });

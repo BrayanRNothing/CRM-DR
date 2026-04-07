@@ -4,6 +4,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Phone, Eye, EyeOff, ArrowRight, Shield, TrendingUp, Calendar } from 'lucide-react';
 import API_URL from '../../config/api';
 import logosolomycrm from '../../assets/logosolomycrm.png';
+import RegisterMobile from './RegisterMobile';
+
+const useWindowSize = () => {
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return windowSize;
+};
 
 /* ─── Feature pill ─── */
 const FeaturePill = ({ icon: Icon, text, delay }) => (
@@ -29,6 +50,7 @@ const ROLES = [
 
 const Register = () => {
   const navigate = useNavigate();
+  const { width } = useWindowSize();
   const [username, setUsername] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -91,6 +113,11 @@ const Register = () => {
       setLoading(false);
     }
   };
+
+  // Renderizar versión móvil si el ancho es menor a 1024px (breakpoint 'lg' de Tailwind)
+  if (width < 1024) {
+    return <RegisterMobile />;
+  }
 
   /* Estilos base del input */
   const inputWrapStyle = (key, hasError = false) => ({

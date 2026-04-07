@@ -390,12 +390,13 @@ router.post('/crear-prospecto', [auth, esCloser], async (req, res) => {
         }
 
         const closerId = parseInt(req.usuario.id);
+        const equipoId = req.usuario.equipo_id || null;
         const now = new Date().toISOString();
 
         // MEJORADO: Incluir vendedorAsignado y prospectorAsignado para consistencia en Postgres
         const stmt = await db.prepare(`
-            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, vendedorAsignado, prospectorAsignado, closerAsignado, etapaEmbudo, fechaRegistro)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prospecto_nuevo', ?)
+            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, vendedorAsignado, prospectorAsignado, closerAsignado, etapaEmbudo, fechaRegistro, "equipo_id")
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prospecto_nuevo', ?, ?)
         `);
         const result = await stmt.run(
             nombres.trim(),
@@ -409,7 +410,8 @@ router.post('/crear-prospecto', [auth, esCloser], async (req, res) => {
             closerId,
             closerId,
             closerId,
-            now
+            now,
+            equipoId
         );
 
         const row = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(result.lastInsertRowid);

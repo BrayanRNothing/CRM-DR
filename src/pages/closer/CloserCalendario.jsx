@@ -107,7 +107,6 @@ const CloserCalendario = () => {
         setNotasModal('');
     };
 
-    // Detectar si llegamos desde Seguimiento con un prospecto pre-seleccionado
     useEffect(() => {
         const prospecto = location.state?.prospecto || location.state?.Cliente || location.state?.cliente;
         if (prospecto) {
@@ -115,10 +114,10 @@ const CloserCalendario = () => {
             enSemana.setDate(enSemana.getDate() + 7);
             setAgendarDirectoForm({ fecha: enSemana.toISOString().split('T')[0], hora: '10:00', duracion: '60', notas: '' });
             setModalAgendarDirecto({ prospecto });
-            // Limpiar el state para no reabrir si se recarga
-            window.history.replaceState({}, document.title);
+            // No limpiar inmediatamente si queremos que persista ante re-renders
+            // window.history.replaceState({}, document.title);
         }
-    }, []);
+    }, [location.state]);
 
     const handleAgendarDirecto = async () => {
         if (!agendarDirectoForm.fecha || !agendarDirectoForm.hora) {
@@ -153,6 +152,26 @@ const CloserCalendario = () => {
             const data = await res.json();
             toast.success(`📅 ¡Reunión con ${nombre} agendada!`);
             if (data.meetLink) toast.success(`Google Meet listo`, { duration: 4000 });
+
+            // REGISTRO DIFERIDO SI VIENE DE FLUJO DE LLAMADA
+            if (location.state?.fromCall) {
+                try {
+                    await fetch(`${API_URL}/api/closer/registrar-actividad`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+                        body: JSON.stringify({
+                            clienteId,
+                            tipo: 'llamada',
+                            resultado: 'exitoso',
+                            notas: 'Agendó reunión'
+                        })
+                    });
+                    console.log("Call activity registered from deferred flow (Closer)");
+                } catch (actErr) {
+                    console.warn("Error registering deferred activity:", actErr);
+                }
+            }
+
             setModalAgendarDirecto(null);
         } catch (err) {
             console.error(err);
@@ -365,98 +384,98 @@ const CloserCalendario = () => {
         }
     };
 
-    useEffect(() => {
-        const fetchEvents = async () => {
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-            const timeMin = new Date(year, month, 1).toISOString();
-            const timeMax = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+    const fetchEvents = async (isQuiet = false) => {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const timeMin = new Date(year, month, 1).toISOString();
+        const timeMax = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
 
-            try {
-                const token = getToken();
-                const res = await fetch(`${API_URL}/api/google/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`, {
-                    headers: { 'x-auth-token': token }
-                });
+        if (!isQuiet) setGoogleLinked(null);
 
-                const data = await res.json();
+        try {
+            const token = getToken();
+            const res = await fetch(`${API_URL}/api/google/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`, {
+                headers: { 'x-auth-token': token }
+            });
 
-                if (!res.ok || data.notLinked) {
-                    // El backend confirma que no hay tokens guardados para este usuario
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok || data.notLinked) {
+                // Solo marcar como no vinculado si el error es explícito de vinculación (401 o flag notLinked)
+                if (data.notLinked || res.status === 401) {
                     setGoogleLinked(false);
                     localStorage.removeItem('google_linked');
-                    return;
                 }
-
-                // El backend confirmó tokens válidos — marcar como vinculado
-                setGoogleLinked(true);
-                localStorage.setItem('google_linked', 'true');
-                const googleEvents = data; // Original behavior expects the array, but now it's data
-
-                // Traer lista de eventos completados
-                let eventosCompletados = [];
-                try {
-                    const completadosRes = await fetch(`${API_URL}/api/closer/google-events-completados`, {
-                        headers: { 'x-auth-token': token }
-                    });
-                    if (completadosRes.ok) {
-                        eventosCompletados = await completadosRes.json();
-                        console.log(`📋 Eventos completados cargados: ${eventosCompletados.length}`);
-                    }
-                } catch (err) {
-                    console.warn('⚠️ No se pudieron cargar eventos completados:', err);
-                }
-
-                const mappedEvents = googleEvents.map(event => {
-                    // Parse description for details
-                    const desc = event.description || '';
-                    const agendadoPorMatch = desc.match(/Agendado por:? (.*?)(\n|$)/i);
-                    const agendadoPor = agendadoPorMatch ? agendadoPorMatch[1].trim() : 'Google Calendar';
-                    const notasMatch = desc.match(/Notas: (.*?)(\n|$)/s);
-                    const notas = notasMatch ? notasMatch[1].trim() : desc;
-
-                    const telefonoMatch = desc.match(/Cliente: (.*?) -/);
-                    const telefono = telefonoMatch ? telefonoMatch[1].trim() : '';
-
-                    // Verificar si fue completado
-                    const completadoGuardado = eventosCompletados.find(e => e.googleEventId === event.id || e === event.id);
-                    const estadoEvento = completadoGuardado ? 'realizada' : 'pendiente';
-                    const resultadoExacto = typeof completadoGuardado === 'object' ? completadoGuardado.resultado : null;
-
-                    // Extract Meet link robustly
-                    let meetLink = event.hangoutLink;
-                    if (!meetLink && event.conferenceData?.entryPoints) {
-                        const ep = event.conferenceData.entryPoints.find(e => e.entryPointType === 'video');
-                        if (ep) meetLink = ep.uri;
-                    }
-
-                    return {
-                        id: event.id,
-                        fecha: event.start.dateTime || event.start.date,
-                        cliente: {
-                            nombres: event.summary || 'Sin Título',
-                            apellidoPaterno: '',
-                            empresa: '',
-                            telefono: telefono,
-                            correo: event.attendees?.find(a => !a.self)?.email || ''
-                        },
-                        prospector: agendadoPor,
-                        notas: notas,
-                        meetLink: meetLink,
-                        estado: estadoEvento,
-                        resultadoExacto
-                    };
-                });
-                setReuniones(mappedEvents);
-            } catch (error) {
-                console.error("Error fetching events:", error);
-                // En caso de error (red, 502, etc.), marcarlo como no vinculado para detener el loading
-                setGoogleLinked(false);
+                return;
             }
-        };
 
-        // Siempre intentar verificar con el backend al montar o cambiar mes
-        // No depender de localStorage — el backend es la fuente de verdad
+            // El backend confirmó tokens válidos — marcar como vinculado
+            setGoogleLinked(true);
+            localStorage.setItem('google_linked', 'true');
+            const googleEvents = data;
+
+            // Traer lista de eventos completados
+            let eventosCompletados = [];
+            try {
+                const completadosRes = await fetch(`${API_URL}/api/closer/google-events-completados`, {
+                    headers: { 'x-auth-token': token }
+                });
+                if (completadosRes.ok) {
+                    eventosCompletados = await completadosRes.json();
+                }
+            } catch (err) {
+                console.warn('⚠️ No se pudieron cargar eventos completados:', err);
+            }
+
+            const mappedEvents = googleEvents.map(event => {
+                const desc = event.description || '';
+                const agendadoPorMatch = desc.match(/Agendado por:? (.*?)(\n|$)/i);
+                const agendadoPor = agendadoPorMatch ? agendadoPorMatch[1].trim() : 'Google Calendar';
+                const notasMatch = desc.match(/Notas: (.*?)(\n|$)/s);
+                const notas = notasMatch ? notasMatch[1].trim() : desc;
+                const telefonoMatch = desc.match(/Cliente: (.*?) -/);
+                const telefono = telefonoMatch ? telefonoMatch[1].trim() : '';
+
+                const completadoGuardado = eventosCompletados.find(e => e.googleEventId === event.id || e === event.id);
+                const estadoEvento = completadoGuardado ? 'realizada' : 'pendiente';
+                const resultadoExacto = typeof completadoGuardado === 'object' ? completadoGuardado.resultado : null;
+
+                let meetLink = event.hangoutLink;
+                if (!meetLink && event.conferenceData?.entryPoints) {
+                    const ep = event.conferenceData.entryPoints.find(e => e.entryPointType === 'video');
+                    if (ep) meetLink = ep.uri;
+                }
+
+                return {
+                    id: event.id,
+                    fecha: event.start.dateTime || event.start.date,
+                    cliente: {
+                        nombres: event.summary || 'Sin Título',
+                        apellidoPaterno: '',
+                        empresa: '',
+                        telefono: telefono,
+                        correo: event.attendees?.find(a => !a.self)?.email || ''
+                    },
+                    prospector: agendadoPor,
+                    notas: notas,
+                    meetLink: meetLink,
+                    estado: estadoEvento,
+                    resultadoExacto
+                };
+            });
+            setReuniones(mappedEvents);
+        } catch (error) {
+            console.error("Error fetching events:", error);
+            // En error de red no asumimos desconexión fatal si ya estábamos vinculados
+        }
+    };
+
+    useEffect(() => {
         fetchEvents();
+
+        const handleFocus = () => fetchEvents(true); // Verificación silenciosa al volver
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
     }, [currentDate]);
 
     // Get dates that have appointments

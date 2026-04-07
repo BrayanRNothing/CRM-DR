@@ -7,6 +7,27 @@ import API_URL from '../../config/api';
 import logosolomycrm from '../../assets/logosolomycrm.png';
 import AnimatedGridBackground from '../../components/ui/AnimatedGridBackground';
 import Typewriter from 'typewriter-effect';
+import LoginMobile from './LoginMobile';
+
+const useWindowSize = () => {
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return windowSize;
+};
 
 const dynamicTexts = [
   {
@@ -129,6 +150,7 @@ const FloatingIcons = () => {
 
 const Login = () => {
   const navigate = useNavigate();
+  const { width } = useWindowSize();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -180,6 +202,11 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  // Renderizar versión móvil si el ancho es menor a 1024px (breakpoint 'lg' de Tailwind)
+  if (width < 1024) {
+    return <LoginMobile />;
+  }
 
   const inputWrapStyle = (key) => ({
     background: focusedField === key ? 'white' : 'rgba(255,255,255,0.5)',

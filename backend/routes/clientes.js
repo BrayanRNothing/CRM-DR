@@ -7,10 +7,15 @@ const { toMongoFormat } = require('../lib/helpers');
 router.get('/', auth, esSuperUser, async (req, res) => {
     try {
         const { estado, busqueda } = req.query;
+        const equipoId = req.usuario.equipo_id;
         let sql = 'SELECT c.*, u.nombre as vendedorNombre FROM clientes c JOIN usuarios u ON c.vendedorAsignado = u.id WHERE 1=1';
         const params = [];
 
-        // Removed specific vendor check
+        // Filtrar por equipo
+        if (equipoId) {
+            sql += ' AND c."equipo_id" = ?';
+            params.push(equipoId);
+        }
         if (estado) {
             sql += ' AND c.estado = ?';
             params.push(estado);
@@ -40,6 +45,13 @@ router.get('/:id', auth, esSuperUser, async (req, res) => {
     try {
         const row = await db.prepare('SELECT c.*, u.nombre as vendedorNombre FROM clientes c JOIN usuarios u ON c.vendedorAsignado = u.id WHERE c.id = ?').get(parseInt(req.params.id));
         if (!row) return res.status(404).json({ mensaje: 'Cliente no encontrado' });
+
+        // Isolación por equipo
+        const equipoId = req.usuario.equipo_id;
+        if (equipoId && row.equipo_id && String(row.equipo_id) !== String(equipoId)) {
+            return res.status(403).json({ mensaje: 'No tiene acceso a este cliente' });
+        }
+
         if (req.usuario.rol === 'vendedor' && row.vendedorAsignado !== parseInt(req.usuario.id)) {
             return res.status(403).json({ mensaje: 'No tiene permiso' });
         }
@@ -60,6 +72,7 @@ router.post('/', auth, esSuperUser, async (req, res) => {
         }
         const rol = String(req.usuario.rol || '').toLowerCase();
         const usuarioId = parseInt(req.usuario.id);
+        const equipoId = req.usuario.equipo_id || null;
         const vendedorId = req.usuario.rol === 'admin' && vendedorAsignado ? parseInt(vendedorAsignado) : usuarioId;
         const etapa = etapaEmbudo || 'venta_ganada';
         const estadoCliente = estado || (etapa === 'venta_ganada' ? 'ganado' : 'proceso');
@@ -70,8 +83,8 @@ router.post('/', auth, esSuperUser, async (req, res) => {
         const closerAsignado = (rol === 'closer' || rol === 'vendedor') ? usuarioId : null;
 
         await db.prepare(`
-            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaEmbudo, historialEmbudo, vendedorAsignado, prospectorAsignado, closerAsignado, fechaUltimaEtapa)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaEmbudo, historialEmbudo, vendedorAsignado, prospectorAsignado, closerAsignado, fechaUltimaEtapa, "equipo_id")
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
             nombres,
             apellidoPaterno || '',
@@ -85,7 +98,8 @@ router.post('/', auth, esSuperUser, async (req, res) => {
             vendedorId,
             prospectorAsignado,
             closerAsignado,
-            now
+            now,
+            equipoId
         );
 
         const row = await db.prepare('SELECT * FROM clientes ORDER BY id DESC LIMIT 1').get();

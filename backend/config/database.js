@@ -284,6 +284,13 @@ const initDb = async () => {
     estado TEXT DEFAULT 'pendiente',
     notas TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS equipos (
+    id SERIAL PRIMARY KEY,
+    nombre TEXT NOT NULL,
+    owner_id INTEGER REFERENCES usuarios(id),
+    "fechaCreacion" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+  );
 `;
 
   let finalSql = sql;
@@ -451,6 +458,10 @@ const initDb = async () => {
       ['actividades', '"createdAt"',        'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP'],
       ['clientes',    '"customMetricLabel"', 'TEXT'],
       ['clientes',    '"customMetricValue"', 'TEXT'],
+      ['usuarios',    '"equipo_id"',         'INTEGER'],
+      ['clientes',    '"equipo_id"',         'INTEGER'],
+      ['actividades', '"equipo_id"',         'INTEGER'],
+      ['tareas',      '"equipo_id"',         'INTEGER'],
     ];
     for (const [table, col, type] of colsMissingPg) {
       try {
@@ -477,6 +488,49 @@ const initDb = async () => {
       await internalDb.query(`UPDATE clientes SET "etapaEmbudo" = 'prospecto_nuevo' WHERE "etapaEmbudo" IS NULL`);
     } catch (e) {
       console.error('⚠️ Migración etapaEmbudo falló:', e.message);
+    }
+
+    // ================================================================
+    // MIGRACIÓN DE DATOS: Sistema de Equipos (idempotente)
+    // Crea un equipo personal por cada usuario que no tenga equipo_id
+    // ================================================================
+    try {
+      // 1. Crear un equipo personal para cada usuario sin equipo
+      await internalDb.query(`
+        INSERT INTO equipos (nombre, owner_id)
+        SELECT 'Equipo de ' || nombre, id
+        FROM usuarios
+        WHERE "equipo_id" IS NULL
+      `);
+
+      // 2. Asignar cada usuario a su equipo recién creado
+      await internalDb.query(`
+        UPDATE usuarios u
+        SET "equipo_id" = (SELECT id FROM equipos WHERE owner_id = u.id)
+        WHERE "equipo_id" IS NULL
+      `);
+
+      // 3. Asignar clientes al equipo del prospector asignado
+      await internalDb.query(`
+        UPDATE clientes
+        SET "equipo_id" = (
+          SELECT "equipo_id" FROM usuarios WHERE id = clientes."prospectorAsignado"
+        )
+        WHERE "equipo_id" IS NULL AND "prospectorAsignado" IS NOT NULL
+      `);
+
+      // 4. Fallback: clientes sin prospector → equipo del vendedor
+      await internalDb.query(`
+        UPDATE clientes
+        SET "equipo_id" = (
+          SELECT "equipo_id" FROM usuarios WHERE id = clientes."vendedorAsignado"
+        )
+        WHERE "equipo_id" IS NULL AND "vendedorAsignado" IS NOT NULL
+      `);
+
+      console.log('✅ Migración: equipos creados y usuarios/clientes asignados');
+    } catch (e) {
+      console.error('⚠️ Migración equipos falló:', e.message);
     }
   } else {
     // SQLite: agregar columnas faltantes

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Calendar as CalendarIcon, Clock, User, Phone, CheckCircle2, ChevronLeft, ChevronRight, UserPlus, Briefcase, Mail, MapPin, LogIn, Link as LinkIcon, Copy, AlertCircle, Trash2, Pencil, VideoOff, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Calendar, Clock, User, Phone, CheckCircle2, ChevronLeft, ChevronRight, UserPlus, Briefcase, Mail, MapPin, LogIn, Link as LinkIcon, Copy, AlertCircle, Trash2, Pencil, Edit2, Video as VideoIcon, VideoOff, X, RefreshCw, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import socket from '../../config/socket';
 import API_URL from '../../config/api';
@@ -13,6 +13,8 @@ const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 
 
 const ProspectorCalendario = () => {
     const location = useLocation();
+    console.log("PROSPECTOR CALENDAR MOUNT/RENDER. Location state:", location.state);
+    
     const currentUser = getUser();
     const isVendedor = String(currentUser?.rol || '').toLowerCase() === 'vendedor';
     const currentUserId = String(currentUser?.id || currentUser?._id || '');
@@ -35,8 +37,10 @@ const ProspectorCalendario = () => {
     const [formData, setFormData] = useState({
         notas: ''
     });
-    const [activeTab, setActiveTab] = useState('agendar'); // 'agendar' o 'reuniones'
+    const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'agenda'); // 'agenda' o 'agendar'
     const [loadingInitial, setLoadingInitial] = useState(true);
+    const [googleEvents, setGoogleEvents] = useState([]);
+    const [loadingGoogleEvents, setLoadingGoogleEvents] = useState(false);
 
     // Modal: registrar resultado
     const [showResultModal, setShowResultModal] = useState(false);
@@ -76,6 +80,31 @@ const ProspectorCalendario = () => {
             setMisReuniones([]);
         } finally {
             setLoadingMisReuniones(false);
+        }
+    };
+
+    const cargarMisEventosGoogle = async () => {
+        if (!isVendedor || !googleLinked) return;
+        setLoadingGoogleEvents(true);
+        try {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const timeMin = new Date(year, month, 1).toISOString();
+            const timeMax = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+            
+            const token = getToken();
+            const res = await fetch(`${API_URL}/api/google/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`, {
+                headers: { 'x-auth-token': token }
+            });
+
+            if (!res.ok) throw new Error('Error al cargar eventos de Google');
+            const data = await res.json();
+            setGoogleEvents(data || []);
+        } catch (error) {
+            console.error('Error cargando eventos de Google:', error);
+            setGoogleEvents([]);
+        } finally {
+            setLoadingGoogleEvents(false);
         }
     };
 
@@ -259,28 +288,49 @@ const ProspectorCalendario = () => {
     }, []);
 
     // Verificar conexión Google del usuario actual (Vendedor)
-    React.useEffect(() => {
+    const checkMyConnection = async (isQuiet = false) => {
         if (!isVendedor) return;
-        const checkMyConnection = async () => {
-            try {
-                const res = await fetch(`${API_URL}/api/google/events?timeMin=${new Date().toISOString()}&maxResults=1`, {
-                    headers: { 'x-auth-token': getToken() }
-                });
-                const data = await res.json();
-                if (!res.ok || data.notLinked) {
+        try {
+            const res = await fetch(`${API_URL}/api/google/account-info`, {
+                headers: { 'x-auth-token': getToken() }
+            });
+            
+            if (res.ok) {
+                // Recordar en sesión que el usuario está vinculado para no mostrar modal al volver
+                sessionStorage.setItem('googleLinkedConfirmed', 'true');
+                setGoogleLinked(true);
+            } else {
+                const data = await res.json().catch(() => ({}));
+                // Solo marcar como no vinculado si el error es explícito de vinculación (401 o flag notLinked)
+                // Errores 500 / de red se ignoran para evitar falsos positivos
+                if (data.notLinked || res.status === 401) {
+                    sessionStorage.removeItem('googleLinkedConfirmed');
                     setGoogleLinked(false);
-                    // Mostrar prompt pantalla completa si no ha sido omitido esta sesión
-                    if (!sessionStorage.getItem('dismissedSyncPrompt')) {
+                    // Mostrar prompt pantalla completa SOLO si:
+                    // 1. No ha sido omitido esta sesión
+                    // 2. No es una revisión silenciosa (focus / recarga)
+                    if (!isQuiet && !sessionStorage.getItem('dismissedSyncPrompt')) {
                         setShowSyncPrompt(true);
                     }
-                } else {
-                    setGoogleLinked(true);
                 }
-            } catch (err) {
-                setGoogleLinked(false);
+                // Si es un error 500 u otro error temporal, no cambiamos el estado de vinculación
             }
-        };
-        checkMyConnection();
+        } catch (err) {
+            console.error("Error verificando conexión Google:", err);
+            // En error de red, no asumimos desconexión fatal para evitar falsos positivos
+        }
+    };
+
+    React.useEffect(() => {
+        // Si ya sabemos que el usuario estaba vinculado en esta sesión, la verificación inicial es silenciosa
+        // Esto evita que el modal aparezca al navegar entre páginas y regresar al calendario
+        const wasLinked = sessionStorage.getItem('googleLinkedConfirmed') === 'true';
+        checkMyConnection(wasLinked); // quiet si ya estaba vinculado, ruidoso solo si es primera vez
+
+        // Re-verificar silenciosamente cuando el usuario vuelve a la pestaña
+        const handleFocus = () => checkMyConnection(true);
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
     }, [isVendedor]);
 
     // Verificar conexión Google del Closer seleccionado
@@ -293,66 +343,86 @@ const ProspectorCalendario = () => {
         }
     }, [selectedCloser, closers]);
 
-    // Auto-seleccionar prospecto si viene del Seguimiento
+    // Tab and Prospect pre-selection from location state
     useEffect(() => {
-        const p = location.state?.prospecto || location.state?.Cliente || location.state?.cliente;
-        if (p) {
-            const id = String(p.id || p._id || '');
-            if (id) setSelectedProspect(id);
+        const state = location.state;
+        if (!state) return;
+
+        // Tabs switching
+        if (state.activeTab) {
+            console.log("Setting active tab from state:", state.activeTab);
+            setActiveTab(state.activeTab);
+        }
+
+        // Prospect selection
+        const p = state.prospecto || state.Cliente || state.cliente;
+        const idFromState = state.clienteId || (p ? (p.id || p._id) : null);
+        
+        if (idFromState) {
+            const sid = String(idFromState);
+            setSelectedProspect(sid);
+            console.log("Pre-selecting prospect ID:", sid);
         }
     }, [location.state]);
 
+    // Ensure prospect stays selected when list loads (for async robustness)
     useEffect(() => {
-        const fetchAvailability = async () => {
-            if (!selectedCloser) {
+        const idFromState = location.state?.clienteId || 
+                          (location.state?.prospecto?.id || location.state?.prospecto?._id) ||
+                          (location.state?.Cliente?.id || location.state?.Cliente?._id);
+        
+        if (idFromState && prospectos.length > 0 && !selectedProspect) {
+            setSelectedProspect(String(idFromState));
+        }
+    }, [prospectos, location.state]);
+
+    const fetchAvailability = async () => {
+        if (!selectedCloser) {
+            setBusySlots([]);
+            setCloserLinkedToGoogle(true);
+            return;
+        }
+
+        const closer = closers.find(c => String(c.id || c._id) === String(selectedCloser));
+        if (closer && !closer.googleRefreshToken && !closer.googleAccessToken) {
+            setCloserLinkedToGoogle(false);
+            setBusySlots([]);
+            return;
+        }
+
+        setLoadingFreeBusy(true);
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const timeMin = new Date(year, month, 1).toISOString();
+        const timeMax = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+
+        try {
+            const token = getToken();
+            const res = await fetch(`${API_URL}/api/google/freebusy/${selectedCloser}?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&_t=${Date.now()}`, {
+                headers: { 'x-auth-token': token },
+                cache: 'no-store'
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                if (data.notLinked) setCloserLinkedToGoogle(false);
                 setBusySlots([]);
+            } else if (data.notLinked) {
+                setCloserLinkedToGoogle(false);
+                setBusySlots([]);
+            } else {
                 setCloserLinkedToGoogle(true);
-                return;
+                const allBusy = Object.values(data.calendars || {}).flatMap(cal => cal.busy || []);
+                setBusySlots(allBusy.map(b => ({ start: new Date(b.start), end: new Date(b.end) })));
             }
+        } catch (err) {
+            setBusySlots([]);
+        } finally {
+            setLoadingFreeBusy(false);
+        }
+    };
 
-            setLoadingFreeBusy(true);
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-            const timeMin = new Date(year, month, 1).toISOString();
-            const timeMax = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
-
-            try {
-                const token = getToken();
-                // Añadir timestamp para evitar caché agresivo del navegador en requests GET 
-                const res = await fetch(`${API_URL}/api/google/freebusy/${selectedCloser}?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&_t=${Date.now()}`, {
-                    headers: { 'x-auth-token': token },
-                    cache: 'no-store'
-                });
-
-                const data = await res.json();
-
-                if (!res.ok) {
-                    if (data.notLinked) {
-                        setCloserLinkedToGoogle(false);
-                    } else {
-                        console.warn("No se pudo obtener disponibilidad:", data.msg);
-                    }
-                    setBusySlots([]);
-                } else if (data.notLinked) {
-                    setCloserLinkedToGoogle(false);
-                    setBusySlots([]);
-                } else {
-                    setCloserLinkedToGoogle(true);
-
-                    // Extraer los horarios ocupados sin importar si la llave es el email o 'primary'
-                    const allBusy = Object.values(data.calendars || {}).flatMap(cal => cal.busy || []);
-                    setBusySlots(allBusy.map(b => ({
-                        start: new Date(b.start),
-                        end: new Date(b.end)
-                    })));
-                }
-            } catch (err) {
-                console.warn("Error en red al pedir freebusy:", err);
-                setBusySlots([]);
-            } finally {
-                setLoadingFreeBusy(false);
-            }
-        };
+    useEffect(() => {
         fetchAvailability();
     }, [selectedCloser, currentDate, closers]);
 
@@ -368,7 +438,8 @@ const ProspectorCalendario = () => {
 
     useEffect(() => {
         cargarMisReuniones();
-    }, [isVendedor]);
+        cargarMisEventosGoogle();
+    }, [isVendedor, currentDate, googleLinked]);
 
     const generateSlotsForDay = (date) => {
         if (!date) return [];
@@ -397,6 +468,86 @@ const ProspectorCalendario = () => {
         }
         return slots;
     };
+
+    const getDayStats = (date) => {
+        if (!date) return { crm: 0, google: 0 };
+        const start = new Date(date); start.setHours(0,0,0,0);
+        const end = new Date(date); end.setHours(23,59,59,999);
+
+        const crmCount = misReuniones.filter(r => {
+            const d = new Date(r.fecha);
+            return d >= start && d <= end;
+        }).length;
+
+        const googleCount = googleEvents.filter(evt => {
+            if (!evt.start || (!evt.start.dateTime && !evt.start.date)) return false;
+            const d = evt.start.dateTime ? new Date(evt.start.dateTime) : new Date(evt.start.date + 'T00:00:00');
+            if (d < start || d > end) return false;
+            // Filter CRM duplicates
+            const isCRM = (evt.description && (evt.description.includes('[ID Actividad:') || evt.description.includes('[SISTEMA-CRM]'))) ||
+                          (evt.summary && (evt.summary.includes('Próxima reunión agendada:') || evt.summary.includes('[CITA]') || evt.summary.includes('[CITA AGENDADA]')));
+            return !isCRM;
+        }).length;
+
+        return { crm: crmCount, google: googleCount };
+    };
+
+    const combinedDayEvents = useMemo(() => {
+        if (!selectedDate) return [];
+
+        const startOfDay = new Date(selectedDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(selectedDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const merged = [];
+
+        // Add CRM Meetings
+        misReuniones.forEach(r => {
+            const d = new Date(r.fecha);
+            if (d >= startOfDay && d <= endOfDay) {
+                merged.push({
+                    type: 'crm',
+                    id: r.id,
+                    date: d,
+                    raw: r,
+                    title: `${r.cliente?.nombres || 'Cliente'} ${r.cliente?.apellidoPaterno || ''}`,
+                    description: r.notas,
+                    meet: r.googleMeetLink
+                });
+            }
+        });
+
+        // Add Google Events
+        googleEvents.forEach(evt => {
+            if (!evt.start || (!evt.start.dateTime && !evt.start.date)) return;
+            // Manejar eventos de todo el día si es start.date (se asignan a las 00:00)
+            const d = evt.start.dateTime ? new Date(evt.start.dateTime) : new Date(evt.start.date + 'T00:00:00');
+            
+            if (d >= startOfDay && d <= endOfDay) {
+                // Filtramos las citas de CRM creadas por el sistema para no duplicarlas.
+                const isCRM = (evt.description && (evt.description.includes('[ID Actividad:') || evt.description.includes('[SISTEMA-CRM]'))) ||
+                              (evt.summary && (evt.summary.includes('Próxima reunión agendada:') || evt.summary.includes('[CITA]') || evt.summary.includes('[CITA AGENDADA]')));
+                
+                if (!isCRM) {
+                    merged.push({
+                        type: 'google',
+                        id: evt.id,
+                        date: d,
+                        raw: evt,
+                        title: evt.summary || '(Evento sin título)',
+                        description: evt.description,
+                        meet: evt.hangoutLink || (evt.conferenceData?.entryPoints?.[0]?.uri),
+                        htmlLink: evt.htmlLink
+                    });
+                }
+            }
+        });
+
+        // Ordenar por hora
+        merged.sort((a, b) => a.date - b.date);
+        return merged;
+    }, [selectedDate, misReuniones, googleEvents]);
 
     // Calendar Helper Functions (Same as CloserCalendario)
     const calendarDays = useMemo(() => {
@@ -471,11 +622,38 @@ const ProspectorCalendario = () => {
                 const dataBackend = await resBackend.json();
                 toast.success('Cita agendada con éxito');
 
-                // El link puede venir como hangoutLink o meetLink según la ruta
                 const finalLink = dataBackend.hangoutLink || dataBackend.meetLink;
-                if (finalLink) {
-                    setCreatedEventLink(finalLink);
+                if (finalLink) setCreatedEventLink(finalLink);
+
+                // Si venimos de un flujo de llamada, registrar la acción en el historial
+                if (location.state?.fromCall) {
+                    try {
+                        const rolePath = currentUser?.rol?.toLowerCase() === 'vendedor' ? 'vendedor' : 
+                                       currentUser?.rol?.toLowerCase() === 'closer' ? 'closer' : 'prospector';
+                        
+                        await fetch(`${API_URL}/api/${rolePath}/registrar-actividad`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'x-auth-token': getToken()
+                            },
+                            body: JSON.stringify({
+                                clienteId: prospect.id,
+                                tipo: 'llamada',
+                                resultado: 'exitoso',
+                                notas: 'Agendó reunión'
+                            })
+                        });
+                        console.log("Call activity registered from deferred flow");
+                    } catch (err) {
+                        console.error("Error registering deferred call activity:", err);
+                    }
                 }
+
+                // ⚡ Refresco Inmediato
+                cargarMisReuniones();
+                cargarMisEventosGoogle();
+                fetchAvailability();
             } else {
                 const dataError = await resBackend.json();
                 if (dataError.code === 'google_config_error') {
@@ -694,14 +872,23 @@ const ProspectorCalendario = () => {
                                                     <div className="absolute bottom-2 w-full flex flex-col items-center pointer-events-none">
                                                         {(() => {
                                                             if (!selectedCloser) return null;
-                                                            if (loadingFreeBusy) {
-                                                                return <span className="text-[10px] leading-tight bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full whitespace-nowrap">Cargando</span>;
-                                                            }
-                                                            const slotsForDay = generateSlotsForDay(date);
-                                                            const busySlotsCount = slotsForDay.filter(s => s.isBusy).length;
+                                                            const stats = getDayStats(date);
 
-                                                            if (busySlotsCount === 0) return null;
-                                                            return <span className={`text-[10px] leading-tight font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap ${isSelected ? 'bg-white text-orange-500' : 'bg-orange-50 text-orange-600 border border-orange-100'}`}>{busySlotsCount} {busySlotsCount === 1 ? 'reunión' : 'reuniones'}</span>;
+                                                            if (stats.crm === 0 && stats.google === 0) return null;
+                                                            return (
+                                                                <div className="flex flex-col gap-0.5 items-center">
+                                                                    {stats.crm > 0 && (
+                                                                        <span className={`text-[9px] leading-tight font-black px-1.5 py-0.5 rounded-full whitespace-nowrap ${isSelected ? 'bg-white text-(--theme-600)' : 'bg-(--theme-50) text-(--theme-700) border border-(--theme-100)'}`}>
+                                                                            {stats.crm} {stats.crm === 1 ? 'cita' : 'citas'}
+                                                                        </span>
+                                                                    )}
+                                                                    {stats.google > 0 && (
+                                                                        <span className={`text-[9px] leading-tight font-black px-1.5 py-0.5 rounded-full whitespace-nowrap ${isSelected ? 'bg-white/30 text-white' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}>
+                                                                            {stats.google} {stats.google === 1 ? 'evento' : 'eventos'}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            );
                                                         })()}
                                                     </div>
                                                 )}
@@ -720,88 +907,99 @@ const ProspectorCalendario = () => {
                             {/* Tabs Headers */}
                             <div className="flex border-b border-gray-100 mb-4 shrink-0">
                                 <button
-                                    onClick={() => setActiveTab('agendar')}
-                                    className={`flex-1 py-2 text-xs font-bold transition-all border-b-2 ${activeTab === 'agendar' ? 'border-(--theme-500) text-(--theme-600)' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                                    onClick={() => setActiveTab('agenda')}
+                                    className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all border-b-2 ${activeTab === 'agenda' ? 'border-(--theme-500) text-(--theme-600)' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
                                 >
-                                    Agendar Cita
+                                    Agenda
                                 </button>
-                                {isVendedor && (
-                                    <button
-                                        onClick={() => setActiveTab('reuniones')}
-                                        className={`flex-1 py-2 text-xs font-bold transition-all border-b-2 ${activeTab === 'reuniones' ? 'border-(--theme-500) text-(--theme-600)' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
-                                    >
-                                        Mis Reuniones
-                                    </button>
-                                )}
+                                <button
+                                    onClick={() => setActiveTab('agendar')}
+                                    className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all border-b-2 ${activeTab === 'agendar' ? 'border-(--theme-500) text-(--theme-600)' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                                >
+                                    Agendar
+                                </button>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                            <div className={`flex-1 flex flex-col min-h-0 ${activeTab === 'agendar' ? 'overflow-hidden' : 'overflow-y-auto'} pr-1`} style={{ scrollbarWidth: 'thin' }}>
                                 {activeTab === 'agendar' ? (
                                     <div className="animate-in fade-in slide-in-from-right-2 duration-200">
-                                        <h2 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
-                                            <CalendarIcon className="w-5 h-5 text-[#689f38]" />
-                                            Agendar Cita
-                                        </h2>
-                                        <p className="text-xs text-gray-500 mb-4">
-                                            Para el <span className="font-bold text-gray-800">{selectedDate.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                                        </p>
-
-                                        {selectedCloser && !closerLinkedToGoogle && (
-                                            <div className="mb-4 flex flex-col p-3 bg-orange-50 border border-orange-200 rounded-lg space-y-1">
-                                                <div className="flex items-center gap-2 text-orange-800">
-                                                    <AlertCircle className="w-4 h-4 shrink-0" />
-                                                    <p className="font-bold text-xs">Calendario No Vinculado</p>
-                                                </div>
-                                                <p className="text-[11px] text-orange-700 leading-tight">Este closer no ha vinculado Google Calendar. No se verificará disponibilidad ni se creará Meet.</p>
+                                        <div className="flex flex-col h-full space-y-4 px-1">
+                                            {/* Form Header */}
+                                            <div className="shrink-0">
+                                                <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                                                    <CalendarIcon className="w-5 h-5 text-(--theme-500)" />
+                                                    Agendar Cita
+                                                </h2>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                                                    Para el <span className="text-(--theme-600)">{selectedDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })}</span>
+                                                </p>
                                             </div>
-                                        )}
 
-                                        <form onSubmit={handleSubmit} className="space-y-4">
-                                            <div className="space-y-3">
-                                                {/* Prospect Selection */}
-                                                <div>
-                                                    <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                                                        Seleccionar Prospecto
-                                                    </label>
-                                                    <select
-                                                        value={selectedProspect}
-                                                        onChange={(e) => setSelectedProspect(e.target.value)}
-                                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-transparent"
-                                                        required
-                                                    >
-                                                        <option value="">Selecciona...</option>
-                                                        {prospectos.map(p => (
-                                                            <option key={p.id} value={p.id}>
-                                                                {p.nombres} {p.apellidoPaterno}
-                                                            </option>
-                                                        ))}
-                                                    </select>
+                                            {/* Feedback if not linked */}
+                                            {selectedCloser && !closerLinkedToGoogle && (
+                                                <div className="shrink-0 p-3 bg-orange-50 border border-orange-200 rounded-2xl flex items-start gap-2.5 animate-in fade-in slide-in-from-top-2">
+                                                    <AlertCircle className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+                                                    <div className="flex flex-col">
+                                                        <p className="font-black text-[10px] text-orange-800 uppercase tracking-wider">Closer no vinculado</p>
+                                                        <p className="text-[10px] text-orange-700 leading-tight">No se verificará disponibilidad de Google.</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 space-y-5">
+                                                {/* Selection Area - 2 Columns for efficiency */}
+                                                <div className="grid grid-cols-2 gap-3 shrink-0">
+                                                    <div className="col-span-1">
+                                                        <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                                                            <User className="w-3 h-3"/> Prospecto
+                                                        </label>
+                                                        <div className="relative group">
+                                                            <select
+                                                                value={selectedProspect}
+                                                                onChange={(e) => setSelectedProspect(e.target.value)}
+                                                                className="w-full pl-3 pr-8 py-2.5 text-xs font-bold text-slate-700 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500) focus:bg-white focus:border-transparent appearance-none transition-all outline-none group-hover:border-slate-300"
+                                                                required
+                                                            >
+                                                                <option value="" disabled>Seleccionar...</option>
+                                                                {prospectos.map(p => (
+                                                                    <option key={p.id} value={p.id}>{p.nombres} {p.apellidoPaterno.charAt(0)}.</option>
+                                                                ))}
+                                                            </select>
+                                                            <div className="absolute inset-y-0 right-0 flex items-center px-2.5 pointer-events-none text-slate-400">
+                                                                <ChevronRight className="w-3.5 h-3.5 rotate-90" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="col-span-1">
+                                                        <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                                                            <Briefcase className="w-3 h-3"/> {isVendedor ? 'Responsable' : 'Closer'}
+                                                        </label>
+                                                        <div className="relative group">
+                                                            <select
+                                                                value={selectedCloser}
+                                                                onChange={(e) => setSelectedCloser(e.target.value)}
+                                                                className="w-full pl-3 pr-8 py-2.5 text-xs font-bold text-slate-700 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500) focus:bg-white focus:border-transparent appearance-none transition-all outline-none group-hover:border-slate-300"
+                                                                required
+                                                            >
+                                                                <option value="" disabled>Seleccionar...</option>
+                                                                {closers.map(c => (
+                                                                    <option key={c.id || c._id} value={c.id || c._id}>{c.nombre}</option>
+                                                                ))}
+                                                            </select>
+                                                            <div className="absolute inset-y-0 right-0 flex items-center px-2.5 pointer-events-none text-slate-400">
+                                                                <ChevronRight className="w-3.5 h-3.5 rotate-90" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
 
-                                                {/* Closer Selection */}
-                                                <div>
-                                                    <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                                                        {isVendedor ? 'Responsable' : 'Asignar Closer'}
+                                                {/* Time Selection - Main Flexible Area */}
+                                                <div className="flex-1 flex flex-col min-h-0">
+                                                    <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1">
+                                                        <Clock className="w-3 h-3"/> Horarios Disponibles
                                                     </label>
-                                                    <select
-                                                        value={selectedCloser}
-                                                        onChange={(e) => setSelectedCloser(e.target.value)}
-                                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-transparent"
-                                                        required
-                                                    >
-                                                        <option value="">{isVendedor ? 'Selecciona...' : 'Selecciona closer...'}</option>
-                                                        {closers.map(c => (
-                                                            <option key={c.id || c._id} value={c.id || c._id}>{c.nombre}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                {/* Time Selection */}
-                                                <div>
-                                                    <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
-                                                        Horarios Disponibles
-                                                    </label>
-                                                    <div className="grid grid-cols-2 gap-2 mt-1">
+                                                    <div className="flex-1 overflow-y-auto pr-1 grid grid-cols-2 gap-2 min-h-0" style={{ scrollbarWidth: 'thin' }}>
                                                         {selectedDate && selectedDate.getDay() !== 0 ? (
                                                             generateSlotsForDay(selectedDate).length > 0 ? (
                                                                 generateSlotsForDay(selectedDate).map((slot, idx) => {
@@ -813,12 +1011,12 @@ const ProspectorCalendario = () => {
                                                                             type="button"
                                                                             disabled={slot.isBusy}
                                                                             onClick={() => !slot.isBusy && setSelectedTimeSlot(slot)}
-                                                                            className={`p-1.5 border rounded-lg text-xs text-center transition-colors 
+                                                                            className={`w-full py-3 px-2 border rounded-xl text-xs font-black text-center transition-all duration-200 
                                                                                 ${slot.isBusy
-                                                                                    ? 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
+                                                                                    ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed line-through'
                                                                                     : isSelected
-                                                                                        ? 'bg-(--theme-500) border-(--theme-500) text-white font-bold'
-                                                                                        : 'bg-white border-gray-200 hover:bg-green-50 text-gray-600'
+                                                                                        ? 'bg-(--theme-600) border-(--theme-600) text-white shadow-lg shadow-(--theme-500)/30 ring-2 ring-white ring-offset-1'
+                                                                                        : 'bg-white border-slate-200 text-slate-600 hover:border-(--theme-500) hover:text-(--theme-600) hover:bg-(--theme-50)'
                                                                                 }`}
                                                                         >
                                                                             {timeStr}
@@ -826,69 +1024,81 @@ const ProspectorCalendario = () => {
                                                                     );
                                                                 })
                                                             ) : (
-                                                                <div className="col-span-2 text-[10px] text-gray-400 text-center py-2 bg-gray-50 rounded italic">Sin disponibilidad.</div>
+                                                                <div className="col-span-2 text-[10px] text-slate-400 text-center py-8 bg-slate-50/50 rounded-2xl italic border border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
+                                                                    <VideoOff className="w-5 h-5 opacity-30" />
+                                                                    Sin horarios disponibles
+                                                                </div>
                                                             )
                                                         ) : (
-                                                            <div className="col-span-2 text-[10px] text-gray-400 text-center py-2 bg-gray-50 rounded italic">Cerrado.</div>
+                                                            <div className="col-span-2 text-[10px] text-slate-400 text-center py-8 bg-slate-50/50 rounded-2xl italic border border-dashed border-slate-200">
+                                                                Día festivo o de descanso
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>
 
-                                                {/* Notes */}
-                                                <div>
-                                                    <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                                                        Notas
-                                                    </label>
-                                                    <textarea
-                                                        value={formData.notas}
-                                                        onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
-                                                        rows="2"
-                                                        className="w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-(--theme-500)"
-                                                        placeholder="Detalles..."
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <button
-                                                type="submit"
-                                                disabled={!selectedTimeSlot || !selectedProspect}
-                                                className="w-full py-2.5 px-4 bg-(--theme-500) text-white rounded-xl font-bold hover:bg-[#7cb342] shadow-md shadow-(--theme-500)/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                Agendar Cita
-                                            </button>
-
-                                            {createdEventLink && (
-                                                <div className="mt-4 p-3 bg-(--theme-50) border border-(--theme-200) rounded-lg flex flex-col items-center animate-in zoom-in-95">
-                                                    <div className="flex items-center gap-2 text-(--theme-800) mb-2">
-                                                        <LinkIcon className="w-4 h-4" />
-                                                        <p className="font-bold text-xs">Meet Creado</p>
+                                                {/* Notes & Submit - Sticky to bottom */}
+                                                <div className="shrink-0 space-y-3 pt-3 border-t border-slate-50 bg-white">
+                                                    <div>
+                                                        <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">
+                                                            Notas de la Reunión
+                                                        </label>
+                                                        <textarea
+                                                            value={formData.notas}
+                                                            onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
+                                                            rows="1"
+                                                            className="w-full p-2.5 text-[11px] font-medium border border-slate-200 bg-slate-50/50 rounded-xl focus:ring-2 focus:ring-(--theme-500) focus:bg-white resize-none outline-none transition-all placeholder:text-slate-300"
+                                                            placeholder="Instrucciones especiales..."
+                                                        />
                                                     </div>
+
                                                     <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText(createdEventLink);
-                                                            toast.success('Enlace copiado');
-                                                        }}
-                                                        className="w-full py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) font-medium text-[10px] flex items-center justify-center gap-2 shadow-sm"
+                                                        type="submit"
+                                                        disabled={!selectedTimeSlot || !selectedProspect}
+                                                        className="w-full py-3 px-4 bg-(--theme-500) text-white rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-(--theme-600) shadow-xl shadow-(--theme-500)/20 transition-all disabled:opacity-50 disabled:grayscale disabled:shadow-none disabled:cursor-not-allowed active:scale-[0.98]"
                                                     >
-                                                        <Copy className="w-3.5 h-3.5" />
-                                                        Copiar Enlace
+                                                        {selectedTimeSlot ? `Confirmar ${selectedTimeSlot.start.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}` : 'Selecciona Horario'}
                                                     </button>
+
+                                                    {createdEventLink && (
+                                                        <div className="p-3 bg-(--theme-50) border border-(--theme-200) rounded-2xl flex flex-col items-center animate-in zoom-in-95">
+                                                            <div className="flex items-center gap-2 text-(--theme-800) mb-2">
+                                                                <LinkIcon className="w-4 h-4" />
+                                                                <p className="font-extrabold text-[10px] uppercase">Meet Generado</p>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(createdEventLink);
+                                                                    toast.success('Enlace copiado');
+                                                                }}
+                                                                className="w-full py-2.5 bg-white border border-(--theme-200) text-(--theme-700) rounded-xl hover:bg-(--theme-50) font-bold text-[10px] flex items-center justify-center gap-2 shadow-sm transition-colors"
+                                                            >
+                                                                <Copy className="w-3.5 h-3.5" />
+                                                                Copiar Enlace
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </form>
+                                            </form>
+                                        </div>
                                     </div>
                                 ) : (
-                                    <div className="animate-in fade-in slide-in-from-left-2 duration-200">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h3 className="text-lg font-bold text-gray-900">Mis Reuniones</h3>
+                                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                                        <div className="flex items-center justify-between mb-5 bg-white sticky top-0 z-10 py-1 border-b border-slate-100">
+                                            <div className="flex flex-col">
+                                                <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                                                    Agenda <span className="text-(--theme-500) font-bold ml-1">{selectedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
+                                                </h3>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Planificación del día</p>
+                                            </div>
                                             <button
                                                 type="button"
-                                                onClick={cargarMisReuniones}
-                                                className="p-1.5 text-xs rounded-lg hover:bg-slate-100 transition-colors"
-                                                title="Actualizar"
+                                                onClick={() => { cargarMisReuniones(); cargarMisEventosGoogle(); }}
+                                                className="p-2 text-slate-400 hover:text-(--theme-600) hover:bg-(--theme-50) rounded-xl transition-all"
+                                                title="Actualizar agenda"
                                             >
-                                                <LogIn className="w-4 h-4 text-slate-500" />
+                                                <RefreshCw className={`w-5 h-5 ${(loadingMisReuniones || loadingGoogleEvents) ? 'animate-spin' : ''}`} />
                                             </button>
                                         </div>
 
@@ -898,131 +1108,112 @@ const ProspectorCalendario = () => {
                                                     <AlertCircle className="w-4 h-4 shrink-0" />
                                                     <p className="font-bold text-xs">Calendario no vinculado</p>
                                                 </div>
-                                                <p className="text-[10px] text-orange-700 leading-tight">Vincula tu cuenta de Google en <span className="font-bold">Ajustes &gt; Google</span> para sincronizar tus reuniones.</p>
+                                                <p className="text-[10px] text-orange-700 leading-tight">Vincula tu cuenta de Google en <span className="font-bold">Ajustes &gt; Google</span> para visualizar eventos y unificar la agenda.</p>
                                             </div>
                                         )}
 
-                                        {loadingMisReuniones ? (
+                                        {loadingMisReuniones || loadingGoogleEvents ? (
                                             <div className="flex items-center justify-center p-8">
                                                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-(--theme-500)"></div>
                                             </div>
-                                        ) : misReuniones.length === 0 ? (
-                                            <p className="text-xs text-gray-400 text-center py-8 italic bg-slate-50 rounded-xl border border-dashed border-slate-200">No hay reuniones próximas.</p>
+                                        ) : combinedDayEvents.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center py-12 text-center opacity-70">
+                                                <CalendarIcon className="w-12 h-12 text-gray-200 mb-3" />
+                                                <p className="text-sm font-bold text-gray-400">Día sin eventos</p>
+                                            </div>
                                         ) : (
-                                            <div className="space-y-3">
-                                                {misReuniones.map((r) => {
-                                                    const hasMeet = !!r.googleMeetLink;
-                                                    const fecha = new Date(r.fecha);
-                                                    return (
-                                                        <div key={r.id} className="group relative bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-200 transition-all duration-300">
-                                                            {/* Colored top accent bar */}
-                                                            <div className="h-1 w-full bg-gradient-to-r from-(--theme-400) to-(--theme-600)"></div>
+                                            <div className="relative border-l-2 border-slate-200 ml-4 pl-6 space-y-5 pb-6">
+                                                {combinedDayEvents.map((evt, idx) => {
+                                                    const fecha = evt.date;
 
-                                                            <div className="p-4">
-                                                                {/* Header row */}
-                                                                <div className="flex items-start justify-between mb-3">
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <p className="text-sm font-black text-slate-900 truncate leading-tight">
-                                                                            {r?.cliente?.nombres || 'Cliente'} {r?.cliente?.apellidoPaterno || ''}
-                                                                        </p>
-                                                                        {r?.cliente?.empresa && (
-                                                                            <p className="text-[10px] font-semibold text-slate-400 truncate mt-0.5 uppercase tracking-wide">{r.cliente.empresa}</p>
-                                                                        )}
-                                                                    </div>
-                                                                    {/* Action icons — always visible on mobile, hover on desktop */}
-                                                                    <div className="flex gap-1 ml-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
-                                                                        <button
-                                                                            type="button"
-                                                                            title="Editar reunión"
-                                                                            onClick={() => {
-                                                                                setSelectedMeetingForEdit(r);
-                                                                                setEditMeetingData({ fecha: fecha.toISOString().slice(0, 16), notas: r.notas || '' });
-                                                                                setShowEditModal(true);
-                                                                            }}
-                                                                            className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-100 transition-all"
-                                                                        >
-                                                                            <Pencil className="w-3.5 h-3.5" />
-                                                                        </button>
-                                                                        <button
-                                                                            type="button"
-                                                                            title="Eliminar reunión"
-                                                                            onClick={() => handleEliminarReunion(r.id)}
-                                                                            className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 border border-slate-100 transition-all"
-                                                                        >
-                                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Date/time pill */}
-                                                                <div className="flex items-center gap-2 mb-3">
-                                                                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-2.5 py-1.5">
-                                                                        <CalendarIcon className="w-3.5 h-3.5 text-(--theme-500)" />
-                                                                        <span className="text-[11px] font-bold text-slate-700">
-                                                                            {fecha.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-1.5 bg-(--theme-50) border border-(--theme-100) rounded-xl px-2.5 py-1.5">
-                                                                        <Clock className="w-3.5 h-3.5 text-(--theme-600)" />
-                                                                        <span className="text-[11px] font-black text-(--theme-700)">
-                                                                            {fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Contact row */}
-                                                                {(r?.cliente?.telefono || r?.cliente?.correo) && (
-                                                                    <div className="flex gap-2 mb-3">
-                                                                        {r?.cliente?.telefono && (
-                                                                            <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-500 truncate">
-                                                                                <Phone className="w-3 h-3 shrink-0" />
-                                                                                <span className="truncate">{r.cliente.telefono}</span>
+                                                    if (evt.type === 'crm') {
+                                                        const r = evt.raw;
+                                                        const hasMeet = !!r.googleMeetLink;
+                                                        return (
+                                                            <div key={`crm-${r.id}`} className="relative group">
+                                                                {/* Timeline dot - Matching Historial design */}
+                                                                <div className="absolute -left-[33px] top-2 w-4 h-4 bg-white border-2 border-slate-300 rounded-full z-10 group-hover:border-(--theme-500) transition-colors"></div>
+                                                                
+                                                                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group-hover:border-(--theme-200)">
+                                                                    <div className="p-4">
+                                                                        {/* Card Header */}
+                                                                        <div className="flex items-start justify-between mb-3">
+                                                                            <div className="flex items-center gap-3">
+                                                                                <div className="w-10 h-10 bg-(--theme-50) rounded-xl flex items-center justify-center text-(--theme-600) shrink-0 shadow-inner">
+                                                                                    <Calendar className="w-5 h-5" />
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h4 className="text-sm font-black text-slate-900 mb-0.5">
+                                                                                        {r?.cliente?.nombres} {r?.cliente?.apellidoPaterno}
+                                                                                    </h4>
+                                                                                    <div className="flex items-center gap-1.5">
+                                                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">CRM Cita</span>
+                                                                                        <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                                                                                            <Clock className="w-3 h-3" /> {fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
                                                                             </div>
-                                                                        )}
-                                                                        {r?.cliente?.correo && (
-                                                                            <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-500 truncate">
-                                                                                <Mail className="w-3 h-3 shrink-0" />
-                                                                                <span className="truncate">{r.cliente.correo}</span>
+                                                                            {/* Mini Actions */}
+                                                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                <button onClick={() => { setSelectedMeetingForEdit(r); setEditMeetingData({ fecha: fecha.toISOString().slice(0, 16), notas: r.notas || '' }); setShowEditModal(true); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Edit2 className="w-3.5 h-3.5" /></button>
+                                                                                <button onClick={() => handleEliminarReunion(r.id)} className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"><Trash2 className="w-3.5 h-3.5" /></button>
                                                                             </div>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-
-                                                                {/* Action buttons */}
-                                                                <div className="flex gap-2 pt-3 border-t border-slate-50">
-                                                                    {/* Meet button */}
-                                                                    {hasMeet ? (
-                                                                        <a href={r.googleMeetLink} target="_blank" rel="noopener noreferrer"
-                                                                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black tracking-wide transition-colors shadow-sm shadow-blue-200 active:scale-95">
-                                                                            <LogIn className="w-3.5 h-3.5" />
-                                                                            Meet
-                                                                        </a>
-                                                                    ) : (
-                                                                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 text-slate-300 text-[10px] font-bold border border-slate-100 cursor-default">
-                                                                            <VideoOff className="w-3.5 h-3.5" />
-                                                                            Sin Meet
                                                                         </div>
-                                                                    )}
 
-                                                                    {hasMeet && (
-                                                                        <button type="button" title="Copiar enlace"
-                                                                            onClick={() => { navigator.clipboard.writeText(r.googleMeetLink); toast.success('Enlace copiado'); }}
-                                                                            className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
-                                                                            <Copy className="w-3.5 h-3.5" />
-                                                                        </button>
-                                                                    )}
-
-                                                                    {/* Registrar resultado — takes remaining space */}
-                                                                    <button type="button"
-                                                                        onClick={() => { setSelectedMeetingForResult(r); setResultNotes(r.notas || ''); setShowResultModal(true); }}
-                                                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black tracking-wide transition-colors shadow-sm active:scale-95">
-                                                                        <CheckCircle2 className="w-3.5 h-3.5" />
-                                                                        Resultado
-                                                                    </button>
+                                                                        {/* Footer Actions */}
+                                                                        <div className="flex gap-2 pt-3 border-t border-slate-50">
+                                                                            {hasMeet && (
+                                                                                 <a href={r.googleMeetLink} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-blue-200">
+                                                                                    <VideoIcon className="w-4 h-4" /> Meet
+                                                                                 </a>
+                                                                            )}
+                                                                            <button type="button" onClick={() => { setSelectedMeetingForResult(r); setResultNotes(r.notas || ''); setShowResultModal(true); }} className={`flex-1 px-4 py-2 ${hasMeet ? 'bg-slate-900' : 'bg-linear-to-r from-(--theme-600) to-(--theme-700)'} text-white text-[11px] font-black uppercase tracking-wider rounded-xl hover:brightness-110 transition-all shadow-lg`}>
+                                                                                {hasMeet ? 'Resultado' : 'Registrar Resultado'}
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    );
+                                                        );
+                                                    } else {
+                                                        // Google Event
+                                                        const g = evt.raw;
+                                                        const isVideo = !!evt.meet;
+                                                        return (
+                                                            <div key={`google-${g.id}`} className="relative group">
+                                                                {/* Timeline dot */}
+                                                                <div className="absolute -left-[33px] top-2 w-4 h-4 bg-white border-2 border-slate-200 rounded-full z-10 group-hover:border-blue-400 transition-colors"></div>
+                                                                
+                                                                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+                                                                    <div className="p-4 border-l-4 border-slate-200 group-hover:border-blue-400">
+                                                                        <div className="flex items-start justify-between mb-2">
+                                                                            <div className="flex flex-col">
+                                                                                <div className="flex items-center gap-2 mb-1.5">
+                                                                                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest border border-blue-100 flex items-center gap-1">
+                                                                                        <Clock className="w-3 h-3" /> {fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                                                                    </span>
+                                                                                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Personal</span>
+                                                                                </div>
+                                                                                <h4 className="text-sm font-bold text-slate-700 wrap-break-word">{evt.title}</h4>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-50">
+                                                                            {isVideo && (
+                                                                                <a href={evt.meet} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[10px] font-black text-blue-600 hover:text-blue-800 transition-colors">
+                                                                                    <VideoIcon className="w-3.5 h-3.5" /> Video Call
+                                                                                </a>
+                                                                            )}
+                                                                            <a href={evt.htmlLink} target="_blank" rel="noopener noreferrer" className="text-[10px] font-black text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1.5">
+                                                                                <ExternalLink className="w-3.5 h-3.5" /> Google Calendar
+                                                                            </a>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
                                                 })}
                                             </div>
                                         )}
@@ -1034,8 +1225,6 @@ const ProspectorCalendario = () => {
                 </div>
             </div>
             <style>{`@keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }`}</style>
-            <ResultModal />
-            <EditMeetingModal />
         </div>
     );
 };

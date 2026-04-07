@@ -56,6 +56,7 @@ const VendedorDashboard = lazyWithRetry(() => import('./pages/vendedor/VendedorD
 const CRMClientes = lazyWithRetry(() => import('./pages/common/CRMClientes.jsx'));
 const UserManagement = lazyWithRetry(() => import('./pages/common/UserManagement.jsx'));
 const UserProfile = lazyWithRetry(() => import('./pages/common/UserProfile.jsx'));
+const GestionEquipo = lazyWithRetry(() => import('./pages/common/GestionEquipo.jsx'));
 
 function App() {
   const currentThemeId = useThemeStore((state) => state.currentThemeId);
@@ -156,6 +157,7 @@ function App() {
             <Route path="usuarios/vendedores" element={<UserManagement initialRole="vendedor" />} />
             <Route path="users/:id" element={<UserProfile />} />
             <Route path="ajustes" element={<Ajustes />} />
+            <Route path="equipo" element={<GestionEquipo />} />
           </Route>
 
           <Route path="/closer" element={<CloserLayout />}>
@@ -169,6 +171,7 @@ function App() {
             <Route path="users/:id" element={<UserProfile />} />
             <Route path="monitoreo-prospectors" element={<CloserMonitoreoProspectors />} />
             <Route path="ajustes" element={<Ajustes />} />
+            <Route path="equipo" element={<GestionEquipo />} />
           </Route>
 
           {/* --- VENDEDOR --- */}
@@ -182,6 +185,7 @@ function App() {
             <Route path="usuarios/vendedores" element={<UserManagement initialRole="vendedor" />} />
             <Route path="users/:id" element={<UserProfile />} />
             <Route path="ajustes" element={<Ajustes />} />
+            <Route path="equipo" element={<GestionEquipo />} />
           </Route>
 
 
