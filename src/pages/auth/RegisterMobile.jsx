@@ -5,11 +5,8 @@ import { Mail, Lock, User, Phone, Eye, EyeOff, ArrowRight, Shield, Check } from 
 import API_URL from '../../config/api';
 import logosolomycrm from '../../assets/logosolomycrm.png';
 
-const ROLES = [
-  { id: 'prospector', label: 'Prospector', emoji: '🔍', desc: 'Generar leads' },
-  { id: 'closer', label: 'Closer', emoji: '🎯', desc: 'Cerrar ventas' },
-  { id: 'vendedor', label: 'Vendedor', emoji: '🛡️', desc: 'Ciclo completo' },
-];
+// Rol único: vendedor
+const DEFAULT_ROL = 'vendedor';
 
 const RegisterMobile = () => {
   const navigate = useNavigate();
@@ -24,7 +21,7 @@ const RegisterMobile = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [rol, setRol] = useState('prospector');
+  const [rol, setRol] = useState(DEFAULT_ROL);
   const [focusedField, setFocusedField] = useState(null);
 
   const handleRegister = async (e) => {
@@ -47,11 +44,8 @@ const RegisterMobile = () => {
       if (response.ok) {
         const userData = data.usuario || data.user;
         sessionStorage.setItem('user', JSON.stringify(userData));
-        const { rol: userRol } = userData;
-        if (userRol === 'prospector') navigate('/prospector');
-        else if (userRol === 'closer') navigate('/closer');
-        else if (userRol === 'vendedor') navigate('/vendedor');
-        else navigate('/');
+        // Todos los usuarios son vendedor, navegar a vendedor dashboard
+        navigate('/vendedor');
       } else {
         setError(data.mensaje || data.message || 'Error al registrar usuario');
       }
@@ -164,24 +158,7 @@ const RegisterMobile = () => {
           </AnimatePresence>
 
           <form onSubmit={handleRegister} className="space-y-4">
-            {/* Selección de Rol */}
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Selecciona tu Rol</label>
-              <div className="grid grid-cols-3 gap-2">
-                {ROLES.map((r) => (
-                  <button key={r.id} type="button" onClick={() => setRol(r.id)}
-                    className="flex flex-col items-center py-3 px-2 rounded-2xl transition-all"
-                    style={{
-                      background: rol === r.id ? 'var(--theme-50)' : 'rgba(248,250,252,0.8)',
-                      border: rol === r.id ? '1.5px solid var(--theme-400)' : '1.5px solid rgba(0,0,0,0.07)',
-                      boxShadow: rol === r.id ? '0 0 0 3px var(--theme-500)15' : 'none',
-                    }}>
-                    <span className="text-xl mb-1">{r.emoji}</span>
-                    <span className="text-[9px] font-black uppercase tracking-wide" style={{ color: rol === r.id ? 'var(--theme-700)' : '#94a3b8' }}>{r.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+
 
             <div className="grid grid-cols-2 gap-3">
               {/* Nombre */}

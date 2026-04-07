@@ -23,10 +23,8 @@ const LoginMobile = () => {
     }
     const user = getUser();
     if (user) {
-      const { rol } = user;
-      if (rol === 'prospector') navigate('/prospector');
-      else if (rol === 'closer') navigate('/closer');
-      else if (rol === 'vendedor') navigate('/vendedor');
+      // Todos los usuarios van al dashboard de vendedor
+      navigate('/vendedor');
     }
   }, [navigate]);
 
@@ -45,11 +43,8 @@ const LoginMobile = () => {
         const userData = data.usuario || data.user;
         saveUser(userData, rememberMe);
         if (data.token) saveToken(data.token, rememberMe);
-        const { rol } = userData;
-        if (rol === 'prospector') navigate('/prospector');
-        else if (rol === 'closer') navigate('/closer');
-        else if (rol === 'vendedor') navigate('/vendedor');
-        else navigate('/');
+        // Todos los usuarios van al dashboard de vendedor
+        navigate('/vendedor');
       } else {
         setError(data.mensaje || data.message || 'Credenciales incorrectas');
       }

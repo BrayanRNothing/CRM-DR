@@ -42,11 +42,8 @@ const FeaturePill = ({ icon: Icon, text, delay }) => (
   </motion.div>
 );
 
-const ROLES = [
-  { id: 'prospector', label: 'Prospector', emoji: '🔍', desc: 'Generar leads' },
-  { id: 'closer', label: 'Closer', emoji: '🎯', desc: 'Cerrar ventas' },
-  { id: 'vendedor', label: 'Vendedor', emoji: '🛡️', desc: 'Ciclo completo' },
-];
+// Rol único: vendedor
+const DEFAULT_ROL = 'vendedor';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -62,7 +59,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [rol, setRol] = useState('prospector');
+  const [rol, setRol] = useState(DEFAULT_ROL);
   const [focusedField, setFocusedField] = useState(null);
 
   const getPasswordStrength = () => {
@@ -99,11 +96,8 @@ const Register = () => {
       if (response.ok) {
         const userData = data.usuario || data.user;
         sessionStorage.setItem('user', JSON.stringify(userData));
-        const { rol: userRol } = userData;
-        if (userRol === 'prospector') navigate('/prospector');
-        else if (userRol === 'closer') navigate('/closer');
-        else if (userRol === 'vendedor') navigate('/vendedor');
-        else navigate('/');
+        // Todos los usuarios son vendedor, navegar a vendedor dashboard
+        navigate('/vendedor');
       } else {
         setError(data.mensaje || data.message || 'Error al registrar usuario');
       }
@@ -247,34 +241,7 @@ const Register = () => {
             </AnimatePresence>
 
             <form onSubmit={handleRegister}>
-              {/* Selección de Rol */}
-              <div className="mb-5">
-                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] mb-2.5"
-                  style={{ color: 'rgba(255,255,255,0.4)' }}>
-                  Selecciona tu Rol *
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {ROLES.map((role) => {
-                    const isActive = rol === role.id;
-                    return (
-                      <button key={role.id} type="button" onClick={() => setRol(role.id)}
-                        className="flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-200"
-                        style={{
-                          background: isActive ? 'var(--theme-900)' : 'rgba(255,255,255,0.03)',
-                          border: isActive ? '1px solid var(--theme-500)' : '1px solid rgba(255,255,255,0.08)',
-                          boxShadow: isActive ? '0 0 0 2px var(--theme-500)20' : 'none',
-                        }}>
-                        <span className="text-base mb-0.5">{role.emoji}</span>
-                        <span className="text-[10px] font-bold tracking-wide"
-                          style={{ color: isActive ? 'var(--theme-300)' : 'rgba(255,255,255,0.4)' }}>
-                          {role.label}
-                        </span>
-                        <span className="text-[8px] mt-0.5" style={{ color: 'rgba(255,255,255,0.2)' }}>{role.desc}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+
 
               {/* Grid de campos */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
