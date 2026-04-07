@@ -8,12 +8,64 @@ const { Pool } = require('pg');
 let internalDb;
 const isPostgres = true;
 
+const isRunningOnRailway = Boolean(
+  process.env.RAILWAY_ENVIRONMENT ||
+  process.env.RAILWAY_PROJECT_ID ||
+  process.env.RAILWAY_SERVICE_ID
+);
+
+const parseDbHost = (url) => {
+  if (!url) return '';
+  try {
+    return new URL(url).hostname || '';
+  } catch (_) {
+    return '';
+  }
+};
+
+const isRailwayInternalHost = (url) => parseDbHost(url).endsWith('.railway.internal');
+
+const envUrls = {
+  DATABASE_URL: process.env.DATABASE_URL,
+  DATABASE_PUBLIC_URL: process.env.DATABASE_PUBLIC_URL,
+  POSTGRES_URL: process.env.POSTGRES_URL,
+  POSTGRES_PUBLIC_URL: process.env.POSTGRES_PUBLIC_URL,
+  PGURL: process.env.PGURL,
+  DATABASE_PRIVATE_URL: process.env.DATABASE_PRIVATE_URL,
+};
+
+const firstNonEmpty = (list) => list.find((v) => typeof v === 'string' && v.trim().length > 0);
+
 // Soportar múltiples nombres de variables de entorno comunes en Railway/Vercel
-const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.PGURL || process.env.DATABASE_PRIVATE_URL;
+let dbUrl = firstNonEmpty([
+  envUrls.DATABASE_URL,
+  envUrls.DATABASE_PUBLIC_URL,
+  envUrls.POSTGRES_URL,
+  envUrls.POSTGRES_PUBLIC_URL,
+  envUrls.PGURL,
+  envUrls.DATABASE_PRIVATE_URL,
+]);
+
+if (!isRunningOnRailway && isRailwayInternalHost(dbUrl)) {
+  const fallbackPublicUrl = firstNonEmpty([
+    envUrls.DATABASE_PUBLIC_URL,
+    envUrls.POSTGRES_PUBLIC_URL,
+    envUrls.POSTGRES_URL,
+    envUrls.PGURL,
+  ]);
+
+  if (fallbackPublicUrl && !isRailwayInternalHost(fallbackPublicUrl)) {
+    console.warn('⚠️ Detectada URL interna de Railway fuera de Railway. Se usará URL pública de respaldo.');
+    dbUrl = fallbackPublicUrl;
+  } else {
+    console.error('❌ DATABASE_URL apunta a *.railway.internal y este entorno no está dentro de Railway.');
+    console.log('💡 Define DATABASE_PUBLIC_URL (o POSTGRES_PUBLIC_URL) para desarrollo local.');
+  }
+}
 
 if (!dbUrl) {
   console.error('❌ CRÍTICO: No se encontró DATABASE_URL. El backend no podrá realizar consultas.');
-  console.log('💡 Tip: Verifica las variables de entorno en el panel de Railway.');
+  console.log('💡 Tip: Verifica DATABASE_URL / DATABASE_PUBLIC_URL en tus variables de entorno.');
 }
 
 console.log(`🌐 Intentando conectar a la base de datos... ${dbUrl ? '(URL detectada)' : '(⚠️ URL NO DETECTADA)'}`);
