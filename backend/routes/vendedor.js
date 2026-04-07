@@ -2860,6 +2860,20 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
             updates.push('interes = ?');
             params.push(parseInt(interes));
         }
+        // Ejecutar actualización del cliente
+        params.push(cid);
+        await db.prepare(`
+            UPDATE clientes 
+            SET ${updates.join(', ')}
+            WHERE id = ?
+        `).run(...params);
 
-        
+        const rowFinal = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(cid);
+        res.json({ msg: 'Actividad registrada y cliente actualizado', cliente: toMongoFormat(rowFinal) || rowFinal });
+    } catch (error) {
+        console.error('Error al registrar actividad:', error);
+        res.status(500).json({ msg: 'Error al registrar actividad' });
+    }
+});
+
 module.exports = router;
