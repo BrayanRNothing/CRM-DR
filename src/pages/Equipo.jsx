@@ -255,16 +255,6 @@ export default function Equipo() {
                     <div className="ge-summary-value">{totales.activos}</div>
                     <div className="ge-summary-hint">Disponibles para operar</div>
                   </div>
-                  <div className="ge-summary-box">
-                    <div className="ge-summary-label">Prospectores</div>
-                    <div className="ge-summary-value">{totales.prospector}</div>
-                    <div className="ge-summary-hint">Captación y seguimiento</div>
-                  </div>
-                  <div className="ge-summary-box">
-                    <div className="ge-summary-label">Closers / Vendedores</div>
-                    <div className="ge-summary-value">{totales.closer + totales.vendedor}</div>
-                    <div className="ge-summary-hint">Cierre y gestión comercial</div>
-                  </div>
                 </div>
               </div>
             );
