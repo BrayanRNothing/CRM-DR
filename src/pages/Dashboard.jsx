@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Phone, UserPlus, Calendar, TrendingUp, RefreshCw, Clock, CheckCircle2, Target, MessageSquare, ExternalLink, Users, Award, DollarSign, AlertTriangle, TrendingDown, Zap, Bell, ArrowRightLeft, PercentCircle, BarChart3, Search, FileText, Video } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import FunnelVisual from '../../components/FunnelVisual';
+import FunnelVisual from '../components/FunnelVisual';
 
-import API_URL from '../../config/api';
-import socket from '../../config/socket';
+import API_URL from '../config/api';
+import socket from '../config/socket';
 
 const PERIODOS = [
     { key: 'dia', label: 'Hoy', suffix: 'hoy' },
@@ -15,7 +15,7 @@ const PERIODOS = [
 ];
 
 const EMPTY_PERIODO = { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: 0 };
-const INITIAL_PROSPECTOR_DATA = {
+const INITIAL_VENDEDOR_DATA = {
     embudo: { prospecto_nuevo: 0, en_contacto: 0, reunion_agendada: 0, transferidos: 0, total: 0 },
     tasasConversion: { contacto: 0, agendamiento: 0 },
     periodos: { dia: EMPTY_PERIODO, semana: EMPTY_PERIODO, mes: EMPTY_PERIODO, total: EMPTY_PERIODO }
@@ -31,13 +31,13 @@ const INITIAL_CLOSER_DATA = {
     analisisPerdidas: { no_asistio: 0, no_interesado: 0 }
 };
 
-import { getToken } from '../../utils/authUtils';
+import { getToken } from '../utils/authUtils';
 
 const getAuthHeaders = () => ({ 'x-auth-token': getToken() || '' });
 
-const VendedorDashboard = () => {
+const Dashboard = () => {
     const [loading, setLoading] = useState(true);
-    const [prospectorData, setProspectorData] = useState(null);
+    const [vendedorData, setVendedorData] = useState(null);
     const [closerData, setCloserData] = useState(null);
     const [recordatorios, setRecordatorios] = useState([]);
     const [reuniones, setReuniones] = useState([]);
@@ -89,7 +89,7 @@ const VendedorDashboard = () => {
         if (!silent) setLoading(true);
         try {
             try {
-                const resP = await axios.get(`${API_URL}/api/prospector/dashboard`, { headers: getAuthHeaders() });
+                const resP = await axios.get(`${API_URL}/api/vendedor/dashboard`, { headers: getAuthHeaders() });
                 let rawP = resP.data;
                 if (!rawP.periodos) {
                     rawP.periodos = {
@@ -106,7 +106,7 @@ const VendedorDashboard = () => {
             }
 
             try {
-                const resC = await axios.get(`${API_URL}/api/closer/dashboard`, { headers: getAuthHeaders() });
+                const resC = await axios.get(`${API_URL}/api/vendedor/dashboard-closer`, { headers: getAuthHeaders() });
                 setCloserData(sanitizeCloserData(resC.data));
             } catch (e) {
                 console.error('Error closer data:', e);
@@ -126,7 +126,7 @@ const VendedorDashboard = () => {
         }
         try {
             try {
-                const resR = await axios.get(`${API_URL}/api/closer/calendario`, { headers: getAuthHeaders() });
+                const resR = await axios.get(`${API_URL}/api/vendedor/calendario`, { headers: getAuthHeaders() });
                 const ahora = new Date();
                 const proximas = resR.data.filter(r => {
                     const fecha = new Date(r.fecha);
@@ -143,9 +143,9 @@ const VendedorDashboard = () => {
             try {
                 // 1. Obtener prospectos con recordatorio (Ruta Closer y Prospector), clientes ganados, y recordatorios de la base de tareas
                 const [resCloser, resProspector, resClientes, resTareas] = await Promise.allSettled([
-                    axios.get(`${API_URL}/api/closer/prospectos`, { headers: getAuthHeaders() }),
-                    axios.get(`${API_URL}/api/prospector/prospectos`, { headers: getAuthHeaders() }),
-                    axios.get(`${API_URL}/api/closer/clientes-ganados`, { headers: getAuthHeaders() }),
+                    axios.get(`${API_URL}/api/vendedor/prospectos`, { headers: getAuthHeaders() }),
+                    axios.get(`${API_URL}/api/vendedor/prospectos`, { headers: getAuthHeaders() }),
+                    axios.get(`${API_URL}/api/vendedor/clientes-ganados`, { headers: getAuthHeaders() }),
                     axios.get(`${API_URL}/api/tareas`, { headers: getAuthHeaders() })
                 ]);
 
@@ -532,4 +532,4 @@ const VendedorDashboard = () => {
     );
 };
 
-export default VendedorDashboard;
+export default Dashboard;

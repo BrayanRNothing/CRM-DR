@@ -3,12 +3,12 @@ import { useLocation } from 'react-router-dom';
 import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar, Filter, Star, Mail, MessageSquare, Clock } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { getToken } from '../../utils/authUtils';
-import { HistorialInteracciones } from '../../components/HistorialInteracciones';
-import TimeWheelPicker from '../../components/TimeWheelPicker';
-import ClienteDetalle from '../../components/ClienteDetalle';
+import { getToken } from '../utils/authUtils';
+import { HistorialInteracciones } from '../components/HistorialInteracciones';
+import TimeWheelPicker from '../components/TimeWheelPicker';
+import ClienteDetalle from '../components/ClienteDetalle';
 
-import API_URL from '../../config/api';
+import API_URL from '../config/api';
 
 const normalizeClienteRecordatorio = (cliente) => ({
     ...cliente,
@@ -36,7 +36,7 @@ const buildReminderByClienteMap = (tareas = []) => {
     return map;
 };
 
-const CRMClientes = () => {
+const Clientes = () => {
     const location = useLocation();
     const esMenuSeguimiento = location.pathname.endsWith('/clientes/seguimiento');
     const [clientes, setClientes] = useState([]);
@@ -90,7 +90,7 @@ const CRMClientes = () => {
     const cargarClientes = async () => {
         setLoading(true);
         try {
-            const rol = getRolePath();
+            const rol = 'vendedor';
             const [resClientes, resTareas] = await Promise.all([
                 axios.get(`${API_URL}/api/${rol}/clientes-ganados`, { headers: getAuthHeaders() }),
                 axios.get(`${API_URL}/api/tareas`, { headers: getAuthHeaders() })
@@ -126,7 +126,7 @@ const CRMClientes = () => {
     const cargarTimelineCliente = async (cliente) => {
         setLoadingTimeline(true);
         try {
-            const rol = getRolePath();
+            const rol = 'vendedor';
             const res = await axios.get(
                 `${API_URL}/api/${rol}/prospecto/${cliente.id || cliente._id}/historial-completo`,
                 { headers: getAuthHeaders() }
@@ -149,7 +149,7 @@ const CRMClientes = () => {
     const registrarActividadCliente = async (payload) => {
         if (!prospectoSeleccionado) return;
 
-        const rol = getRolePath();
+        const rol = 'vendedor';
         const clienteId = prospectoSeleccionado.id || prospectoSeleccionado._id;
 
         if (payload.tipo === 'llamada' && prospectoSeleccionado.proximaLlamada) {
@@ -420,7 +420,7 @@ const CRMClientes = () => {
         return (
             <ClienteDetalle 
                 Cliente={prospectoSeleccionado}
-                rolePath={getRolePath()}
+                rolePath={'vendedor'}
                 onVolver={() => setProspectoSeleccionado(null)}
                 onActualizado={async () => {
                     const lista = await cargarClientes();
@@ -788,4 +788,4 @@ const CRMClientes = () => {
     );
 };
 
-export default CRMClientes;
+export default Clientes;

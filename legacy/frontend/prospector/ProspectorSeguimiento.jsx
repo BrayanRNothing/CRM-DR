@@ -146,7 +146,7 @@ const ProspectorSeguimiento = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
-    const rolePath = location.pathname.startsWith('/closer') ? 'closer' : 'prospector';
+    const rolePath = location.pathname.startsWith('/closer') ? 'closer' : (location.pathname.startsWith('/vendedor') ? 'vendedor' : 'prospector');
     const [prospectos, setProspectos] = useState([]);
     const [loading, setLoading] = useState(true);
     // Filtros

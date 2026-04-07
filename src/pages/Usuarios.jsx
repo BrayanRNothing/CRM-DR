@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import Avatar from '../../components/ui/Avatar';
+import Avatar from '../components/ui/Avatar';
 import toast from 'react-hot-toast';
-import API_URL from '../../config/api';
-import { getToken } from '../../utils/authUtils';
+import API_URL from '../config/api';
+import { getToken } from '../utils/authUtils';
 import { X, User, Phone, Mail, Lock, Shield, Trash2, Edit2, Search, Plus, Calendar, CheckCircle2, XCircle, Eye, EyeOff, Target } from 'lucide-react';
 
 const GoogleIcon = ({ size = 14 }) => (
@@ -174,7 +174,7 @@ function ConfirmarEliminarModal({ visible, nombre, onConfirm, onCancel, loading 
     );
 }
 
-function UserManagement({ initialRole }) {
+function Usuarios({ initialRole }) {
     const [usuarios, setUsuarios] = useState([]);
     const [cargando, setCargando] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -438,4 +438,4 @@ function UserManagement({ initialRole }) {
     );
 }
 
-export default UserManagement;
+export default Usuarios;

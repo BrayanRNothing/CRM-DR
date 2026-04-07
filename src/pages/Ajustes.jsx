@@ -4,13 +4,13 @@ import {
     Link2, Link2Off, CheckCircle2, Mail, Phone,
     AlertCircle, Bell, Save, KeyRound, Palette, Camera
 } from 'lucide-react';
-import Avatar from '../../components/ui/Avatar';
+import Avatar from '../components/ui/Avatar';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
-import API_URL from '../../config/api';
-import { getUser, saveUser, getToken } from '../../utils/authUtils';
-import useThemeStore, { THEMES } from '../../store/themeStore.js';
+import API_URL from '../config/api';
+import { getUser, saveUser, getToken } from '../utils/authUtils';
+import useThemeStore, { THEMES } from '../store/themeStore.js';
 
 const GoogleIcon = ({ size = 20 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24">

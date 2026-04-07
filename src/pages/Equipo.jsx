@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Users, UserPlus, Edit2, Power, Crown, Shield, ChevronRight, X, Check, Loader2, RefreshCw } from 'lucide-react';
-import { getUser, getToken } from '../../utils/authUtils';
-import API_URL from '../../config/api';
+import { getUser, getToken } from '../utils/authUtils';
+import API_URL from '../config/api';
 
 const ROLES = [
   { value: 'prospector', label: 'Prospector', color: '#6366f1', bg: '#eef2ff' },
@@ -20,7 +20,7 @@ const getRolBadge = (rol) => {
 
 const initialForm = { usuario: '', contraseña: '', nombre: '', email: '', telefono: '', rol: 'prospector' };
 
-export default function GestionEquipo() {
+export default function Equipo() {
   const userAuth = getUser();
   const token = getToken();
 

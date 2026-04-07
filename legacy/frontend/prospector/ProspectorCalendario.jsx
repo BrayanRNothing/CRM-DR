@@ -59,7 +59,8 @@ const ProspectorCalendario = () => {
         setLoadingMisReuniones(true);
         try {
             const token = getToken();
-            const res = await fetch(`${API_URL}/api/closer/calendario`, {
+            const rolActual = isVendedor ? 'vendedor' : (currentUser?.rol?.toLowerCase() || 'prospector');
+            const res = await fetch(`${API_URL}/api/${rolActual}/calendario`, {
                 headers: { 'x-auth-token': token }
             });
             if (!res.ok) throw new Error('No se pudieron cargar reuniones');
@@ -118,7 +119,8 @@ const ProspectorCalendario = () => {
         setGuardandoResultadoId(reunion.id);
         try {
             const token = getToken();
-            const res = await fetch(`${API_URL}/api/closer/registrar-reunion`, {
+            const rolActual = isVendedor ? 'vendedor' : (currentUser?.rol?.toLowerCase() || 'closer');
+            const res = await fetch(`${API_URL}/api/${rolActual}/registrar-reunion`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -261,7 +263,8 @@ const ProspectorCalendario = () => {
         const fetchProspectos = async () => {
             try {
                 const token = getToken();
-                const res = await fetch(`${API_URL}/api/prospector/prospectos`, {
+                const rolActual = isVendedor ? 'vendedor' : 'prospector';
+                const res = await fetch(`${API_URL}/api/${rolActual}/prospectos`, {
                     headers: { 'x-auth-token': token }
                 });
                 if (res.ok) {
@@ -603,8 +606,9 @@ const ProspectorCalendario = () => {
             if (!selectedTimeSlot) throw new Error("Selecciona un horario disponible");
 
             const startDateTime = selectedTimeSlot.start;
+            const rolActual = isVendedor ? 'vendedor' : 'prospector';
 
-            const resBackend = await fetch(`${API_URL}/api/prospector/agendar-reunion`, {
+            const resBackend = await fetch(`${API_URL}/api/${rolActual}/agendar-reunion`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

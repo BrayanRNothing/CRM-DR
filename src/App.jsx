@@ -3,8 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 // Layouts
-import ProspectorLayout from './layouts/ProspectorLayout.jsx';
-import CloserLayout from './layouts/CloserLayout.jsx';
+// Todos los layouts dinámicos abajo
 
 // Components
 import SkeletonLoader from './components/ui/SkeletonLoader.jsx';
@@ -32,31 +31,25 @@ const lazyWithRetry = (importer) =>
 
 const Login = lazyWithRetry(() => import('./pages/auth/Login.jsx'));
 const Register = lazyWithRetry(() => import('./pages/auth/Register.jsx'));
-const Ajustes = lazyWithRetry(() => import('./pages/common/Ajustes.jsx'));
-const TerminosCondiciones = lazyWithRetry(() => import('./pages/common/TerminosCondiciones.jsx'));
-const PoliticaPrivacidad = lazyWithRetry(() => import('./pages/common/PoliticaPrivacidad.jsx'));
+const Ajustes = lazyWithRetry(() => import('./pages/Ajustes.jsx'));
+const TerminosCondiciones = lazyWithRetry(() => import('./pages/TerminosCondiciones.jsx'));
+const PoliticaPrivacidad = lazyWithRetry(() => import('./pages/PoliticaPrivacidad.jsx'));
 
 const NotFound = lazyWithRetry(() => import('./pages/NotFound.jsx'));
 
-// Prospector Pages
-const ProspectorDashboard = lazyWithRetry(() => import('./pages/prospector/ProspectorDashboard.jsx'));
-const ProspectorCalendario = lazyWithRetry(() => import('./pages/prospector/ProspectorCalendario.jsx'));
-const ProspectorSeguimiento = lazyWithRetry(() => import('./pages/prospector/ProspectorSeguimiento.jsx'));
+// Legacy pages was removed
 
-// Closer Pages
-const CloserDashboard = lazyWithRetry(() => import('./pages/closer/CloserDashboard.jsx'));
-const CloserCalendario = lazyWithRetry(() => import('./pages/closer/CloserCalendario.jsx'));
-const CloserMonitoreoProspectors = lazyWithRetry(() => import('./pages/closer/CloserMonitoreoProspectors.jsx'));
-
-// Vendedor Pages
-const VendedorLayout = lazyWithRetry(() => import('./layouts/VendedorLayout.jsx'));
-const VendedorDashboard = lazyWithRetry(() => import('./pages/vendedor/VendedorDashboard.jsx'));
+// Core Pages
+const MainLayout = lazyWithRetry(() => import('./layouts/MainLayout.jsx'));
+const Dashboard = lazyWithRetry(() => import('./pages/Dashboard.jsx'));
+const Calendario = lazyWithRetry(() => import('./pages/Calendario.jsx'));
+const Seguimiento = lazyWithRetry(() => import('./pages/Seguimiento.jsx'));
+const Clientes = lazyWithRetry(() => import('./pages/Clientes.jsx'));
 
 // Shared Components
-const CRMClientes = lazyWithRetry(() => import('./pages/common/CRMClientes.jsx'));
-const UserManagement = lazyWithRetry(() => import('./pages/common/UserManagement.jsx'));
-const UserProfile = lazyWithRetry(() => import('./pages/common/UserProfile.jsx'));
-const GestionEquipo = lazyWithRetry(() => import('./pages/common/GestionEquipo.jsx'));
+const Usuarios = lazyWithRetry(() => import('./pages/Usuarios.jsx'));
+const Perfil = lazyWithRetry(() => import('./pages/Perfil.jsx'));
+const Equipo = lazyWithRetry(() => import('./pages/Equipo.jsx'));
 
 function App() {
   const currentThemeId = useThemeStore((state) => state.currentThemeId);
@@ -146,46 +139,18 @@ function App() {
           <Route path="/terminos-y-condiciones" element={<TerminosCondiciones />} />
           <Route path="/politica-de-privacidad" element={<PoliticaPrivacidad />} />
 
-          {/* --- PROSPECTOR --- */}
-          <Route path="/prospector" element={<ProspectorLayout />}>
-            <Route index element={<ProspectorDashboard />} />
-            <Route path="prospectos" element={<ProspectorSeguimiento />} />
-            <Route path="calendario" element={<ProspectorCalendario />} />
-            <Route path="clientes" element={<CRMClientes />} />
-            <Route path="usuarios/prospectors" element={<UserManagement initialRole="prospector" />} />
-            <Route path="usuarios/closers" element={<UserManagement initialRole="closer" />} />
-            <Route path="usuarios/vendedores" element={<UserManagement initialRole="vendedor" />} />
-            <Route path="users/:id" element={<UserProfile />} />
+          {/* --- VENDEDOR / CORE --- */}
+          <Route path="/vendedor" element={<MainLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="calendario" element={<Calendario />} />
+            <Route path="prospectos" element={<Seguimiento />} />
+            <Route path="clientes" element={<Clientes />} />
+            <Route path="usuarios/prospectors" element={<Usuarios initialRole="prospector" />} />
+            <Route path="usuarios/closers" element={<Usuarios initialRole="closer" />} />
+            <Route path="usuarios/vendedores" element={<Usuarios initialRole="vendedor" />} />
+            <Route path="users/:id" element={<Perfil />} />
             <Route path="ajustes" element={<Ajustes />} />
-            <Route path="equipo" element={<GestionEquipo />} />
-          </Route>
-
-          <Route path="/closer" element={<CloserLayout />}>
-            <Route index element={<CloserDashboard />} />
-            <Route path="calendario" element={<CloserCalendario />} />
-            <Route path="prospectos" element={<ProspectorSeguimiento />} />
-            <Route path="clientes" element={<CRMClientes />} />
-            <Route path="usuarios/prospectors" element={<UserManagement initialRole="prospector" />} />
-            <Route path="usuarios/closers" element={<UserManagement initialRole="closer" />} />
-            <Route path="usuarios/vendedores" element={<UserManagement initialRole="vendedor" />} />
-            <Route path="users/:id" element={<UserProfile />} />
-            <Route path="monitoreo-prospectors" element={<CloserMonitoreoProspectors />} />
-            <Route path="ajustes" element={<Ajustes />} />
-            <Route path="equipo" element={<GestionEquipo />} />
-          </Route>
-
-          {/* --- VENDEDOR --- */}
-          <Route path="/vendedor" element={<VendedorLayout />}>
-            <Route index element={<VendedorDashboard />} />
-            <Route path="calendario" element={<ProspectorCalendario />} />
-            <Route path="prospectos" element={<ProspectorSeguimiento />} />
-            <Route path="clientes" element={<CRMClientes />} />
-            <Route path="usuarios/prospectors" element={<UserManagement initialRole="prospector" />} />
-            <Route path="usuarios/closers" element={<UserManagement initialRole="closer" />} />
-            <Route path="usuarios/vendedores" element={<UserManagement initialRole="vendedor" />} />
-            <Route path="users/:id" element={<UserProfile />} />
-            <Route path="ajustes" element={<Ajustes />} />
-            <Route path="equipo" element={<GestionEquipo />} />
+            <Route path="equipo" element={<Equipo />} />
           </Route>
 
 

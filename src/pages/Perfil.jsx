@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import AnimatedGridBackground from '../../components/ui/AnimatedGridBackground';
+import AnimatedGridBackground from '../components/ui/AnimatedGridBackground';
 import { ChevronLeft, User, Phone, Mail, BadgeCheck, Shield } from 'lucide-react';
-import { getUser } from '../../utils/authUtils';
-import API_URL from '../../config/api';
+import { getUser } from '../utils/authUtils';
+import API_URL from '../config/api';
 import toast from 'react-hot-toast';
 
-const UserProfile = () => {
+const Perfil = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [userProfile, setUserProfile] = useState(null);
@@ -165,4 +165,4 @@ const UserProfile = () => {
     );
 };
 
-export default UserProfile;
+export default Perfil;

@@ -92,7 +92,7 @@ router.post('/register', async (req, res) => {
         console.log('📝 Intento de registro recibido:', { ...req.body, contraseña: '***' });
         let { usuario, contraseña, nombre, email, telefono, rol } = req.body;
 
-        if (!rol) rol = 'closer';
+        if (!rol) rol = 'vendedor';
 
         if (!ROLES_PERMITIDOS.includes(rol)) {
             return res.status(400).json({ mensaje: `Rol inválido. Roles permitidos: ${ROLES_PERMITIDOS.join(', ')}` });
