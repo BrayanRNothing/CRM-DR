@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 // Inicializar base de datos
 require('./config/database');
@@ -41,11 +42,26 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 function mountOptionalRoute(basePath, modulePath) {
+    const resolvedWithoutExt = path.resolve(__dirname, modulePath);
+    const candidateFiles = [resolvedWithoutExt, `${resolvedWithoutExt}.js`, `${resolvedWithoutExt}.cjs`];
+    const moduleExists = candidateFiles.some((candidate) => fs.existsSync(candidate));
+
+    if (!moduleExists) {
+        console.warn(`⚠️ Módulo opcional ausente ${modulePath}. Fallback activo para ${basePath}`);
+        app.use(basePath, (req, res) => {
+            res.status(503).json({
+                mensaje: `Módulo no disponible en este entorno: ${basePath}`,
+                codigo: 'MODULE_DISABLED'
+            });
+        });
+        return;
+    }
+
     try {
         app.use(basePath, require(modulePath));
     } catch (error) {
-        console.warn(`⚠️ No se pudo cargar módulo opcional ${modulePath}. Se activa fallback para ${basePath}`);
-        console.warn(`   Motivo: ${error?.message || 'Error desconocido'}`);
+        console.warn(`⚠️ Módulo opcional inválido ${modulePath}. Fallback activo para ${basePath}`);
+        console.warn(`   Motivo: ${error?.code || error?.name || 'LOAD_ERROR'}`);
         app.use(basePath, (req, res) => {
             res.status(503).json({
                 mensaje: `Módulo no disponible en este entorno: ${basePath}`,
@@ -87,7 +103,6 @@ app.get('/api', (req, res) => {
 
 // ✅ SERVIR ARCHIVOS ESTÁTICOS DEL FRONTEND (React compilado)
 const distPath = path.join(__dirname, '../dist');
-const fs = require('fs');
 
 if (fs.existsSync(distPath)) {
     app.use(express.static(distPath));
