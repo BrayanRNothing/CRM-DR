@@ -148,4 +148,34 @@ router.delete('/miembro/:id', auth, esTeamOwner, async (req, res) => {
     }
 });
 
+// @route   DELETE /api/equipos/miembro/:id/eliminar
+// @desc    Eliminar miembro del equipo (lo saca del equipo actual)
+// @access  Private (Team Owner)
+router.delete('/miembro/:id/eliminar', auth, esTeamOwner, async (req, res) => {
+    try {
+        const miembroId = parseInt(req.params.id);
+
+        const miembro = await db.prepare('SELECT id, nombre, "equipo_id" FROM usuarios WHERE id = ?').get(miembroId);
+        if (!miembro) {
+            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+        }
+
+        if (String(miembro.equipo_id) !== String(req.equipoId)) {
+            return res.status(403).json({ mensaje: 'No tienes permiso para eliminar a este usuario' });
+        }
+
+        if (String(miembroId) === String(req.usuario.id)) {
+            return res.status(400).json({ mensaje: 'No puedes eliminarte a ti mismo del equipo' });
+        }
+
+        // Lo removemos del equipo para que no aparezca en la lista de miembros.
+        await db.prepare('UPDATE usuarios SET "equipo_id" = NULL, activo = 0 WHERE id = ?').run(miembroId);
+
+        res.json({ mensaje: `Usuario ${miembro.nombre} eliminado del equipo correctamente` });
+    } catch (error) {
+        console.error('Error en DELETE /api/equipos/miembro/:id/eliminar:', error);
+        res.status(500).json({ mensaje: 'Error del servidor' });
+    }
+});
+
 module.exports = router;

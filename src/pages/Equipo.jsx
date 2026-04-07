@@ -117,7 +117,7 @@ export default function Equipo() {
     }
     if (!window.confirm(`¿Eliminar permanentemente a ${miembro.nombre} del equipo?`)) return;
     try {
-      const res = await fetch(`${API_URL}/api/equipos/miembro/${miembro.id}`, {
+      const res = await fetch(`${API_URL}/api/equipos/miembro/${miembro.id}/eliminar`, {
         method: 'DELETE', headers
       });
       const data = await res.json();
