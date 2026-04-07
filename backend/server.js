@@ -41,13 +41,17 @@ app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const isDevelopment = (process.env.NODE_ENV || '').trim().toLowerCase() === 'development';
+
 function mountOptionalRoute(basePath, modulePath) {
     const resolvedWithoutExt = path.resolve(__dirname, modulePath);
     const candidateFiles = [resolvedWithoutExt, `${resolvedWithoutExt}.js`, `${resolvedWithoutExt}.cjs`];
     const moduleExists = candidateFiles.some((candidate) => fs.existsSync(candidate));
 
     if (!moduleExists) {
-        console.warn(`⚠️ Módulo opcional ausente ${modulePath}. Fallback activo para ${basePath}`);
+        if (isDevelopment) {
+            console.warn(`⚠️ Módulo opcional ausente ${modulePath}. Fallback activo para ${basePath}`);
+        }
         app.use(basePath, (req, res) => {
             res.status(503).json({
                 mensaje: `Módulo no disponible en este entorno: ${basePath}`,
@@ -60,8 +64,10 @@ function mountOptionalRoute(basePath, modulePath) {
     try {
         app.use(basePath, require(modulePath));
     } catch (error) {
-        console.warn(`⚠️ Módulo opcional inválido ${modulePath}. Fallback activo para ${basePath}`);
-        console.warn(`   Motivo: ${error?.code || error?.name || 'LOAD_ERROR'}`);
+        if (isDevelopment) {
+            console.warn(`⚠️ Módulo opcional inválido ${modulePath}. Fallback activo para ${basePath}`);
+            console.warn(`   Motivo: ${error?.code || error?.name || 'LOAD_ERROR'}`);
+        }
         app.use(basePath, (req, res) => {
             res.status(503).json({
                 mensaje: `Módulo no disponible en este entorno: ${basePath}`,
