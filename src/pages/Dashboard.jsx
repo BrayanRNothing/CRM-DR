@@ -662,7 +662,7 @@ const Dashboard = () => {
                                                 if (p.esCliente) {
                                                     navigate('/vendedor/clientes', { state: { selectedId: p.id || p._id } });
                                                 } else {
-                                                    navigate('/prospector/prospectos', { state: { selectedId: p.id || p._id } });
+                                                    navigate('/vendedor/prospectos', { state: { selectedId: p.id || p._id } });
                                                 }
                                             }}
                                         >
@@ -723,7 +723,7 @@ const Dashboard = () => {
                                                 if (r.esCliente) {
                                                     navigate('/vendedor/clientes', { state: { selectedId: r.cliente?.id || r.clienteId } });
                                                 } else {
-                                                    navigate('/prospector/prospectos', { state: { selectedId: r.cliente?.id || r.clienteId } });
+                                                    navigate('/vendedor/prospectos', { state: { selectedId: r.cliente?.id || r.clienteId } });
                                                 }
                                             }}
                                         >
