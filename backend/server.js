@@ -41,41 +41,7 @@ app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const isDevelopment = (process.env.NODE_ENV || '').trim().toLowerCase() === 'development';
 
-function mountOptionalRoute(basePath, modulePath) {
-    const resolvedWithoutExt = path.resolve(__dirname, modulePath);
-    const candidateFiles = [resolvedWithoutExt, `${resolvedWithoutExt}.js`, `${resolvedWithoutExt}.cjs`];
-    const moduleExists = candidateFiles.some((candidate) => fs.existsSync(candidate));
-
-    if (!moduleExists) {
-        if (isDevelopment) {
-            console.warn(`⚠️ Módulo opcional ausente ${modulePath}. Fallback activo para ${basePath}`);
-        }
-        app.use(basePath, (req, res) => {
-            res.status(503).json({
-                mensaje: `Módulo no disponible en este entorno: ${basePath}`,
-                codigo: 'MODULE_DISABLED'
-            });
-        });
-        return;
-    }
-
-    try {
-        app.use(basePath, require(modulePath));
-    } catch (error) {
-        if (isDevelopment) {
-            console.warn(`⚠️ Módulo opcional inválido ${modulePath}. Fallback activo para ${basePath}`);
-            console.warn(`   Motivo: ${error?.code || error?.name || 'LOAD_ERROR'}`);
-        }
-        app.use(basePath, (req, res) => {
-            res.status(503).json({
-                mensaje: `Módulo no disponible en este entorno: ${basePath}`,
-                codigo: 'MODULE_DISABLED'
-            });
-        });
-    }
-}
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -86,12 +52,8 @@ app.use('/api/ventas', require('./routes/ventas'));
 app.use('/api/tareas', require('./routes/tareas'));
 app.use('/api/metricas', require('./routes/metricas'));
 app.use('/api/embudo', require('./routes/embudo'));
-mountOptionalRoute('/api/prospector', '../legacy/backend/prospector');
-mountOptionalRoute('/api/closer', '../legacy/backend/closer');
-// Nuevo backend unificado para vendedor
+// Rol único: vendedor
 app.use('/api/vendedor', require('./routes/vendedor'));
-mountOptionalRoute('/api/prospectos', '../legacy/backend/prospector');
-mountOptionalRoute('/api/closer/prospectors', '../legacy/backend/prospector-monitoring');
 app.use('/api/google', require('./routes/google'));
 app.use('/api/equipos', require('./routes/equipos'));
 console.log('🚀 Rutas registradas correctamente');
