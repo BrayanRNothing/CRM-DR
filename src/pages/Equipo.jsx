@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, UserPlus, Edit2, Power, Crown, Shield, ChevronRight, X, Check, Loader2, RefreshCw } from 'lucide-react';
+import { Users, UserPlus, Edit2, Power, Crown, Shield, ChevronRight, X, Check, Loader2, RefreshCw, Trash2 } from 'lucide-react';
 import { getUser, getToken } from '../utils/authUtils';
 import API_URL from '../config/api';
 
@@ -94,6 +94,28 @@ export default function Equipo() {
     if (String(miembro.id) === String(userAuth?.id)) return;
     const accion = miembro.activo ? 'desactivar' : 'TODO: reactivar';
     if (!window.confirm(`¿Desactivar a ${miembro.nombre}?`)) return;
+    try {
+      const res = await fetch(`${API_URL}/api/equipos/miembro/${miembro.id}`, {
+        method: 'DELETE', headers
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.mensaje);
+      fetchEquipo();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  const handleDeleteMember = async (miembro) => {
+    if (String(miembro.id) === String(userAuth?.id)) {
+      alert('No puedes eliminarte a ti mismo');
+      return;
+    }
+    if (String(miembro.id) === String(equipo.owner_id)) {
+      alert('No puedes eliminar al propietario del equipo');
+      return;
+    }
+    if (!window.confirm(`¿Eliminar permanentemente a ${miembro.nombre} del equipo?`)) return;
     try {
       const res = await fetch(`${API_URL}/api/equipos/miembro/${miembro.id}`, {
         method: 'DELETE', headers
@@ -334,14 +356,25 @@ export default function Equipo() {
                     {!m.activo && (
                       <span className="ge-badge" style={{ color: '#ef4444', background: '#fef2f2' }}>Inactivo</span>
                     )}
-                    {esOwner && String(m.id) !== String(userAuth?.id) && String(m.id) !== String(equipo.owner_id) && m.activo && (
-                      <button
-                        className="ge-btn ge-btn-danger"
-                        onClick={() => handleToggleMember(m)}
-                        title="Desactivar miembro"
-                      >
-                        <Power size={14} />
-                      </button>
+                    {esOwner && String(m.id) !== String(userAuth?.id) && String(m.id) !== String(equipo.owner_id) && (
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {m.activo && (
+                          <button
+                            className="ge-btn ge-btn-danger"
+                            onClick={() => handleToggleMember(m)}
+                            title="Desactivar miembro"
+                          >
+                            <Power size={14} />
+                          </button>
+                        )}
+                        <button
+                          className="ge-btn ge-btn-danger"
+                          onClick={() => handleDeleteMember(m)}
+                          title="Eliminar miembro del equipo"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
