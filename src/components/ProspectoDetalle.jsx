@@ -1075,9 +1075,10 @@ export default function ProspectoDetalle({
                                         <button
                                             onClick={handleGuardarNotasRapidas}
                                             disabled={loadingNotas}
-                                            className="text-[10px] bg-(--theme-600) text-white px-2 py-1 rounded font-bold hover:bg-(--theme-700) transition-colors disabled:opacity-50"
+                                            className={`p-1.5 rounded-lg transition-colors ${notasRapidas !== (prospectoSeleccionado?.notas || '') ? 'bg-(--theme-500) text-white hover:bg-(--theme-600) shadow-sm' : 'text-slate-300 hover:bg-slate-50'}`}
+                                            title="Guardar notas"
                                         >
-                                            {loadingNotas ? 'Guardando...' : '✓ Guardar'}
+                                            <Save className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                     <textarea
