@@ -318,6 +318,7 @@ const initDb = async () => {
     etapaAnterior TEXT,
     etapaNueva TEXT,
     notas TEXT,
+    invitados TEXT,
     "googleMeetLink" TEXT,
     "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
   );
@@ -348,6 +349,7 @@ const initDb = async () => {
   CREATE TABLE IF NOT EXISTS equipos (
     id SERIAL PRIMARY KEY,
     nombre TEXT NOT NULL,
+    icon TEXT,
     owner_id INTEGER REFERENCES usuarios(id),
     "fechaCreacion" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
   );
@@ -523,7 +525,9 @@ const initDb = async () => {
       ['usuarios',    '"equipo_id"',         'INTEGER'],
       ['clientes',    '"equipo_id"',         'INTEGER'],
       ['actividades', '"equipo_id"',         'INTEGER'],
+      ['actividades', 'invitados',           'TEXT'],
       ['tareas',      '"equipo_id"',         'INTEGER'],
+      ['equipos',     'icon',                'TEXT'],
     ];
     for (const [table, col, type] of colsMissingPg) {
       try {
@@ -624,9 +628,10 @@ const initDb = async () => {
       ['usuarios', 'googleRefreshToken TEXT'],
       ['usuarios', 'googleAccessToken TEXT'],
       ['usuarios', 'googleTokenExpiry REAL'],
-      ['actividades', 'createdAt TEXT DEFAULT (datetime(\'now\'))'],
-      ['clientes', 'customMetricLabel TEXT'],
       ['clientes', 'customMetricValue TEXT'],
+      ['actividades', 'invitados TEXT'],
+      ['actividades', 'createdAt TEXT DEFAULT (datetime(\'now\'))'],
+      ['equipos', 'icon TEXT'],
     ];
     for (const [table, colDef] of colsMissingSqlite) {
       try {

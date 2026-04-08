@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Calendar as CalendarIcon, Clock, Phone, ChevronLeft, ChevronRight, UserPlus, User, Briefcase, Mail, Link as LinkIcon, Copy, AlertCircle, Trash2, Edit2, Video as VideoIcon, VideoOff, X, RefreshCw, ExternalLink } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Phone, ChevronLeft, ChevronRight, UserPlus, User, Users, Briefcase, Mail, Link as LinkIcon, Copy, AlertCircle, Trash2, Edit2, Video as VideoIcon, VideoOff, X, RefreshCw, ExternalLink, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import API_URL from '../config/api';
@@ -76,7 +76,19 @@ const Calendario = () => {
                 })
                 .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
-            setMisReuniones(proximas);
+            const processed = proximas.map(r => {
+                let parsedInvitados = [];
+                if (r.invitados) {
+                    try {
+                        parsedInvitados = typeof r.invitados === 'string' ? JSON.parse(r.invitados) : r.invitados;
+                    } catch (e) {
+                        console.error("Error parsing invitados for meeting", r.id, e);
+                    }
+                }
+                return { ...r, invitados: parsedInvitados };
+            });
+
+            setMisReuniones(processed);
         } catch (error) {
             console.error('Error cargando reuniones del vendedor:', error);
             setMisReuniones([]);
@@ -576,18 +588,30 @@ const Calendario = () => {
     const previousMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
     const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
 
+    const addInvitadoLocal = () => {
+        if (!invitadoInput) return;
+        const normalized = invitadoInput.trim().toLowerCase();
+        if (normalized && !formData.invitados.includes(normalized)) {
+            setFormData({
+                ...formData,
+                invitados: [...formData.invitados, normalized]
+            });
+            setInvitadoInput('');
+        }
+    };
+
 
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const closer = closers.find(c => c.id == selectedCloser);
+        const closer = closers.find(c => String(c.id || c._id) === String(selectedCloser));
         if (!closer) {
             toast.error(isVendedor ? 'Selecciona a quién asignar la reunión' : 'Selecciona un closer');
             return;
         }
 
-        const prospect = prospectos.find(p => p.id == selectedProspect);
+        const prospect = prospectos.find(p => String(p.id) === String(selectedProspect));
         if (!prospect) {
             toast.error('Selecciona un prospecto');
             return;
@@ -945,84 +969,108 @@ const Calendario = () => {
 
                             <div className={`flex-1 flex flex-col min-h-0 ${activeTab === 'agendar' ? 'overflow-hidden' : 'overflow-y-auto'} pr-1`} style={{ scrollbarWidth: 'thin' }}>
                                 {activeTab === 'agendar' ? (
-                                    <div className="animate-in fade-in slide-in-from-right-2 duration-200">
-                                        <div className="flex flex-col h-full space-y-4 px-1">
-                                            {/* Form Header */}
-                                            <div className="shrink-0">
-                                                <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-                                                    <CalendarIcon className="w-5 h-5 text-(--theme-500)" />
-                                                    Agendar Cita
-                                                </h2>
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-                                                    Para el <span className="text-(--theme-600)">{selectedDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })}</span>
-                                                </p>
+                                    <div className="animate-in fade-in slide-in-from-right-2 duration-200 flex-1 flex flex-col min-h-0">
+                                        <div className="flex flex-col flex-1 min-h-0 space-y-4 px-1">
+                                            {/* Form Header & Warning Compact */}
+                                            <div className="flex items-start justify-between shrink-0 mb-2">
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="p-1.5 bg-(--theme-50) text-(--theme-600) rounded-lg border border-(--theme-100)">
+                                                            <CalendarIcon className="w-4 h-4" />
+                                                        </span>
+                                                        <h3 className="text-sm font-black text-slate-800 tracking-tight">Agendar Cita</h3>
+                                                    </div>
+                                                    <p className="text-[10px] font-bold text-(--theme-600) uppercase tracking-wider">
+                                                        PARA EL {selectedDate.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' }).toUpperCase()}
+                                                    </p>
+                                                </div>
+                                                
+                                                {selectedCloser && !closerLinkedToGoogle && (
+                                                    <div className="px-2 py-1 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-1.5 animate-in fade-in slide-in-from-right-2 duration-300" title="No se verificará disponibilidad de Google">
+                                                        <AlertCircle className="w-3 h-3 text-amber-500 shadow-sm" />
+                                                        <span className="text-[8px] font-black text-amber-600 uppercase tracking-tighter">SIN SYNC</span>
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            {/* Feedback if not linked */}
-                                            {selectedCloser && !closerLinkedToGoogle && (
-                                                <div className="shrink-0 p-3 bg-orange-50 border border-orange-200 rounded-2xl flex items-start gap-2.5 animate-in fade-in slide-in-from-top-2">
-                                                    <AlertCircle className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
-                                                    <div className="flex flex-col">
-                                                        <p className="font-black text-[10px] text-orange-800 uppercase tracking-wider">Closer no vinculado</p>
-                                                        <p className="text-[10px] text-orange-700 leading-tight">No se verificará disponibilidad de Google.</p>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 space-y-5">
-                                                {/* Selection Area - 2 Columns for efficiency */}
+                                            <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 space-y-3 pb-2 pr-1 custom-scrollbar overflow-y-auto">
+                                                {/* 1. Selecciones de Personas */}
                                                 <div className="grid grid-cols-2 gap-3 shrink-0">
-                                                    <div className="col-span-1">
+                                                    <div>
                                                         <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-                                                            <User className="w-3 h-3"/> Prospecto
+                                                            <User className="w-3 h-3 text-slate-400" /> Prospecto
                                                         </label>
-                                                        <div className="relative group">
-                                                            <select
-                                                                value={selectedProspect}
-                                                                onChange={(e) => setSelectedProspect(e.target.value)}
-                                                                className="w-full pl-3 pr-8 py-2.5 text-xs font-bold text-slate-700 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500) focus:bg-white focus:border-transparent appearance-none transition-all outline-none group-hover:border-slate-300"
-                                                                required
-                                                            >
-                                                                <option value="" disabled>Seleccionar...</option>
-                                                                {prospectos.map(p => (
-                                                                    <option key={p.id} value={p.id}>{p.nombres} {p.apellidoPaterno.charAt(0)}.</option>
-                                                                ))}
-                                                            </select>
-                                                            <div className="absolute inset-y-0 right-0 flex items-center px-2.5 pointer-events-none text-slate-400">
-                                                                <ChevronRight className="w-3.5 h-3.5 rotate-90" />
-                                                            </div>
-                                                        </div>
+                                                        <select
+                                                            value={selectedProspect}
+                                                            onChange={(e) => setSelectedProspect(e.target.value)}
+                                                            className="w-full h-9 px-3 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all cursor-pointer"
+                                                            required
+                                                        >
+                                                            <option value="" disabled>Seleccionar...</option>
+                                                            {prospectos.map(p => (
+                                                                <option key={p.id || p._id} value={p.id || p._id}>{p.nombres} {p.apellidoPaterno.charAt(0)}.</option>
+                                                            ))}
+                                                        </select>
                                                     </div>
 
-                                                    <div className="col-span-1">
+                                                    <div>
                                                         <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-                                                            <Briefcase className="w-3 h-3"/> {isVendedor ? 'Responsable' : 'Closer'}
+                                                            <Briefcase className="w-3 h-3 text-slate-400" /> {currentUser?.rol === 'vendedor' ? 'Responsable' : 'Closer'}
                                                         </label>
-                                                        <div className="relative group">
-                                                            <select
-                                                                value={selectedCloser}
-                                                                onChange={(e) => setSelectedCloser(e.target.value)}
-                                                                className="w-full pl-3 pr-8 py-2.5 text-xs font-bold text-slate-700 bg-slate-50/50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500) focus:bg-white focus:border-transparent appearance-none transition-all outline-none group-hover:border-slate-300"
-                                                                required
-                                                            >
-                                                                <option value="" disabled>Seleccionar...</option>
-                                                                {closers.map(c => (
-                                                                    <option key={c.id || c._id} value={c.id || c._id}>{c.nombre}</option>
-                                                                ))}
-                                                            </select>
-                                                            <div className="absolute inset-y-0 right-0 flex items-center px-2.5 pointer-events-none text-slate-400">
-                                                                <ChevronRight className="w-3.5 h-3.5 rotate-90" />
-                                                            </div>
-                                                        </div>
+                                                        <select
+                                                            value={selectedCloser}
+                                                            onChange={(e) => setSelectedCloser(e.target.value)}
+                                                            className="w-full h-9 px-3 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all cursor-pointer"
+                                                            required
+                                                        >
+                                                            <option value="" disabled>Seleccionar...</option>
+                                                            {closers.map(c => (
+                                                                <option key={c.id || c._id} value={c.id || c._id}>{c.nombre}</option>
+                                                            ))}
+                                                        </select>
                                                     </div>
                                                 </div>
 
-                                                {/* Time Selection - Main Flexible Area */}
-                                                <div className="flex-1 flex flex-col min-h-0">
-                                                    <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1">
+                                                {/* 2. Invitados Seccion (Movida Arriba) */}
+                                                <div className="shrink-0 bg-slate-50/50 p-2.5 rounded-2xl border border-slate-100">
+                                                    <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                                                        <Users className="w-3 h-3 text-(--theme-500)"/> Invitados Adicionales
+                                                    </label>
+                                                    <div className="flex gap-2 mb-2">
+                                                        <input 
+                                                            type="email" 
+                                                            value={invitadoInput} 
+                                                            onChange={(e) => setInvitadoInput(e.target.value)}
+                                                            placeholder="correo@ejemplo.com"
+                                                            className="flex-1 h-8 px-3 text-[10px] font-medium border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-(--theme-500)/30 outline-none transition-all"
+                                                        />
+                                                        <button 
+                                                            type="button"
+                                                            onClick={addInvitadoLocal}
+                                                            className="w-8 h-8 flex items-center justify-center bg-(--theme-500) text-white rounded-lg hover:bg-(--theme-600) transition-all shadow-sm"
+                                                        >
+                                                            <UserPlus className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {formData.invitados.map((inv, idx) => (
+                                                            <span key={idx} className="flex items-center gap-1 px-2 py-0.5 bg-white text-slate-600 rounded-md text-[9px] font-bold border border-slate-200 animate-in zoom-in-95">
+                                                                {inv}
+                                                                <X 
+                                                                    className="w-2.5 h-2.5 cursor-pointer hover:text-red-500" 
+                                                                    onClick={() => setFormData({...formData, invitados: formData.invitados.filter(i => i !== inv)})} 
+                                                                />
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* 3. Horarios Grid (Compacto) */}
+                                                <div className="shrink-0">
+                                                    <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
                                                         <Clock className="w-3 h-3"/> Horarios Disponibles
                                                     </label>
-                                                    <div className="flex-1 overflow-y-auto pr-1 grid grid-cols-2 gap-2 min-h-0" style={{ scrollbarWidth: 'thin' }}>
+                                                    <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
                                                         {selectedDate && selectedDate.getDay() !== 0 ? (
                                                             generateSlotsForDay(selectedDate).length > 0 ? (
                                                                 generateSlotsForDay(selectedDate).map((slot, idx) => {
@@ -1034,7 +1082,7 @@ const Calendario = () => {
                                                                             type="button"
                                                                             disabled={slot.isBusy}
                                                                             onClick={() => !slot.isBusy && setSelectedTimeSlot(slot)}
-                                                                            className={`w-full py-3 px-2 border rounded-xl text-xs font-black text-center transition-all duration-200 
+                                                                            className={`w-full py-2 border rounded-xl text-[10px] font-black text-center transition-all duration-200 
                                                                                 ${slot.isBusy
                                                                                     ? 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed line-through'
                                                                                     : isSelected
@@ -1047,91 +1095,58 @@ const Calendario = () => {
                                                                     );
                                                                 })
                                                             ) : (
-                                                                <div className="col-span-2 text-[10px] text-slate-400 text-center py-8 bg-slate-50/50 rounded-2xl italic border border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
-                                                                    <VideoOff className="w-5 h-5 opacity-30" />
+                                                                <div className="col-span-2 text-[10px] text-slate-400 text-center py-6 bg-slate-50/50 rounded-2xl italic border border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
+                                                                    <VideoOff className="w-4 h-4 opacity-30" />
                                                                     Sin horarios disponibles
                                                                 </div>
                                                             )
                                                         ) : (
-                                                            <div className="col-span-2 text-[10px] text-slate-400 text-center py-8 bg-slate-50/50 rounded-2xl italic border border-dashed border-slate-200">
-                                                                Día festivo o de descanso
+                                                            <div className="col-span-2 text-[10px] text-slate-400 text-center py-6 bg-slate-50/50 rounded-2xl italic border border-dashed border-slate-200">
+                                                                Día festivo / descanso
                                                             </div>
                                                         )}
                                                     </div>
                                                 </div>
 
-                                                {/* Notes & Submit - Sticky to bottom */}
-                                                <div className="shrink-0 space-y-3 pt-3 border-t border-slate-50 bg-white">
+                                                {/* 4. Notas y Pie (Compacto) */}
+                                                <div className="shrink-0 space-y-3">
                                                     <div>
                                                         <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-                                                            <Mail className="w-3 h-3"/> Invitados
-                                                        </label>
-                                                        <div className="flex gap-2 mb-2">
-                                                            <input 
-                                                                type="email" 
-                                                                value={invitadoInput} 
-                                                                onChange={(e) => setInvitadoInput(e.target.value)}
-                                                                placeholder="correo@ejemplo.com"
-                                                                className="flex-1 p-2 text-[11px] font-medium border border-slate-200 bg-slate-50/50 rounded-xl focus:ring-2 focus:ring-(--theme-500) focus:bg-white outline-none"
-                                                            />
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    if (invitadoInput && !formData.invitados.includes(invitadoInput)) {
-                                                                        setFormData({...formData, invitados: [...formData.invitados, invitadoInput]});
-                                                                        setInvitadoInput('');
-                                                                    }
-                                                                }}
-                                                                className="px-3 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-colors"
-                                                            >
-                                                                <UserPlus className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        </div>
-                                                        <div className="flex flex-wrap gap-1.5 mb-3">
-                                                            {formData.invitados.map((inv, idx) => (
-                                                                <span key={idx} className="flex items-center gap-1 px-2 py-1 bg-(--theme-50) text-(--theme-700) rounded-lg text-[9px] font-black border border-(--theme-100)">
-                                                                    {inv}
-                                                                    <X className="w-2.5 h-2.5 cursor-pointer hover:text-red-500" onClick={() => setFormData({...formData, invitados: formData.invitados.filter(i => i !== inv)})} />
-                                                                </span>
-                                                            ))}
-                                                        </div>
-
-                                                        <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">
-                                                            Notas de la Reunión
+                                                            <FileText className="w-3 h-3 text-slate-300"/> Notas
                                                         </label>
                                                         <textarea
                                                             value={formData.notas}
                                                             onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
                                                             rows="1"
-                                                            className="w-full p-2.5 text-[11px] font-medium border border-slate-200 bg-slate-50/50 rounded-xl focus:ring-2 focus:ring-(--theme-500) focus:bg-white resize-none outline-none transition-all placeholder:text-slate-300"
-                                                            placeholder="Instrucciones especiales..."
+                                                            className="w-full h-8 p-2 text-[10px] font-bold border border-slate-100 bg-slate-50/50 rounded-lg focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all resize-none"
+                                                            placeholder="Instrucciones..."
                                                         />
                                                     </div>
 
                                                     <button
                                                         type="submit"
                                                         disabled={!selectedTimeSlot || !selectedProspect}
-                                                        className="w-full py-3 px-4 bg-(--theme-500) text-white rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-(--theme-600) shadow-xl shadow-(--theme-500)/20 transition-all disabled:opacity-50 disabled:grayscale disabled:shadow-none disabled:cursor-not-allowed active:scale-[0.98]"
+                                                        className="w-full py-3.5 px-4 bg-(--theme-500) text-white rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-(--theme-600) shadow-xl shadow-(--theme-500)/20 transition-all disabled:opacity-40 disabled:grayscale disabled:shadow-none disabled:cursor-not-allowed"
                                                     >
-                                                        {selectedTimeSlot ? `Confirmar ${selectedTimeSlot.start.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}` : 'Selecciona Horario'}
+                                                        {selectedTimeSlot ? `Confirmar ${selectedTimeSlot.start.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}` : 'Selecciona un horario'}
                                                     </button>
 
                                                     {createdEventLink && (
-                                                        <div className="p-3 bg-(--theme-50) border border-(--theme-200) rounded-2xl flex flex-col items-center animate-in zoom-in-95">
-                                                            <div className="flex items-center gap-2 text-(--theme-800) mb-2">
+                                                        <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-2xl flex flex-col items-center animate-in zoom-in-95">
+                                                            <div className="flex items-center gap-2 text-blue-700 mb-2">
                                                                 <LinkIcon className="w-4 h-4" />
-                                                                <p className="font-extrabold text-[10px] uppercase">Meet Generado</p>
+                                                                <p className="font-black text-[9px] uppercase tracking-wider text-blue-800">Meet Generado</p>
                                                             </div>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => {
                                                                     navigator.clipboard.writeText(createdEventLink);
-                                                                    toast.success('Enlace copiado');
+                                                                    toast.success('Enlace de Meet copiado');
                                                                 }}
-                                                                className="w-full py-2.5 bg-white border border-(--theme-200) text-(--theme-700) rounded-xl hover:bg-(--theme-50) font-bold text-[10px] flex items-center justify-center gap-2 shadow-sm transition-colors"
+                                                                className="w-full py-2 bg-white border border-blue-200 text-blue-600 rounded-xl hover:bg-blue-50 font-black text-[10px] flex items-center justify-center gap-2 shadow-sm transition-all"
                                                             >
                                                                 <Copy className="w-3.5 h-3.5" />
-                                                                Copiar Enlace
+                                                                COPIAR ENLACE
                                                             </button>
                                                         </div>
                                                     )}
@@ -1253,17 +1268,25 @@ const Calendario = () => {
                                                                         </div>
 
                                                                         {/* 4. Invitados Section */}
-                                                                        {r.invitados?.length > 0 && (
-                                                                            <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
-                                                                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mr-1">Invitados:</p>
-                                                                                {r.invitados.map((inv, idx) => (
-                                                                                    <div key={idx} className="flex items-center gap-1 px-1.5 py-0.5 bg-(--theme-50) rounded-md border border-(--theme-100) text-[9px] font-bold text-(--theme-700)" title={inv}>
-                                                                                        <Mail className="w-2 h-2" />
-                                                                                        <span className="truncate max-w-[120px]">{inv}</span>
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        )}
+                                                                        {(() => {
+                                                                             const guests = r.invitados || [];
+                                                                             // Si no hay invitados adicionales, mostramos al prospecto para que no esté vacío
+                                                                             const finalGuests = guests.length > 0 ? guests : (r.cliente?.correo ? [r.cliente.correo] : []);
+                                                                             
+                                                                             if (finalGuests.length === 0) return null;
+
+                                                                             return (
+                                                                                 <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
+                                                                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mr-1">Invitados:</p>
+                                                                                     {finalGuests.map((inv, idx) => (
+                                                                                         <div key={idx} className="flex items-center gap-1 px-1.5 py-0.5 bg-(--theme-50) rounded-md border border-(--theme-100) text-[9px] font-bold text-(--theme-700)" title={inv}>
+                                                                                             <Mail className="w-2 h-2" />
+                                                                                             <span className="truncate max-w-[150px]">{inv}</span>
+                                                                                         </div>
+                                                                                     ))}
+                                                                                 </div>
+                                                                             );
+                                                                         })()}
 
                                                                         {/* 5. Notes Section */}
                                                                         {r.notas && (
