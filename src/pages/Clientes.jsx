@@ -638,7 +638,9 @@ const Clientes = () => {
                                                         ))}
                                                     </div>
                                                                             <p className="text-[10px] text-slate-400 mt-0.5">
-                                                                                {(cliente.esPropietario === true || isOwnerRecord(cliente)) ? 'Propietario: tú' : `Propietario: ${cliente.propietarioNombre || 'otro usuario'}`}
+                                                                                {(cliente.esPropietario === true || isOwnerRecord(cliente))
+                                                                                    ? 'Propietario: tú'
+                                                                                    : `Compartido por: ${cliente.propietarioNombre || 'usuario del equipo'}`}
                                                                             </p>
                                                 </div>
                                             </td>

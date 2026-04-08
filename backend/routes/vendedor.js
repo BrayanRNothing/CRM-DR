@@ -503,7 +503,7 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
             ) as proximaCita
             FROM clientes c
             LEFT JOIN usuarios u ON c.closerAsignado = u.id
-            LEFT JOIN usuarios owner ON c."propietarioId" = owner.id
+            LEFT JOIN usuarios owner ON owner.id = COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado)
             WHERE`;
 
         const params = [];
@@ -605,7 +605,7 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
             ) as proximaCita
             FROM clientes c
             LEFT JOIN usuarios u ON c.closerAsignado = u.id
-            LEFT JOIN usuarios owner ON c."propietarioId" = owner.id
+            LEFT JOIN usuarios owner ON owner.id = COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado)
             WHERE`;
 
         const params = [];

@@ -84,7 +84,7 @@ const CAMEL_COLS = [
   'propietarioId',
   'cambioEtapa', 'etapaAnterior', 'etapaNueva', 'fechaLimite', 'fechaCreacion',
   'googleRefreshToken', 'googleAccessToken', 'googleTokenExpiry',
-  'vendedorNombre', 'vendedorRol', 'closerNombre', 'sitioWeb', 'googleMeetLink',
+  'vendedorNombre', 'vendedorRol', 'closerNombre', 'propietarioNombre', 'sitioWeb', 'googleMeetLink',
   'customMetricLabel', 'customMetricValue', 'createdAt', 'tipoActividad',
   'ultimaInteraccion', 'proximaLlamada'
 ];
@@ -117,7 +117,7 @@ const pgMap = {
   etapanueva: 'etapaNueva', fechalimite: 'fechaLimite',
   fechacreacion: 'fechaCreacion', googlerefreshtoken: 'googleRefreshToken',
   googleaccesstoken: 'googleAccessToken', googletokenexpiry: 'googleTokenExpiry',
-  vendedornombre: 'vendedorNombre', vendedorrol: 'vendedorRol', closernombre: 'closerNombre',
+  vendedornombre: 'vendedorNombre', vendedorrol: 'vendedorRol', closernombre: 'closerNombre', propietarionombre: 'propietarioNombre',
   sitioweb: 'sitioWeb', googlemeetlink: 'googleMeetLink',
   custommetriclabel: 'customMetricLabel', custommetricvalue: 'customMetricValue'
 };

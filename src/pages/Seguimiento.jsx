@@ -1401,7 +1401,9 @@ const Seguimiento = () => {
                                                         {p.nombres} {p.apellidoPaterno}
                                                     </p>
                                                     <p className="text-[10px] text-slate-400">
-                                                        {(p.esPropietario === true || isOwnerRecord(p)) ? 'Propietario: tú' : `Propietario: ${p.propietarioNombre || 'otro usuario'}`}
+                                                        {(p.esPropietario === true || isOwnerRecord(p))
+                                                            ? 'Propietario: tú'
+                                                            : `Compartido por: ${p.propietarioNombre || 'usuario del equipo'}`}
                                                     </p>
                                                     <div className="flex items-center gap-0.5 text-yellow-500 scale-75 origin-left mt-0.5">
                                                         {[1, 2, 3, 4, 5].map((value) => (
