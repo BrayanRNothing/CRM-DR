@@ -25,6 +25,34 @@ const parseHistorialSeguro = (value) => {
     }
 };
 
+const getOwnerId = (cliente) => parseInt(
+    cliente?.propietarioId ?? cliente?.prospectorAsignado ?? cliente?.vendedorAsignado ?? 0,
+    10
+);
+
+const isShared = (cliente) => {
+    if (cliente?.compartido === true) return true;
+    if (cliente?.compartido === 1) return true;
+    if (cliente?.compartido === '1') return true;
+    return false;
+};
+
+const canReadCliente = (cliente, usuarioId, equipoId) => {
+    const ownerId = getOwnerId(cliente);
+    if (ownerId && ownerId === usuarioId) return true;
+    if (!isShared(cliente)) return false;
+    if (!equipoId || !cliente?.equipo_id) return false;
+    return String(cliente.equipo_id) === String(equipoId);
+};
+
+const canWriteCliente = (cliente, usuarioId) => getOwnerId(cliente) === usuarioId;
+
+const parseScope = (scope) => {
+    const normalized = String(scope || 'mine').toLowerCase();
+    if (['mine', 'shared', 'all'].includes(normalized)) return normalized;
+    return 'mine';
+};
+
 // Helper: calcula métricas para un período dado por filtro SQL en campo fecha (actividades) y fechaRegistro (clientes)
 async function calcularPeriodoActividades(db, prospectorId, filtroFecha) {
     const where = filtroFecha ? `AND ${filtroFecha}` : '';
@@ -453,11 +481,12 @@ router.get('/calendario', [auth, esVendedor], async (req, res) => {
 // GET /api/vendedor/prospectos
 router.get('/prospectos', [auth, esVendedor], async (req, res) => {
     try {
-        const prospectorId = parseInt(req.usuario.id);
+        const prospectorId = parseInt(req.usuario.id, 10);
         const equipoId = req.usuario.equipo_id;
-        const { etapa, busqueda } = req.query;
+        const { etapa, busqueda, scope } = req.query;
+        const visibilityScope = parseScope(scope);
 
-        let sql = `SELECT c.*, u.nombre as closerNombre,
+        let sql = `SELECT c.*, u.nombre as closerNombre, owner.nombre as propietarioNombre,
             (
                 SELECT MIN(t.fechaLimite)
                 FROM tareas t
@@ -472,19 +501,37 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
                   AND a.tipo = 'cita'
                   AND (a.resultado = 'pendiente' OR a.resultado IS NULL)
             ) as proximaCita
-            FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE`;
+            FROM clientes c
+            LEFT JOIN usuarios u ON c.closerAsignado = u.id
+            LEFT JOIN usuarios owner ON c."propietarioId" = owner.id
+            WHERE`;
 
         const params = [];
+        const visibilityWhere = [];
 
-        if (equipoId) {
-            // Con equipo: ver todos los prospectos del equipo (colaborativo)
-            sql += ` c."equipo_id" = ? AND c.etapaEmbudo NOT IN (?, ?)`;
-            params.push(equipoId, 'venta_ganada', 'perdido');
+        if (visibilityScope === 'mine') {
+            visibilityWhere.push('COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) = ?');
+            params.push(prospectorId);
+        } else if (visibilityScope === 'shared') {
+            visibilityWhere.push('COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) <> ?');
+            params.push(prospectorId);
+            visibilityWhere.push('c.compartido = TRUE');
+            if (equipoId) {
+                visibilityWhere.push('c."equipo_id" = ?');
+                params.push(equipoId);
+            } else {
+                visibilityWhere.push('1 = 0');
+            }
         } else {
-            // Fallback: solo los propios
-            sql += ` c.prospectorAsignado = ? AND c.etapaEmbudo NOT IN (?, ?)`;
-            params.push(prospectorId, 'venta_ganada', 'perdido');
+            visibilityWhere.push('(COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) = ? OR (c.compartido = TRUE AND COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) <> ?' + (equipoId ? ' AND c."equipo_id" = ?' : '') + '))');
+            params.push(prospectorId, prospectorId);
+            if (equipoId) params.push(equipoId);
         }
+
+        sql += ` ${visibilityWhere.join(' AND ')}`;
+
+        sql += ' AND c.etapaEmbudo NOT IN (?, ?)';
+        params.push('venta_ganada', 'perdido');
 
         if (etapa && etapa !== 'todos') {
             sql += ' AND c.etapaEmbudo = ?';
@@ -516,7 +563,7 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
         for (const a of ultimasActs) actMap[a.cliente] = { tipo: a.tipo, notas: a.texto };
 
         const prospectos = rows.map(r => {
-            const { closerNombre, ...c } = r;
+            const { closerNombre, propietarioNombre, ...c } = r;
             if (!c.etapaEmbudo) c.etapaEmbudo = 'prospecto_nuevo';
             const out = toMongoFormat(c);
             if (out && closerNombre) out.closerAsignado = { nombre: closerNombre };
@@ -526,6 +573,9 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
                 out.proximaLlamada = out.proximaLlamada || out.proximallamada || out.proximoRecordatorio || out.proximorecordatorio || null;
                 out.ultimaActTipo = act?.tipo || null;
                 out.ultimaActNotas = act?.notas || null;
+                out.esPropietario = getOwnerId(c) === prospectorId;
+                out.compartido = isShared(c);
+                out.propietarioNombre = propietarioNombre || null;
             }
             return out || c;
         });
@@ -540,11 +590,12 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
 // GET /api/vendedor/clientes-ganados
 router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
     try {
-        const prospectorId = parseInt(req.usuario.id);
+        const prospectorId = parseInt(req.usuario.id, 10);
         const equipoId = req.usuario.equipo_id;
-        const { busqueda } = req.query;
+        const { busqueda, scope } = req.query;
+        const visibilityScope = parseScope(scope);
 
-        let sql = `SELECT c.*, u.nombre as closerNombre,
+        let sql = `SELECT c.*, u.nombre as closerNombre, owner.nombre as propietarioNombre,
             (
                 SELECT MIN(a.fecha)
                 FROM actividades a
@@ -552,17 +603,37 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
                   AND a.tipo = 'cita'
                   AND (a.resultado = 'pendiente' OR a.resultado IS NULL)
             ) as proximaCita
-            FROM clientes c LEFT JOIN usuarios u ON c.closerAsignado = u.id WHERE`;
+            FROM clientes c
+            LEFT JOIN usuarios u ON c.closerAsignado = u.id
+            LEFT JOIN usuarios owner ON c."propietarioId" = owner.id
+            WHERE`;
 
         const params = [];
+        const visibilityWhere = [];
 
-        if (equipoId) {
-            sql += ` c."equipo_id" = ? AND c.etapaEmbudo = ?`;
-            params.push(equipoId, 'venta_ganada');
+        if (visibilityScope === 'mine') {
+            visibilityWhere.push('COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) = ?');
+            params.push(prospectorId);
+        } else if (visibilityScope === 'shared') {
+            visibilityWhere.push('COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) <> ?');
+            params.push(prospectorId);
+            visibilityWhere.push('c.compartido = TRUE');
+            if (equipoId) {
+                visibilityWhere.push('c."equipo_id" = ?');
+                params.push(equipoId);
+            } else {
+                visibilityWhere.push('1 = 0');
+            }
         } else {
-            sql += ` c.prospectorAsignado = ? AND c.etapaEmbudo = ?`;
-            params.push(prospectorId, 'venta_ganada');
+            visibilityWhere.push('(COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) = ? OR (c.compartido = TRUE AND COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) <> ?' + (equipoId ? ' AND c."equipo_id" = ?' : '') + '))');
+            params.push(prospectorId, prospectorId);
+            if (equipoId) params.push(equipoId);
         }
+
+        sql += ` ${visibilityWhere.join(' AND ')}`;
+
+        sql += ' AND c.etapaEmbudo = ?';
+        params.push('venta_ganada');
 
         if (busqueda) {
             sql += ' AND (c.nombres LIKE ? OR c.apellidoPaterno LIKE ? OR c.empresa LIKE ? OR c.telefono LIKE ?)';
@@ -573,9 +644,14 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
 
         const rows = await db.prepare(sql).all(...params);
         const clientes = rows.map(r => {
-            const { closerNombre, ...c } = r;
+            const { closerNombre, propietarioNombre, ...c } = r;
             const out = toMongoFormat(c);
             if (out && closerNombre) out.closerAsignado = { nombre: closerNombre };
+            if (out) {
+                out.esPropietario = getOwnerId(c) === prospectorId;
+                out.compartido = isShared(c);
+                out.propietarioNombre = propietarioNombre || null;
+            }
             return out || c;
         });
 
@@ -598,8 +674,8 @@ router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
         const now = new Date().toISOString();
 
         const stmt = await db.prepare(`
-            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, sitioWeb, ubicacion, customMetricLabel, customMetricValue, vendedorAsignado, prospectorAsignado, closerAsignado, etapaEmbudo, fechaRegistro, fechaUltimaEtapa, "equipo_id")
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prospecto_nuevo', ?, ?, ?)
+            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, sitioWeb, ubicacion, customMetricLabel, customMetricValue, vendedorAsignado, prospectorAsignado, closerAsignado, etapaEmbudo, fechaRegistro, fechaUltimaEtapa, "equipo_id", "propietarioId", compartido)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prospecto_nuevo', ?, ?, ?, ?, ?)
         `);
         const result = await stmt.run(
             (nombres || '').trim(),
@@ -619,7 +695,9 @@ router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
             closerId,
             now,
             now,
-            equipoId
+            equipoId,
+            prospectorId,
+            false
         );
 
         const row = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(result.lastInsertRowid);
@@ -668,6 +746,10 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
             return res.status(404).json({ msg: 'Cliente no encontrado' });
         }
         const prospectorId = parseInt(req.usuario.id);
+
+        if (!canWriteCliente(cliente, prospectorId)) {
+            return res.status(403).json({ msg: 'Solo el propietario puede modificar este prospecto' });
+        }
 
         // UNIFICADO: Cualquier prospector o closer puede registrar actividades (acceso compartido)
         const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
@@ -766,6 +848,10 @@ router.get('/prospecto/:id/historial-completo', auth, async (req, res) => {
         const cliente = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(prospectoId);
         if (!cliente) {
             return res.status(404).json({ msg: 'Prospecto no encontrado' });
+        }
+
+        if (!canReadCliente(cliente, usuarioId, req.usuario.equipo_id)) {
+            return res.status(403).json({ msg: 'No tienes permiso para ver este prospecto' });
         }
 
         // UNIFICADO: Cualquier prospector o closer puede ver el historial (acceso compartido)
@@ -895,6 +981,11 @@ router.get('/prospectos/:id/actividades', auth, async (req, res) => {
         const cliente = await db.prepare('SELECT id FROM clientes WHERE id = ?').get(prospectoId);
         if (!cliente) return res.status(404).json({ msg: 'Prospecto no encontrado' });
 
+        const clienteFull = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(prospectoId);
+        if (!canReadCliente(clienteFull, userId, req.usuario.equipo_id)) {
+            return res.status(403).json({ msg: 'No tienes permiso para ver este prospecto' });
+        }
+
         const actividades = await db.prepare(`
             SELECT a.*, u.nombre as vendedorNombre 
             FROM actividades a
@@ -916,7 +1007,12 @@ router.get('/prospectos/:id/actividades', auth, async (req, res) => {
 router.get('/prospectos/:id/recordatorios', auth, async (req, res) => {
     try {
         const clienteId = parseInt(req.params.id);
-        const vendedorId = parseInt(req.usuario.id);
+        const vendedorId = parseInt(req.usuario.id, 10);
+        const cliente = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(clienteId);
+        if (!cliente) return res.status(404).json({ msg: 'Prospecto no encontrado' });
+        if (!canReadCliente(cliente, vendedorId, req.usuario.equipo_id)) {
+            return res.status(403).json({ msg: 'No tienes permiso para ver recordatorios de este prospecto' });
+        }
         const rows = await db.prepare(`
             SELECT * FROM tareas
             WHERE cliente = ? AND titulo = 'Recordatorio de llamada' AND estado = 'pendiente'
@@ -933,10 +1029,16 @@ router.get('/prospectos/:id/recordatorios', auth, async (req, res) => {
 router.post('/prospectos/:id/recordatorios', auth, async (req, res) => {
     try {
         const clienteId = parseInt(req.params.id);
-        const vendedorId = parseInt(req.usuario.id);
+        const vendedorId = parseInt(req.usuario.id, 10);
         const { fechaLimite, descripcion } = req.body;
 
         if (!fechaLimite) return res.status(400).json({ msg: 'La fecha es requerida' });
+
+        const cliente = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(clienteId);
+        if (!cliente) return res.status(404).json({ msg: 'Prospecto no encontrado' });
+        if (!canWriteCliente(cliente, vendedorId)) {
+            return res.status(403).json({ msg: 'Solo el propietario puede crear recordatorios' });
+        }
 
         const result = await db.prepare(`
             INSERT INTO tareas (titulo, descripcion, vendedor, cliente, estado, prioridad, fechaLimite)
@@ -994,7 +1096,14 @@ router.put('/recordatorios/:recordatorioId', auth, async (req, res) => {
 router.put('/prospectos/:id', auth, async (req, res) => {
     try {
         const prospectoId = parseInt(req.params.id);
+        const usuarioId = parseInt(req.usuario.id, 10);
         const { interes, proximaLlamada, customMetricLabel, customMetricValue } = req.body;
+
+        const cliente = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(prospectoId);
+        if (!cliente) return res.status(404).json({ msg: 'Prospecto no encontrado' });
+        if (!canWriteCliente(cliente, usuarioId)) {
+            return res.status(403).json({ msg: 'Solo el propietario puede editar este prospecto' });
+        }
 
         const updates = [];
         const params = [];
@@ -1016,6 +1125,27 @@ router.put('/prospectos/:id', auth, async (req, res) => {
     }
 });
 
+router.patch('/prospectos/:id/compartir', auth, async (req, res) => {
+    try {
+        const prospectoId = parseInt(req.params.id, 10);
+        const usuarioId = parseInt(req.usuario.id, 10);
+        const cliente = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(prospectoId);
+
+        if (!cliente) return res.status(404).json({ msg: 'Prospecto no encontrado' });
+        if (!canWriteCliente(cliente, usuarioId)) {
+            return res.status(403).json({ msg: 'Solo el propietario puede cambiar la visibilidad' });
+        }
+
+        const compartido = req.body?.compartido === true || req.body?.compartido === 1 || req.body?.compartido === '1';
+        await db.prepare('UPDATE clientes SET compartido = ? WHERE id = ?').run(compartido, prospectoId);
+
+        res.json({ msg: 'Visibilidad actualizada', compartido });
+    } catch (error) {
+        console.error('Error al actualizar visibilidad:', error);
+        res.status(500).json({ msg: 'Error del servidor' });
+    }
+});
+
 // PUT /api/vendedor/prospectos/:id/editar
 router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
     try {
@@ -1027,6 +1157,10 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
         const cliente = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(prospectoId);
         if (!cliente) {
             return res.status(404).json({ msg: 'Prospecto no encontrado' });
+        }
+
+        if (!canWriteCliente(cliente, prospectorId)) {
+            return res.status(403).json({ msg: 'Solo el propietario puede editar este prospecto' });
         }
 
         const updates = [
@@ -1101,6 +1235,10 @@ router.post('/agendar-reunion', [auth, esVendedor], async (req, res) => {
         }
 
         const prospectorId = parseInt(req.usuario.id);
+
+        if (!canWriteCliente(cliente, prospectorId)) {
+            return res.status(403).json({ msg: 'Solo el propietario puede agendar reuniones de este prospecto' });
+        }
 
         // UNIFICADO: Acceso por rol
         const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
@@ -1236,6 +1374,10 @@ router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
             return res.status(404).json({ msg: 'Prospecto no encontrado' });
         }
 
+        if (!canWriteCliente(cliente, prospectorId)) {
+            return res.status(403).json({ msg: 'Solo el propietario puede convertir este prospecto' });
+        }
+
         // UNIFICADO: Acceso por rol
         const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
@@ -1276,6 +1418,10 @@ router.post('/descartar-prospecto/:id', [auth, esVendedor], async (req, res) => 
         const cliente = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(clienteId);
         if (!cliente) {
             return res.status(404).json({ msg: 'Prospecto no encontrado' });
+        }
+
+        if (!canWriteCliente(cliente, prospectorId)) {
+            return res.status(403).json({ msg: 'Solo el propietario puede descartar este prospecto' });
         }
 
         // UNIFICADO: Acceso por rol
@@ -1486,8 +1632,8 @@ router.post('/importar-csv', [auth, esVendedor], async (req, res) => {
                 const empresa = (p.empresa || '').trim();
                 const notas = (p.notas || '').trim();
                 const ahora = new Date().toISOString();
-                const sql = 'INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, notas, etapaEmbudo, vendedorAsignado, prospectorAsignado, fechaRegistro, fechaUltimaEtapa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-                await db.prepare(sql).run(nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, notas, 'prospecto_nuevo', prospectorId, prospectorId, ahora, ahora);
+                const sql = 'INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, notas, etapaEmbudo, vendedorAsignado, prospectorAsignado, "propietarioId", compartido, fechaRegistro, fechaUltimaEtapa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                await db.prepare(sql).run(nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, notas, 'prospecto_nuevo', prospectorId, prospectorId, prospectorId, false, ahora, ahora);
                 insertados++;
             } catch (err) {
                 console.error('Error en fila CSV:', err.message);
@@ -1512,8 +1658,8 @@ router.delete('/prospectos/:id', [auth, esVendedor], async (req, res) => {
             return res.status(404).json({ msg: 'Prospecto no encontrado' });
         }
 
-        // Solo el prospector asignado puede eliminar
-        if (parseInt(cliente.prospectorAsignado) !== prospectorId) {
+        // Solo el propietario puede eliminar
+        if (!canWriteCliente(cliente, prospectorId)) {
             return res.status(403).json({ msg: 'No tienes permiso para eliminar este prospecto' });
         }
 

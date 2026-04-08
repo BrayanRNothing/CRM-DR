@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar, Filter, Star, Mail, MessageSquare, Clock } from 'lucide-react';
+import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar, Filter, Star, Mail, MessageSquare, Clock, Share2 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { getToken } from '../utils/authUtils';
@@ -46,6 +46,7 @@ const Clientes = () => {
     const [eliminando, setEliminando] = useState(false);
     const [importando, setImportando] = useState(false);
     const [filtro, setFiltro] = useState('todos');
+    const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine'); // mine | shared | all
     const fileInputRef = useRef(null);
     const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
     const [creandoCliente, setCreandoCliente] = useState(false);
@@ -66,6 +67,25 @@ const Clientes = () => {
     const getAuthHeaders = () => ({
         'x-auth-token': getToken() || ''
     });
+
+    const getCurrentUserId = () => {
+        try {
+            const raw = localStorage.getItem('user') || sessionStorage.getItem('user');
+            if (!raw) return null;
+            const user = JSON.parse(raw);
+            return user?.id ?? user?._id ?? null;
+        } catch (error) {
+            return null;
+        }
+    };
+
+    const currentUserId = getCurrentUserId();
+
+    const isOwnerRecord = (record) => {
+        const ownerId = record?.propietarioId ?? record?.prospectorAsignado ?? record?.vendedorAsignado ?? null;
+        if (ownerId == null || currentUserId == null) return false;
+        return String(ownerId) === String(currentUserId);
+    };
 
     const getRole = () => {
         const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
@@ -92,7 +112,10 @@ const Clientes = () => {
         try {
             const rol = 'vendedor';
             const [resClientes, resTareas] = await Promise.all([
-                axios.get(`${API_URL}/api/${rol}/clientes-ganados`, { headers: getAuthHeaders() }),
+                axios.get(`${API_URL}/api/${rol}/clientes-ganados`, {
+                    headers: getAuthHeaders(),
+                    params: { scope: filtroVisibilidad }
+                }),
                 axios.get(`${API_URL}/api/tareas`, { headers: getAuthHeaders() })
             ]);
 
@@ -121,7 +144,41 @@ const Clientes = () => {
         cargarClientes();
         const interval = setInterval(cargarClientes, 5 * 60 * 1000);
         return () => clearInterval(interval);
-    }, []);
+    }, [filtroVisibilidad]);
+
+    const handleToggleCompartido = async (cliente, nuevoEstado) => {
+        const id = cliente.id || cliente._id;
+        const prev = clientes;
+        setClientes((curr) => curr.map((c) => {
+            const cid = c.id || c._id;
+            return String(cid) === String(id) ? { ...c, compartido: nuevoEstado } : c;
+        }));
+
+        try {
+            await axios.patch(
+                `${API_URL}/api/vendedor/prospectos/${id}/compartir`,
+                { compartido: nuevoEstado },
+                { headers: getAuthHeaders() }
+            );
+            toast.success(nuevoEstado ? 'Cliente compartido con tu equipo' : 'Cliente marcado como privado');
+        } catch (error) {
+            setClientes(prev);
+            const status = error?.response?.status;
+            const backendMsg = String(error?.response?.data?.msg || error?.response?.data?.mensaje || '');
+
+            if (status === 404) {
+                toast.error('Tu backend en Railway aun no tiene esta ruta de compartir. Falta desplegar backend.');
+                return;
+            }
+
+            if (status >= 500 && /compartido|propietarioid|column|does not exist/i.test(backendMsg)) {
+                toast.error('Falta ejecutar la migracion en Railway (columnas compartido/propietarioId).');
+                return;
+            }
+
+            toast.error(error.response?.data?.msg || 'No se pudo actualizar la visibilidad');
+        }
+    };
 
     const cargarTimelineCliente = async (cliente) => {
         setLoadingTimeline(true);
@@ -500,6 +557,25 @@ const Clientes = () => {
                             <Filter className="w-4 h-4 text-slate-400 shrink-0" />
                             <div className="flex flex-wrap gap-1.5">
                                 {[
+                                    { value: 'mine', label: 'Mis clientes' },
+                                    { value: 'shared', label: 'Compartidos' },
+                                    { value: 'all', label: 'Todos visibles' },
+                                ].map(btn => (
+                                    <button
+                                        key={btn.value}
+                                        onClick={() => setFiltroVisibilidad(btn.value)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtroVisibilidad === btn.value
+                                            ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
+                                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400 hover:text-slate-800'
+                                            }`}
+                                    >
+                                        {btn.label}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="w-px h-6 bg-slate-200 mx-1"></div>
+                            <div className="flex flex-wrap gap-1.5">
+                                {[
                                     { value: 'todos', label: 'Todos' },
                                     { value: 'con_recordatorio', label: 'Con recordatorio' },
                                     { value: 'sin_recordatorio', label: 'Sin recordatorio' },
@@ -561,6 +637,9 @@ const Clientes = () => {
                                                             <Star key={val} className="w-3.5 h-3.5 fill-yellow-400" />
                                                         ))}
                                                     </div>
+                                                                            <p className="text-[10px] text-slate-400 mt-0.5">
+                                                                                {(cliente.esPropietario === true || isOwnerRecord(cliente)) ? 'Propietario: tú' : `Propietario: ${cliente.propietarioNombre || 'otro usuario'}`}
+                                                                            </p>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-gray-600 text-sm whitespace-nowrap">{cliente.empresa || '—'}</td>
@@ -639,6 +718,22 @@ const Clientes = () => {
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <div className="flex items-center justify-center gap-3">
+                                                    {(cliente.esPropietario === true || isOwnerRecord(cliente)) && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleToggleCompartido(cliente, !cliente.compartido);
+                                                            }}
+                                                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${cliente.compartido
+                                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                                                }`}
+                                                            title="Compartir u ocultar este cliente"
+                                                        >
+                                                            <Share2 className="w-3 h-3" />
+                                                            {cliente.compartido ? 'Compartido' : 'Privado'}
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleVerDetalles(cliente); }}
                                                         className="text-gray-400 hover:text-(--theme-600) transition-colors p-2 rounded-full hover:bg-(--theme-50)"

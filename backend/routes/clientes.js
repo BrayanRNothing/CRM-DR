@@ -4,6 +4,22 @@ const { db } = require('../config/database');
 const { auth, esSuperUser } = require('../middleware/auth');
 const { toMongoFormat } = require('../lib/helpers');
 
+const getOwnerId = (cliente) => parseInt(
+    cliente?.propietarioId ?? cliente?.prospectorAsignado ?? cliente?.vendedorAsignado ?? 0,
+    10
+);
+
+const isShared = (cliente) => cliente?.compartido === true || cliente?.compartido === 1 || cliente?.compartido === '1';
+
+const canReadCliente = (cliente, usuarioId, equipoId) => {
+    if (getOwnerId(cliente) === usuarioId) return true;
+    if (!isShared(cliente)) return false;
+    if (!equipoId || !cliente?.equipo_id) return false;
+    return String(cliente.equipo_id) === String(equipoId);
+};
+
+const canWriteCliente = (cliente, usuarioId) => getOwnerId(cliente) === usuarioId;
+
 router.get('/', auth, esSuperUser, async (req, res) => {
     try {
         const { estado, busqueda } = req.query;
@@ -52,8 +68,9 @@ router.get('/:id', auth, esSuperUser, async (req, res) => {
             return res.status(403).json({ mensaje: 'No tiene acceso a este cliente' });
         }
 
-        if (req.usuario.rol === 'vendedor' && row.vendedorAsignado !== parseInt(req.usuario.id)) {
-            return res.status(403).json({ mensaje: 'No tiene permiso' });
+        const usuarioId = parseInt(req.usuario.id, 10);
+        if (!canReadCliente(row, usuarioId, req.usuario.equipo_id)) {
+            return res.status(403).json({ mensaje: 'No tiene permiso para ver este cliente' });
         }
         const { vendedorNombre, ...c } = row;
         const cliente = toMongoFormat(c);
@@ -83,8 +100,8 @@ router.post('/', auth, esSuperUser, async (req, res) => {
         const closerAsignado = (rol === 'closer' || rol === 'vendedor') ? usuarioId : null;
 
         await db.prepare(`
-            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaEmbudo, historialEmbudo, vendedorAsignado, prospectorAsignado, closerAsignado, fechaUltimaEtapa, "equipo_id")
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaEmbudo, historialEmbudo, vendedorAsignado, prospectorAsignado, closerAsignado, fechaUltimaEtapa, "equipo_id", "propietarioId", compartido)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
             nombres,
             apellidoPaterno || '',
@@ -99,7 +116,9 @@ router.post('/', auth, esSuperUser, async (req, res) => {
             prospectorAsignado,
             closerAsignado,
             now,
-            equipoId
+            equipoId,
+            usuarioId,
+            false
         );
 
         const row = await db.prepare('SELECT * FROM clientes ORDER BY id DESC LIMIT 1').get();
@@ -113,9 +132,9 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
     try {
         const c = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(parseInt(req.params.id));
         if (!c) return res.status(404).json({ mensaje: 'Cliente no encontrado' });
-        if (req.usuario.rol === 'vendedor' && c.vendedorAsignado !== parseInt(req.usuario.id)) {
-            // Backward compatibility for 'vendedor' role if still exists
-            return res.status(403).json({ mensaje: 'No tiene permiso' });
+        const usuarioId = parseInt(req.usuario.id, 10);
+        if (!canWriteCliente(c, usuarioId)) {
+            return res.status(403).json({ mensaje: 'Solo el propietario puede editar este cliente' });
         }
 
         const { nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, notas, vendedorAsignado, etapaEmbudo } = req.body;
@@ -185,6 +204,11 @@ router.delete('/:id', auth, esSuperUser, async (req, res) => {
         const existe = await db.prepare('SELECT id FROM clientes WHERE id = ?').get(clienteId);
         if (!existe) return res.status(404).json({ mensaje: 'Cliente no encontrado' });
 
+        const cliente = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(clienteId);
+        if (!canWriteCliente(cliente, parseInt(req.usuario.id, 10))) {
+            return res.status(403).json({ mensaje: 'Solo el propietario puede eliminar este cliente' });
+        }
+
         // Eliminar registros relacionados primero para evitar violaciones de FK
         await db.prepare('DELETE FROM actividades WHERE cliente = ?').run(clienteId);
         await db.prepare('DELETE FROM tareas WHERE cliente = ?').run(clienteId);
@@ -204,8 +228,8 @@ router.patch('/:id/etapa', auth, esSuperUser, async (req, res) => {
         if (!etapaNueva) return res.status(400).json({ mensaje: 'etapaNueva requerida' });
         const c = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(parseInt(req.params.id));
         if (!c) return res.status(404).json({ mensaje: 'Cliente no encontrado' });
-        if (req.usuario.rol === 'vendedor' && c.vendedorAsignado !== parseInt(req.usuario.id)) {
-            return res.status(403).json({ mensaje: 'No tiene permiso' });
+        if (!canWriteCliente(c, parseInt(req.usuario.id, 10))) {
+            return res.status(403).json({ mensaje: 'Solo el propietario puede cambiar la etapa' });
         }
         const now = new Date().toISOString();
         const hist = c.historialEmbudo ? JSON.parse(c.historialEmbudo) : [];

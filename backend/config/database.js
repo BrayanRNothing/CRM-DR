@@ -81,6 +81,7 @@ const CAMEL_COLS = [
   'apellidoPaterno', 'apellidoMaterno', 'etapaEmbudo', 'prospectorAsignado',
   'closerAsignado', 'fechaTransferencia', 'fechaUltimaEtapa', 'historialEmbudo',
   'vendedorAsignado', 'fechaRegistro', 'ultimaInteraccion', 'proximaLlamada',
+  'propietarioId',
   'cambioEtapa', 'etapaAnterior', 'etapaNueva', 'fechaLimite', 'fechaCreacion',
   'googleRefreshToken', 'googleAccessToken', 'googleTokenExpiry',
   'vendedorNombre', 'vendedorRol', 'closerNombre', 'sitioWeb', 'googleMeetLink',
@@ -110,6 +111,7 @@ const pgMap = {
   closerasignado: 'closerAsignado', fechatransferencia: 'fechaTransferencia',
   fechaultimaetapa: 'fechaUltimaEtapa', historialembudo: 'historialEmbudo',
   vendedorasignado: 'vendedorAsignado', fecharegistro: 'fechaRegistro',
+  propietarioid: 'propietarioId',
   ultimainteraccion: 'ultimaInteraccion', proximallamada: 'proximaLlamada',
   cambioetapa: 'cambioEtapa', etapaanterior: 'etapaAnterior',
   etapanueva: 'etapaNueva', fechalimite: 'fechaLimite',
@@ -298,6 +300,8 @@ const initDb = async () => {
     notas TEXT,
     interes INTEGER DEFAULT 0,
     proximaLlamada TEXT,
+    "propietarioId" INTEGER REFERENCES usuarios(id),
+    compartido BOOLEAN DEFAULT FALSE,
     sitioWeb TEXT,
     ubicacion TEXT
   );
@@ -509,6 +513,8 @@ const initDb = async () => {
       ['clientes',  'telefono2',            'TEXT'],
       ['clientes',  '"proximaLlamada"',     'TIMESTAMPTZ'],
       ['clientes',  'interes',              'TEXT'],
+      ['clientes',  'compartido',           'BOOLEAN DEFAULT FALSE'],
+      ['clientes',  '"propietarioId"',      'INTEGER'],
       ['usuarios',  'activo',               'INTEGER DEFAULT 1'],
       ['actividades', '"googleMeetLink"',   'TEXT'],
       ['actividades', '"createdAt"',        'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP'],
@@ -544,6 +550,22 @@ const initDb = async () => {
       await internalDb.query(`UPDATE clientes SET "etapaEmbudo" = 'prospecto_nuevo' WHERE "etapaEmbudo" IS NULL`);
     } catch (e) {
       console.error('⚠️ Migración etapaEmbudo falló:', e.message);
+    }
+
+    // Rellenar propietarioId y compartido para registros antiguos
+    try {
+      await internalDb.query(`
+        UPDATE clientes
+        SET "propietarioId" = COALESCE("propietarioId", "prospectorAsignado", "vendedorAsignado")
+        WHERE "propietarioId" IS NULL
+      `);
+      await internalDb.query(`
+        UPDATE clientes
+        SET compartido = FALSE
+        WHERE compartido IS NULL
+      `);
+    } catch (e) {
+      console.error('⚠️ Migración propietarioId/compartido falló:', e.message);
     }
 
     // ================================================================
@@ -596,6 +618,8 @@ const initDb = async () => {
       ['clientes', 'telefono2 TEXT'],
       ['clientes', 'proximaLlamada TEXT'],
       ['clientes', 'interes TEXT'],
+      ['clientes', 'propietarioId INTEGER'],
+      ['clientes', 'compartido INTEGER DEFAULT 0'],
       ['usuarios', 'activo INTEGER DEFAULT 1'],
       ['usuarios', 'googleRefreshToken TEXT'],
       ['usuarios', 'googleAccessToken TEXT'],
@@ -667,6 +691,15 @@ const initDb = async () => {
     
     try {
       internalDb.prepare(`UPDATE clientes SET etapaEmbudo = 'prospecto_nuevo' WHERE etapaEmbudo IS NULL`).run();
+    } catch (e) { /* ignorar */ }
+
+    try {
+      internalDb.prepare(`
+        UPDATE clientes
+        SET propietarioId = COALESCE(propietarioId, prospectorAsignado, vendedorAsignado)
+        WHERE propietarioId IS NULL
+      `).run();
+      internalDb.prepare(`UPDATE clientes SET compartido = 0 WHERE compartido IS NULL`).run();
     } catch (e) { /* ignorar */ }
   }
 

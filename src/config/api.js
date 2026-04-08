@@ -8,14 +8,16 @@ const currentHost = typeof window !== 'undefined' ? window.location.hostname : '
 const isLocalHost = currentHost === 'localhost' || currentHost === '127.0.0.1';
 
 const normalizeBaseUrl = (url) => (url || '').replace(/\/+$/, '');
+const isLocalApiUrl = (url) => /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test((url || '').trim());
 
 // In Railway production we serve frontend + backend from the same host.
 // This prevents stale env values (e.g. old domains) from breaking auth calls.
 const forceSameOriginHosts = new Set(['crm-dr-production.up.railway.app']);
 const DEFAULT_REMOTE_API = 'https://crm-dr-production.up.railway.app';
+const safeEnvApiUrl = isLocalApiUrl(rawEnvApiUrl) ? '' : rawEnvApiUrl;
 const API_URL = forceSameOriginHosts.has(currentHost)
     ? normalizeBaseUrl(currentOrigin)
-    : normalizeBaseUrl(rawEnvApiUrl || (isLocalHost ? DEFAULT_REMOTE_API : currentOrigin) || DEFAULT_REMOTE_API);
+    : normalizeBaseUrl(safeEnvApiUrl || (isLocalHost ? DEFAULT_REMOTE_API : currentOrigin) || DEFAULT_REMOTE_API);
 
 // Global interceptor: auto-logout when token is expired or invalid  
 axios.interceptors.response.use(

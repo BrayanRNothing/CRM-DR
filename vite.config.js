@@ -3,6 +3,11 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 
+const DEFAULT_REMOTE_API = 'https://crm-dr-production.up.railway.app'
+const targetApi = process.env.VITE_API_URL && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(process.env.VITE_API_URL)
+  ? process.env.VITE_API_URL
+  : DEFAULT_REMOTE_API
+
 // https://vitejs.dev/config/
 // Build: Dec 9, 2025
 export default defineConfig({
@@ -15,11 +20,11 @@ export default defineConfig({
     https: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        target: targetApi,
         changeOrigin: true,
       },
       '/socket.io': {
-        target: 'http://localhost:4000',
+        target: targetApi,
         changeOrigin: true,
         ws: true,
       },
