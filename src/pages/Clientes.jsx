@@ -261,6 +261,308 @@ const Clientes = () => {
         }
     };
 
+    const renderModales = () => (
+        <>
+            {/* Modal Editar Cliente - Rediseño Moderno */}
+            {modalEditarAbierto && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 transition-all duration-300 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col max-h-[82vh] overflow-hidden animate-in fade-in zoom-in duration-300">
+                        {/* Header */}
+                        <div className="px-6 py-4 bg-linear-to-r from-(--theme-50) to-white border-b border-slate-100 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-(--theme-100) rounded-xl flex items-center justify-center">
+                                    <Edit2 className="w-5 h-5 text-(--theme-600)" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">Editar Cliente</h2>
+                                    <p className="text-xs text-slate-500 mt-0.5">Actualiza la información de contacto</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setModalEditarAbierto(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 space-y-6 overflow-y-auto hide-scrollbar">
+                            {/* Sección: Datos Personales */}
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
+                                    Información Personal
+                                </h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Nombres *</label>
+                                        <input
+                                            type="text"
+                                            value={clienteAEditar.nombres}
+                                            onChange={(e) => setClienteAEditar((f) => ({ ...f, nombres: e.target.value }))}
+                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Apellido Paterno</label>
+                                            <input
+                                                type="text"
+                                                value={clienteAEditar.apellidoPaterno}
+                                                onChange={(e) => setClienteAEditar((f) => ({ ...f, apellidoPaterno: e.target.value }))}
+                                                className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Apellido Materno</label>
+                                            <input
+                                                type="text"
+                                                value={clienteAEditar.apellidoMaterno}
+                                                onChange={(e) => setClienteAEditar((f) => ({ ...f, apellidoMaterno: e.target.value }))}
+                                                className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Sección: Contacto */}
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
+                                    Contacto
+                                </h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Teléfonos *</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setClienteAEditar((f) => ({ ...f, telefonos: [...(f.telefonos || ['']), ''] }))}
+                                                className="flex items-center gap-1.5 text-xs text-(--theme-600) hover:text-(--theme-700) font-bold hover:bg-(--theme-50) px-2.5 py-1.5 rounded-lg transition-all"
+                                            >
+                                                <Plus className="w-3.5 h-3.5" /> Agregar
+                                            </button>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {(clienteAEditar.telefonos || ['']).map((tel, idx) => (
+                                                <div key={idx} className="flex gap-3 items-center bg-linear-to-r from-slate-50 to-white p-3 rounded-lg border border-slate-200 hover:border-slate-300 transition-all group">
+                                                    <Phone className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
+                                                    <input
+                                                        type="tel"
+                                                        value={tel}
+                                                        onChange={(e) => setClienteAEditar((f) => { const t = [...(f.telefonos || [''])]; t[idx] = e.target.value; return { ...f, telefonos: t }; })}
+                                                        className="flex-1 bg-transparent border-0 focus:ring-0 text-sm py-1 outline-none font-medium"
+                                                        placeholder="Ej: +56 9 1234 5678"
+                                                    />
+                                                    {(clienteAEditar.telefonos || ['']).length > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setClienteAEditar((f) => ({ ...f, telefonos: (f.telefonos || ['']).filter((_, i) => i !== idx) }))}
+                                                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-all"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Correo Electrónico</label>
+                                        <input
+                                            type="email"
+                                            value={clienteAEditar.correo}
+                                            onChange={(e) => setClienteAEditar((f) => ({ ...f, correo: e.target.value }))}
+                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300 font-medium"
+                                            placeholder="ejemplo@empresa.com"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Sección: Empresa */}
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
+                                    Detalles de Empresa
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Empresa</label>
+                                        <input
+                                            type="text"
+                                            value={clienteAEditar.empresa}
+                                            onChange={(e) => setClienteAEditar((f) => ({ ...f, empresa: e.target.value }))}
+                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300 font-medium"
+                                            placeholder="Nombre de la empresa"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Sitio Web</label>
+                                        <input
+                                            type="url"
+                                            value={clienteAEditar.sitioWeb || ''}
+                                            onChange={(e) => setClienteAEditar((f) => ({ ...f, sitioWeb: e.target.value }))}
+                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300 font-medium"
+                                            placeholder="https://ejemplo.com"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Ubicación</label>
+                                    <input
+                                        type="text"
+                                        value={clienteAEditar.ubicacion || ''}
+                                        onChange={(e) => setClienteAEditar((f) => ({ ...f, ubicacion: e.target.value }))}
+                                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300 font-medium"
+                                        placeholder="Ciudad, Estado"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex gap-3 p-6 border-t border-slate-100 bg-slate-50 justify-end">
+                            <button
+                                onClick={() => setModalEditarAbierto(false)}
+                                className="px-6 py-3 border border-slate-300 text-gray-700 rounded-xl text-sm hover:bg-white font-bold transition-all hover:shadow-sm"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleEditarCliente}
+                                disabled={loadingEditar}
+                                className="px-8 py-3 bg-linear-to-r from-(--theme-600) to-(--theme-700) text-white rounded-xl text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:brightness-110 transition-all"
+                            >
+                                {loadingEditar ? '⏳ Guardando...' : '✓ Guardar Cambios'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal crear cliente */}
+            {mostrarModalCrear && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl p-6 shadow-xl max-w-xl w-full mx-4 border border-slate-200">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900">Crear Cliente</h2>
+                            <button
+                                onClick={() => setMostrarModalCrear(false)}
+                                className="text-slate-400 hover:text-slate-600"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre completo *</label>
+                                <input
+                                    type="text"
+                                    value={formCliente.nombreCompleto}
+                                    onChange={(e) => setFormCliente({ ...formCliente, nombreCompleto: e.target.value })}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                                    placeholder="Juan Pérez López"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Teléfono *</label>
+                                <input
+                                    type="tel"
+                                    value={formCliente.telefono}
+                                    onChange={(e) => setFormCliente({ ...formCliente, telefono: e.target.value })}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                                    placeholder="555-123-4567"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Correo *</label>
+                                <input
+                                    type="email"
+                                    value={formCliente.correo}
+                                    onChange={(e) => setFormCliente({ ...formCliente, correo: e.target.value })}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                                    placeholder="juan@empresa.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Empresa</label>
+                                <input
+                                    type="text"
+                                    value={formCliente.empresa}
+                                    onChange={(e) => setFormCliente({ ...formCliente, empresa: e.target.value })}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
+                                    placeholder="Mi Empresa S.A."
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => setMostrarModalCrear(false)}
+                                disabled={creandoCliente}
+                                className="px-6 py-2 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleCrearCliente}
+                                disabled={creandoCliente}
+                                className="px-6 py-2 rounded-lg bg-(--theme-600) text-white font-semibold hover:bg-(--theme-700) transition-colors disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {creandoCliente ? (
+                                    <>
+                                        <RefreshCw className="w-4 h-4 animate-spin" />
+                                        Creando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Plus className="w-4 h-4" />
+                                        Crear Cliente
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal confirmación eliminar */}
+            {clienteAEliminar && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl p-6 shadow-xl max-w-md w-full mx-4 border border-red-100">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                                <Trash2 className="w-5 h-5 text-red-600" />
+                            </div>
+                            <h2 className="text-lg font-bold text-gray-900">Eliminar cliente</h2>
+                        </div>
+                        <p className="text-gray-600 mb-6">
+                            ¿Estás seguro de eliminar a <strong>{clienteAEliminar.nombres} {clienteAEliminar.apellidoPaterno}</strong>? Esta acción no se puede deshacer.
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => setClienteAEliminar(null)}
+                                disabled={eliminando}
+                                className="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleEliminarCliente}
+                                disabled={eliminando}
+                                className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {eliminando ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                {eliminando ? 'Eliminando...' : 'Sí, eliminar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+
     const registrarActividadCliente = async (payload) => {
         if (!prospectoSeleccionado) return;
 
@@ -533,17 +835,20 @@ const Clientes = () => {
     // VISTA DETALLADA PREMIUM (Post-Venta)
     if (prospectoSeleccionado) {
         return (
-            <ClienteDetalle 
-                Cliente={prospectoSeleccionado}
-                rolePath={'vendedor'}
-                onVolver={() => setProspectoSeleccionado(null)}
-                onActualizado={async () => {
-                    const lista = await cargarClientes();
-                    const actualizado = lista.find(c => String(c.id || c._id) === String(prospectoSeleccionado.id || prospectoSeleccionado._id));
-                    if (actualizado) setProspectoSeleccionado(actualizado);
-                }}
-                abrirModalEditar={abrirModalEditar}
-            />
+            <>
+                <ClienteDetalle 
+                    Cliente={prospectoSeleccionado}
+                    rolePath={'vendedor'}
+                    onVolver={() => handleVerDetalles(null)}
+                    onActualizado={async () => {
+                        const lista = await cargarClientes();
+                        const actualizado = lista.find(c => String(c.id || c._id) === String(prospectoSeleccionado.id || prospectoSeleccionado._id));
+                        if (actualizado) setProspectoSeleccionado(actualizado);
+                    }}
+                    abrirModalEditar={abrirModalEditar}
+                />
+                {renderModales()}
+            </>
         );
     }
 
@@ -816,304 +1121,7 @@ const Clientes = () => {
                 )}
             </div>
         </div>
-
-        {/* Modal Editar Cliente - Rediseño Moderno */}
-        {modalEditarAbierto && (
-            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 transition-all duration-300 backdrop-blur-sm">
-                <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col max-h-[82vh] overflow-hidden animate-in fade-in zoom-in duration-300">
-                    {/* Header */}
-                    <div className="px-6 py-4 bg-linear-to-r from-(--theme-50) to-white border-b border-slate-100 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-(--theme-100) rounded-xl flex items-center justify-center">
-                                <Edit2 className="w-5 h-5 text-(--theme-600)" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-900">Editar Cliente</h2>
-                                <p className="text-xs text-slate-500 mt-0.5">Actualiza la información de contacto</p>
-                            </div>
-                        </div>
-                        <button onClick={() => setModalEditarAbierto(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600">
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-6 space-y-6 overflow-y-auto hide-scrollbar">
-                        {/* Sección: Datos Personales */}
-                        <div className="space-y-4">
-                            <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
-                                Información Personal
-                            </h3>
-                            <div className="space-y-3">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Nombres *</label>
-                                    <input
-                                        type="text"
-                                        value={clienteAEditar.nombres}
-                                        onChange={(e) => setClienteAEditar((f) => ({ ...f, nombres: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Apellido Paterno</label>
-                                        <input
-                                            type="text"
-                                            value={clienteAEditar.apellidoPaterno}
-                                            onChange={(e) => setClienteAEditar((f) => ({ ...f, apellidoPaterno: e.target.value }))}
-                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Apellido Materno</label>
-                                        <input
-                                            type="text"
-                                            value={clienteAEditar.apellidoMaterno}
-                                            onChange={(e) => setClienteAEditar((f) => ({ ...f, apellidoMaterno: e.target.value }))}
-                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Sección: Contacto */}
-                        <div className="space-y-4">
-                            <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
-                                Contacto
-                            </h3>
-                            <div className="space-y-3">
-                                <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Teléfonos *</label>
-                                        <button
-                                            type="button"
-                                            onClick={() => setClienteAEditar((f) => ({ ...f, telefonos: [...(f.telefonos || ['']), ''] }))}
-                                            className="flex items-center gap-1.5 text-xs text-(--theme-600) hover:text-(--theme-700) font-bold hover:bg-(--theme-50) px-2.5 py-1.5 rounded-lg transition-all"
-                                        >
-                                            <Plus className="w-3.5 h-3.5" /> Agregar
-                                        </button>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {(clienteAEditar.telefonos || ['']).map((tel, idx) => (
-                                            <div key={idx} className="flex gap-3 items-center bg-linear-to-r from-slate-50 to-white p-3 rounded-lg border border-slate-200 hover:border-slate-300 transition-all group">
-                                                <Phone className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
-                                                <input
-                                                    type="tel"
-                                                    value={tel}
-                                                    onChange={(e) => setClienteAEditar((f) => { const t = [...(f.telefonos || [''])]; t[idx] = e.target.value; return { ...f, telefonos: t }; })}
-                                                    className="flex-1 bg-transparent border-0 focus:ring-0 text-sm py-1 outline-none font-medium"
-                                                    placeholder="Ej: +56 9 1234 5678"
-                                                />
-                                                {(clienteAEditar.telefonos || ['']).length > 1 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setClienteAEditar((f) => ({ ...f, telefonos: (f.telefonos || ['']).filter((_, i) => i !== idx) }))}
-                                                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-all"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Correo Electrónico</label>
-                                    <input
-                                        type="email"
-                                        value={clienteAEditar.correo}
-                                        onChange={(e) => setClienteAEditar((f) => ({ ...f, correo: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300 font-medium"
-                                        placeholder="ejemplo@empresa.com"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Sección: Empresa */}
-                        <div className="space-y-4">
-                            <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
-                                Detalles de Empresa
-                            </h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Empresa</label>
-                                    <input
-                                        type="text"
-                                        value={clienteAEditar.empresa}
-                                        onChange={(e) => setClienteAEditar((f) => ({ ...f, empresa: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300 font-medium"
-                                        placeholder="Nombre de la empresa"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Sitio Web</label>
-                                    <input
-                                        type="url"
-                                        value={clienteAEditar.sitioWeb || ''}
-                                        onChange={(e) => setClienteAEditar((f) => ({ ...f, sitioWeb: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300 font-medium"
-                                        placeholder="https://ejemplo.com"
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Ubicación</label>
-                                <input
-                                    type="text"
-                                    value={clienteAEditar.ubicacion || ''}
-                                    onChange={(e) => setClienteAEditar((f) => ({ ...f, ubicacion: e.target.value }))}
-                                    className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300 font-medium"
-                                    placeholder="Ciudad, Estado"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="flex gap-3 p-6 border-t border-slate-100 bg-slate-50 justify-end">
-                        <button
-                            onClick={() => setModalEditarAbierto(false)}
-                            className="px-6 py-3 border border-slate-300 text-gray-700 rounded-xl text-sm hover:bg-white font-bold transition-all hover:shadow-sm"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={handleEditarCliente}
-                            disabled={loadingEditar}
-                            className="px-8 py-3 bg-linear-to-r from-(--theme-600) to-(--theme-700) text-white rounded-xl text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:brightness-110 transition-all"
-                        >
-                            {loadingEditar ? '⏳ Guardando...' : '✓ Guardar Cambios'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
-
-        {/* Modal crear cliente */}
-        {mostrarModalCrear && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                <div className="bg-white rounded-2xl p-6 shadow-xl max-w-xl w-full mx-4 border border-slate-200">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">Crear Cliente</h2>
-                        <button
-                            onClick={() => setMostrarModalCrear(false)}
-                            className="text-slate-400 hover:text-slate-600"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre completo *</label>
-                            <input
-                                type="text"
-                                value={formCliente.nombreCompleto}
-                                onChange={(e) => setFormCliente({ ...formCliente, nombreCompleto: e.target.value })}
-                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                                placeholder="Juan Pérez López"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Teléfono *</label>
-                            <input
-                                type="tel"
-                                value={formCliente.telefono}
-                                onChange={(e) => setFormCliente({ ...formCliente, telefono: e.target.value })}
-                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                                placeholder="555-123-4567"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Correo *</label>
-                            <input
-                                type="email"
-                                value={formCliente.correo}
-                                onChange={(e) => setFormCliente({ ...formCliente, correo: e.target.value })}
-                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                                placeholder="juan@empresa.com"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Empresa</label>
-                            <input
-                                type="text"
-                                value={formCliente.empresa}
-                                onChange={(e) => setFormCliente({ ...formCliente, empresa: e.target.value })}
-                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                                placeholder="Mi Empresa S.A."
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex gap-3 justify-end">
-                        <button
-                            onClick={() => setMostrarModalCrear(false)}
-                            disabled={creandoCliente}
-                            className="px-6 py-2 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-colors"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={handleCrearCliente}
-                            disabled={creandoCliente}
-                            className="px-6 py-2 rounded-lg bg-(--theme-600) text-white font-semibold hover:bg-(--theme-700) transition-colors disabled:opacity-50 flex items-center gap-2"
-                        >
-                            {creandoCliente ? (
-                                <>
-                                    <RefreshCw className="w-4 h-4 animate-spin" />
-                                    Creando...
-                                </>
-                            ) : (
-                                <>
-                                    <Plus className="w-4 h-4" />
-                                    Crear Cliente
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
-
-        {/* Modal confirmación eliminar */}
-        {clienteAEliminar && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                <div className="bg-white rounded-2xl p-6 shadow-xl max-w-md w-full mx-4 border border-red-100">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                            <Trash2 className="w-5 h-5 text-red-600" />
-                        </div>
-                        <h2 className="text-lg font-bold text-gray-900">Eliminar cliente</h2>
-                    </div>
-                    <p className="text-gray-600 mb-6">
-                        ¿Estás seguro de eliminar a <strong>{clienteAEliminar.nombres} {clienteAEliminar.apellidoPaterno}</strong>? Esta acción no se puede deshacer.
-                    </p>
-                    <div className="flex gap-3 justify-end">
-                        <button
-                            onClick={() => setClienteAEliminar(null)}
-                            disabled={eliminando}
-                            className="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-colors"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={handleEliminarCliente}
-                            disabled={eliminando}
-                            className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                        >
-                            {eliminando ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                            {eliminando ? 'Eliminando...' : 'Sí, eliminar'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
+        {renderModales()}
         </>
     );
 };
