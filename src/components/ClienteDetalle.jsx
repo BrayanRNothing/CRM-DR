@@ -608,7 +608,7 @@ export default function ClienteDetalle({
                     <div className="lg:col-span-2 flex flex-col gap-4 overflow-y-auto hide-scrollbar pr-1">
 
                         {/* Cabecera + Estrellas + Datos de contacto (Rediseño 3 - Más Compacto) */}
-                        <div className="bg-white border border-slate-200 rounded-xl p-4 sm:px-6 shadow-sm shrink-0">
+                        <div className="bg-white border border-slate-200 rounded-xl p-4 sm:px-6 shadow-sm shrink-0 relative overflow-hidden">
                             <div className="flex flex-col gap-3">
                                 {/* Fila Superior: Nombre, Editar, Etapa e Interés */}
                                 <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
@@ -626,7 +626,7 @@ export default function ClienteDetalle({
                                             </button>
                                         </div>
                                         <div className="flex items-center gap-3 flex-wrap">
-                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-black uppercase tracking-widest border border-green-200">
+                                            <div className="md:absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-1.5 px-3 py-1 bg-green-100/80 backdrop-blur-sm text-green-700 rounded-lg text-xs font-black uppercase tracking-widest border border-green-200 shadow-sm z-10">
                                                 <Star className="w-4 h-4 fill-green-500 text-green-500" />
                                                 Cliente Ganado
                                             </div>
