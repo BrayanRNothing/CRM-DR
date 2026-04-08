@@ -1,18 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, UserPlus, Edit2, Power, Crown, Shield, ChevronRight, X, Check, Loader2, RefreshCw, Trash2 } from 'lucide-react';
+import { Users, UserPlus, Edit2, Power, Crown, Shield, X, Check, Loader2, RefreshCw, Trash2, Search, Download, BarChart3, Target, Save } from 'lucide-react';
 import { getUser, getToken } from '../utils/authUtils';
 import API_URL from '../config/api';
 
-// Rol único: vendedor
-const ROLES = [
-  { value: 'vendedor', label: 'Vendedor', color: '#10b981', bg: '#d1fae5' },
+const ROL_UNICO = { value: 'vendedor', label: 'Vendedor', color: '#10b981', bg: '#d1fae5' };
+
+const TIPOS_META = [
+  { value: 'ventas_monto', label: 'Ventas $' },
+  { value: 'ventas_cantidad', label: 'Ventas #'},
+  { value: 'clientes', label: 'Clientes' },
+  { value: 'actividades', label: 'Actividades' },
 ];
 
+const normalizeText = (value) => String(value || '')
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '');
+
 const getRolBadge = (rol) => {
-  const r = ROLES.find(x => x.value === rol) || { label: rol, color: '#64748b', bg: '#f1f5f9' };
   return (
-    <span className="ge-badge" style={{ color: r.color, background: r.bg }}>
-      {r.label}
+    <span className="ge-badge" style={{ color: ROL_UNICO.color, background: ROL_UNICO.bg }}>
+      {ROL_UNICO.label}
     </span>
   );
 };
@@ -24,7 +32,8 @@ const inferRoleKey = (rol) => {
   return 'prospector';
 };
 
-const initialForm = { usuario: '', contraseña: '', nombre: '', email: '', telefono: '', rol: 'vendedor' };
+const initialForm = { usuario: '', contraseña: '', nombre: '', email: '', telefono: '' };
+const initialEditForm = { nombre: '', email: '', telefono: '' };
 
 export default function Equipo() {
   const userAuth = getUser();
@@ -32,8 +41,12 @@ export default function Equipo() {
 
   const [equipo, setEquipo] = useState(null);
   const [miembros, setMiembros] = useState([]);
+  const [resumen, setResumen] = useState({ total: 0, activos: 0, inactivos: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const [filters, setFilters] = useState({ busqueda: '', estado: 'todos' });
+  const [draftFilters, setDraftFilters] = useState({ busqueda: '', estado: 'todos' });
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState(initialForm);
@@ -41,9 +54,19 @@ export default function Equipo() {
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
 
+  const [editMember, setEditMember] = useState(null);
+  const [editForm, setEditForm] = useState(initialEditForm);
+  const [editLoading, setEditLoading] = useState(false);
+
   const [renameMode, setRenameMode] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [renameLoading, setRenameLoading] = useState(false);
+
+  const [periodo, setPeriodo] = useState(new Date().toISOString().slice(0, 7));
+  const [metricas, setMetricas] = useState([]);
+  const [metricasLoading, setMetricasLoading] = useState(false);
+  const [goalDrafts, setGoalDrafts] = useState({});
+  const [goalLoadingKey, setGoalLoadingKey] = useState('');
 
   const headers = { 'Content-Type': 'application/json', 'x-auth-token': token };
 
@@ -51,20 +74,50 @@ export default function Equipo() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_URL}/api/equipos/mi-equipo`, { headers });
+      const params = new URLSearchParams();
+      if (filters.busqueda.trim()) params.set('busqueda', filters.busqueda.trim());
+      if (filters.estado && filters.estado !== 'todos') params.set('estado', filters.estado);
+
+      const url = `${API_URL}/api/equipos/mi-equipo${params.toString() ? `?${params.toString()}` : ''}`;
+      const res = await fetch(url, { headers });
       if (!res.ok) throw new Error((await res.json()).mensaje || 'Error al cargar equipo');
       const data = await res.json();
       setEquipo(data.equipo);
       setMiembros(data.miembros || []);
+      setResumen(data.resumen || { total: 0, activos: 0, inactivos: 0 });
       setNuevoNombre(data.equipo?.nombre || '');
     } catch (e) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filters.busqueda, filters.estado]);
+
+  const applyFilters = () => {
+    setFilters({
+      busqueda: draftFilters.busqueda,
+      estado: draftFilters.estado,
+    });
+  };
+
+  const fetchMetricas = useCallback(async () => {
+    setMetricasLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (periodo) params.set('periodo', periodo);
+      const res = await fetch(`${API_URL}/api/equipos/mi-equipo/metricas?${params.toString()}`, { headers });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.mensaje || 'Error al cargar métricas');
+      setMetricas(data.metricas || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setMetricasLoading(false);
+    }
+  }, [periodo]);
 
   useEffect(() => { fetchEquipo(); }, [fetchEquipo]);
+  useEffect(() => { fetchMetricas(); }, [fetchMetricas]);
 
   const handleAddMember = async (e) => {
     e.preventDefault();
@@ -92,7 +145,6 @@ export default function Equipo() {
 
   const handleToggleMember = async (miembro) => {
     if (String(miembro.id) === String(userAuth?.id)) return;
-    const accion = miembro.activo ? 'desactivar' : 'TODO: reactivar';
     if (!window.confirm(`¿Desactivar a ${miembro.nombre}?`)) return;
     try {
       const res = await fetch(`${API_URL}/api/equipos/miembro/${miembro.id}`, {
@@ -101,6 +153,22 @@ export default function Equipo() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.mensaje);
       fetchEquipo();
+      fetchMetricas();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  const handleReactivateMember = async (miembro) => {
+    if (!window.confirm(`¿Reactivar a ${miembro.nombre}?`)) return;
+    try {
+      const res = await fetch(`${API_URL}/api/equipos/miembro/${miembro.id}/reactivar`, {
+        method: 'PATCH', headers
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.mensaje);
+      fetchEquipo();
+      fetchMetricas();
     } catch (e) {
       alert(e.message);
     }
@@ -123,6 +191,95 @@ export default function Equipo() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.mensaje);
       fetchEquipo();
+      fetchMetricas();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  const openEditModal = (miembro) => {
+    setEditMember(miembro);
+    setEditForm({
+      nombre: miembro.nombre || '',
+      email: miembro.email || '',
+      telefono: miembro.telefono || '',
+    });
+  };
+
+  const handleEditMember = async (e) => {
+    e.preventDefault();
+    if (!editMember) return;
+    setEditLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/equipos/miembro/${editMember.id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(editForm),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.mensaje || 'No se pudo actualizar el miembro');
+      setEditMember(null);
+      setEditForm(initialEditForm);
+      fetchEquipo();
+      fetchMetricas();
+    } catch (e2) {
+      alert(e2.message);
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleSaveGoal = async (memberId) => {
+    const draft = goalDrafts[memberId] || {};
+    if (!draft.tipo || draft.objetivo === '' || Number.isNaN(Number(draft.objetivo))) {
+      alert('Completa tipo y objetivo numérico para guardar la meta');
+      return;
+    }
+
+    const loadingKey = `${memberId}:${draft.tipo}`;
+    setGoalLoadingKey(loadingKey);
+    try {
+      const res = await fetch(`${API_URL}/api/equipos/metas`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          miembro_id: memberId,
+          tipo: draft.tipo,
+          objetivo: Number(draft.objetivo),
+          periodo,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.mensaje || 'No se pudo guardar la meta');
+      fetchMetricas();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setGoalLoadingKey('');
+    }
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (filters.busqueda.trim()) params.set('busqueda', filters.busqueda.trim());
+      if (filters.estado && filters.estado !== 'todos') params.set('estado', filters.estado);
+
+      const res = await fetch(`${API_URL}/api/equipos/exportar-miembros.csv?${params.toString()}`, { headers });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.mensaje || 'No se pudo exportar el CSV');
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `equipo_${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
     } catch (e) {
       alert(e.message);
     }
@@ -141,6 +298,7 @@ export default function Equipo() {
       if (!res.ok) throw new Error(data.mensaje);
       setEquipo(prev => ({ ...prev, nombre: nuevoNombre }));
       setRenameMode(false);
+      fetchEquipo();
     } catch (e) {
       alert(e.message);
     } finally {
@@ -149,6 +307,17 @@ export default function Equipo() {
   };
 
   const esOwner = equipo?.esOwner;
+  const busquedaActiva = normalizeText(filters.busqueda.trim());
+  const miembrosFiltrados = miembros.filter((m) => {
+    if (filters.estado === 'activo' && !m.activo) return false;
+    if (filters.estado === 'inactivo' && m.activo) return false;
+    if (!busquedaActiva) return true;
+
+    const nombre = normalizeText(m.nombre);
+    const usuario = normalizeText(m.usuario);
+    const email = normalizeText(m.email);
+    return nombre.includes(busquedaActiva) || usuario.includes(busquedaActiva) || email.includes(busquedaActiva);
+  });
 
   return (
     <div className="ge-root">
@@ -233,32 +402,26 @@ export default function Equipo() {
 
       {!loading && !error && equipo && (
         <>
-          {(() => {
-            const totales = miembros.reduce((acc, miembro) => {
-              acc.total += 1;
-              acc.activos += miembro.activo ? 1 : 0;
-              acc[inferRoleKey(miembro.rol)] += 1;
-              return acc;
-            }, { total: 0, activos: 0, prospector: 0, closer: 0, vendedor: 0 });
-
-            return (
-              <div className="ge-card">
-                <div className="ge-section-title">Resumen rápido</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
-                  <div className="ge-summary-box">
-                    <div className="ge-summary-label">Miembros</div>
-                    <div className="ge-summary-value">{totales.total}</div>
-                    <div className="ge-summary-hint">Usuarios dentro del equipo</div>
-                  </div>
-                  <div className="ge-summary-box">
-                    <div className="ge-summary-label">Activos</div>
-                    <div className="ge-summary-value">{totales.activos}</div>
-                    <div className="ge-summary-hint">Disponibles para operar</div>
-                  </div>
-                </div>
+          <div className="ge-card">
+            <div className="ge-section-title">Resumen rápido</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
+              <div className="ge-summary-box">
+                <div className="ge-summary-label">Miembros</div>
+                <div className="ge-summary-value">{resumen.total}</div>
+                <div className="ge-summary-hint">Usuarios dentro del equipo</div>
               </div>
-            );
-          })()}
+              <div className="ge-summary-box">
+                <div className="ge-summary-label">Activos</div>
+                <div className="ge-summary-value">{resumen.activos}</div>
+                <div className="ge-summary-hint">Disponibles para operar</div>
+              </div>
+              <div className="ge-summary-box">
+                <div className="ge-summary-label">Inactivos</div>
+                <div className="ge-summary-value">{resumen.inactivos}</div>
+                <div className="ge-summary-hint">Pendientes de reactivar</div>
+              </div>
+            </div>
+          </div>
 
           {/* Info del Equipo */}
           <div className="ge-card">
@@ -309,23 +472,47 @@ export default function Equipo() {
           <div className="ge-card">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div className="ge-section-title" style={{ marginBottom: 0 }}>
-                Miembros ({miembros.length})
+                Miembros ({miembrosFiltrados.length})
               </div>
-              {esOwner && (
-                <button className="ge-btn ge-btn-primary" onClick={() => setShowAddModal(true)}>
-                  <UserPlus size={15} /> Agregar Miembro
-                </button>
-              )}
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {esOwner && (
+                  <button className="ge-btn ge-btn-primary" onClick={() => setShowAddModal(true)}>
+                    <UserPlus size={15} /> Agregar Miembro
+                  </button>
+                )}
+                {esOwner && (
+                  <button className="ge-btn ge-btn-ghost" onClick={handleExportCSV}>
+                    <Download size={15} /> Exportar CSV
+                  </button>
+                )}
+              </div>
             </div>
 
-            {miembros.length === 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '0.75rem', marginBottom: '1rem' }}>
+              <input
+                className="ge-input"
+                value={draftFilters.busqueda}
+                onChange={e => setDraftFilters(prev => ({ ...prev, busqueda: e.target.value }))}
+                placeholder="Buscar por nombre, usuario o correo"
+              />
+              <select className="ge-select" value={draftFilters.estado} onChange={e => setDraftFilters(prev => ({ ...prev, estado: e.target.value }))}>
+                <option value="todos">Todos</option>
+                <option value="activo">Activos</option>
+                <option value="inactivo">Inactivos</option>
+              </select>
+              <button className="ge-btn ge-btn-ghost" onClick={applyFilters}>
+                <Search size={15} /> Aplicar
+              </button>
+            </div>
+
+            {miembrosFiltrados.length === 0 ? (
               <div className="ge-empty">
                 <Users size={40} style={{ marginBottom: 8, opacity: 0.3 }} />
-                <div>No hay miembros en el equipo aún</div>
+                <div>No hay miembros que coincidan con el filtro</div>
               </div>
             ) : (
               <div className="ge-members-grid">
-                {miembros.map(m => (
+                {miembrosFiltrados.map(m => (
                   <div key={m.id} className={`ge-member-row${!m.activo ? ' ge-inactive' : ''}`}>
                     <div className="ge-avatar">
                       {m.nombre?.charAt(0)?.toUpperCase() || '?'}
@@ -348,6 +535,13 @@ export default function Equipo() {
                     )}
                     {esOwner && String(m.id) !== String(userAuth?.id) && String(m.id) !== String(equipo.owner_id) && (
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          className="ge-btn ge-btn-ghost"
+                          onClick={() => openEditModal(m)}
+                          title="Editar miembro"
+                        >
+                          <Edit2 size={14} />
+                        </button>
                         {m.activo && (
                           <button
                             className="ge-btn ge-btn-danger"
@@ -355,6 +549,15 @@ export default function Equipo() {
                             title="Desactivar miembro"
                           >
                             <Power size={14} />
+                          </button>
+                        )}
+                        {!m.activo && (
+                          <button
+                            className="ge-btn ge-btn-primary"
+                            onClick={() => handleReactivateMember(m)}
+                            title="Reactivar miembro"
+                          >
+                            <Check size={14} />
                           </button>
                         )}
                         <button
@@ -368,6 +571,101 @@ export default function Equipo() {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          <div className="ge-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div className="ge-section-title" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <BarChart3 size={14} /> Métricas por miembro
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <input
+                  type="month"
+                  className="ge-input"
+                  value={periodo}
+                  onChange={e => setPeriodo(e.target.value)}
+                  style={{ width: 170 }}
+                />
+                <button className="ge-btn ge-btn-ghost" onClick={fetchMetricas}>
+                  <RefreshCw size={14} /> Recargar
+                </button>
+              </div>
+            </div>
+
+            {metricasLoading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '1.25rem' }}>
+                <Loader2 size={24} className="ge-spin" />
+              </div>
+            ) : metricas.length === 0 ? (
+              <div className="ge-empty" style={{ padding: '1.5rem 1rem' }}>No hay métricas disponibles para este período</div>
+            ) : (
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                {metricas.map(item => {
+                  const m = item.miembro;
+                  const currentDraft = goalDrafts[m.id] || { tipo: 'ventas_monto', objetivo: '' };
+                  return (
+                    <div key={m.id} className={`ge-member-row${!m.activo ? ' ge-inactive' : ''}`} style={{ alignItems: 'flex-start', flexDirection: 'column' }}>
+                      <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1.4fr repeat(4, 1fr)', gap: '0.75rem' }}>
+                        <div>
+                          <div className="ge-member-name">{m.nombre}</div>
+                          <div className="ge-member-usuario">@{m.usuario}</div>
+                        </div>
+                        <div>
+                          <div className="ge-summary-label">Leads</div>
+                          <div style={{ fontWeight: 800 }}>{item.leads}</div>
+                        </div>
+                        <div>
+                          <div className="ge-summary-label">Ventas #</div>
+                          <div style={{ fontWeight: 800 }}>{item.ventasCantidad}</div>
+                        </div>
+                        <div>
+                          <div className="ge-summary-label">Ventas $</div>
+                          <div style={{ fontWeight: 800 }}>${item.ventasMonto.toLocaleString()}</div>
+                        </div>
+                        <div>
+                          <div className="ge-summary-label">Conversión</div>
+                          <div style={{ fontWeight: 800 }}>{item.conversion}%</div>
+                        </div>
+                      </div>
+
+                      {item.goals.length > 0 && (
+                        <div style={{ width: '100%', marginTop: '0.75rem', display: 'grid', gap: '0.35rem' }}>
+                          {item.goals.map(g => (
+                            <div key={g.id} style={{ fontSize: '0.76rem', color: '#475569', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                              <span>{TIPOS_META.find(t => t.value === g.tipo)?.label || g.tipo}: {g.actual}/{g.objetivo}</span>
+                              <span style={{ fontWeight: 700 }}>{g.progreso}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {esOwner && (
+                        <div style={{ width: '100%', marginTop: '0.75rem', display: 'grid', gridTemplateColumns: '1.2fr 1fr auto', gap: '0.5rem' }}>
+                          <select
+                            className="ge-select"
+                            value={currentDraft.tipo}
+                            onChange={e => setGoalDrafts(prev => ({ ...prev, [m.id]: { ...currentDraft, tipo: e.target.value } }))}
+                          >
+                            {TIPOS_META.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                          </select>
+                          <input
+                            className="ge-input"
+                            type="number"
+                            min="0"
+                            value={currentDraft.objetivo}
+                            onChange={e => setGoalDrafts(prev => ({ ...prev, [m.id]: { ...currentDraft, objetivo: e.target.value } }))}
+                            placeholder="Objetivo"
+                          />
+                          <button className="ge-btn ge-btn-primary" onClick={() => handleSaveGoal(m.id)} disabled={goalLoadingKey === `${m.id}:${currentDraft.tipo}`}>
+                            {goalLoadingKey === `${m.id}:${currentDraft.tipo}` ? <Loader2 size={14} className="ge-spin" /> : <Save size={14} />} Guardar meta
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -413,13 +711,6 @@ export default function Equipo() {
                   <input className="ge-input" value={form.telefono} onChange={e => setForm(p => ({ ...p, telefono: e.target.value }))} placeholder="+52 55 1234 5678" />
                 </div>
               </div>
-              <div className="ge-form-row">
-                <label className="ge-form-label">Rol *</label>
-                <select className="ge-select" value={form.rol} onChange={e => setForm(p => ({ ...p, rol: e.target.value }))}>
-                  {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                </select>
-              </div>
-
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
                 <button type="submit" className="ge-btn ge-btn-primary" disabled={formLoading} style={{ flex: 1 }}>
                   {formLoading ? <Loader2 size={15} className="ge-spin" /> : <UserPlus size={15} />}
