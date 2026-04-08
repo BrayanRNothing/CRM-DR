@@ -4,7 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
     Phone, MessageSquare, Mail, Calendar, CheckCircle2,
-    XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown
+    XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown, Save
 } from 'lucide-react';
 
 import { getToken, getUser } from '../utils/authUtils';
@@ -971,7 +971,7 @@ export default function ClienteDetalle({
                                     <div className="flex items-center justify-between">
                                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Notas del Cliente</p>
                                         <button
-                                            onClick={handleGuardarNotas}
+                                            onClick={handleGuardarNotasRapidas}
                                             disabled={loadingNotas}
                                             className={`p-1.5 rounded-lg transition-colors ${notasRapidas !== (ClienteSeleccionado?.notas || '') ? 'bg-(--theme-500) text-white hover:bg-(--theme-600) shadow-sm' : 'text-slate-300 hover:bg-slate-50'}`}
                                             title="Guardar notas"

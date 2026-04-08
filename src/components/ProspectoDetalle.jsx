@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import socket from '../config/socket';
 import {
     Phone, MessageSquare, Mail, Calendar, CheckCircle2,
-    XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown, VideoIcon
+    XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown, VideoIcon, Save
 } from 'lucide-react';
 
 import { getToken, getUser } from '../utils/authUtils';
