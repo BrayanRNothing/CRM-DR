@@ -77,7 +77,7 @@ router.get('/mi-equipo', auth, async (req, res) => {
             params.push(estado);
         }
         if (busqueda) {
-            miembrosSql += ' AND (LOWER(nombre) LIKE LOWER(?) OR LOWER(usuario) LIKE LOWER(?) OR LOWER(COALESCE(email, \''\')) LIKE LOWER(?))';
+            miembrosSql += " AND (LOWER(nombre) LIKE LOWER(?) OR LOWER(usuario) LIKE LOWER(?) OR LOWER(COALESCE(email, '')) LIKE LOWER(?))";
             const like = `%${busqueda}%`;
             params.push(like, like, like);
         }
@@ -488,7 +488,7 @@ router.get('/exportar-miembros.csv', auth, esTeamOwner, async (req, res) => {
             params.push(estado);
         }
         if (busqueda) {
-            sql += ' AND (LOWER(nombre) LIKE LOWER(?) OR LOWER(usuario) LIKE LOWER(?) OR LOWER(COALESCE(email, \''\')) LIKE LOWER(?))';
+            sql += " AND (LOWER(nombre) LIKE LOWER(?) OR LOWER(usuario) LIKE LOWER(?) OR LOWER(COALESCE(email, '')) LIKE LOWER(?))";
             const like = `%${busqueda}%`;
             params.push(like, like, like);
         }
