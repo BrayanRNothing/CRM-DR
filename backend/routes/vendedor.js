@@ -2306,7 +2306,7 @@ router.post('/registrar-reunion', [auth, esVendedor], async (req, res) => {
 router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
     try {
         const prospectoId = parseInt(req.params.id);
-        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, etapaEmbudo, interes, proximaLlamada } = req.body;
+        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, etapaEmbudo, interes, proximaLlamada, customSections } = req.body;
         const now = new Date().toISOString();
 
         const c = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(prospectoId);
@@ -2331,6 +2331,10 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
 
         if (interes !== undefined) { updates.push('interes = ?'); params.push(interes); }
         if (proximaLlamada !== undefined) { updates.push('proximaLlamada = ?'); params.push(proximaLlamada); }
+        if (customSections !== undefined) { 
+            updates.push('customSections = ?'); 
+            params.push(typeof customSections === 'string' ? customSections : JSON.stringify(customSections)); 
+        }
 
         // Manejo de cambio de etapa
         if (etapaEmbudo && etapaEmbudo !== c.etapaEmbudo) {
@@ -3019,6 +3023,67 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
     } catch (error) {
         console.error('Error al registrar actividad:', error);
         res.status(500).json({ msg: 'Error al registrar actividad' });
+    }
+});
+
+// ==========================================
+// RUTAS DE ETIQUETAS GLOBALES (NO TERMINADO)
+// ==========================================
+
+// GET /api/vendedor/etiquetas
+router.get('/etiquetas', [auth, esVendedor], async (req, res) => {
+    try {
+        const equipoId = req.usuario.equipo_id;
+        let sql = 'SELECT * FROM etiquetas_globales';
+        let params = [];
+        
+        if (equipoId) {
+            sql += ' WHERE equipo_id = ? OR equipo_id IS NULL';
+            params.push(equipoId);
+        } else {
+            sql += ' WHERE equipo_id IS NULL';
+        }
+        
+        sql += ' ORDER BY nombre ASC';
+        const etiquetas = await db.prepare(sql).all(...params);
+        res.json(etiquetas);
+    } catch (error) {
+        console.error('Error al obtener etiquetas:', error);
+        res.status(500).json({ msg: 'Error al obtener etiquetas' });
+    }
+});
+
+// POST /api/vendedor/etiquetas
+router.post('/etiquetas', [auth, esVendedor], async (req, res) => {
+    try {
+        const { nombre, color } = req.body;
+        if (!nombre) return res.status(400).json({ msg: 'El nombre es requerido' });
+        
+        const equipoId = req.usuario.equipo_id;
+        const nombreLimpio = nombre.trim();
+        
+        // Verificar si ya existe
+        let existente;
+        if (equipoId) {
+            existente = await db.prepare('SELECT * FROM etiquetas_globales WHERE nombre = ? AND (equipo_id = ? OR equipo_id IS NULL)')
+                .get(nombreLimpio, equipoId);
+        } else {
+            existente = await db.prepare('SELECT * FROM etiquetas_globales WHERE nombre = ? AND equipo_id IS NULL')
+                .get(nombreLimpio);
+        }
+        
+        if (existente) {
+            return res.json(existente);
+        }
+        
+        // Crear nueva
+        const result = await db.prepare('INSERT INTO etiquetas_globales (nombre, color, equipo_id) VALUES (?, ?, ?)')
+            .run(nombreLimpio, color || '#10b981', equipoId);
+            
+        res.json({ id: result.lastInsertRowid, nombre: nombreLimpio, color: color || '#10b981' });
+    } catch (error) {
+        console.error('Error al crear etiqueta:', error);
+        res.status(500).json({ msg: 'Error al crear etiqueta' });
     }
 });
 

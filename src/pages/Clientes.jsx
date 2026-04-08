@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar, Filter, Star, Mail, MessageSquare, Clock, Share2, Edit2 } from 'lucide-react';
+import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar, Filter, Star, Mail, MessageSquare, Clock, Share2, Edit2, Bell } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { getToken } from '../utils/authUtils';
@@ -856,12 +856,12 @@ const Clientes = () => {
         <>
         <div className="min-h-screen bg-slate-50 p-6">
             <div className="max-w-full mx-auto">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">
                             {esMenuSeguimiento ? 'Seguimiento de Clientes' : 'Clientes'}
                         </h1>
-                        <p className="text-gray-500">
+                        <p className="text-gray-500 mt-1">
                             {esMenuSeguimiento
                                 ? 'Gestiona y da seguimiento a tu cartera de clientes ganados.'
                                 : 'Cartera de clientes ganados.'}
@@ -905,13 +905,14 @@ const Clientes = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-4 items-center">
                         <div className="relative w-full">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Buscar clientes por nombre, empresa, teléfono..."
-                                value={busqueda}
-                                onChange={(event) => setBusqueda(event.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) text-sm"
-                            />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar clientes por nombre, empresa, teléfono..."
+                                    value={busqueda}
+                                    onChange={(event) => setBusqueda(event.target.value)}
+                                    className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-sm"
+                                    title="Buscar por nombre, empresa, correo o teléfono"
+                                />
                         </div>
                         <div className="flex flex-wrap gap-2 items-center w-full">
                             <Filter className="w-4 h-4 text-slate-400 shrink-0" />
@@ -952,6 +953,25 @@ const Clientes = () => {
                                     </button>
                                 ))}
                             </div>
+                            <button
+                                onClick={() => setFiltro(f => f === 'con_recordatorio' ? 'todos' : 'con_recordatorio')}
+                                className={`flex items-center justify-center w-8 h-8 rounded-lg border text-sm transition-all ${filtro === 'con_recordatorio'
+                                    ? 'bg-(--theme-50) border-(--theme-400) text-(--theme-700)'
+                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'
+                                    }`}
+                                title="Solo con recordatorio de llamada"
+                            >
+                                <Bell className="w-3.5 h-3.5" />
+                            </button>
+                            {(filtro !== 'todos' || busqueda || filtroVisibilidad !== 'mine') && (
+                                <button
+                                    onClick={() => { setFiltro('todos'); setBusqueda(''); setFiltroVisibilidad('mine'); }}
+                                    className="flex items-center justify-center w-8 h-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
+                                    title="Limpiar filtros"
+                                >
+                                    ✕
+                                </button>
+                            )}
                         </div>
                     </div>
                     {/* Contador de resultados */}
@@ -973,7 +993,7 @@ const Clientes = () => {
                     <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="min-w-full text-sm">
-                                <thead>
+                                <thead className="bg-slate-100/70 text-slate-500 uppercase">
                                     <tr>
                                         <th className="px-4 py-3 text-left font-semibold">Cliente</th>
                                         <th className="px-4 py-3 text-left font-semibold">Empresa</th>
@@ -992,16 +1012,16 @@ const Clientes = () => {
                                                     <p className="font-medium text-gray-900 leading-tight">
                                                         {cliente.nombres} {cliente.apellidoPaterno}
                                                     </p>
+                                                    <p className="text-[10px] text-slate-400 mt-0.5">
+                                                        {(cliente.esPropietario === true || isOwnerRecord(cliente))
+                                                            ? 'Propietario: tú'
+                                                            : `Compartido por: ${cliente.propietarioNombre || 'usuario del equipo'}`}
+                                                    </p>
                                                     <div className="flex items-center gap-0.5 text-yellow-500 scale-75 origin-left mt-0.5">
                                                         {[1, 2, 3, 4, 5].map((val) => (
-                                                            <Star key={val} className="w-3.5 h-3.5 fill-yellow-400" />
+                                                            <Star key={val} className={`w-3.5 h-3.5 ${ (cliente.interes || 5) >= val ? 'fill-yellow-400' : 'fill-slate-100 text-slate-300'}`} />
                                                         ))}
                                                     </div>
-                                                                            <p className="text-[10px] text-slate-400 mt-0.5">
-                                                                                {(cliente.esPropietario === true || isOwnerRecord(cliente))
-                                                                                    ? 'Propietario: tú'
-                                                                                    : `Compartido por: ${cliente.propietarioNombre || 'usuario del equipo'}`}
-                                                                            </p>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-gray-600 text-sm whitespace-nowrap">{cliente.empresa || '—'}</td>
@@ -1060,9 +1080,9 @@ const Clientes = () => {
                                                 {cliente.proximaLlamada ? (() => {
                                                     const esVencido = new Date(cliente.proximaLlamada) < new Date();
                                                     return (
-                                                        <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-(--theme-600)'}`}>
-                                                            <div className={`w-2 h-2 rounded-full animate-pulse ${esVencido ? 'bg-red-500' : 'bg-(--theme-500)'}`}></div>
-                                                            <span className="text-xs font-semibold leading-tight">
+                                                        <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-emerald-00'}`}>
+                                                            <Phone className="w-3 h-3 shrink-0" />
+                                                            <span className="text-[10px] font-bold leading-tight uppercase tracking-tighter">
                                                                 {new Date(cliente.proximaLlamada).toLocaleString('es-MX', {
                                                                     day: 'numeric',
                                                                     month: 'short',
@@ -1071,7 +1091,6 @@ const Clientes = () => {
                                                                 })}
                                                                 {esVencido && ' ⚠'}
                                                             </span>
-                                                            <Phone className="w-3 h-3" />
                                                         </div>
                                                     );
                                                 })() : (
@@ -1102,6 +1121,13 @@ const Clientes = () => {
                                                         title="Ver Detalles / Historial"
                                                     >
                                                         <History className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); abrirModalEditar(cliente); }}
+                                                        className="text-gray-400 hover:text-(--theme-600) transition-colors p-2 rounded-full hover:bg-(--theme-50)"
+                                                        title="Editar Cliente"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); setClienteAEliminar(cliente); }}

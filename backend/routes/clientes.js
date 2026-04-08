@@ -137,7 +137,7 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
             return res.status(403).json({ mensaje: 'Solo el propietario puede editar este cliente' });
         }
 
-        const { nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, notas, vendedorAsignado, etapaEmbudo } = req.body;
+        const { nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, notas, vendedorAsignado, etapaEmbudo, customSections } = req.body;
         const updates = [];
         const params = [];
         const now = new Date().toISOString();
@@ -148,6 +148,10 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
         if (telefono) { updates.push('telefono = ?'); params.push(telefono); }
         if (correo) { updates.push('correo = ?'); params.push(correo); }
         if (empresa !== undefined) { updates.push('empresa = ?'); params.push(empresa); }
+        if (customSections !== undefined) {
+            updates.push('customSections = ?');
+            params.push(typeof customSections === 'string' ? customSections : JSON.stringify(customSections));
+        }
 
         // Manejo de cambio de etapa
         if (etapaEmbudo && etapaEmbudo !== c.etapaEmbudo) {

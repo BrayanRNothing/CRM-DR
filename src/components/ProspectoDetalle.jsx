@@ -105,11 +105,16 @@ export default function ProspectoDetalle({
     // Solo actualizar estado local al recibir nuevos datos
     useEffect(() => {
         if (initialProspecto) {
-            setProspectoSeleccionado(initialProspecto);
-            setNotasRapidas(initialProspecto.notas || '');
-            setMonedaSeleccionada(initialProspecto.customMetricLabel || 'MXN');
-            setValorProspecto(initialProspecto.customMetricValue || '');
-            setCustomSections(initialProspecto.customSections || []);
+            const currentId = prospectoSeleccionado?.id || prospectoSeleccionado?._id;
+            const newId = initialProspecto.id || initialProspecto._id;
+
+            if (currentId !== newId) {
+                setProspectoSeleccionado(initialProspecto);
+                setNotasRapidas(initialProspecto.notas || '');
+                setMonedaSeleccionada(initialProspecto.customMetricLabel || 'MXN');
+                setValorProspecto(initialProspecto.customMetricValue || '');
+                setCustomSections(initialProspecto.customSections || []);
+            }
         }
     }, [initialProspecto]);
 
@@ -261,9 +266,11 @@ export default function ProspectoDetalle({
         if (!prospectoSeleccionado) return;
         try {
             const pidLoc = prospectoSeleccionado.id || prospectoSeleccionado._id;
-            await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLoc}`, {
+            const endpoint = `${API_URL}/api/${rolePath}/prospectos/${pidLoc}/editar`;
+            await axios.put(endpoint, {
                 customSections: nuevasSecciones
             }, { headers: getAuthHeaders() });
+            
             setProspectoSeleccionado(prev => ({ ...prev, customSections: nuevasSecciones }));
             if (onActualizado) onActualizado();
         } catch (error) {

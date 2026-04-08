@@ -86,7 +86,7 @@ const CAMEL_COLS = [
   'googleRefreshToken', 'googleAccessToken', 'googleTokenExpiry',
   'vendedorNombre', 'vendedorRol', 'closerNombre', 'propietarioNombre', 'sitioWeb', 'googleMeetLink',
   'customMetricLabel', 'customMetricValue', 'createdAt', 'tipoActividad',
-  'ultimaInteraccion', 'proximaLlamada'
+  'ultimaInteraccion', 'proximaLlamada', 'customSections'
 ];
 
 // Helper: convierte '?' a '$1', '$2', etc. para Postgres y añade comillas dobles a columnas camelCase
@@ -119,7 +119,8 @@ const pgMap = {
   googleaccesstoken: 'googleAccessToken', googletokenexpiry: 'googleTokenExpiry',
   vendedornombre: 'vendedorNombre', vendedorrol: 'vendedorRol', closernombre: 'closerNombre', propietarionombre: 'propietarioNombre',
   sitioweb: 'sitioWeb', googlemeetlink: 'googleMeetLink',
-  custommetriclabel: 'customMetricLabel', custommetricvalue: 'customMetricValue'
+  custommetriclabel: 'customMetricLabel', custommetricvalue: 'customMetricValue',
+  customsections: 'customSections'
 };
 
 const mapPgRow = (row) => {
@@ -303,7 +304,9 @@ const initDb = async () => {
     "propietarioId" INTEGER REFERENCES usuarios(id),
     compartido BOOLEAN DEFAULT FALSE,
     sitioWeb TEXT,
-    ubicacion TEXT
+    ubicacion TEXT,
+    etiquetas TEXT,
+    "customSections" TEXT
   );
 
   CREATE TABLE IF NOT EXISTS actividades (
@@ -351,6 +354,14 @@ const initDb = async () => {
     nombre TEXT NOT NULL,
     icon TEXT,
     owner_id INTEGER REFERENCES usuarios(id),
+    "fechaCreacion" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS etiquetas_globales (
+    id SERIAL PRIMARY KEY,
+    nombre TEXT NOT NULL UNIQUE,
+    color TEXT,
+    equipo_id INTEGER REFERENCES equipos(id),
     "fechaCreacion" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
   );
 `;
@@ -470,6 +481,10 @@ const initDb = async () => {
              AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='proximaLlamada') THEN
             ALTER TABLE clientes RENAME COLUMN proximallamada TO "proximaLlamada";
           END IF;
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='customsections')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clientes' AND column_name='customSections') THEN
+            ALTER TABLE clientes RENAME COLUMN customsections TO "customSections";
+          END IF;
 
           -- actividades
           IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='actividades' AND column_name='cambioetapa')
@@ -528,6 +543,8 @@ const initDb = async () => {
       ['actividades', 'invitados',           'TEXT'],
       ['tareas',      '"equipo_id"',         'INTEGER'],
       ['equipos',     'icon',                'TEXT'],
+      ['clientes',    'etiquetas',           'TEXT'],
+      ['clientes',    '"customSections"',    'TEXT'],
     ];
     for (const [table, col, type] of colsMissingPg) {
       try {
@@ -632,6 +649,8 @@ const initDb = async () => {
       ['actividades', 'invitados TEXT'],
       ['actividades', 'createdAt TEXT DEFAULT (datetime(\'now\'))'],
       ['equipos', 'icon TEXT'],
+      ['clientes', 'etiquetas TEXT'],
+      ['clientes', 'customSections TEXT'],
     ];
     for (const [table, colDef] of colsMissingSqlite) {
       try {
