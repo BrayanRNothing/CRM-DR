@@ -69,7 +69,7 @@ router.get('/mi-equipo', auth, async (req, res) => {
         }
 
         // Miembros del equipo
-        let miembrosSql = 'SELECT id, usuario, nombre, rol, email, telefono, activo, "equipo_id" FROM usuarios WHERE "equipo_id" = ?';
+        let miembrosSql = 'SELECT id, usuario, nombre, rol, email, telefono, activo, "equipo_id", googleRefreshToken FROM usuarios WHERE "equipo_id" = ?';
         const params = [equipoId];
 
         if (estado !== null) {
@@ -104,7 +104,8 @@ router.get('/mi-equipo', auth, async (req, res) => {
                 rol: m.rol,
                 email: m.email,
                 telefono: m.telefono,
-                activo: !!m.activo
+                activo: !!m.activo,
+                googleLinked: !!m.googleRefreshToken
             })),
             resumen: {
                 total: Number(resumen?.total || 0),

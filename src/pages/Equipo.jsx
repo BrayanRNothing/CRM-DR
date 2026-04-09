@@ -1,16 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, UserPlus, Edit2, Power, Crown, Shield, X, Check, Loader2, RefreshCw, Trash2, Search, Download, BarChart3, Target, Save, AlertTriangle } from 'lucide-react';
+import { Users, UserPlus, Edit2, Power, Crown, Shield, X, Check, Loader2, RefreshCw, Trash2, Search, Download, AlertTriangle } from 'lucide-react';
 import { getUser, getToken } from '../utils/authUtils';
 import API_URL from '../config/api';
 
 const ROL_UNICO = { value: 'vendedor', label: 'Vendedor', color: '#10b981', bg: '#d1fae5' };
 
-const TIPOS_META = [
-  { value: 'ventas_monto', label: 'Ventas $' },
-  { value: 'ventas_cantidad', label: 'Ventas #'},
-  { value: 'clientes', label: 'Clientes' },
-  { value: 'actividades', label: 'Actividades' },
-];
+
 
 const normalizeText = (value) => String(value || '')
   .toLowerCase()
@@ -62,11 +57,7 @@ export default function Equipo() {
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [renameLoading, setRenameLoading] = useState(false);
 
-  const [periodo, setPeriodo] = useState(new Date().toISOString().slice(0, 7));
-  const [metricas, setMetricas] = useState([]);
-  const [metricasLoading, setMetricasLoading] = useState(false);
-  const [goalDrafts, setGoalDrafts] = useState({});
-  const [goalLoadingKey, setGoalLoadingKey] = useState('');
+
 
   const headers = { 'Content-Type': 'application/json', 'x-auth-token': token };
 
@@ -100,24 +91,9 @@ export default function Equipo() {
     });
   };
 
-  const fetchMetricas = useCallback(async () => {
-    setMetricasLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (periodo) params.set('periodo', periodo);
-      const res = await fetch(`${API_URL}/api/equipos/mi-equipo/metricas?${params.toString()}`, { headers });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.mensaje || 'Error al cargar métricas');
-      setMetricas(data.metricas || []);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setMetricasLoading(false);
-    }
-  }, [periodo]);
+
 
   useEffect(() => { fetchEquipo(); }, [fetchEquipo]);
-  useEffect(() => { fetchMetricas(); }, [fetchMetricas]);
 
   const handleAddMember = async (e) => {
     e.preventDefault();
@@ -153,7 +129,6 @@ export default function Equipo() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.mensaje);
       fetchEquipo();
-      fetchMetricas();
     } catch (e) {
       alert(e.message);
     }
@@ -168,7 +143,6 @@ export default function Equipo() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.mensaje);
       fetchEquipo();
-      fetchMetricas();
     } catch (e) {
       alert(e.message);
     }
@@ -191,7 +165,6 @@ export default function Equipo() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.mensaje);
       fetchEquipo();
-      fetchMetricas();
     } catch (e) {
       alert(e.message);
     }
@@ -221,7 +194,6 @@ export default function Equipo() {
       setEditMember(null);
       setEditForm(initialEditForm);
       fetchEquipo();
-      fetchMetricas();
     } catch (e2) {
       alert(e2.message);
     } finally {
@@ -229,35 +201,7 @@ export default function Equipo() {
     }
   };
 
-  const handleSaveGoal = async (memberId) => {
-    const draft = goalDrafts[memberId] || {};
-    if (!draft.tipo || draft.objetivo === '' || Number.isNaN(Number(draft.objetivo))) {
-      alert('Completa tipo y objetivo numérico para guardar la meta');
-      return;
-    }
 
-    const loadingKey = `${memberId}:${draft.tipo}`;
-    setGoalLoadingKey(loadingKey);
-    try {
-      const res = await fetch(`${API_URL}/api/equipos/metas`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          miembro_id: memberId,
-          tipo: draft.tipo,
-          objetivo: Number(draft.objetivo),
-          periodo,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.mensaje || 'No se pudo guardar la meta');
-      fetchMetricas();
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setGoalLoadingKey('');
-    }
-  };
 
   const handleExportCSV = async () => {
     try {
@@ -324,7 +268,7 @@ export default function Equipo() {
       {/* Team Info Card - NOW AT THE TOP */}
       <div className="max-w-7xl mx-auto space-y-6">
         {!loading && !error && equipo && (
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 premium-reflejo transition-all hover:shadow-md">
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-200 premium-reflejo transition-all hover:shadow-md">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-(--theme-500) to-(--theme-600) flex items-center justify-center shadow-lg shadow-(--theme-500)/20">
@@ -406,7 +350,7 @@ export default function Equipo() {
         {/* Member List Section */}
         {!loading && equipo && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-200 overflow-hidden">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">Miembros del Equipo</h2>
@@ -460,7 +404,7 @@ export default function Equipo() {
                   {miembrosFiltrados.map(m => (
                     <div 
                       key={m.id} 
-                      className={`group relative p-5 bg-white border border-gray-100 rounded-2xl transition-all hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 ${!m.activo ? 'grayscale opacity-70' : ''}`}
+                      className={`group relative p-5 bg-white border border-gray-200 rounded-2xl transition-all hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 ${!m.activo ? 'grayscale opacity-70' : ''}`}
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">
@@ -471,6 +415,16 @@ export default function Equipo() {
                             <div className="flex items-center gap-2">
                               <h3 className="font-bold text-gray-900 truncate max-w-[120px]">{m.nombre}</h3>
                               {String(m.id) === String(equipo.owner_id) && <Crown size={14} className="text-amber-500" />}
+                              {m.googleLinked && (
+                                <div title="Google Calendar Vinculado">
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                    <path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z" fill="#FBBC05"/>
+                                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+                                  </svg>
+                                </div>
+                              )}
                             </div>
                             <p className="text-xs text-gray-400 font-semibold">@{m.usuario}</p>
                           </div>
@@ -537,129 +491,7 @@ export default function Equipo() {
               )}
             </div>
 
-            {/* Performance/Metrics Section */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Rendimiento por Miembro</h2>
-                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest mt-1">Métricas y objetivos del período</p>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <input
-                    type="month"
-                    className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:bg-white focus:border-(--theme-500) transition-all"
-                    value={periodo}
-                    onChange={e => setPeriodo(e.target.value)}
-                  />
-                  <button 
-                    className="p-2.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 transition-all border border-gray-100"
-                    onClick={fetchMetricas}
-                  >
-                    <RefreshCw size={16} className={metricasLoading ? 'animate-spin' : ''} />
-                  </button>
-                </div>
-              </div>
 
-              {metricasLoading ? (
-                <div className="flex justify-center py-20">
-                  <Loader2 size={32} className="animate-spin text-(--theme-500)" />
-                </div>
-              ) : metricas.length === 0 ? (
-                <div className="text-center py-10 text-gray-400 font-semibold italic">No hay métricas disponibles para este período</div>
-              ) : (
-                <div className="space-y-4">
-                  {metricas.map(item => {
-                    const m = item.miembro;
-                    const currentDraft = goalDrafts[m.id] || { tipo: 'ventas_monto', objetivo: '' };
-                    return (
-                      <div key={m.id} className="p-6 bg-gray-50/50 rounded-2xl border border-gray-100 transition-all hover:bg-white hover:border-(--theme-100) hover:shadow-lg hover:shadow-(--theme-500)/5">
-                        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-center">
-                          <div className="xl:col-span-1">
-                            <h3 className="font-bold text-gray-900">{m.nombre}</h3>
-                            <p className="text-xs text-gray-400 font-semibold uppercase tracking-tighter">@{m.usuario}</p>
-                          </div>
-                          
-                          <div className="xl:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">Leads</p>
-                              <p className="text-xl font-bold text-gray-800">{item.leads}</p>
-                            </div>
-                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">Ventas #</p>
-                              <p className="text-xl font-bold text-gray-800">{item.ventasCantidad}</p>
-                            </div>
-                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">Ventas $</p>
-                              <p className="text-xl font-bold text-emerald-600">${item.ventasMonto.toLocaleString()}</p>
-                            </div>
-                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">Conv.</p>
-                              <p className="text-xl font-bold text-(--theme-600)">{item.conversion}%</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {item.goals.length > 0 && (
-                          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {item.goals.map(g => (
-                              <div key={g.id} className="space-y-2">
-                                <div className="flex justify-between items-end">
-                                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                                    {TIPOS_META.find(t => t.value === g.tipo)?.label || g.tipo}
-                                  </p>
-                                  <p className="text-xs font-bold text-gray-800">{g.actual} / {g.objetivo}</p>
-                                </div>
-                                <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                                  <div 
-                                    className={`h-full rounded-full transition-all duration-1000 ${g.progreso >= 100 ? 'bg-emerald-500' : 'bg-linear-to-r from-(--theme-500) to-(--theme-400)'}`}
-                                    style={{ width: `${Math.min(g.progreso, 100)}%` }}
-                                  />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {esOwner && (
-                          <div className="mt-6 pt-6 border-t border-gray-100 flex flex-wrap gap-3 items-end">
-                            <div className="flex-1 min-w-[150px]">
-                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Tipo de meta</p>
-                              <select
-                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 outline-none focus:border-(--theme-500) transition-all cursor-pointer"
-                                value={currentDraft.tipo}
-                                onChange={e => setGoalDrafts(prev => ({ ...prev, [m.id]: { ...currentDraft, tipo: e.target.value } }))}
-                              >
-                                {TIPOS_META.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                              </select>
-                            </div>
-                            <div className="flex-1 min-w-[120px]">
-                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Objetivo</p>
-                              <input
-                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-(--theme-500) transition-all"
-                                type="number"
-                                min="0"
-                                value={currentDraft.objetivo}
-                                onChange={e => setGoalDrafts(prev => ({ ...prev, [m.id]: { ...currentDraft, objetivo: e.target.value } }))}
-                                placeholder="0"
-                              />
-                            </div>
-                            <button 
-                              className="px-6 py-2.5 bg-(--theme-500) text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-(--theme-500)/20 hover:opacity-90 disabled:opacity-50 transition-all flex items-center gap-2 h-[42px]"
-                              onClick={() => handleSaveGoal(m.id)} 
-                              disabled={goalLoadingKey === `${m.id}:${currentDraft.tipo}`}
-                            >
-                              {goalLoadingKey === `${m.id}:${currentDraft.tipo}` ? <Loader2 size={14} className="animate-spin" /> : <Target size={14} />}
-                              GUARDAR META
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
           </div>
         )}
       </div>
