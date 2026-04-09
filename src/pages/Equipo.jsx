@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, UserPlus, Edit2, Power, Crown, Shield, X, Check, Loader2, RefreshCw, Trash2, Search, Download, BarChart3, Target, Save } from 'lucide-react';
+import { Users, UserPlus, Edit2, Power, Crown, Shield, X, Check, Loader2, RefreshCw, Trash2, Search, Download, BarChart3, Target, Save, AlertTriangle } from 'lucide-react';
 import { getUser, getToken } from '../utils/authUtils';
 import API_URL from '../config/api';
 
@@ -320,404 +320,530 @@ export default function Equipo() {
   });
 
   return (
-    <div className="ge-root">
-      <style>{`
-        .ge-root {
-          font-family: 'Inter', -apple-system, sans-serif;
-          min-height: 100vh;
-          background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
-          padding: 2rem;
-          color: #0f172a;
-        }
-        .ge-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
-        .ge-header-icon { width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, var(--theme-500, #6366f1), var(--theme-600, #4f46e5)); display: flex; align-items: center; justify-center: center; align-items: center; justify-content: center; box-shadow: 0 8px 24px -4px rgba(99,102,241,.35); }
-        .ge-title { font-size: 1.75rem; font-weight: 900; letter-spacing: -0.04em; color: #0f172a; }
-        .ge-subtitle { font-size: 0.75rem; color: #64748b; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
-        .ge-card { background: white; border-radius: 20px; box-shadow: 0 4px 24px -4px rgba(0,0,0,.08); padding: 1.75rem; border: 1px solid #f1f5f9; margin-bottom: 1.5rem; }
-        .ge-equipo-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-        .ge-equipo-name { font-size: 1.4rem; font-weight: 900; letter-spacing: -0.03em; color: #0f172a; }
-        .ge-crown { color: #f59e0b; }
-        .ge-input { width: 100%; padding: 0.65rem 1rem; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.9rem; font-weight: 600; outline: none; transition: border-color 0.2s; background: #f8faff; color: #0f172a; }
-        .ge-input:focus { border-color: var(--theme-500, #6366f1); background: white; }
-        .ge-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; border-radius: 10px; font-weight: 800; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; border: none; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-        .ge-btn-primary { background: linear-gradient(135deg, var(--theme-500, #6366f1), var(--theme-600, #4f46e5)); color: white; box-shadow: 0 4px 12px -2px rgba(99,102,241,.4); }
-        .ge-btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
-        .ge-btn-ghost { background: #f1f5f9; color: #475569; }
-        .ge-btn-ghost:hover { background: #e2e8f0; }
-        .ge-btn-danger { background: #fef2f2; color: #ef4444; }
-        .ge-btn-danger:hover { background: #fee2e2; }
-        .ge-section-title { font-size: 0.7rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: #94a3b8; margin-bottom: 1rem; }
-        .ge-summary-box { background: #fafbff; border: 1.5px solid #eef2ff; border-radius: 16px; padding: 1rem; }
-        .ge-summary-label { font-size: 0.68rem; font-weight: 900; color: #64748b; letter-spacing: 0.08em; text-transform: uppercase; }
-        .ge-summary-value { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.04em; color: #0f172a; margin-top: 0.35rem; }
-        .ge-summary-hint { font-size: 0.76rem; color: #94a3b8; font-weight: 600; margin-top: 0.2rem; }
-        .ge-members-grid { display: grid; gap: 0.75rem; }
-        .ge-member-row { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; border-radius: 14px; border: 1.5px solid #f1f5f9; background: #fafbff; transition: all 0.2s; }
-        .ge-member-row:hover { border-color: #e0e7ff; background: white; box-shadow: 0 2px 12px -2px rgba(0,0,0,.06); }
-        .ge-avatar { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, var(--theme-500, #6366f1), var(--theme-600, #4f46e5)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 1rem; flex-shrink: 0; }
-        .ge-member-info { flex: 1; min-width: 0; }
-        .ge-member-name { font-weight: 800; font-size: 0.95rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ge-member-usuario { font-size: 0.7rem; color: #94a3b8; font-weight: 600; }
-        .ge-badge { font-size: 0.65rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.25rem 0.65rem; border-radius: 20px; }
-        .ge-inactive { opacity: 0.45; }
-        .ge-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); backdrop-filter: blur(6px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-        .ge-modal { background: white; border-radius: 24px; padding: 2rem; width: 100%; max-width: 480px; box-shadow: 0 32px 64px -16px rgba(0,0,0,.2); }
-        .ge-modal-title { font-size: 1.3rem; font-weight: 900; letter-spacing: -0.03em; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; }
-        .ge-form-row { margin-bottom: 1rem; }
-        .ge-form-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; margin-bottom: 0.4rem; display: block; }
-        .ge-select { appearance: none; width: 100%; padding: 0.65rem 1rem; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.9rem; font-weight: 700; outline: none; background: #f8faff; color: #0f172a; cursor: pointer; }
-        .ge-select:focus { border-color: var(--theme-500, #6366f1); }
-        .ge-error { background: #fef2f2; color: #ef4444; border-radius: 10px; padding: 0.75rem 1rem; font-size: 0.8rem; font-weight: 700; margin-bottom: 1rem; }
-        .ge-success { background: #f0fdf4; color: #16a34a; border-radius: 10px; padding: 0.75rem 1rem; font-size: 0.8rem; font-weight: 700; margin-bottom: 1rem; }
-        .ge-empty { text-align: center; padding: 3rem 1rem; color: #94a3b8; font-weight: 600; }
-        .ge-spin { animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
-
-      {/* Header */}
-      <div className="ge-header">
-        <div className="ge-header-icon">
-          <Users size={26} color="white" />
-        </div>
-        <div>
-          <div className="ge-title">Equipo y usuarios</div>
-          <div className="ge-subtitle">Gestión unificada de miembros, roles y configuración</div>
-        </div>
-        <div style={{ marginLeft: 'auto' }}>
-          <button className="ge-btn ge-btn-ghost" onClick={fetchEquipo} title="Actualizar">
-            <RefreshCw size={15} />
-          </button>
-        </div>
-      </div>
-
-      {loading && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
-          <Loader2 size={36} style={{ color: 'var(--theme-500, #6366f1)' }} className="ge-spin" />
-        </div>
-      )}
-
-      {error && !loading && (
-        <div className="ge-error" style={{ maxWidth: 480 }}>⚠️ {error}</div>
-      )}
-
-      {!loading && !error && equipo && (
-        <>
-          <div className="ge-card">
-            <div className="ge-section-title">Resumen rápido</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem' }}>
-              <div className="ge-summary-box">
-                <div className="ge-summary-label">Miembros</div>
-                <div className="ge-summary-value">{resumen.total}</div>
-                <div className="ge-summary-hint">Usuarios dentro del equipo</div>
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+      {/* Team Info Card - NOW AT THE TOP */}
+      <div className="max-w-7xl mx-auto space-y-6">
+        {!loading && !error && equipo && (
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 premium-reflejo transition-all hover:shadow-md">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-(--theme-500) to-(--theme-600) flex items-center justify-center shadow-lg shadow-(--theme-500)/20">
+                  <Crown size={28} className="text-white" />
+                </div>
+                <div>
+                  {renameMode ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2 font-semibold text-gray-800 outline-none focus:border-(--theme-500) transition-all"
+                        value={nuevoNombre}
+                        onChange={e => setNuevoNombre(e.target.value)}
+                        autoFocus
+                      />
+                      <button className="p-2 bg-(--theme-500) text-white rounded-xl hover:opacity-90 transition-all" onClick={handleRename} disabled={renameLoading}>
+                        {renameLoading ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+                      </button>
+                      <button className="p-2 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 transition-all" onClick={() => setRenameMode(false)}>
+                        <X size={18} />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <h1 className="text-2xl font-bold tracking-tight text-gray-900">{equipo.nombre}</h1>
+                        {esOwner && (
+                          <button 
+                            className="p-1.5 text-gray-400 hover:text-(--theme-600) hover:bg-(--theme-50) rounded-lg transition-all"
+                            onClick={() => setRenameMode(true)}
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mt-1">
+                        {esOwner ? 'Propietario del Equipo' : 'Miembro del Equipo'}
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="ge-summary-box">
-                <div className="ge-summary-label">Activos</div>
-                <div className="ge-summary-value">{resumen.activos}</div>
-                <div className="ge-summary-hint">Disponibles para operar</div>
-              </div>
-              <div className="ge-summary-box">
-                <div className="ge-summary-label">Inactivos</div>
-                <div className="ge-summary-value">{resumen.inactivos}</div>
-                <div className="ge-summary-hint">Pendientes de reactivar</div>
+
+              <div className="flex items-center gap-3">
+                <button 
+                  className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm"
+                  onClick={fetchEquipo}
+                >
+                  <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                  ACTUALIZAR
+                </button>
+                {esOwner && (
+                  <button 
+                    className="flex items-center gap-2 px-4 py-2.5 bg-linear-to-r from-(--theme-600) to-(--theme-500) text-white rounded-xl text-xs font-bold shadow-lg shadow-(--theme-600)/20 hover:-translate-y-0.5 transition-all"
+                    onClick={() => setShowAddModal(true)}
+                  >
+                    <UserPlus size={14} />
+                    AGREGAR MIEMBRO
+                  </button>
+                )}
               </div>
             </div>
           </div>
+        )}
 
-          {/* Info del Equipo */}
-          <div className="ge-card">
-            <div className="ge-section-title">Información del Equipo</div>
-            <div className="ge-equipo-row">
-              {renameMode ? (
-                <>
-                  <input
-                    className="ge-input"
-                    value={nuevoNombre}
-                    onChange={e => setNuevoNombre(e.target.value)}
-                    style={{ maxWidth: 300 }}
-                    autoFocus
-                  />
-                  <button className="ge-btn ge-btn-primary" onClick={handleRename} disabled={renameLoading}>
-                    {renameLoading ? <Loader2 size={14} className="ge-spin" /> : <Check size={14} />} Guardar
+        {loading && !equipo && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 size={48} className="animate-spin text-(--theme-500) mb-4" />
+            <p className="text-gray-500 font-semibold uppercase tracking-widest text-xs">Cargando datos del equipo...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl flex items-center gap-3 text-rose-600 font-semibold">
+            <AlertTriangle size={20} />
+            {error}
+          </div>
+        )}
+
+        {/* Member List Section */}
+        {!loading && equipo && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 overflow-hidden">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Miembros del Equipo</h2>
+                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest mt-1">Gestión de acceso y roles</p>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  <div className="relative group">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-(--theme-500) transition-colors" size={16} />
+                    <input
+                      className="pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium w-full md:w-64 outline-none focus:bg-white focus:border-(--theme-500) focus:ring-4 focus:ring-(--theme-500)/10 transition-all"
+                      value={draftFilters.busqueda}
+                      onChange={e => setDraftFilters(prev => ({ ...prev, busqueda: e.target.value }))}
+                      placeholder="Buscar por nombre, usuario..."
+                    />
+                  </div>
+                  <select 
+                    className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:bg-white focus:border-(--theme-500) transition-all cursor-pointer"
+                    value={draftFilters.estado} 
+                    onChange={e => setDraftFilters(prev => ({ ...prev, estado: e.target.value }))}
+                  >
+                    <option value="todos">Todos los estados</option>
+                    <option value="activo">Activos</option>
+                    <option value="inactivo">Inactivos</option>
+                  </select>
+                  <button 
+                    className="px-6 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-bold shadow-sm hover:bg-black transition-all"
+                    onClick={applyFilters}
+                  >
+                    FILTRAR
                   </button>
-                  <button className="ge-btn ge-btn-ghost" onClick={() => setRenameMode(false)}>
-                    <X size={14} /> Cancelar
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Crown size={22} className="ge-crown" />
-                  <span className="ge-equipo-name">{equipo.nombre}</span>
                   {esOwner && (
-                    <button className="ge-btn ge-btn-ghost" onClick={() => setRenameMode(true)}>
-                      <Edit2 size={14} /> Renombrar
+                    <button 
+                      className="p-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all"
+                      onClick={handleExportCSV}
+                      title="Exportar a CSV"
+                    >
+                      <Download size={18} />
                     </button>
                   )}
-                </>
-              )}
-            </div>
-            <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>
-              {esOwner ? (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Crown size={12} style={{ color: '#f59e0b' }} /> Eres el propietario de este equipo
-                </span>
+                </div>
+              </div>
+
+              {miembrosFiltrados.length === 0 ? (
+                <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                  <Users size={48} className="mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500 font-semibold">No se encontraron miembros</p>
+                </div>
               ) : (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Shield size={12} /> Eres miembro de este equipo
-                </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {miembrosFiltrados.map(m => (
+                    <div 
+                      key={m.id} 
+                      className={`group relative p-5 bg-white border border-gray-100 rounded-2xl transition-all hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 ${!m.activo ? 'grayscale opacity-70' : ''}`}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl bg-linear-to-br from-(--theme-50) to-(--theme-100) text-(--theme-600) flex items-center justify-center font-bold text-lg border border-(--theme-100)">
+                            {m.nombre?.charAt(0)?.toUpperCase() || '?'}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-bold text-gray-900 truncate max-w-[120px]">{m.nombre}</h3>
+                              {String(m.id) === String(equipo.owner_id) && <Crown size={14} className="text-amber-500" />}
+                            </div>
+                            <p className="text-xs text-gray-400 font-semibold">@{m.usuario}</p>
+                          </div>
+                        </div>
+                        <div className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-tighter ${m.activo ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
+                          {m.activo ? 'ACTIVO' : 'INACTIVO'}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 mb-6 text-xs text-gray-500 font-semibold">
+                        <div className="flex items-center gap-2">
+                          <Shield size={12} className="text-gray-400" />
+                          <span className="uppercase tracking-widest">{ROL_UNICO.label}</span>
+                        </div>
+                        <div className="flex items-center gap-2 truncate">
+                          <Search size={12} className="text-gray-400" />
+                          <span className="truncate">{m.email || 'Sin correo registrado'}</span>
+                        </div>
+                      </div>
+
+                      {esOwner && String(m.id) !== String(userAuth?.id) && (
+                        <div className="flex items-center gap-2 pt-4 border-t border-gray-50">
+                          <button 
+                            className="flex-1 py-2 bg-gray-50 text-gray-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-gray-100 transition-all flex items-center justify-center gap-1"
+                            onClick={() => openEditModal(m)}
+                          >
+                            <Edit2 size={12} /> EDITAR
+                          </button>
+                          {m.activo ? (
+                            <button 
+                              className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                              onClick={() => handleToggleMember(m)}
+                              title="Desactivar"
+                            >
+                              <Power size={14} />
+                            </button>
+                          ) : (
+                            <button 
+                              className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all"
+                              onClick={() => handleReactivateMember(m)}
+                              title="Reactivar"
+                            >
+                              <Check size={14} />
+                            </button>
+                          )}
+                          <button 
+                            className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                            onClick={() => handleDeleteMember(m)}
+                            title="Eliminar"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                      
+                      {String(m.id) === String(userAuth?.id) && (
+                        <div className="pt-4 border-t border-gray-50 text-center">
+                          <span className="text-[10px] font-bold text-(--theme-600) bg-(--theme-50) px-3 py-1 rounded-full border border-(--theme-100)">ESTE ERES TÚ</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Performance/Metrics Section */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Rendimiento por Miembro</h2>
+                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest mt-1">Métricas y objetivos del período</p>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <input
+                    type="month"
+                    className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:bg-white focus:border-(--theme-500) transition-all"
+                    value={periodo}
+                    onChange={e => setPeriodo(e.target.value)}
+                  />
+                  <button 
+                    className="p-2.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 transition-all border border-gray-100"
+                    onClick={fetchMetricas}
+                  >
+                    <RefreshCw size={16} className={metricasLoading ? 'animate-spin' : ''} />
+                  </button>
+                </div>
+              </div>
+
+              {metricasLoading ? (
+                <div className="flex justify-center py-20">
+                  <Loader2 size={32} className="animate-spin text-(--theme-500)" />
+                </div>
+              ) : metricas.length === 0 ? (
+                <div className="text-center py-10 text-gray-400 font-semibold italic">No hay métricas disponibles para este período</div>
+              ) : (
+                <div className="space-y-4">
+                  {metricas.map(item => {
+                    const m = item.miembro;
+                    const currentDraft = goalDrafts[m.id] || { tipo: 'ventas_monto', objetivo: '' };
+                    return (
+                      <div key={m.id} className="p-6 bg-gray-50/50 rounded-2xl border border-gray-100 transition-all hover:bg-white hover:border-(--theme-100) hover:shadow-lg hover:shadow-(--theme-500)/5">
+                        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-center">
+                          <div className="xl:col-span-1">
+                            <h3 className="font-bold text-gray-900">{m.nombre}</h3>
+                            <p className="text-xs text-gray-400 font-semibold uppercase tracking-tighter">@{m.usuario}</p>
+                          </div>
+                          
+                          <div className="xl:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">Leads</p>
+                              <p className="text-xl font-bold text-gray-800">{item.leads}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">Ventas #</p>
+                              <p className="text-xl font-bold text-gray-800">{item.ventasCantidad}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">Ventas $</p>
+                              <p className="text-xl font-bold text-emerald-600">${item.ventasMonto.toLocaleString()}</p>
+                            </div>
+                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">Conv.</p>
+                              <p className="text-xl font-bold text-(--theme-600)">{item.conversion}%</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {item.goals.length > 0 && (
+                          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {item.goals.map(g => (
+                              <div key={g.id} className="space-y-2">
+                                <div className="flex justify-between items-end">
+                                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                                    {TIPOS_META.find(t => t.value === g.tipo)?.label || g.tipo}
+                                  </p>
+                                  <p className="text-xs font-bold text-gray-800">{g.actual} / {g.objetivo}</p>
+                                </div>
+                                <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full rounded-full transition-all duration-1000 ${g.progreso >= 100 ? 'bg-emerald-500' : 'bg-linear-to-r from-(--theme-500) to-(--theme-400)'}`}
+                                    style={{ width: `${Math.min(g.progreso, 100)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {esOwner && (
+                          <div className="mt-6 pt-6 border-t border-gray-100 flex flex-wrap gap-3 items-end">
+                            <div className="flex-1 min-w-[150px]">
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Tipo de meta</p>
+                              <select
+                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 outline-none focus:border-(--theme-500) transition-all cursor-pointer"
+                                value={currentDraft.tipo}
+                                onChange={e => setGoalDrafts(prev => ({ ...prev, [m.id]: { ...currentDraft, tipo: e.target.value } }))}
+                              >
+                                {TIPOS_META.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                              </select>
+                            </div>
+                            <div className="flex-1 min-w-[120px]">
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Objetivo</p>
+                              <input
+                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-800 outline-none focus:border-(--theme-500) transition-all"
+                                type="number"
+                                min="0"
+                                value={currentDraft.objetivo}
+                                onChange={e => setGoalDrafts(prev => ({ ...prev, [m.id]: { ...currentDraft, objetivo: e.target.value } }))}
+                                placeholder="0"
+                              />
+                            </div>
+                            <button 
+                              className="px-6 py-2.5 bg-(--theme-500) text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-(--theme-500)/20 hover:opacity-90 disabled:opacity-50 transition-all flex items-center gap-2 h-[42px]"
+                              onClick={() => handleSaveGoal(m.id)} 
+                              disabled={goalLoadingKey === `${m.id}:${currentDraft.tipo}`}
+                            >
+                              {goalLoadingKey === `${m.id}:${currentDraft.tipo}` ? <Loader2 size={14} className="animate-spin" /> : <Target size={14} />}
+                              GUARDAR META
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
-
-          {/* Lista de Miembros */}
-          <div className="ge-card">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <div className="ge-section-title" style={{ marginBottom: 0 }}>
-                Miembros ({miembrosFiltrados.length})
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                {esOwner && (
-                  <button className="ge-btn ge-btn-primary" onClick={() => setShowAddModal(true)}>
-                    <UserPlus size={15} /> Agregar Miembro
-                  </button>
-                )}
-                {esOwner && (
-                  <button className="ge-btn ge-btn-ghost" onClick={handleExportCSV}>
-                    <Download size={15} /> Exportar CSV
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '0.75rem', marginBottom: '1rem' }}>
-              <input
-                className="ge-input"
-                value={draftFilters.busqueda}
-                onChange={e => setDraftFilters(prev => ({ ...prev, busqueda: e.target.value }))}
-                placeholder="Buscar por nombre, usuario o correo"
-              />
-              <select className="ge-select" value={draftFilters.estado} onChange={e => setDraftFilters(prev => ({ ...prev, estado: e.target.value }))}>
-                <option value="todos">Todos</option>
-                <option value="activo">Activos</option>
-                <option value="inactivo">Inactivos</option>
-              </select>
-              <button className="ge-btn ge-btn-ghost" onClick={applyFilters}>
-                <Search size={15} /> Aplicar
-              </button>
-            </div>
-
-            {miembrosFiltrados.length === 0 ? (
-              <div className="ge-empty">
-                <Users size={40} style={{ marginBottom: 8, opacity: 0.3 }} />
-                <div>No hay miembros que coincidan con el filtro</div>
-              </div>
-            ) : (
-              <div className="ge-members-grid">
-                {miembrosFiltrados.map(m => (
-                  <div key={m.id} className={`ge-member-row${!m.activo ? ' ge-inactive' : ''}`}>
-                    <div className="ge-avatar">
-                      {m.nombre?.charAt(0)?.toUpperCase() || '?'}
-                    </div>
-                    <div className="ge-member-info">
-                      <div className="ge-member-name">
-                        {m.nombre}
-                        {String(m.id) === String(equipo.owner_id) && (
-                          <Crown size={13} style={{ color: '#f59e0b', marginLeft: 6, display: 'inline' }} />
-                        )}
-                        {String(m.id) === String(userAuth?.id) && (
-                          <span style={{ fontSize: '0.65rem', color: '#94a3b8', marginLeft: 8, fontWeight: 700 }}>(Tú)</span>
-                        )}
-                      </div>
-                      <div className="ge-member-usuario">@{m.usuario} · {m.email || 'sin correo'}</div>
-                    </div>
-                    {getRolBadge(m.rol)}
-                    {!m.activo && (
-                      <span className="ge-badge" style={{ color: '#ef4444', background: '#fef2f2' }}>Inactivo</span>
-                    )}
-                    {esOwner && String(m.id) !== String(userAuth?.id) && String(m.id) !== String(equipo.owner_id) && (
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button
-                          className="ge-btn ge-btn-ghost"
-                          onClick={() => openEditModal(m)}
-                          title="Editar miembro"
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        {m.activo && (
-                          <button
-                            className="ge-btn ge-btn-danger"
-                            onClick={() => handleToggleMember(m)}
-                            title="Desactivar miembro"
-                          >
-                            <Power size={14} />
-                          </button>
-                        )}
-                        {!m.activo && (
-                          <button
-                            className="ge-btn ge-btn-primary"
-                            onClick={() => handleReactivateMember(m)}
-                            title="Reactivar miembro"
-                          >
-                            <Check size={14} />
-                          </button>
-                        )}
-                        <button
-                          className="ge-btn ge-btn-danger"
-                          onClick={() => handleDeleteMember(m)}
-                          title="Eliminar miembro del equipo"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="ge-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <div className="ge-section-title" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <BarChart3 size={14} /> Métricas por miembro
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <input
-                  type="month"
-                  className="ge-input"
-                  value={periodo}
-                  onChange={e => setPeriodo(e.target.value)}
-                  style={{ width: 170 }}
-                />
-                <button className="ge-btn ge-btn-ghost" onClick={fetchMetricas}>
-                  <RefreshCw size={14} /> Recargar
-                </button>
-              </div>
-            </div>
-
-            {metricasLoading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '1.25rem' }}>
-                <Loader2 size={24} className="ge-spin" />
-              </div>
-            ) : metricas.length === 0 ? (
-              <div className="ge-empty" style={{ padding: '1.5rem 1rem' }}>No hay métricas disponibles para este período</div>
-            ) : (
-              <div style={{ display: 'grid', gap: '0.75rem' }}>
-                {metricas.map(item => {
-                  const m = item.miembro;
-                  const currentDraft = goalDrafts[m.id] || { tipo: 'ventas_monto', objetivo: '' };
-                  return (
-                    <div key={m.id} className={`ge-member-row${!m.activo ? ' ge-inactive' : ''}`} style={{ alignItems: 'flex-start', flexDirection: 'column' }}>
-                      <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1.4fr repeat(4, 1fr)', gap: '0.75rem' }}>
-                        <div>
-                          <div className="ge-member-name">{m.nombre}</div>
-                          <div className="ge-member-usuario">@{m.usuario}</div>
-                        </div>
-                        <div>
-                          <div className="ge-summary-label">Leads</div>
-                          <div style={{ fontWeight: 800 }}>{item.leads}</div>
-                        </div>
-                        <div>
-                          <div className="ge-summary-label">Ventas #</div>
-                          <div style={{ fontWeight: 800 }}>{item.ventasCantidad}</div>
-                        </div>
-                        <div>
-                          <div className="ge-summary-label">Ventas $</div>
-                          <div style={{ fontWeight: 800 }}>${item.ventasMonto.toLocaleString()}</div>
-                        </div>
-                        <div>
-                          <div className="ge-summary-label">Conversión</div>
-                          <div style={{ fontWeight: 800 }}>{item.conversion}%</div>
-                        </div>
-                      </div>
-
-                      {item.goals.length > 0 && (
-                        <div style={{ width: '100%', marginTop: '0.75rem', display: 'grid', gap: '0.35rem' }}>
-                          {item.goals.map(g => (
-                            <div key={g.id} style={{ fontSize: '0.76rem', color: '#475569', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                              <span>{TIPOS_META.find(t => t.value === g.tipo)?.label || g.tipo}: {g.actual}/{g.objetivo}</span>
-                              <span style={{ fontWeight: 700 }}>{g.progreso}%</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {esOwner && (
-                        <div style={{ width: '100%', marginTop: '0.75rem', display: 'grid', gridTemplateColumns: '1.2fr 1fr auto', gap: '0.5rem' }}>
-                          <select
-                            className="ge-select"
-                            value={currentDraft.tipo}
-                            onChange={e => setGoalDrafts(prev => ({ ...prev, [m.id]: { ...currentDraft, tipo: e.target.value } }))}
-                          >
-                            {TIPOS_META.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                          </select>
-                          <input
-                            className="ge-input"
-                            type="number"
-                            min="0"
-                            value={currentDraft.objetivo}
-                            onChange={e => setGoalDrafts(prev => ({ ...prev, [m.id]: { ...currentDraft, objetivo: e.target.value } }))}
-                            placeholder="Objetivo"
-                          />
-                          <button className="ge-btn ge-btn-primary" onClick={() => handleSaveGoal(m.id)} disabled={goalLoadingKey === `${m.id}:${currentDraft.tipo}`}>
-                            {goalLoadingKey === `${m.id}:${currentDraft.tipo}` ? <Loader2 size={14} className="ge-spin" /> : <Save size={14} />} Guardar meta
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </>
-      )}
+        )}
+      </div>
 
       {/* Modal Agregar Miembro */}
       {showAddModal && (
-        <div className="ge-modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddModal(false)}>
-          <div className="ge-modal">
-            <div className="ge-modal-title">
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, var(--theme-500, #6366f1), var(--theme-600, #4f46e5))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <UserPlus size={20} color="white" />
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[32px] p-8 w-full max-w-xl shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner">
+                  <UserPlus size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 leading-none">Nuevo Miembro</h3>
+                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest mt-1">Integrar al equipo</p>
+                </div>
               </div>
-              Agregar Miembro
+              <button 
+                className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-all"
+                onClick={() => { setShowAddModal(false); setFormError(''); setForm(initialForm); }}
+              >
+                <X size={24} />
+              </button>
             </div>
 
-            {formError && <div className="ge-error">{formError}</div>}
-            {formSuccess && <div className="ge-success">{formSuccess}</div>}
+            {formError && (
+              <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-3 text-rose-600 font-semibold text-sm">
+                <AlertTriangle size={18} /> {formError}
+              </div>
+            )}
+            {formSuccess && (
+              <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3 text-emerald-600 font-semibold text-sm italic">
+                {formSuccess}
+              </div>
+            )}
 
-            <form onSubmit={handleAddMember}>
-              <div className="ge-form-row">
-                <label className="ge-form-label">Nombre completo *</label>
-                <input className="ge-input" value={form.nombre} onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} required placeholder="Ej: Ana García" />
+            <form onSubmit={handleAddMember} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Nombre Completo *</label>
+                <input 
+                  className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 focus:shadow-lg focus:shadow-indigo-500/10 transition-all" 
+                  value={form.nombre} 
+                  onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} 
+                  required 
+                  placeholder="Ej: Ana María García" 
+                />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="ge-form-row">
-                  <label className="ge-form-label">Usuario *</label>
-                  <input className="ge-input" value={form.usuario} onChange={e => setForm(p => ({ ...p, usuario: e.target.value }))} required placeholder="anagarcia" />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Usuario *</label>
+                  <input 
+                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all font-mono" 
+                    value={form.usuario} 
+                    onChange={e => setForm(p => ({ ...p, usuario: e.target.value }))} 
+                    required 
+                    placeholder="amgarcia" 
+                  />
                 </div>
-                <div className="ge-form-row">
-                  <label className="ge-form-label">Contraseña *</label>
-                  <input className="ge-input" type="password" value={form.contraseña} onChange={e => setForm(p => ({ ...p, contraseña: e.target.value }))} required placeholder="••••••••" />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Contraseña *</label>
+                  <input 
+                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all" 
+                    type="password" 
+                    value={form.contraseña} 
+                    onChange={e => setForm(p => ({ ...p, contraseña: e.target.value }))} 
+                    required 
+                    placeholder="••••••••" 
+                  />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="ge-form-row">
-                  <label className="ge-form-label">Correo</label>
-                  <input className="ge-input" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="ana@empresa.com" />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Correo Electrónico</label>
+                  <input 
+                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all" 
+                    type="email" 
+                    value={form.email} 
+                    onChange={e => setForm(p => ({ ...p, email: e.target.value }))} 
+                    placeholder="ana@empresa.com" 
+                  />
                 </div>
-                <div className="ge-form-row">
-                  <label className="ge-form-label">Teléfono</label>
-                  <input className="ge-input" value={form.telefono} onChange={e => setForm(p => ({ ...p, telefono: e.target.value }))} placeholder="+52 55 1234 5678" />
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Teléfono</label>
+                  <input 
+                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all" 
+                    value={form.telefono} 
+                    onChange={e => setForm(p => ({ ...p, telefono: e.target.value }))} 
+                    placeholder="+52 55 ..." 
+                  />
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
-                <button type="submit" className="ge-btn ge-btn-primary" disabled={formLoading} style={{ flex: 1 }}>
-                  {formLoading ? <Loader2 size={15} className="ge-spin" /> : <UserPlus size={15} />}
-                  {formLoading ? 'Agregando...' : 'Agregar al Equipo'}
+
+              <div className="pt-6 flex gap-4">
+                <button 
+                  type="submit" 
+                  className="flex-1 py-4 bg-indigo-600 text-white rounded-[20px] text-xs font-bold uppercase tracking-widest shadow-xl shadow-indigo-600/30 hover:-translate-y-1 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  disabled={formLoading}
+                >
+                  {formLoading ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
+                  {formLoading ? 'PROCESANDO...' : 'DAR DE ALTA EN EQUIPO'}
                 </button>
-                <button type="button" className="ge-btn ge-btn-ghost" onClick={() => { setShowAddModal(false); setFormError(''); setForm(initialForm); }}>
-                  <X size={15} /> Cancelar
+                <button 
+                  type="button" 
+                  className="px-8 py-4 bg-gray-100 text-gray-500 rounded-[20px] text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition-all"
+                  onClick={() => { setShowAddModal(false); setFormError(''); setForm(initialForm); }}
+                >
+                  CANCELAR
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal (Reusing add modal styles) */}
+      {editMember && (
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[32px] p-8 w-full max-w-xl shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shadow-inner">
+                  <Edit2 size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 leading-none">Editar Perfil</h3>
+                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest mt-1">{editMember.nombre}</p>
+                </div>
+              </div>
+              <button 
+                className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-all"
+                onClick={() => setEditMember(null)}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditMember} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Nombre Completo *</label>
+                <input 
+                  className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-amber-500 transition-all" 
+                  value={editForm.nombre} 
+                  onChange={e => setEditForm(p => ({ ...p, nombre: e.target.value }))} 
+                  required 
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Correo Electrónico</label>
+                  <input 
+                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-amber-500 transition-all" 
+                    type="email" 
+                    value={editForm.email} 
+                    onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Teléfono</label>
+                  <input 
+                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-amber-500 transition-all" 
+                    value={editForm.telefono} 
+                    onChange={e => setEditForm(p => ({ ...p, telefono: e.target.value }))} 
+                  />
+                </div>
+              </div>
+
+              <div className="pt-6 flex gap-4">
+                <button 
+                  type="submit" 
+                  className="flex-1 py-4 bg-amber-500 text-white rounded-[20px] text-xs font-bold uppercase tracking-widest shadow-xl shadow-amber-500/30 hover:-translate-y-1 transition-all disabled:opacity-50"
+                  disabled={editLoading}
+                >
+                  {editLoading ? 'GUARDANDO...' : 'ACTUALIZAR DATOS'}
+                </button>
+                <button 
+                  type="button" 
+                  className="px-8 py-4 bg-gray-100 text-gray-500 rounded-[20px] text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition-all"
+                  onClick={() => setEditMember(null)}
+                >
+                  CANCELAR
                 </button>
               </div>
             </form>
