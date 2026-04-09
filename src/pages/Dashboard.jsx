@@ -33,6 +33,82 @@ const INITIAL_CLOSER_DATA = {
     analisisPerdidas: { no_asistio: 0, no_interesado: 0 }
 };
 
+const GOAL_LABELS = {
+    ventas_monto: 'Meta ventas $',
+    ventas_cantidad: 'Meta ventas #',
+    clientes: 'Meta clientes',
+    actividades: 'Meta actividades'
+};
+
+const toNumber = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const clampPercent = (value) => Math.max(0, Math.min(100, toNumber(value)));
+const formatPercent = (value) => `${clampPercent(value).toFixed(1)}%`;
+
+const sanitizeVendedorData = (rawData) => {
+    const getNumero = (val) => {
+        const num = parseFloat(val);
+        return Number.isFinite(num) ? num : 0;
+    };
+
+    const fallbackDia = {
+        llamadas: getNumero(rawData?.metricas?.llamadas?.hoy),
+        mensajes: getNumero(rawData?.metricas?.correosEnviados),
+        prospectos: getNumero(rawData?.metricas?.prospectosHoy),
+        reuniones: getNumero(rawData?.metricas?.reunionesAgendadas?.hoy)
+    };
+
+    const fallbackTotal = {
+        llamadas: getNumero(rawData?.metricas?.llamadas?.totales),
+        mensajes: 0,
+        prospectos: getNumero(rawData?.embudo?.total),
+        reuniones: getNumero(rawData?.metricas?.reunionesAgendadas?.totales)
+    };
+
+    return {
+        embudo: {
+            total: getNumero(rawData?.embudo?.total),
+            prospecto_nuevo: getNumero(rawData?.embudo?.prospecto_nuevo),
+            en_contacto: getNumero(rawData?.embudo?.en_contacto),
+            reunion_agendada: getNumero(rawData?.embudo?.reunion_agendada),
+            transferidos: getNumero(rawData?.embudo?.transferidos)
+        },
+        tasasConversion: {
+            contacto: getNumero(rawData?.tasasConversion?.contacto),
+            agendamiento: getNumero(rawData?.tasasConversion?.agendamiento)
+        },
+        periodos: {
+            dia: {
+                llamadas: getNumero(rawData?.periodos?.dia?.llamadas ?? fallbackDia.llamadas),
+                mensajes: getNumero(rawData?.periodos?.dia?.mensajes ?? fallbackDia.mensajes),
+                prospectos: getNumero(rawData?.periodos?.dia?.prospectos ?? fallbackDia.prospectos),
+                reuniones: getNumero(rawData?.periodos?.dia?.reuniones ?? fallbackDia.reuniones)
+            },
+            semana: {
+                llamadas: getNumero(rawData?.periodos?.semana?.llamadas),
+                mensajes: getNumero(rawData?.periodos?.semana?.mensajes),
+                prospectos: getNumero(rawData?.periodos?.semana?.prospectos),
+                reuniones: getNumero(rawData?.periodos?.semana?.reuniones)
+            },
+            mes: {
+                llamadas: getNumero(rawData?.periodos?.mes?.llamadas),
+                mensajes: getNumero(rawData?.periodos?.mes?.mensajes),
+                prospectos: getNumero(rawData?.periodos?.mes?.prospectos),
+                reuniones: getNumero(rawData?.periodos?.mes?.reuniones)
+            },
+            total: {
+                llamadas: getNumero(rawData?.periodos?.total?.llamadas ?? fallbackTotal.llamadas),
+                mensajes: getNumero(rawData?.periodos?.total?.mensajes ?? fallbackTotal.mensajes),
+                prospectos: getNumero(rawData?.periodos?.total?.prospectos ?? fallbackTotal.prospectos),
+                reuniones: getNumero(rawData?.periodos?.total?.reuniones ?? fallbackTotal.reuniones)
+            }
+        }
+    };
+};
+
 import { getToken } from '../utils/authUtils';
 
 const getAuthHeaders = () => ({ 'x-auth-token': getToken() || '' });
@@ -46,6 +122,7 @@ const Dashboard = () => {
     const [loadingReuniones, setLoadingReuniones] = useState(true);
     const [periodo, setPeriodo] = useState('dia');
     const [healthTab, setHealthTab] = useState('resumen');
+    const [metasEquipo, setMetasEquipo] = useState([]);
     const navigate = useNavigate();
 
     const sanitizeCloserData = (rawData) => {
@@ -87,21 +164,48 @@ const Dashboard = () => {
         };
     };
 
+    const cargarMetasEquipo = async () => {
+        try {
+            const periodoMeta = new Date().toISOString().slice(0, 7);
+            const res = await axios.get(`${API_URL}/api/equipos/mi-equipo/metricas`, {
+                headers: getAuthHeaders(),
+                params: { periodo: periodoMeta }
+            });
+
+            const metricas = Array.isArray(res.data?.metricas) ? res.data.metricas : [];
+            const acumuladas = new Map();
+
+            for (const m of metricas) {
+                const goals = Array.isArray(m.goals) ? m.goals : [];
+                for (const g of goals) {
+                    const tipo = String(g.tipo || '');
+                    if (!tipo) continue;
+                    const curr = acumuladas.get(tipo) || { tipo, objetivo: 0, actual: 0 };
+                    curr.objetivo += toNumber(g.objetivo);
+                    curr.actual += toNumber(g.actual);
+                    acumuladas.set(tipo, curr);
+                }
+            }
+
+            const resumen = Array.from(acumuladas.values())
+                .map((g) => ({
+                    ...g,
+                    progreso: g.objetivo > 0 ? clampPercent((g.actual / g.objetivo) * 100) : 0
+                }))
+                .sort((a, b) => b.progreso - a.progreso);
+
+            setMetasEquipo(resumen);
+        } catch (error) {
+            setMetasEquipo([]);
+        }
+    };
+
     const cargarDatos = async (silent = false) => {
         if (!silent) setLoading(true);
         try {
             try {
                 const resP = await axios.get(`${API_URL}/api/vendedor/dashboard`, { headers: getAuthHeaders() });
-                let rawP = resP.data;
-                if (!rawP.periodos) {
-                    rawP.periodos = {
-                        dia: { llamadas: rawP.metricas?.llamadas?.hoy || 0, mensajes: rawP.metricas?.correosEnviados || 0, prospectos: rawP.metricas?.prospectosHoy || 0, reuniones: rawP.metricas?.reunionesAgendadas?.hoy || 0 },
-                        semana: { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: rawP.metricas?.reunionesAgendadas?.semana || 0 },
-                        mes: { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: 0 },
-                        total: { llamadas: rawP.metricas?.llamadas?.totales || 0, mensajes: 0, prospectos: rawP.embudo?.total || 0, reuniones: rawP.metricas?.reunionesAgendadas?.totales || 0 }
-                    };
-                }
-                setVendedorData(rawP);
+                setVendedorData(sanitizeVendedorData(resP.data));
             } catch (e) {
                 console.error('Error prospector data:', e);
                 setVendedorData(INITIAL_VENDEDOR_DATA);
@@ -257,15 +361,18 @@ const Dashboard = () => {
     useEffect(() => {
         cargarDatos();
         cargarListas();
+        cargarMetasEquipo();
 
         const interval = setInterval(() => {
             cargarDatos(true);
             cargarListas(true);
+            cargarMetasEquipo();
         }, 5 * 60 * 1000);
 
         const handleSocketUpdate = () => {
             cargarDatos(true);
             cargarListas(true);
+            cargarMetasEquipo();
         };
         socket.on('prospectos_actualizados', handleSocketUpdate);
 
@@ -296,10 +403,10 @@ const Dashboard = () => {
     const sinContactar = Math.max(0, totalEntrada - enContacto);
     const negociacion = (vendedorData.embudo.reunion_agendada || 0) + (closerData.embudo.reunion_realizada || 0) + (closerData.embudo.propuesta_enviada || 0);
     const ganadas = closerData.embudo.venta_ganada || 0;
-    const tasaGlobal = totalEntrada > 0 ? Math.round((ganadas / totalEntrada) * 100) : 0;
-    const tasaContacto = Number(vendedorData.tasasConversion.contacto || 0);
-    const tasaAgendamiento = enContacto > 0 ? Math.round((negociacion / enContacto) * 100) : 0;
-    const tasaCierre = negociacion > 0 ? Math.round((ganadas / negociacion) * 100) : 0;
+    const tasaGlobal = totalEntrada > 0 ? clampPercent((ganadas / totalEntrada) * 100) : 0;
+    const tasaContacto = clampPercent(vendedorData.tasasConversion.contacto || 0);
+    const tasaAgendamiento = enContacto > 0 ? clampPercent((negociacion / enContacto) * 100) : 0;
+    const tasaCierre = negociacion > 0 ? clampPercent((ganadas / negociacion) * 100) : 0;
     const etapasDebiles = [
         { etapa: 'Contacto Inicial → Llamadas', tasa: tasaContacto },
         { etapa: 'Llamadas → Citas', tasa: tasaAgendamiento },
@@ -310,7 +417,7 @@ const Dashboard = () => {
         { title: 'Prospectos activos', value: formatNumber.format(totalEntrada), icon: '👥', color: 'blue', subtext: `${mP.prospectos || 0} recibidos ${periodoSuffix}` },
         { title: 'En contacto', value: formatNumber.format(enContacto), icon: '📞', color: 'green', subtext: `${sinContactar} todavía sin tocar` },
         { title: 'En negociación', value: formatNumber.format(negociacion), icon: '🤝', color: 'purple', subtext: `${closerData.metricas.reuniones.realizadasHoy || 0} citas realizadas hoy` },
-        { title: 'Ventas ganadas', value: formatNumber.format(ganadas), icon: '🏆', color: 'yellow', subtext: `${tasaGlobal}% de conversión global` }
+        { title: 'Ventas ganadas', value: formatNumber.format(ganadas), icon: '🏆', color: 'yellow', subtext: `${formatPercent(tasaGlobal)} de conversión global` }
     ];
 
     const panelesActividad = [
@@ -356,8 +463,8 @@ const Dashboard = () => {
                                 labelContador: `recibidos ${periodoSuffix}`,
                                 cantidadExito: enContacto,
                                 cantidadPerdida: sinContactar,
-                                porcentajeExito: vendedorData.tasasConversion.contacto,
-                                porcentajePerdida: (100 - (vendedorData.tasasConversion.contacto || 0)).toFixed(1),
+                                porcentajeExito: formatPercent(tasaContacto),
+                                porcentajePerdida: formatPercent(100 - tasaContacto),
                                 labelExito: 'a contacto',
                                 labelPerdida: 'sin tocar'
                             },
@@ -369,8 +476,8 @@ const Dashboard = () => {
                                 labelContador: `esfuerzos ${periodoSuffix}`,
                                 cantidadExito: negociacion,
                                 cantidadPerdida: Math.max(0, enContacto - negociacion),
-                                porcentajeExito: enContacto > 0 ? Math.round((negociacion / enContacto) * 100) : 0,
-                                porcentajePerdida: enContacto > 0 ? (100 - Math.round((negociacion / enContacto) * 100)).toFixed(1) : 0,
+                                porcentajeExito: formatPercent(tasaAgendamiento),
+                                porcentajePerdida: formatPercent(100 - tasaAgendamiento),
                                 labelExito: 'a cita',
                                 labelPerdida: 'estancados'
                             },
@@ -382,7 +489,7 @@ const Dashboard = () => {
                                 labelContador: `citas ${periodoSuffix}`,
                                 cantidadExito: ganadas,
                                 cantidadPerdida: Math.max(0, negociacion - ganadas),
-                                porcentajeExito: negociacion > 0 ? Math.round((ganadas / negociacion) * 100) : 0,
+                                porcentajeExito: formatPercent(tasaCierre),
                                 labelExito: 'a venta',
                                 labelPerdida: 'pausados'
                             },
@@ -452,7 +559,7 @@ const Dashboard = () => {
                                                     <p className="text-xs text-gray-400 mt-1">Lo más importante del día y del mes en una sola vista.</p>
                                                 </div>
                                                 <span className="text-xs font-bold text-(--theme-600) bg-(--theme-50) px-3 py-1 rounded-full border border-(--theme-100)">
-                                                    {tasaGlobal}% cierre global
+                                                    {formatPercent(tasaGlobal)} cierre global
                                                 </span>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -475,28 +582,28 @@ const Dashboard = () => {
                                                 <div>
                                                     <div className="flex items-center justify-between text-xs font-bold text-gray-600 mb-1">
                                                         <span>Contacto</span>
-                                                        <span>{tasaContacto}%</span>
+                                                        <span>{formatPercent(tasaContacto)}</span>
                                                     </div>
                                                     <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                                                        <div className="h-full bg-(--theme-500)" style={{ width: `${Math.min(tasaContacto, 100)}%` }} />
+                                                        <div className="h-full bg-(--theme-500)" style={{ width: `${tasaContacto}%` }} />
                                                     </div>
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center justify-between text-xs font-bold text-gray-600 mb-1">
                                                         <span>Agendamiento</span>
-                                                        <span>{tasaAgendamiento}%</span>
+                                                        <span>{formatPercent(tasaAgendamiento)}</span>
                                                     </div>
                                                     <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                                                        <div className="h-full bg-slate-500" style={{ width: `${Math.min(tasaAgendamiento, 100)}%` }} />
+                                                        <div className="h-full bg-slate-500" style={{ width: `${tasaAgendamiento}%` }} />
                                                     </div>
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center justify-between text-xs font-bold text-gray-600 mb-1">
                                                         <span>Cierre</span>
-                                                        <span>{tasaCierre}%</span>
+                                                        <span>{formatPercent(tasaCierre)}</span>
                                                     </div>
                                                     <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                                                        <div className="h-full bg-green-500" style={{ width: `${Math.min(tasaCierre, 100)}%` }} />
+                                                        <div className="h-full bg-green-500" style={{ width: `${tasaCierre}%` }} />
                                                     </div>
                                                 </div>
                                             </div>
@@ -515,19 +622,51 @@ const Dashboard = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                         <div className="bg-white border border-gray-200 rounded-xl p-4">
                                             <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Contacto inicial</p>
-                                            <p className="text-3xl font-black text-gray-800 mt-2">{tasaContacto}%</p>
+                                            <p className="text-3xl font-black text-gray-800 mt-2">{formatPercent(tasaContacto)}</p>
                                             <p className="text-xs text-gray-400 mt-1">De prospectos activos a contacto real</p>
                                         </div>
                                         <div className="bg-white border border-gray-200 rounded-xl p-4">
                                             <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Agendamiento</p>
-                                            <p className="text-3xl font-black text-gray-800 mt-2">{tasaAgendamiento}%</p>
+                                            <p className="text-3xl font-black text-gray-800 mt-2">{formatPercent(tasaAgendamiento)}</p>
                                             <p className="text-xs text-gray-400 mt-1">De contacto a cita o negociación</p>
                                         </div>
                                         <div className="bg-white border border-gray-200 rounded-xl p-4">
                                             <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Cierre</p>
-                                            <p className="text-3xl font-black text-gray-800 mt-2">{tasaCierre}%</p>
+                                            <p className="text-3xl font-black text-gray-800 mt-2">{formatPercent(tasaCierre)}</p>
                                             <p className="text-xs text-gray-400 mt-1">De negociación a venta ganada</p>
                                         </div>
+                                    </div>
+
+                                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-700">Metas del equipo (mes actual)</h3>
+                                            <span className="text-[11px] font-bold text-(--theme-700) bg-(--theme-50) border border-(--theme-100) rounded-full px-2.5 py-1">
+                                                {new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}
+                                            </span>
+                                        </div>
+
+                                        {metasEquipo.length === 0 ? (
+                                            <p className="text-sm text-gray-400 text-center py-6">Aún no hay metas guardadas en Equipos.</p>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {metasEquipo.map((meta) => (
+                                                    <div key={meta.tipo} className="bg-white border border-gray-200 rounded-lg p-3">
+                                                        <div className="flex items-center justify-between gap-3 mb-2">
+                                                            <p className="text-sm font-bold text-gray-800">{GOAL_LABELS[meta.tipo] || meta.tipo}</p>
+                                                            <p className="text-xs font-bold text-gray-600">{formatPercent(meta.progreso)}</p>
+                                                        </div>
+                                                        <div className="h-2 rounded-full bg-gray-200 overflow-hidden mb-2">
+                                                            <div className="h-full bg-(--theme-500)" style={{ width: `${meta.progreso}%` }} />
+                                                        </div>
+                                                        <p className="text-xs text-gray-500">
+                                                            Actual: <span className="font-semibold text-gray-700">{meta.tipo === 'ventas_monto' ? formatMoney.format(meta.actual) : formatNumber.format(meta.actual)}</span>
+                                                            {' '}de{' '}
+                                                            <span className="font-semibold text-gray-700">{meta.tipo === 'ventas_monto' ? formatMoney.format(meta.objetivo) : formatNumber.format(meta.objetivo)}</span>
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">

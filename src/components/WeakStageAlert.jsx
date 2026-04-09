@@ -4,14 +4,14 @@ import { AlertTriangle, TrendingDown, Users, Lightbulb } from 'lucide-react';
 const WeakStageAlert = ({ etapasDebiles }) => {
     if (!etapasDebiles || etapasDebiles.length === 0) {
         return (
-            <div className="p-6 bg-green-500/10 border border-green-500/30 rounded-xl">
+            <div className="p-6 bg-green-50 border border-green-200 rounded-xl">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 bg-green-500/20 rounded-lg">
-                        <TrendingDown className="w-6 h-6 text-green-400 rotate-180" />
+                    <div className="p-3 bg-green-100 rounded-lg">
+                        <TrendingDown className="w-6 h-6 text-green-700 rotate-180" />
                     </div>
                     <div>
-                        <h3 className="text-green-400 font-bold text-lg">¡Embudo Saludable!</h3>
-                        <p className="text-gray-300 text-sm">
+                        <h3 className="text-green-800 font-bold text-lg">¡Embudo Saludable!</h3>
+                        <p className="text-green-700 text-sm">
                             Todas las etapas tienen tasas de conversión superiores al 30%
                         </p>
                     </div>
@@ -49,16 +49,16 @@ const WeakStageAlert = ({ etapasDebiles }) => {
     return (
         <div className="space-y-4">
             {/* Header de alerta */}
-            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+            <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 bg-red-500/20 rounded-lg">
-                        <AlertTriangle className="w-6 h-6 text-red-400" />
+                    <div className="p-3 bg-rose-100 rounded-lg">
+                        <AlertTriangle className="w-6 h-6 text-rose-700" />
                     </div>
                     <div>
-                        <h3 className="text-red-400 font-bold text-lg">
+                        <h3 className="text-rose-700 font-bold text-lg">
                             {etapasDebiles.length} Etapa{etapasDebiles.length !== 1 ? 's' : ''} Débil{etapasDebiles.length !== 1 ? 'es' : ''} Detectada{etapasDebiles.length !== 1 ? 's' : ''}
                         </h3>
-                        <p className="text-gray-300 text-sm">
+                        <p className="text-rose-700/90 text-sm">
                             Estas etapas tienen tasas de conversión menores al 30% y requieren atención inmediata
                         </p>
                     </div>
@@ -70,43 +70,43 @@ const WeakStageAlert = ({ etapasDebiles }) => {
                 {etapasDebiles.map((etapaDebil, index) => (
                     <div
                         key={index}
-                        className="p-4 bg-gray-800/50 border border-red-500/30 rounded-lg hover:border-red-500/50 transition-colors"
+                        className="p-4 bg-white border border-rose-200 rounded-lg hover:border-rose-300 transition-colors"
                     >
                         {/* Etapa y tasa */}
                         <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-red-500/20 rounded-lg">
-                                    <TrendingDown className="w-5 h-5 text-red-400" />
+                                <div className="p-2 bg-rose-100 rounded-lg">
+                                    <TrendingDown className="w-5 h-5 text-rose-700" />
                                 </div>
                                 <div>
-                                    <h4 className="text-white font-semibold">{etapaDebil.etapa}</h4>
-                                    <p className="text-gray-400 text-sm">Tasa de conversión crítica</p>
+                                    <h4 className="text-slate-800 font-semibold">{etapaDebil.etapa}</h4>
+                                    <p className="text-slate-600 text-sm">Tasa de conversión crítica</p>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <div className="text-3xl font-bold text-red-400">{etapaDebil.tasa}%</div>
-                                <div className="text-xs text-gray-500">Objetivo: ≥30%</div>
+                                <div className="text-3xl font-bold text-rose-700">{etapaDebil.tasa}%</div>
+                                <div className="text-xs text-slate-500">Objetivo: ≥30%</div>
                             </div>
                         </div>
 
                         {/* Barra de progreso */}
-                        <div className="mb-3 h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div className="mb-3 h-2 bg-slate-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-red-500 transition-all duration-500"
+                                className="h-full bg-rose-500 transition-all duration-500"
                                 style={{ width: `${Math.min(etapaDebil.tasa, 100)}%` }}
                             />
                         </div>
 
                         {/* Sugerencias */}
                         {sugerencias[etapaDebil.etapa] && (
-                            <div className="mt-3 p-3 bg-(--theme-500)/10 border border-(--theme-500)/20 rounded-lg">
+                            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                 <div className="flex items-start gap-2 mb-2">
-                                    <Lightbulb className="w-4 h-4 text-(--theme-400) mt-0.5 shrink-0" />
-                                    <h5 className="text-(--theme-400) font-semibold text-sm">Sugerencias de Mejora</h5>
+                                    <Lightbulb className="w-4 h-4 text-blue-700 mt-0.5 shrink-0" />
+                                    <h5 className="text-blue-700 font-semibold text-sm">Sugerencias de Mejora</h5>
                                 </div>
                                 <ul className="space-y-1 ml-6">
                                     {sugerencias[etapaDebil.etapa].map((sugerencia, idx) => (
-                                        <li key={idx} className="text-gray-300 text-sm">
+                                        <li key={idx} className="text-slate-700 text-sm">
                                             • {sugerencia}
                                         </li>
                                     ))}
@@ -118,12 +118,12 @@ const WeakStageAlert = ({ etapasDebiles }) => {
             </div>
 
             {/* Acción recomendada */}
-            <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                 <div className="flex items-start gap-3">
-                    <Users className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
+                    <Users className="w-5 h-5 text-amber-700 mt-0.5 shrink-0" />
                     <div>
-                        <h4 className="text-yellow-400 font-semibold mb-1">Acción Recomendada</h4>
-                        <p className="text-gray-300 text-sm">
+                        <h4 className="text-amber-800 font-semibold mb-1">Acción Recomendada</h4>
+                        <p className="text-amber-800/90 text-sm">
                             Revisar el rendimiento individual de cada vendedor en estas etapas para identificar
                             quiénes necesitan capacitación específica. Considera implementar sesiones de coaching
                             enfocadas en las áreas débiles detectadas.

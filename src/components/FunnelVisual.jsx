@@ -2,6 +2,13 @@ import React from 'react';
 import { ArrowRight, TrendingUp, CheckCircle2, XCircle } from 'lucide-react';
 
 const FunnelVisual = ({ stages }) => {
+    const formatPercent = (value) => {
+        if (value === null || value === undefined || value === '') return '0%';
+        const numeric = Number(value);
+        if (Number.isFinite(numeric)) return `${numeric.toFixed(1)}%`;
+        return `${String(value).replace(/%$/, '')}%`;
+    };
+
     // Mapeo de colores para gradientes
     const getGradientClasses = (color) => {
         const colorMap = {
@@ -82,7 +89,7 @@ const FunnelVisual = ({ stages }) => {
                                                         {stage.cantidadExito}
                                                     </span>
                                                     <span className="text-xs font-semibold text-green-200 bg-green-500/30 px-1.5 py-0.5 rounded">
-                                                        {stage.porcentajeExito}%
+                                                        {formatPercent(stage.porcentajeExito)}
                                                     </span>
                                                 </div>
                                             </div>
@@ -102,7 +109,7 @@ const FunnelVisual = ({ stages }) => {
                                                         {stage.cantidadPerdida}
                                                     </span>
                                                     <span className="text-xs font-semibold text-red-200 bg-red-500/30 px-1.5 py-0.5 rounded">
-                                                        {stage.porcentajePerdida}%
+                                                        {formatPercent(stage.porcentajePerdida)}
                                                     </span>
                                                 </div>
                                             </div>

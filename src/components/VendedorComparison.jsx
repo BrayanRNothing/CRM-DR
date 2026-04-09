@@ -2,6 +2,11 @@ import React from 'react';
 import { Users, TrendingUp, TrendingDown, Award } from 'lucide-react';
 
 const VendedorComparison = ({ comparativa }) => {
+    const formatPercent = (value) => {
+        const numeric = Number(value);
+        return `${Number.isFinite(numeric) ? numeric.toFixed(1) : '0.0'}%`;
+    };
+
     if (!comparativa || comparativa.length === 0) {
         return (
             <div className="p-8 text-center text-gray-500">
@@ -93,7 +98,7 @@ const VendedorComparison = ({ comparativa }) => {
                                                     vendedor.metricas.conversionGlobal >= 30 ? 'text-yellow-400' :
                                                         'text-red-400'
                                                 }`}>
-                                                {vendedor.metricas.conversionGlobal}%
+                                                {formatPercent(vendedor.metricas.conversionGlobal)}
                                             </span>
                                         </div>
                                     </td>
@@ -125,7 +130,7 @@ const VendedorComparison = ({ comparativa }) => {
                         </div>
                         <p className="text-white font-bold text-lg">{mejorVendedor.vendedor.nombre}</p>
                         <p className="text-gray-400 text-sm">
-                            {mejorVendedor.metricas.conversionGlobal}% de conversión global
+                            {formatPercent(mejorVendedor.metricas.conversionGlobal)} de conversión global
                         </p>
                     </div>
 
@@ -137,7 +142,7 @@ const VendedorComparison = ({ comparativa }) => {
                         </div>
                         <p className="text-white font-bold text-lg">{peorVendedor.vendedor.nombre}</p>
                         <p className="text-gray-400 text-sm">
-                            {peorVendedor.metricas.conversionGlobal}% de conversión global
+                                {formatPercent(peorVendedor.metricas.conversionGlobal)} de conversión global
                         </p>
                     </div>
                 </div>
