@@ -36,6 +36,16 @@ const buildReminderByClienteMap = (tareas = []) => {
     return map;
 };
 
+const ETAPA_META = {
+    venta_ganada: { label: 'Venta ganada', className: 'bg-emerald-100 text-emerald-700' },
+    cotizacion_realizada: { label: 'Cotizacion realizada', className: 'bg-blue-100 text-blue-700' },
+    contrato_firmado: { label: 'Contrato firmado', className: 'bg-indigo-100 text-indigo-700' },
+    esperando_pago: { label: 'Esperando pago', className: 'bg-amber-100 text-amber-700' },
+    cliente_activo: { label: 'Cliente activo', className: 'bg-cyan-100 text-cyan-700' }
+};
+
+const getEtapaMeta = (etapa) => ETAPA_META[etapa] || { label: 'Sin etapa', className: 'bg-slate-100 text-slate-600' };
+
 const Clientes = () => {
     const location = useLocation();
     const esMenuSeguimiento = location.pathname.endsWith('/clientes/seguimiento');
@@ -1045,9 +1055,14 @@ const Clientes = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-(--theme-100) text-(--theme-600)">
-                                                    Venta Ganada
-                                                </span>
+                                                {(() => {
+                                                    const etapa = getEtapaMeta(cliente.etapaEmbudo);
+                                                    return (
+                                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${etapa.className}`}>
+                                                            {etapa.label}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </td>
                                             <td className="px-4 py-3 max-w-[200px]">
                                                 {cliente.ultimaActTipo ? (
