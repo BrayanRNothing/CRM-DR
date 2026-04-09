@@ -56,6 +56,7 @@ app.use('/api/embudo', require('./routes/embudo'));
 app.use('/api/vendedor', require('./routes/vendedor'));
 app.use('/api/google', require('./routes/google'));
 app.use('/api/equipos', require('./routes/equipos'));
+app.use('/api/plantillas', require('./routes/plantillas'));
 console.log('🚀 Rutas registradas correctamente');
 
 // Ruta de prueba API

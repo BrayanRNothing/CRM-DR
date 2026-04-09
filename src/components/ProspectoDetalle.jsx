@@ -12,6 +12,7 @@ import { getToken, getUser } from '../utils/authUtils';
 import API_URL from '../config/api';
 import TimeWheelPicker from './TimeWheelPicker';
 import HistorialInteracciones from './HistorialInteracciones';
+import PlantillasMensajesModal from './PlantillasMensajesModal';
 import GmailIcon from '../assets/google-gmail-svgrepo-com.svg';
 
 const ETAPAS_EMBUDO = {
@@ -814,6 +815,7 @@ export default function ProspectoDetalle({
                                                         </div>
                                                         
                                                         <div className="flex items-center gap-3 ml-8 shrink-0">
+                                                            <PlantillasMensajesModal contacto={prospectoSeleccionado} scope="prospecto" />
                                                             <a
                                                                 href={`https://wa.me/${[prospectoSeleccionado.telefono, prospectoSeleccionado.telefono2].filter(Boolean).join(',').replace(/\D/g, '')}`}
                                                                 target="_blank"
