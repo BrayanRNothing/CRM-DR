@@ -53,6 +53,9 @@ const parseScope = (scope) => {
     return 'mine';
 };
 
+const CLIENT_STAGES = ['venta_ganada', 'cotizacion_realizada', 'contrato_firmado', 'esperando_pago', 'cliente_activo'];
+const NON_PROSPECT_STAGES = [...CLIENT_STAGES, 'perdido'];
+
 // Helper: calcula métricas para un período dado por filtro SQL en campo fecha (actividades) y fechaRegistro (clientes)
 async function calcularPeriodoActividades(db, prospectorId, filtroFecha) {
     const where = filtroFecha ? `AND ${filtroFecha}` : '';
@@ -76,7 +79,7 @@ async function calcularPeriodoClientes(db, prospectorId, filtroFechaRegistro) {
     const row = await db.prepare(
         `SELECT COUNT(DISTINCT id) as c FROM clientes 
          WHERE (prospectorAsignado = ? OR id IN (SELECT cliente FROM actividades WHERE vendedor = ?))
-         AND etapaEmbudo NOT IN ('perdido', 'venta_ganada') ${where}`
+         AND etapaEmbudo NOT IN ('perdido', 'venta_ganada', 'cotizacion_realizada', 'contrato_firmado', 'esperando_pago', 'cliente_activo') ${where}`
     ).get(prospectorId, prospectorId);
     return row?.c || 0;
 }
@@ -104,9 +107,7 @@ router.get('/dashboard', [auth, esVendedor], async (req, res) => {
         `).all(prospectorId, prospectorId);
 
         // Filtrar solo prospectos activos (excluir perdidos y ventas ganadas)
-        const clientesActivos = clientes.filter(c =>
-            c.etapaEmbudo !== 'perdido' && c.etapaEmbudo !== 'venta_ganada'
-        );
+        const clientesActivos = clientes.filter(c => !NON_PROSPECT_STAGES.includes(c.etapaEmbudo));
 
         // Embudo siempre sobre totales (Acumulativo)
         const embudo = {
@@ -530,8 +531,8 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
 
         sql += ` ${visibilityWhere.join(' AND ')}`;
 
-        sql += ' AND c.etapaEmbudo NOT IN (?, ?)';
-        params.push('venta_ganada', 'perdido');
+        sql += ' AND c.etapaEmbudo NOT IN (?, ?, ?, ?, ?, ?)';
+        params.push('venta_ganada', 'cotizacion_realizada', 'contrato_firmado', 'esperando_pago', 'cliente_activo', 'perdido');
 
         if (etapa && etapa !== 'todos') {
             sql += ' AND c.etapaEmbudo = ?';
@@ -632,8 +633,8 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
 
         sql += ` ${visibilityWhere.join(' AND ')}`;
 
-        sql += ' AND c.etapaEmbudo = ?';
-        params.push('venta_ganada');
+        sql += ' AND c.etapaEmbudo IN (?, ?, ?, ?, ?)';
+        params.push(...CLIENT_STAGES);
 
         if (busqueda) {
             sql += ' AND (c.nombres LIKE ? OR c.apellidoPaterno LIKE ? OR c.empresa LIKE ? OR c.telefono LIKE ?)';
