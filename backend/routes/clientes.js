@@ -4,6 +4,9 @@ const { db } = require('../config/database');
 const { auth, esSuperUser } = require('../middleware/auth');
 const { toMongoFormat } = require('../lib/helpers');
 
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+const normalizePhone = (value) => String(value || '').replace(/\D/g, '');
+
 const getOwnerId = (cliente) => parseInt(
     cliente?.propietarioId ?? cliente?.prospectorAsignado ?? cliente?.vendedorAsignado ?? 0,
     10
@@ -54,6 +57,176 @@ router.get('/', auth, esSuperUser, async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ mensaje: 'Error del servidor' });
+    }
+});
+
+router.get('/duplicados', auth, esSuperUser, async (req, res) => {
+    try {
+        const campo = String(req.query.campo || 'ambos').toLowerCase();
+        const equipoId = req.usuario.equipo_id;
+
+        let sql = 'SELECT id, nombres, apellidoPaterno, telefono, correo, empresa, estado, "equipo_id" FROM clientes WHERE 1=1';
+        const params = [];
+
+        if (equipoId) {
+            sql += ' AND "equipo_id" = ?';
+            params.push(equipoId);
+        }
+
+        const clientes = await db.prepare(sql).all(...params);
+        const grupos = [];
+
+        const pushGroupsBy = (fieldName, normalizer, minLen = 1) => {
+            const map = new Map();
+
+            clientes.forEach((c) => {
+                const key = normalizer(c[fieldName]);
+                if (!key || key.length < minLen) return;
+                if (!map.has(key)) map.set(key, []);
+                map.get(key).push(c);
+            });
+
+            Array.from(map.entries())
+                .filter(([, list]) => list.length > 1)
+                .forEach(([valor, list]) => {
+                    grupos.push({
+                        campo: fieldName,
+                        valor,
+                        total: list.length,
+                        clientes: list.map((c) => ({
+                            id: c.id,
+                            nombre: `${c.nombres || ''} ${c.apellidoPaterno || ''}`.trim(),
+                            telefono: c.telefono,
+                            correo: c.correo,
+                            empresa: c.empresa,
+                            estado: c.estado
+                        }))
+                    });
+                });
+        };
+
+        if (campo === 'correo' || campo === 'ambos') {
+            pushGroupsBy('correo', normalizeEmail, 3);
+        }
+        if (campo === 'telefono' || campo === 'ambos') {
+            pushGroupsBy('telefono', normalizePhone, 7);
+        }
+
+        grupos.sort((a, b) => b.total - a.total);
+
+        res.json({ campo, totalGrupos: grupos.length, grupos });
+    } catch (error) {
+        console.error('Error al detectar duplicados:', error);
+        res.status(500).json({ mensaje: 'Error del servidor' });
+    }
+});
+
+router.post('/fusionar-duplicados', auth, esSuperUser, async (req, res) => {
+    try {
+        const principalId = parseInt(req.body.principalId, 10);
+        const duplicadoIdsRaw = Array.isArray(req.body.duplicadoIds) ? req.body.duplicadoIds : [];
+        const duplicadoIds = [...new Set(duplicadoIdsRaw
+            .map((x) => parseInt(x, 10))
+            .filter((x) => Number.isInteger(x) && x > 0 && x !== principalId))];
+
+        if (!principalId || duplicadoIds.length === 0) {
+            return res.status(400).json({ mensaje: 'Debe enviar principalId y al menos un duplicado válido' });
+        }
+
+        const principal = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(principalId);
+        if (!principal) {
+            return res.status(404).json({ mensaje: 'Cliente principal no encontrado' });
+        }
+
+        const equipoId = req.usuario.equipo_id;
+        if (equipoId && principal.equipo_id && String(principal.equipo_id) !== String(equipoId)) {
+            return res.status(403).json({ mensaje: 'No tienes acceso al cliente principal' });
+        }
+
+        const placeholders = duplicadoIds.map(() => '?').join(', ');
+        const duplicados = await db.prepare(`SELECT * FROM clientes WHERE id IN (${placeholders})`).all(...duplicadoIds);
+
+        if (duplicados.length !== duplicadoIds.length) {
+            return res.status(404).json({ mensaje: 'Uno o más clientes duplicados no existen' });
+        }
+
+        const invalidTeam = duplicados.find((d) => equipoId && d.equipo_id && String(d.equipo_id) !== String(equipoId));
+        if (invalidTeam) {
+            return res.status(403).json({ mensaje: 'Uno o más duplicados no pertenecen a tu equipo' });
+        }
+
+        const pickValue = (field) => {
+            const current = principal[field];
+            if (current !== null && current !== undefined && String(current).trim() !== '') return current;
+            const candidate = duplicados.find((d) => d[field] !== null && d[field] !== undefined && String(d[field]).trim() !== '');
+            return candidate ? candidate[field] : current;
+        };
+
+        const mergeHistorial = () => {
+            const all = [];
+            const pushHist = (raw) => {
+                if (!raw) return;
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) all.push(...parsed);
+                } catch (_) {
+                    // Ignorar historial corrupto sin romper la fusión
+                }
+            };
+
+            pushHist(principal.historialEmbudo);
+            duplicados.forEach((d) => pushHist(d.historialEmbudo));
+            all.sort((a, b) => new Date(a.fecha || 0) - new Date(b.fecha || 0));
+            return all.length ? JSON.stringify(all) : principal.historialEmbudo;
+        };
+
+        const notasUnificadas = [principal.notas, ...duplicados.map((d) => d.notas)]
+            .filter((x) => typeof x === 'string' && x.trim())
+            .join('\n\n--- Fusionado ---\n\n');
+
+        const ultimaInteraccion = [principal.ultimaInteraccion, ...duplicados.map((d) => d.ultimaInteraccion)]
+            .filter(Boolean)
+            .sort((a, b) => new Date(b) - new Date(a))[0] || principal.ultimaInteraccion;
+
+        await db.exec('BEGIN');
+        try {
+            await db.prepare(
+                'UPDATE clientes SET nombres = ?, apellidoPaterno = ?, apellidoMaterno = ?, telefono = ?, correo = ?, empresa = ?, notas = ?, historialEmbudo = ?, ultimaInteraccion = ? WHERE id = ?'
+            ).run(
+                pickValue('nombres'),
+                pickValue('apellidoPaterno'),
+                pickValue('apellidoMaterno'),
+                pickValue('telefono'),
+                pickValue('correo'),
+                pickValue('empresa'),
+                notasUnificadas || principal.notas,
+                mergeHistorial(),
+                ultimaInteraccion,
+                principalId
+            );
+
+            const inClause = duplicadoIds.map(() => '?').join(', ');
+            await db.prepare(`UPDATE actividades SET cliente = ? WHERE cliente IN (${inClause})`).run(principalId, ...duplicadoIds);
+            await db.prepare(`UPDATE tareas SET cliente = ? WHERE cliente IN (${inClause})`).run(principalId, ...duplicadoIds);
+            await db.prepare(`UPDATE ventas SET cliente = ? WHERE cliente IN (${inClause})`).run(principalId, ...duplicadoIds);
+            await db.prepare(`DELETE FROM clientes WHERE id IN (${inClause})`).run(...duplicadoIds);
+            await db.exec('COMMIT');
+        } catch (txError) {
+            await db.exec('ROLLBACK');
+            throw txError;
+        }
+
+        const actualizado = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(principalId);
+
+        res.json({
+            mensaje: 'Duplicados fusionados correctamente',
+            principalId,
+            eliminados: duplicadoIds,
+            cliente: toMongoFormat(actualizado) || actualizado
+        });
+    } catch (error) {
+        console.error('Error al fusionar duplicados:', error);
+        res.status(500).json({ mensaje: 'Error del servidor', detalle: error.message });
     }
 });
 
