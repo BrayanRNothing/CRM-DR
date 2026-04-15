@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowDown, Layout, Shield, Check } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowDown, Layout, Check } from 'lucide-react';
 import { getUser, saveUser, saveToken } from '../../utils/authUtils';
 import API_URL from '../../config/api';
 import logosolomycrm from '../../assets/logosolomycrm.png';
@@ -31,16 +31,16 @@ const useWindowSize = () => {
 
 const dynamicTexts = [
   {
-    title: "Gestiona el \néxito hoy.",
-    subtitle: "Sincroniza y automatiza con una infraestructura diseñada para el rendimiento extremo."
+    title: "Es simple y \ndirecto.",
+    subtitle: "sin funciones innecesarias solo lo que necesitas."
   },
   {
-    title: "Cierra tratos \nmás rápido.",
-    subtitle: "Visibilidad total de tu pipeline de ventas en tiempo real, desde cualquier lugar."
+    title: "Organiza tus \nclientes.",
+    subtitle: "Visibilidad total de tus clientes en tiempo real, desde cualquier lugar."
   },
   {
-    title: "Escala tu \nempresa.",
-    subtitle: "Métricas y reportes avanzados para llevar tu negocio al siguiente nivel."
+    title: "El crm mas facil \nde utilizar.",
+    subtitle: "Diseñado para que puedas gestionar tus clientes de manera rápida y eficiente."
   }
 ];
 
@@ -235,19 +235,31 @@ const Login = () => {
             {/* Nav Links - Distributed */}
             <div className="hidden md:flex items-center justify-between flex-1 max-w-5xl ml-12 relative z-10">
               {[
-                { name: 'Página web', to: '#' },
-                { name: 'Suscripciones', to: '#' },
+                { name: 'Página web', to: 'https://web.solomycrm.com/', isExternal: true },
                 { name: 'Contáctanos', to: '#' },
-                { name: 'Términos y condiciones de uso', to: '/terminos-y-condiciones' },
-                { name: 'Política de privacidad', to: '/politica-de-privacidad' }
+                { name: 'Términos y condiciones de uso', to: '/terminos-y-condiciones', targetBlank: true },
+                { name: 'Política de privacidad', to: '/politica-de-privacidad', targetBlank: true }
               ].map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.to}
-                  className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
-                >
-                  {link.name}
-                </Link>
+                link.isExternal ? (
+                  <a
+                    key={link.name}
+                    href={link.to}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
+                  >
+                    {link.name}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.name}
+                    to={link.to}
+                    target={link.targetBlank ? "_blank" : undefined}
+                    className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
+                  >
+                    {link.name}
+                  </Link>
+                )
               ))}
             </div>
           </div>
@@ -307,11 +319,7 @@ const Login = () => {
                   </div>
                   <div className="text-center">
                     <h2 className="text-3xl font-black tracking-tighter text-(--theme-600) leading-tight">Inicia sesión</h2>
-                    <div className="mt-4">
-                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-sm bg-(--theme-50) text-(--theme-600) border border-(--theme-100)">
-                        <Shield size={14} /> Acceso Administrativo
-                      </span>
-                    </div>
+
                   </div>
                 </div>
 

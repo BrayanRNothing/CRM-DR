@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, Shield, Check } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Check } from 'lucide-react';
 import { getUser, saveUser, saveToken } from '../../utils/authUtils';
 import API_URL from '../../config/api';
 import logosolomycrm from '../../assets/logosolomycrm.png';
@@ -92,10 +92,32 @@ const LoginMobile = () => {
         </div>
         {/* Secciones en fila scrollable */}
         <div className="flex items-center gap-5 overflow-x-auto no-scrollbar py-2.5">
-          {['Página web', 'Suscripciones', 'Contáctanos', 'Términos', 'Privacidad'].map((name) => (
-            <span key={name} className="text-[9px] font-black uppercase tracking-widest text-slate-300 whitespace-nowrap cursor-pointer hover:text-slate-500 transition-colors">
-              {name}
-            </span>
+          {[
+            { name: 'Página web', to: 'https://web.solomycrm.com/', isExternal: true },
+            { name: 'Contáctanos', to: '#' },
+            { name: 'Términos', to: '/terminos-y-condiciones', targetBlank: true },
+            { name: 'Privacidad', to: '/politica-de-privacidad', targetBlank: true }
+          ].map((link) => (
+            link.isExternal ? (
+              <a
+                key={link.name}
+                href={link.to}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[9px] font-black uppercase tracking-widest text-slate-300 whitespace-nowrap cursor-pointer hover:text-slate-500 transition-colors"
+              >
+                {link.name}
+              </a>
+            ) : (
+              <Link
+                key={link.name}
+                to={link.to}
+                target={link.targetBlank ? "_blank" : undefined}
+                className="text-[9px] font-black uppercase tracking-widest text-slate-300 whitespace-nowrap cursor-pointer hover:text-slate-500 transition-colors"
+              >
+                {link.name}
+              </Link>
+            )
           ))}
         </div>
       </div>
@@ -110,7 +132,7 @@ const LoginMobile = () => {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">Acceso Administrativo</p>
+
           <h1 className="text-3xl font-black tracking-tighter text-slate-900 leading-tight">
             Bienvenido de <br /><span style={{ color: 'var(--theme-600)' }}>vuelta.</span>
           </h1>

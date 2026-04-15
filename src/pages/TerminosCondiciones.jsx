@@ -3,77 +3,77 @@ import { Link } from 'react-router-dom';
 
 const secciones = [
   {
-    titulo: '1. Aceptacion de los terminos',
+    titulo: '1. Aceptación de los términos',
     contenido: [
-      'Al acceder y utilizar esta plataforma CRM, el usuario declara haber leido, entendido y aceptado estos terminos y condiciones.',
-      'Si no estas de acuerdo con alguna clausula, debes abstenerte de usar el sistema y notificar al administrador de tu organizacion.'
+      'Al acceder y utilizar esta plataforma CRM, el usuario declara haber leído, entendido y aceptado estos términos y condiciones.',
+      'Si no estás de acuerdo con alguna cláusula, debes abstenerte de usar el sistema y notificar al administrador de tu organización.'
     ]
   },
   {
-    titulo: '2. Identificacion del responsable',
+    titulo: '2. Identificación del responsable',
     contenido: [
-      'Razon social: CRM DR Soluciones Comerciales.',
-      'Unidad responsable: Area de Soporte y Cumplimiento.',
-      'Este sitio tiene como finalidad la administracion de prospectos, clientes, actividades comerciales y reportes operativos internos.'
+      'Razón social: CRM DR Soluciones Comerciales.',
+      'Unidad responsable: Área de Soporte y Cumplimiento.',
+      'Este sitio tiene como finalidad la administración de prospectos, clientes, actividades comerciales y reportes operativos internos.'
     ]
   },
   {
     titulo: '3. Cuenta, acceso y seguridad',
     contenido: [
-      'Cada usuario es responsable de su cuenta, contrasena y de toda accion realizada con sus credenciales.',
-      'No se permite compartir usuarios, suplantar identidad, deshabilitar controles de seguridad o acceder a informacion sin autorizacion.',
+      'Cada usuario es responsable de su cuenta, contraseña y de toda acción realizada con sus credenciales.',
+      'No se permite compartir usuarios, suplantar identidad, deshabilitar controles de seguridad o acceder a información sin autorización.',
       'Ante sospecha de uso no autorizado, debes reportarlo de forma inmediata por los canales de contacto oficiales.'
     ]
   },
   {
     titulo: '4. Uso permitido y prohibiciones',
     contenido: [
-      'El sistema solo puede usarse para fines comerciales legitimos y tareas autorizadas por la empresa.',
-      'Queda prohibido: cargar malware, extraer datos masivamente sin autorizacion, alterar registros, y utilizar informacion para fines distintos a la operacion comercial.'
+      'El sistema solo puede usarse para fines comerciales legítimos y tareas autorizadas por la empresa.',
+      'Queda prohibido: cargar malware, extraer datos masivamente sin autorización, alterar registros, y utilizar información para fines distintos a la operación comercial.'
     ]
   },
   {
     titulo: '5. Tratamiento de datos y privacidad',
     contenido: [
       'Los datos personales y comerciales capturados en la plataforma se tratan conforme a principios de licitud, finalidad, proporcionalidad y seguridad.',
-      'El usuario garantiza que la informacion registrada fue obtenida de forma legitima y con base legal aplicable.',
-      'Se aplican medidas tecnicas y organizativas razonables para proteger la confidencialidad, integridad y disponibilidad de la informacion.'
+      'El usuario garantiza que la información registrada fue obtenida de forma legítima y con base legal aplicable.',
+      'Se aplican medidas técnicas y organizativas razonables para proteger la confidencialidad, integridad y disponibilidad de la información.'
     ]
   },
   {
     titulo: '6. Disponibilidad, mantenimiento y respaldos',
     contenido: [
       'Se realizan esfuerzos razonables para mantener la continuidad del servicio, sin garantizar disponibilidad ininterrumpida al 100%.',
-      'Puede haber ventanas de mantenimiento, actualizaciones, caidas de terceros o eventos de fuerza mayor que afecten temporalmente la operacion.',
-      'La empresa puede ejecutar politicas de respaldo y recuperacion conforme a sus capacidades operativas.'
+      'Puede haber ventanas de mantenimiento, actualizaciones, caídas de terceros o eventos de fuerza mayor que afecten temporalmente la operación.',
+      'La empresa puede ejecutar políticas de respaldo y recuperación conforme a sus capacidades operativas.'
     ]
   },
   {
     titulo: '7. Propiedad intelectual y uso del contenido',
     contenido: [
       'El software, interfaces, logos y elementos visuales asociados al sistema se encuentran protegidos por derechos de propiedad intelectual.',
-      'No esta permitido copiar, distribuir, modificar o explotar el contenido del sistema sin autorizacion expresa.'
+      'No está permitido copiar, distribuir, modificar o explotar el contenido del sistema sin autorización expresa.'
     ]
   },
   {
-    titulo: '8. Limitacion de responsabilidad',
+    titulo: '8. Limitación de responsabilidad',
     contenido: [
-      'En la maxima medida permitida por ley, la empresa no sera responsable por danos indirectos, incidentales o lucro cesante derivados del uso del sistema.',
-      'La responsabilidad total, cuando proceda, estara sujeta a los limites establecidos por la normativa aplicable y acuerdos contractuales vigentes.'
+      'En la máxima medida permitida por ley, la empresa no será responsable por daños indirectos, incidentales o lucro cesante derivados del uso del sistema.',
+      'La responsabilidad total, cuando proceda, estará sujeta a los límites establecidos por la normativa aplicable y acuerdos contractuales vigentes.'
     ]
   },
   {
     titulo: '9. Vigencia y modificaciones',
     contenido: [
-      'Estos terminos pueden actualizarse para reflejar cambios operativos, legales o de seguridad.',
-      'Las nuevas versiones entran en vigor desde su publicacion en esta pagina y sustituyen versiones anteriores.'
+      'Estos términos pueden actualizarse para reflejar cambios operativos, legales o de seguridad.',
+      'Las nuevas versiones entran en vigor desde su publicación en esta página y sustituyen versiones anteriores.'
     ]
   },
   {
-    titulo: '10. Legislacion aplicable y jurisdiccion',
+    titulo: '10. Legislación aplicable y jurisdicción',
     contenido: [
-      'Estos terminos se interpretan conforme a la legislacion aplicable en la jurisdiccion de operacion de la empresa.',
-      'Cualquier controversia sera atendida ante las autoridades competentes conforme a la normativa vigente.'
+      'Estos términos se interpretan conforme a la legislación aplicable en la jurisdicción de operación de la empresa.',
+      'Cualquier controversia será atendida ante las autoridades competentes conforme a la normativa vigente.'
     ]
   }
 ];
@@ -83,10 +83,10 @@ const metodosContacto = [
     titulo: 'Correo de soporte',
     valor: 'julio@updm.mx / brayan@updm.mx',
     href: 'mailto:julio@updm.mx,brayan@updm.mx',
-    detalle: 'Atencion de incidencias tecnicas, acceso, bloqueos y consultas de uso.'
+    detalle: 'Atención de incidencias técnicas, acceso, bloqueos y consultas de uso.'
   },
   {
-    titulo: 'Telefono',
+    titulo: 'Teléfono',
     valor: '8136458366',
     href: 'tel:8136458366',
     detalle: 'Lunes a viernes, 8:00 a.m. a 6:00 p.m. (GMT-4).'
@@ -95,13 +95,13 @@ const metodosContacto = [
     titulo: 'WhatsApp de soporte',
     valor: '8136458366',
     href: 'https://wa.me/8136458366',
-    detalle: 'Soporte rapido para incidencias operativas y seguimiento de tickets.'
+    detalle: 'Soporte rápido para incidencias operativas y seguimiento de tickets.'
   },
   {
-    titulo: 'Direccion administrativa',
-    valor: 'AVENIDA CUMBRES ELITE 1310, MONTERREY, NUEVO LEON, MEXICO',
+    titulo: 'Dirección administrativa',
+    valor: 'AVENIDA CUMBRES ELITE 1310, MONTERREY, NUEVO LEÓN, MÉXICO',
     href: null,
-    detalle: 'Recepcion de notificaciones formales en horario administrativo.'
+    detalle: 'Recepción de notificaciones formales en horario administrativo.'
   }
 ];
 
@@ -111,15 +111,15 @@ const TerminosCondiciones = () => {
       <div className="max-w-7xl mx-auto w-full">
         <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6 sm:p-10">
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Terminos y Condiciones
+            Términos y Condiciones
           </h1>
           <p className="mt-4 text-slate-600 leading-relaxed">
-            Ultima actualizacion: 23 de marzo de 2026.
+            Última actualización: 23 de marzo de 2026.
           </p>
 
           <div className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 sm:p-5">
             <p className="text-sm sm:text-base text-emerald-900 leading-relaxed">
-              Compromiso de confianza: esta plataforma aplica controles de acceso por rol, registro de actividades y buenas practicas de seguridad para proteger la informacion comercial.
+              Compromiso de confianza: esta plataforma aplica controles de acceso por rol, registro de actividades y buenas prácticas de seguridad para proteger la información comercial.
             </p>
           </div>
 
@@ -139,7 +139,7 @@ const TerminosCondiciones = () => {
           </div>
 
           <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-800">11. Metodos de contacto oficiales</h2>
+            <h2 className="text-lg font-bold text-slate-800">11. Métodos de contacto oficiales</h2>
             <p className="mt-2 text-slate-600 leading-relaxed">
               Para cualquier duda legal, operativa o de privacidad, utiliza exclusivamente los siguientes canales verificados.
             </p>

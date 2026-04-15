@@ -11,6 +11,7 @@ import SkeletonLoader from './components/ui/SkeletonLoader.jsx';
 // Componentes Globales
 import React, { Suspense, lazy, useEffect } from 'react';
 import useThemeStore, { THEMES } from './store/themeStore.js';
+import ScrollToTop from './components/ScrollToTop.jsx';
 
 const lazyWithRetry = (importer) =>
   lazy(async () => {
@@ -64,6 +65,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Toaster
         position="top-right"
         toastOptions={{

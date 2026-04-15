@@ -109,6 +109,14 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ mensaje: 'El nombre de usuario ya está en uso' });
         }
 
+        if (email && email.trim()) {
+            const emailExiste = await db.prepare('SELECT * FROM usuarios WHERE LOWER(email) = LOWER(?)').get(email.trim());
+            if (emailExiste) {
+                console.log('⚠️ Registro fallido: Correo ya existe:', email);
+                return res.status(400).json({ mensaje: 'El correo electrónico ya está en uso' });
+            }
+        }
+
         const salt = await bcrypt.genSalt(10);
         const hash = await bcrypt.hash(contraseña, salt);
 
