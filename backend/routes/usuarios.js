@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { db } = require('../config/database');
-const { auth, esSuperUser } = require('../middleware/auth');
+const { auth, esSuperUser, esAdminUnico } = require('../middleware/auth');
 
 const ROLES_PERMITIDOS = ['prospector', 'closer', 'vendedor'];
 
@@ -17,6 +17,120 @@ const formatUser = (row) => ({
     activo: !!row.activo,
     fechaCreacion: row.fechaCreacion,
     googleLinked: !!(row.googleRefreshToken || row.googleAccessToken)
+});
+
+const formatTeamOwner = (row) => ({
+    id: row.id,
+    usuario: row.usuario,
+    nombre: row.nombre,
+    rol: row.rol,
+    email: row.email,
+    telefono: row.telefono,
+    activo: !!row.activo,
+    equipo: {
+        id: row.team_id,
+        nombre: row.team_name,
+        fechaCreacion: row.team_created
+    }
+});
+
+// @route   GET api/usuarios/team-owners
+// @desc    Listar propietarios de equipo
+// @access  Private (Admin root único)
+router.get('/team-owners', auth, esAdminUnico, async (req, res) => {
+    try {
+        const rows = await db.prepare(
+            `SELECT
+                u.id,
+                u.usuario,
+                u.nombre,
+                u.rol,
+                u.email,
+                u.telefono,
+                u.activo,
+                e.id AS team_id,
+                e.nombre AS team_name,
+                e."fechaCreacion" AS team_created
+            FROM usuarios u
+            INNER JOIN equipos e ON e.owner_id = u.id
+            WHERE u.activo = 1 AND u.rol <> 'admin'
+            ORDER BY e."fechaCreacion" DESC, u.nombre ASC`
+        ).all();
+
+        res.json(rows.map(formatTeamOwner));
+    } catch (error) {
+        console.error('Error en GET /api/usuarios/team-owners:', error);
+        res.status(500).json({ mensaje: 'Error del servidor' });
+    }
+});
+
+// @route   POST api/usuarios/team-owners
+// @desc    Crear un propietario de equipo (usuario + equipo propio)
+// @access  Private (Admin root único)
+router.post('/team-owners', auth, esAdminUnico, async (req, res) => {
+    try {
+        const { usuario, contraseña, nombre, email, telefono, equipoNombre } = req.body;
+
+        if (!usuario || !contraseña || !nombre) {
+            return res.status(400).json({ mensaje: 'Complete usuario, contraseña y nombre' });
+        }
+
+        const existeUsuario = await db.prepare('SELECT id FROM usuarios WHERE LOWER(usuario) = LOWER(?)').get(usuario.trim());
+        if (existeUsuario) {
+            return res.status(400).json({ mensaje: 'El nombre de usuario ya está en uso' });
+        }
+
+        if (email && email.trim()) {
+            const existeEmail = await db.prepare('SELECT id FROM usuarios WHERE LOWER(email) = LOWER(?)').get(email.trim());
+            if (existeEmail) {
+                return res.status(400).json({ mensaje: 'El email ya está en uso' });
+            }
+        }
+
+        const hash = await bcrypt.hash(contraseña, 10);
+
+        const userInsert = await db.prepare(
+            'INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono, activo) VALUES (?, ?, ?, ?, ?, ?, 1)'
+        ).run(
+            usuario.trim(),
+            hash,
+            'vendedor',
+            nombre.trim(),
+            (email || '').trim(),
+            (telefono || '').trim()
+        );
+
+        const ownerId = userInsert.lastInsertRowid;
+        const nombreEquipo = (equipoNombre || `Equipo de ${nombre.trim()}`).trim();
+
+        const teamInsert = await db.prepare('INSERT INTO equipos (nombre, owner_id) VALUES (?, ?)').run(nombreEquipo, ownerId);
+        await db.prepare('UPDATE usuarios SET "equipo_id" = ? WHERE id = ?').run(teamInsert.lastInsertRowid, ownerId);
+
+        const created = await db.prepare(
+            `SELECT
+                u.id,
+                u.usuario,
+                u.nombre,
+                u.rol,
+                u.email,
+                u.telefono,
+                u.activo,
+                e.id AS team_id,
+                e.nombre AS team_name,
+                e."fechaCreacion" AS team_created
+             FROM usuarios u
+             INNER JOIN equipos e ON e.owner_id = u.id
+             WHERE u.id = ?`
+        ).get(ownerId);
+
+        res.status(201).json({
+            mensaje: 'Propietario de equipo creado exitosamente',
+            owner: formatTeamOwner(created)
+        });
+    } catch (error) {
+        console.error('Error en POST /api/usuarios/team-owners:', error);
+        res.status(500).json({ mensaje: 'Error del servidor' });
+    }
 });
 
 // @route   GET api/usuarios

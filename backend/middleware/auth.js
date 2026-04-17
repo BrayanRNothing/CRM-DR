@@ -82,4 +82,36 @@ const esTeamOwner = async (req, res, next) => {
     }
 };
 
-module.exports = { auth, esSuperUser, esTeamOwner };
+/**
+ * Middleware: permite acceso solo al admin root único del sistema.
+ */
+const esAdminUnico = async (req, res, next) => {
+    try {
+        if (!req.usuario) {
+            return res.status(401).json({ mensaje: 'Usuario no autenticado' });
+        }
+
+        if (req.usuario.rol !== 'admin') {
+            return res.status(403).json({ mensaje: 'Acceso denegado. Se requiere admin root.' });
+        }
+
+        const adminRoot = await db.prepare('SELECT id, usuario FROM usuarios WHERE rol = ? ORDER BY id ASC LIMIT 1').get('admin');
+        if (!adminRoot) {
+            return res.status(403).json({ mensaje: 'No existe admin root configurado' });
+        }
+
+        const sameId = String(adminRoot.id) === String(req.usuario.id);
+        const sameUsername = String(req.usuario.usuario || '').toLowerCase() === String(adminRoot.usuario || '').toLowerCase();
+
+        if (!sameId || !sameUsername) {
+            return res.status(403).json({ mensaje: 'Solo el admin root puede realizar esta acción' });
+        }
+
+        next();
+    } catch (error) {
+        console.error('esAdminUnico error:', error.message);
+        res.status(500).json({ mensaje: 'Error del servidor' });
+    }
+};
+
+module.exports = { auth, esSuperUser, esTeamOwner, esAdminUnico };

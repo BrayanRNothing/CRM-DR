@@ -27,6 +27,16 @@ const MainLayout = () => {
         setUsuario(userGuardado);
     }, []);
 
+    const isAdminRoot = usuario?.rol === 'admin';
+
+    const getRoleLabel = () => {
+        if (!usuario?.rol) return 'Usuario';
+        if (usuario.rol === 'admin') return 'Admin Root';
+        if (usuario.rol === 'closer') return 'Closer';
+        if (usuario.rol === 'prospector') return 'Prospector';
+        return 'Vendedor';
+    };
+
     const menuItems = [
         {
             name: 'Dashboard',
@@ -46,6 +56,15 @@ const MainLayout = () => {
                 </svg>
             )
         },
+        ...(isAdminRoot ? [{
+            name: 'Panel Admin',
+            path: '/vendedor/admin',
+            icon: (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 2a1 1 0 01.707.293l6 6A1 1 0 0117 9v6a3 3 0 01-3 3H6a3 3 0 01-3-3V9a1 1 0 01.293-.707l6-6A1 1 0 0110 2zm0 3.414L5 10.414V15a1 1 0 001 1h8a1 1 0 001-1v-4.586L10 5.414z" clipRule="evenodd" />
+                </svg>
+            )
+        }] : []),
         {
             name: 'Prospectos',
             path: '/vendedor/prospectos',
@@ -102,7 +121,7 @@ const MainLayout = () => {
                 {/* Floating Sidebar (Light Mode) */}
                 <FloatingSidebar
                     menuItems={menuItems}
-                    userInfo={{ ...usuario, rol: 'Vendedor' }}
+                    userInfo={{ ...usuario, rol: getRoleLabel() }}
                     title="solomycrm"
                     subtitle="Sales Full"
                     logo={<img src={logosolomycrm} alt="solomycrm" className="w-8 h-8 object-contain" />}

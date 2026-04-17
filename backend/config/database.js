@@ -4,9 +4,26 @@
  */
 
 const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
 
 let internalDb;
 const isPostgres = true;
+
+const ROOT_ADMIN_DEFAULTS = {
+  username: 'ownerjulio',
+  password: 'OwnerJulio#2026',
+  nombre: 'Julio Admin Root',
+  email: 'julio.admin@solomycrm.com',
+  telefono: '0000000000'
+};
+
+const getRootAdminCredentials = () => ({
+  username: (process.env.ROOT_ADMIN_USER || ROOT_ADMIN_DEFAULTS.username).trim(),
+  password: (process.env.ROOT_ADMIN_PASS || ROOT_ADMIN_DEFAULTS.password).trim(),
+  nombre: (process.env.ROOT_ADMIN_NAME || ROOT_ADMIN_DEFAULTS.nombre).trim(),
+  email: (process.env.ROOT_ADMIN_EMAIL || ROOT_ADMIN_DEFAULTS.email).trim(),
+  telefono: (process.env.ROOT_ADMIN_PHONE || ROOT_ADMIN_DEFAULTS.telefono).trim()
+});
 
 const isRunningOnRailway = Boolean(
   process.env.RAILWAY_ENVIRONMENT ||
@@ -268,7 +285,7 @@ const initDb = async () => {
     id SERIAL PRIMARY KEY,
     usuario TEXT UNIQUE NOT NULL,
     contraseña TEXT NOT NULL,
-    rol TEXT NOT NULL CHECK(rol IN ('prospector','closer','vendedor')),
+    rol TEXT NOT NULL CHECK(rol IN ('prospector','closer','vendedor','admin')),
     nombre TEXT NOT NULL,
     email TEXT,
     telefono TEXT,
@@ -381,7 +398,6 @@ const initDb = async () => {
     const userCount = await db.prepare('SELECT COUNT(*) as count FROM usuarios').get();
     if (userCount && parseInt(userCount.count) === 0) {
       console.log('🌱 Base de datos vacía, insertando usuarios predeterminados...');
-      const bcrypt = require('bcryptjs');
       const hashProspector = await bcrypt.hash('prospector123', 10);
       const hashCloser = await bcrypt.hash('closer123', 10);
 
@@ -668,7 +684,7 @@ const initDb = async () => {
         "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usuarios'"
       ).get();
 
-      const needsRoleMigration = usuariosSql?.sql && !usuariosSql.sql.includes("'vendedor'");
+      const needsRoleMigration = usuariosSql?.sql && (!usuariosSql.sql.includes("'vendedor'") || !usuariosSql.sql.includes("'admin'"));
       if (needsRoleMigration) {
         internalDb.exec('PRAGMA foreign_keys = OFF');
         internalDb.exec('BEGIN TRANSACTION');
@@ -678,7 +694,7 @@ const initDb = async () => {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             usuario TEXT UNIQUE NOT NULL,
             contraseña TEXT NOT NULL,
-            rol TEXT NOT NULL CHECK(rol IN ('prospector','closer','vendedor','admin','superadmin')),
+            rol TEXT NOT NULL CHECK(rol IN ('prospector','closer','vendedor','admin')),
             nombre TEXT NOT NULL,
             email TEXT,
             telefono TEXT,
@@ -733,12 +749,58 @@ const initDb = async () => {
         // Remover el constraint anterior y añadir el nuevo (con 'vendedor')
         await internalDb.query(`
             ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_check;
-            ALTER TABLE usuarios ADD CONSTRAINT usuarios_rol_check CHECK (rol IN ('prospector', 'closer', 'vendedor'));
+            ALTER TABLE usuarios ADD CONSTRAINT usuarios_rol_check CHECK (rol IN ('prospector', 'closer', 'vendedor', 'admin'));
         `);
-        console.log('✅ Migración: Constraint de rol actualizado en Postgres para incluir "vendedor"');
+        console.log('✅ Migración: Constraint de rol actualizado en Postgres para incluir "vendedor" y "admin"');
     } catch(e) {
         console.error('⚠️ Migración: Error actualizando constraint de rol en Postgres:', e.message);
     }
+  }
+
+  // Asegurar que exista un único usuario admin root y que tenga su propio equipo.
+  try {
+    const creds = getRootAdminCredentials();
+    const admins = await db.prepare('SELECT id, usuario FROM usuarios WHERE rol = ? ORDER BY id ASC').all('admin');
+
+    if (admins.length === 0) {
+      const hashAdmin = await bcrypt.hash(creds.password, 10);
+      const created = await db.prepare(
+        'INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono, activo) VALUES (?, ?, ?, ?, ?, ?, 1)'
+      ).run(creds.username, hashAdmin, 'admin', creds.nombre, creds.email, creds.telefono);
+      console.log(`✅ Admin root creado (id: ${created.lastInsertRowid || 'n/a'})`);
+    }
+
+    let adminRoot = await db.prepare('SELECT id, usuario, nombre, email, "equipo_id" FROM usuarios WHERE rol = ? ORDER BY id ASC LIMIT 1').get('admin');
+
+    if (!adminRoot) {
+      throw new Error('No se pudo obtener admin root después de la creación/verificación');
+    }
+
+    if (adminRoot && adminRoot.usuario.toLowerCase() !== creds.username.toLowerCase()) {
+      const usuarioReservadoExiste = await db.prepare('SELECT id FROM usuarios WHERE LOWER(usuario) = LOWER(?)').get(creds.username);
+      if (!usuarioReservadoExiste) {
+        await db.prepare('UPDATE usuarios SET usuario = ? WHERE id = ?').run(creds.username, adminRoot.id);
+        adminRoot.usuario = creds.username;
+      }
+    }
+
+    await db.prepare('UPDATE usuarios SET activo = 1 WHERE id = ?').run(adminRoot.id);
+
+    const adminsDespues = await db.prepare('SELECT id FROM usuarios WHERE rol = ? ORDER BY id ASC').all('admin');
+    if (adminsDespues.length > 1) {
+      const idsExtras = adminsDespues.slice(1).map((a) => a.id);
+      for (const extraId of idsExtras) {
+        await db.prepare('UPDATE usuarios SET rol = ? WHERE id = ?').run('vendedor', extraId);
+      }
+      console.log(`⚠️ Se normalizaron ${idsExtras.length} admins extra a rol vendedor para mantener admin único.`);
+    }
+
+    if (!adminRoot.equipo_id) {
+      const teamCreated = await db.prepare('INSERT INTO equipos (nombre, owner_id) VALUES (?, ?)').run('Panel Admin Root', adminRoot.id);
+      await db.prepare('UPDATE usuarios SET "equipo_id" = ? WHERE id = ?').run(teamCreated.lastInsertRowid, adminRoot.id);
+    }
+  } catch (e) {
+    console.error('⚠️ Error asegurando admin root único:', e.message);
   }
 };
 

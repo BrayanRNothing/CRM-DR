@@ -49,6 +49,7 @@ const Clientes = lazyWithRetry(() => import('./pages/Clientes.jsx'));
 
 // Shared Components
 const Equipo = lazyWithRetry(() => import('./pages/Equipo.jsx'));
+const AdminPanel = lazyWithRetry(() => import('./pages/AdminPanel.jsx'));
 
 function App() {
   const currentThemeId = useThemeStore((state) => state.currentThemeId);
@@ -146,6 +147,7 @@ function App() {
             <Route path="prospectos" element={<Seguimiento />} />
             <Route path="clientes" element={<Clientes />} />
             <Route path="equipo" element={<Equipo />} />
+            <Route path="admin" element={<AdminPanel />} />
             <Route path="usuarios" element={<Navigate to="/vendedor/equipo" replace />} />
             <Route path="usuarios/*" element={<Navigate to="/vendedor/equipo" replace />} />
             <Route path="users/:id" element={<Navigate to="/vendedor/equipo" replace />} />
