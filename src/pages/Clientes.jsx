@@ -864,20 +864,20 @@ const Clientes = () => {
 
     return (
         <>
-        <div className="min-h-screen bg-slate-50 p-6">
+        <div className="min-h-screen md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 pb-8 md:pb-6">
             <div className="max-w-full mx-auto">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">
+                        <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
                             {esMenuSeguimiento ? 'Seguimiento de Clientes' : 'Clientes'}
                         </h1>
-                        <p className="text-gray-500 mt-1">
+                        <p className="text-xs md:text-sm text-gray-500 mt-0.5 leading-snug">
                             {esMenuSeguimiento
                                 ? 'Gestiona y da seguimiento a tu cartera de clientes ganados.'
                                 : 'Cartera de clientes ganados.'}
                         </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto mt-2 sm:mt-0">
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -888,45 +888,45 @@ const Clientes = () => {
                         <button
                             onClick={() => fileInputRef.current?.click()}
                             disabled={importando}
-                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                            className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
                         >
-                            {importando ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                            {importando ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 md:w-4 md:h-4" />}
                             {importando ? 'Importando...' : 'Importar CSV'}
                         </button>
                         <button
                             onClick={exportarClientesCsv}
                             disabled={loading || !clientesFiltrados.length}
-                            className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                            className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
                         >
-                            <Download className="w-4 h-4" />
+                            <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
                             Exportar CSV
                         </button>
                         <button
                             onClick={() => setMostrarModalCrear(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors"
+                            className="w-full sm:w-auto justify-center flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs md:text-sm font-medium"
                         >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-4 h-4 md:w-5 md:h-5" />
                             Crear Cliente
                         </button>
                     </div>
                 </div>
 
-                <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm mb-6">
+                <div className="bg-white border-b border-slate-100 md:border md:border-slate-200 md:rounded-2xl p-4 md:shadow-sm mb-6">
                     <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-4 items-center">
                         <div className="relative w-full">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
                                 <input
                                     type="text"
-                                    placeholder="Buscar clientes por nombre, empresa, teléfono..."
+                                    placeholder="Buscar clientes..."
                                     value={busqueda}
                                     onChange={(event) => setBusqueda(event.target.value)}
-                                    className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-sm"
+                                    className="w-full pl-8 md:pl-10 pr-3 md:pr-4 py-1.5 md:py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs md:text-sm"
                                     title="Buscar por nombre, empresa, correo o teléfono"
                                 />
                         </div>
-                        <div className="flex flex-wrap gap-2 items-center w-full">
-                            <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-                            <div className="flex flex-wrap gap-1.5">
+                        <div className="hidden md:flex flex-wrap md:flex-wrap pb-2 -mx-2 px-2 md:mx-0 md:px-0 gap-2 items-center w-full">
+                            <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden md:block" />
+                            <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
                                 {[
                                     { value: 'mine', label: 'Mis clientes' },
                                     { value: 'shared', label: 'Compartidos' },
@@ -944,8 +944,8 @@ const Clientes = () => {
                                     </button>
                                 ))}
                             </div>
-                            <div className="w-px h-6 bg-slate-200 mx-1"></div>
-                            <div className="flex flex-wrap gap-1.5">
+                            <div className="w-px h-6 bg-slate-200 mx-1 shrink-0 hidden md:block"></div>
+                            <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
                                 {[
                                     { value: 'todos', label: 'Todos' },
                                     { value: 'con_recordatorio', label: 'Con recordatorio' },
@@ -965,7 +965,7 @@ const Clientes = () => {
                             </div>
                             <button
                                 onClick={() => setFiltro(f => f === 'con_recordatorio' ? 'todos' : 'con_recordatorio')}
-                                className={`flex items-center justify-center w-8 h-8 rounded-lg border text-sm transition-all ${filtro === 'con_recordatorio'
+                                className={`shrink-0 flex items-center justify-center w-8 h-8 rounded-lg border text-sm transition-all ${filtro === 'con_recordatorio'
                                     ? 'bg-(--theme-50) border-(--theme-400) text-(--theme-700)'
                                     : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'
                                     }`}
@@ -976,7 +976,7 @@ const Clientes = () => {
                             {(filtro !== 'todos' || busqueda || filtroVisibilidad !== 'mine') && (
                                 <button
                                     onClick={() => { setFiltro('todos'); setBusqueda(''); setFiltroVisibilidad('mine'); }}
-                                    className="flex items-center justify-center w-8 h-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
+                                    className="shrink-0 flex items-center justify-center w-8 h-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
                                     title="Limpiar filtros"
                                 >
                                     ✕
@@ -991,51 +991,51 @@ const Clientes = () => {
                 </div>
 
                 {loading ? (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center">
+                    <div className="bg-white md:border md:border-slate-200 md:rounded-2xl p-10 text-center">
                         <RefreshCw className="w-8 h-8 text-(--theme-500) animate-spin mx-auto mb-4" />
                         <p className="text-gray-500">Cargando clientes...</p>
                     </div>
                 ) : clientesFiltrados.length === 0 ? (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center text-gray-500">
+                    <div className="bg-white md:border md:border-slate-200 md:rounded-2xl p-10 text-center text-gray-500">
                         No hay clientes registrados aún.
                     </div>
                 ) : (
-                    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div className="bg-white md:border md:border-slate-200 md:rounded-2xl md:shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="min-w-full text-sm">
                                 <thead className="bg-slate-100/70 text-slate-500 uppercase">
                                     <tr>
-                                        <th className="px-4 py-3 text-left font-semibold">Cliente</th>
-                                        <th className="px-4 py-3 text-left font-semibold">Empresa</th>
-                                        <th className="px-4 py-3 text-left font-semibold">Contacto</th>
-                                        <th className="px-4 py-3 text-center font-semibold text-xs uppercase tracking-wider">Etapa</th>
-                                        <th className="px-4 py-3 text-left font-semibold">Última interacción</th>
-                                        <th className="px-4 py-3 text-left font-semibold">Recordatorio</th>
-                                        <th className="px-4 py-3 text-center font-semibold">Acciones</th>
+                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Cliente</th>
+                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Empresa</th>
+                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Contacto</th>
+                                        <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[9px] md:text-xs uppercase tracking-wider">Etapa</th>
+                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs whitespace-nowrap">Última interacción</th>
+                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Recordatorio</th>
+                                        <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[10px] md:text-xs">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {clientesFiltrados.map((cliente) => (
                                         <tr key={cliente._id || cliente.id} className="hover:bg-slate-50/70 transition-colors cursor-pointer" onClick={() => handleVerDetalles(cliente)}>
-                                            <td className="px-4 py-3 text-left">
+                                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
                                                 <div className="flex flex-col">
-                                                    <p className="font-medium text-gray-900 leading-tight">
+                                                    <p className="font-bold text-gray-900 leading-tight text-[11px] md:text-sm">
                                                         {cliente.nombres} {cliente.apellidoPaterno}
                                                     </p>
-                                                    <p className="text-[10px] text-slate-400 mt-0.5">
+                                                    <p className="text-[9px] md:text-[10px] text-slate-400 mt-0.5 max-w-[100px] md:max-w-none truncate">
                                                         {(cliente.esPropietario === true || isOwnerRecord(cliente))
                                                             ? 'Propietario: tú'
-                                                            : `Compartido por: ${cliente.propietarioNombre || 'usuario del equipo'}`}
+                                                            : `Compartido por: ${cliente.propietarioNombre || 'usuario'}`}
                                                     </p>
-                                                    <div className="flex items-center gap-0.5 text-yellow-500 scale-75 origin-left mt-0.5">
+                                                    <div className="flex items-center gap-0.5 text-yellow-500 scale-[0.6] md:scale-75 origin-left mt-0.5">
                                                         {[1, 2, 3, 4, 5].map((val) => (
                                                             <Star key={val} className={`w-3.5 h-3.5 ${ (cliente.interes || 5) >= val ? 'fill-yellow-400' : 'fill-slate-100 text-slate-300'}`} />
                                                         ))}
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-gray-600 text-sm whitespace-nowrap">{cliente.empresa || '—'}</td>
-                                            <td className="px-4 py-3">
+                                            <td className="px-2 md:px-4 py-2 md:py-3 text-gray-600 text-[10px] md:text-sm whitespace-nowrap max-w-[90px] md:max-w-none truncate">{cliente.empresa || '—'}</td>
+                                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
                                                 <div className="space-y-0.5">
                                                     {cliente.telefono ? (
                                                         <p className="flex items-center gap-1.5 text-gray-700 text-sm font-medium">
@@ -1054,7 +1054,7 @@ const Clientes = () => {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-center">
+                                            <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
                                                 {(() => {
                                                     const etapa = getEtapaMeta(cliente.etapaEmbudo);
                                                     return (
@@ -1064,7 +1064,7 @@ const Clientes = () => {
                                                     );
                                                 })()}
                                             </td>
-                                            <td className="px-4 py-3 max-w-[200px]">
+                                            <td className="px-2 md:px-4 py-2 md:py-3 max-w-[140px] md:max-w-[200px]">
                                                 {cliente.ultimaActTipo ? (
                                                     <div className="flex items-start gap-1.5">
                                                         <div className="mt-0.5 shrink-0">
@@ -1091,7 +1091,7 @@ const Clientes = () => {
                                                     <span className="text-xs text-slate-300 italic">Sin historial</span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3">
+                                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
                                                 {cliente.proximaLlamada ? (() => {
                                                     const esVencido = new Date(cliente.proximaLlamada) < new Date();
                                                     return (
@@ -1112,8 +1112,8 @@ const Clientes = () => {
                                                     <span className="text-xs text-slate-400 italic">Sin pendiente</span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <div className="flex items-center justify-center gap-3">
+                                            <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
+                                                <div className="flex items-center justify-center gap-1.5 md:gap-3">
                                                     {(cliente.esPropietario === true || isOwnerRecord(cliente)) && (
                                                         <button
                                                             onClick={(e) => {

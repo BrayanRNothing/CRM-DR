@@ -203,12 +203,12 @@ export default function VendedorAjustes() {
     ];
 
     return (
-        <div className="w-full h-screen overflow-hidden bg-(--theme-50)/20">
-            <div className="h-full overflow-y-auto">
-                <div className="w-full max-w-(--breakpoint-2xl) mx-auto px-4 sm:px-10 py-10 pb-32">
+        <div className="min-h-screen bg-white md:bg-(--theme-50)/20 -m-4 md:m-0">
+            <div>
+                <div className="max-w-(--breakpoint-2xl) mx-auto md:px-10 py-6 md:py-10 pb-16">
 
                     {/* ═══ HERO HEADER ═══ */}
-                    <div className="relative rounded-3xl overflow-hidden mb-8 shadow-xl border border-(--theme-200)/50">
+                    <div className="relative md:rounded-3xl overflow-hidden mb-6 md:mb-8 md:shadow-xl border-b md:border border-(--theme-200)/50">
                         {/* Gradient Banner */}
                         <div className={`h-32 sm:h-40 bg-linear-to-br ${roleBg} relative`} />
 
@@ -246,7 +246,7 @@ export default function VendedorAjustes() {
 
                                 <button
                                     onClick={handleLogout}
-                                    className="self-start sm:self-end flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-red-500 bg-red-50 hover:bg-red-100 border border-red-100 transition-all"
+                                    className="self-start sm:self-end flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-red-500 bg-red-50 hover:bg-red-100 border border-red-100 transition-all mt-3 md:mt-0"
                                 >
                                     <LogOut size={15} />
                                     <span>Salir</span>
@@ -256,11 +256,11 @@ export default function VendedorAjustes() {
                     </div>
 
                     {/* ═══ GRID CONTENT ═══ */}
-                    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-start">
+                    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 md:gap-8 items-start">
                         
                         {/* ═══ TABS SIDEBAR (Hybrid) ═══ */}
-                        <div className="lg:sticky lg:top-8 z-10">
-                            <div className="flex lg:flex-col gap-2 bg-white/80 backdrop-blur-md p-1.5 lg:p-2 rounded-2xl shadow-sm border border-(--theme-200) overflow-x-auto no-scrollbar lg:overflow-visible">
+                        <div className="lg:sticky lg:top-8 z-10 px-3 md:px-0">
+                            <div className="flex lg:flex-col gap-2 bg-white/80 backdrop-blur-md p-1.5 lg:p-2 md:rounded-2xl lg:shadow-sm md:border border-(--theme-200) border-b overflow-x-auto no-scrollbar lg:overflow-visible">
                                 {tabs.map(({ id, label, icon: Icon }) => {
                                     const isActive = activeTab === id;
                                     return (
@@ -302,7 +302,7 @@ export default function VendedorAjustes() {
                     {/* ═══ TAB: PERFIL ═══ */}
                     {activeTab === 'perfil' && (
                         <form onSubmit={handleSaveProfile}>
-                            <div className="bg-white rounded-3xl shadow-xl border border-(--theme-200) overflow-hidden">
+                            <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-hidden">
                                 <div className="" />
                                 <div className="p-6 sm:p-8">
                                     <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
@@ -355,7 +355,7 @@ export default function VendedorAjustes() {
                     {/* ═══ TAB: SEGURIDAD ═══ */}
                     {activeTab === 'seguridad' && (
                         <form onSubmit={handleSavePass}>
-                            <div className="bg-white rounded-3xl shadow-xl border border-(--theme-200) overflow-hidden">
+                            <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-hidden">
                                 <div className="" />
                                 <div className="p-6 sm:p-8">
                                     <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
@@ -417,7 +417,7 @@ export default function VendedorAjustes() {
                     )}
 
                     {activeTab === 'integraciones' && (
-                        <div className="bg-white rounded-3xl shadow-xl border border-(--theme-200) overflow-hidden">
+                        <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-hidden">
                             <div className="p-4 sm:p-6">
                                 <h2 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
                                     <div className="p-1.5 rounded-lg bg-white border border-slate-200 shadow-sm">
@@ -529,7 +529,7 @@ export default function VendedorAjustes() {
                     )}
 
                     {activeTab === 'preferencias' && (
-                        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+                        <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-slate-200 overflow-hidden">
                             <div className="p-4 sm:p-6 max-h-[360px] overflow-y-auto space-y-6 custom-scrollbar bg-(--theme-50)/30 shadow-inner">
                                 
                                 {/* 1. Apariencia / Tema (Moved Up) */}

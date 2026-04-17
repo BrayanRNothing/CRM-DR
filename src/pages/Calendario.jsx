@@ -845,17 +845,17 @@ const Calendario = () => {
     };
 
     return (
-        <div className="h-full flex flex-col p-5 overflow-hidden">
+        <div className="h-full flex flex-col md:p-5 overflow-hidden -mx-4 -mt-4 md:m-0">
             <ResultModal />
             <EditMeetingModal />
             <SyncPromptModal />
-            <div className="flex-1 flex flex-col space-y-4 overflow-hidden min-h-0">
+            <div className="flex-1 flex flex-col space-y-4 overflow-hidden min-h-0 bg-white md:bg-transparent">
                 {/* Main Grid */}
-                <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
+                <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-0 md:gap-6 min-h-0">
 
                     {/* Calendar Section (Left Side - 2 Cols) */}
                     <div className="lg:col-span-2 flex flex-col min-h-0">
-                        <div className="flex-1 p-8 flex flex-col min-h-0">
+                        <div className="flex-1 bg-white md:border md:border-gray-200 md:rounded-xl p-5 md:p-6 md:shadow-sm flex flex-col min-h-0">
                             {/* Header */}
                             <div className="flex items-center justify-between mb-6">
                                 <button onClick={previousMonth} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
@@ -878,14 +878,14 @@ const Calendario = () => {
 
                             {/* Calendar Days */}
                             <div className="flex-1 flex flex-col min-h-0">
-                                <div className="grid grid-cols-7 gap-2 mb-2 shrink-0">
+                                <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 shrink-0">
                                     {DAYS.map(day => (
-                                        <div key={day} className="text-center font-semibold text-gray-600 text-sm py-2">
+                                        <div key={day} className="text-center font-bold text-gray-400 text-[10px] sm:text-sm py-1 uppercase tracking-wider">
                                             {day}
                                         </div>
                                     ))}
                                 </div>
-                                <div className="flex-1 grid grid-cols-7 gap-2 min-h-0" style={{ gridAutoRows: '1fr' }}>
+                                <div className="flex-1 grid grid-cols-7 gap-1 sm:gap-2 auto-rows-fr min-h-0">
                                     {calendarDays.map((date, index) => {
                                         const isSelected = date && isSameDay(date, selectedDate);
                                         const isTodayDate = date && isToday(date);
@@ -901,16 +901,16 @@ const Calendario = () => {
                                                 }}
                                                 disabled={!date || !selectedCloser}
                                                 className={`
-                                                    relative rounded-lg transition-all border flex items-center justify-center p-2 min-h-[72px]
-                                                    ${!date ? 'bg-gray-50/50 border-gray-100 cursor-default select-none' : ''}
-                                                    ${date && !selectedCloser ? 'opacity-40 cursor-not-allowed bg-gray-50 border-gray-100' : ''}
-                                                    ${date && selectedCloser && !isSelected ? 'bg-white border-gray-200 hover:border-(--theme-500)/50 text-gray-700' : ''}
-                                                    ${isSelected ? 'bg-(--theme-500) text-white shadow-lg scale-105 border-(--theme-500) z-20' : ''}
-                                                    ${isTodayDate && !isSelected ? 'bg-(--theme-50)/50 border-(--theme-200) text-(--theme-700)' : ''}
-                                                    ${isTodayDate && !isSelected ? 'after:content-["HOY"] after:absolute after:top-1 after:right-1 after:text-[7px] after:font-black after:text-(--theme-500) after:bg-(--theme-50) after:px-1 after:rounded-sm' : ''}
+                                                    relative rounded-2xl transition-all border flex items-center justify-center p-1 md:p-2 min-h-[44px] md:min-h-[72px] aspect-square md:aspect-auto
+                                                    ${!date ? 'bg-transparent border-transparent cursor-default select-none' : ''}
+                                                    ${date && !selectedCloser ? 'opacity-40 cursor-not-allowed bg-slate-50 border-slate-100' : ''}
+                                                    ${date && selectedCloser && !isSelected ? 'bg-white border-slate-200 hover:border-(--theme-500)/50 hover:shadow-sm text-slate-700' : ''}
+                                                    ${isSelected ? 'bg-(--theme-500) text-white shadow-lg shadow-(--theme-500)/30 scale-105 border-(--theme-500) z-20' : ''}
+                                                    ${isTodayDate && !isSelected ? 'bg-(--theme-50) border-(--theme-200) text-(--theme-700)' : ''}
+                                                    ${isTodayDate && !isSelected ? 'after:content-["HOY"] after:absolute after:top-1 lg:after:top-1.5 after:right-1 lg:after:right-1.5 after:text-[6px] lg:after:text-[8px] after:font-black after:text-(--theme-500) after:bg-white after:px-1 after:py-0.5 after:rounded-sm after:shadow-sm' : ''}
                                                 `}
                                             >
-                                                <span className={`text-2xl font-black leading-none select-none ${isSelected ? 'text-white' : ''}`}>
+                                                <span className={`text-sm md:text-2xl font-black leading-none select-none ${isSelected ? 'text-white' : ''}`}>
                                                     {date ? date.getDate() : ''}
                                                 </span>
                                                 {date && date.getDay() !== 0 && (
@@ -949,7 +949,7 @@ const Calendario = () => {
 
                     {/* Scheduling Panel (Right Side - 1 Col) */}
                     <div className="lg:col-span-1 flex flex-col min-h-0">
-                        <div className="flex-1 bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col overflow-hidden">
+                        <div className="flex-1 bg-white border-t border-slate-100 md:border md:border-gray-200 md:rounded-xl p-5 md:p-4 md:shadow-sm flex flex-col overflow-hidden">
 
                             {/* Tabs Headers */}
                             <div className="flex border-b border-gray-100 mb-4 shrink-0">

@@ -118,7 +118,7 @@ const RegisterMobile = () => {
         </div>
         <div className="flex items-center gap-5 overflow-x-auto no-scrollbar py-2.5">
           {[
-            { name: 'Página web', to: 'https://web.solomycrm.com/', isExternal: true },
+            { name: 'Página web', to: 'https://solomycrm.com/', isExternal: true },
             { name: 'Contáctanos', to: '#' },
             { name: 'Términos', to: '/terminos-y-condiciones', targetBlank: true },
             { name: 'Privacidad', to: '/politica-de-privacidad', targetBlank: true }

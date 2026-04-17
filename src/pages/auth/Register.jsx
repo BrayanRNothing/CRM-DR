@@ -246,7 +246,7 @@ const Register = () => {
 
             <div className="hidden md:flex items-center justify-between flex-1 max-w-5xl ml-12 relative z-10">
               {[
-                { name: 'Página web', to: 'https://web.solomycrm.com/', isExternal: true },
+                { name: 'Página web', to: 'https://solomycrm.com/', isExternal: true },
                 { name: 'Contáctanos', to: '#' },
                 { name: 'Términos y condiciones de uso', to: '/terminos-y-condiciones', targetBlank: true },
                 { name: 'Política de privacidad', to: '/politica-de-privacidad', targetBlank: true }

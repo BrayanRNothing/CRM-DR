@@ -4,10 +4,14 @@ import AnimatedGridBackground from '../components/ui/AnimatedGridBackground';
 import FloatingSidebar from '../components/ui/FloatingSidebar';
 import { getUser } from '../utils/authUtils';
 import logosolomycrm from '../assets/logosolomycrm.png';
+import useWindowSize from '../hooks/useWindowSize';
+import MainLayoutMobile from './MainLayoutMobile';
 
 const MainLayout = () => {
+    const { width } = useWindowSize();
     const [usuario, setUsuario] = useState(null);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
 
     React.useEffect(() => {
         const userGuardado = getUser();
@@ -61,7 +65,7 @@ const MainLayout = () => {
             )
         },
         {
-            name: 'Equipo y usuarios',
+            name: 'Equipo',
             path: '/vendedor/equipo',
             isBottom: true,
             icon: (
@@ -82,9 +86,19 @@ const MainLayout = () => {
         },
     ];
 
+    if (width < 1024) {
+        return (
+            <MainLayoutMobile
+                menuItems={menuItems}
+                userInfo={{ ...usuario, rol: 'Vendedor' }}
+            />
+        );
+    }
+
     return (
         <AnimatedGridBackground mode="light">
             <div className="h-screen flex p-4 gap-4">
+
                 {/* Floating Sidebar (Light Mode) */}
                 <FloatingSidebar
                     menuItems={menuItems}

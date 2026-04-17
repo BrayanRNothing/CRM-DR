@@ -110,11 +110,15 @@ const sanitizeVendedorData = (rawData) => {
 };
 
 import { getToken } from '../utils/authUtils';
+import useWindowSize from '../hooks/useWindowSize';
+import DashboardMobile from './DashboardMobile';
 
 const getAuthHeaders = () => ({ 'x-auth-token': getToken() || '' });
 
 const Dashboard = () => {
+    const { width } = useWindowSize();
     const [loading, setLoading] = useState(true);
+
     const [vendedorData, setVendedorData] = useState(null);
     const [closerData, setCloserData] = useState(null);
     const [recordatorios, setRecordatorios] = useState([]);
@@ -392,6 +396,20 @@ const Dashboard = () => {
             </div>
         );
     }
+
+    if (width < 1024) {
+        return (
+            <DashboardMobile 
+                vendedorData={vendedorData}
+                closerData={closerData}
+                recordatorios={recordatorios}
+                reuniones={reuniones}
+                periodo={periodo}
+                setPeriodo={setPeriodo}
+            />
+        );
+    }
+
 
     const mP = vendedorData.periodos?.[periodo] || EMPTY_PERIODO;
     const periodoSuffix = PERIODOS.find(p => p.key === periodo)?.suffix || 'hoy';

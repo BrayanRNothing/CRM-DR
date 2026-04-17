@@ -4,7 +4,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
     Phone, MessageSquare, Mail, Calendar, CheckCircle2,
-    XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown, Save
+    XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown, Save, History
 } from 'lucide-react';
 
 import { getToken, getUser } from '../utils/authUtils';
@@ -104,6 +104,7 @@ export default function ClienteDetalle({
     // SECCIONES PERSONALIZADAS
     const [customSections, setCustomSections] = useState(initialCliente?.customSections || []);
     const [modalNuevaSeccion, setModalNuevaSeccion] = useState(false);
+    const [drawerHistorialAbierto, setDrawerHistorialAbierto] = useState(false);
 
     // Solo actualizar estado local al recibir nuevos datos
     useEffect(() => {
@@ -1146,14 +1147,33 @@ export default function ClienteDetalle({
                         </div>
                     </div>
 
-                    {/* ===================== COLUMNA DERECHA: HISTORIAL ===================== */}
-                    <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden lg:h-full h-[70vh] min-h-0">
-                        <div className="p-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl flex items-center justify-between">
+                    {/* ===================== COLUMNA DERECHA: HISTORIAL (Drawer en Mobile) ===================== */}
+                    {/* Overlay Backdrop (solo visible en mobile) */}
+                    <div 
+                        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${drawerHistorialAbierto ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
+                        onClick={() => setDrawerHistorialAbierto(false)} 
+                    />
+
+                    <div className={`fixed inset-x-0 bottom-0 z-50 lg:static lg:z-auto transition-transform duration-300 ease-out transform ${drawerHistorialAbierto ? 'translate-y-0' : 'translate-y-full lg:translate-y-0'} lg:transform-none bg-white lg:bg-white border-t lg:border-t-0 lg:border lg:border-slate-200 rounded-t-2xl lg:rounded-xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] lg:shadow-sm flex flex-col overflow-hidden h-[88vh] lg:h-full min-h-0`}>
+                        {/* Pequeña barra tirador en móvil */}
+                        <div className="w-full flex justify-center py-2 lg:hidden" onTouchMove={(e) => {
+                                // Touch prevent o close on swipe (opcional, por ahora solo visual)
+                            }}
+                            onClick={() => setDrawerHistorialAbierto(false)}>
+                            <div className="w-12 h-1.5 bg-slate-300 rounded-full"></div>
+                        </div>
+
+                        <div className="p-4 border-b border-slate-100 bg-slate-50/50 lg:rounded-t-xl flex items-center justify-between">
                             <div>
                                 <h3 className="font-bold text-gray-900 text-sm">Historial de interacciones</h3>
                                 <p className="text-[10px] text-slate-400 mt-0.5">↑ Más reciente arriba</p>
                             </div>
-                            <span className="text-xs bg-slate-200 text-slate-600 rounded-full px-2 py-0.5 font-semibold">{actividadesContext.length}</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs bg-slate-200 text-slate-600 rounded-full px-2 py-0.5 font-semibold">{actividadesContext.length}</span>
+                                <button className="lg:hidden p-1.5 bg-slate-200/50 rounded-full text-slate-500 hover:text-slate-800" onClick={() => setDrawerHistorialAbierto(false)}>
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
                         </div>
                         <div
                             className="flex-1 overflow-y-auto px-4 py-4 hide-scrollbar"
@@ -1270,6 +1290,21 @@ export default function ClienteDetalle({
                 </div>
             </div>
 
+            {/* FAB Botón de Historial (Mobile Only) */}
+            <button
+                onClick={() => setDrawerHistorialAbierto(true)}
+                className={`lg:hidden fixed bottom-6 right-6 p-4 rounded-full shadow-2xl z-30 transition-transform duration-300 flex items-center justify-center bg-(--theme-600) text-white hover:scale-105 active:scale-95 ${drawerHistorialAbierto ? 'translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}
+                title="Ver Historial"
+            >
+                <div className="relative">
+                    <History className="w-6 h-6" />
+                    {actividadesContext.length > 0 && (
+                        <div className="absolute -top-3 -right-3 min-w-[20px] h-5 bg-rose-500 rounded-full flex items-center justify-center px-1 border-2 border-white text-white text-[9px] font-black shadow-sm">
+                            {actividadesContext.length}
+                        </div>
+                    )}
+                </div>
+            </button>
 
             {/* MODAL RECORDATORIO DE LLAMADA */}
             {llamadaFlow !== null && (

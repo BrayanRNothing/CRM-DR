@@ -264,11 +264,11 @@ export default function Equipo() {
   });
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+    <div className="min-h-screen bg-white md:bg-linear-to-br md:from-gray-50 md:to-gray-100 p-4 md:p-8 -m-4 md:m-0 pb-8 md:pb-8">
       {/* Team Info Card - NOW AT THE TOP */}
       <div className="max-w-7xl mx-auto space-y-6">
         {!loading && !error && equipo && (
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-200 premium-reflejo transition-all hover:shadow-md">
+          <div className="bg-white md:rounded-3xl p-6 border-b border-gray-100 md:shadow-sm md:border md:border-gray-200 premium-reflejo transition-all hover:shadow-md">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-(--theme-500) to-(--theme-600) flex items-center justify-center shadow-lg shadow-(--theme-500)/20">
@@ -293,7 +293,7 @@ export default function Equipo() {
                   ) : (
                     <>
                       <div className="flex items-center gap-3">
-                        <h1 className="text-2xl font-bold tracking-tight text-gray-900">{equipo.nombre}</h1>
+                        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-gray-900 leading-tight">{equipo.nombre}</h1>
                         {esOwner && (
                           <button 
                             className="p-1.5 text-gray-400 hover:text-(--theme-600) hover:bg-(--theme-50) rounded-lg transition-all"
@@ -311,9 +311,9 @@ export default function Equipo() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 md:gap-3 w-full md:w-auto mt-2 md:mt-0">
                 <button 
-                  className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm"
+                  className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2.5 bg-white border border-gray-200 rounded-xl text-[11px] md:text-xs font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm"
                   onClick={fetchEquipo}
                 >
                   <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
@@ -321,7 +321,7 @@ export default function Equipo() {
                 </button>
                 {esOwner && (
                   <button 
-                    className="flex items-center gap-2 px-4 py-2.5 bg-linear-to-r from-(--theme-600) to-(--theme-500) text-white rounded-xl text-xs font-bold shadow-lg shadow-(--theme-600)/20 hover:-translate-y-0.5 transition-all"
+                    className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2.5 bg-linear-to-r from-(--theme-600) to-(--theme-500) text-white rounded-xl text-[11px] md:text-xs font-bold shadow-lg shadow-(--theme-600)/20 hover:-translate-y-0.5 transition-all"
                     onClick={() => setShowAddModal(true)}
                   >
                     <UserPlus size={14} />
@@ -350,11 +350,11 @@ export default function Equipo() {
         {/* Member List Section */}
         {!loading && equipo && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white md:rounded-3xl p-6 border-b border-gray-100 md:shadow-sm md:border md:border-gray-200 overflow-hidden">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Miembros del Equipo</h2>
-                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest mt-1">Gestión de acceso y roles</p>
+                  <h2 className="text-lg md:text-xl font-bold text-gray-900 leading-tight">Miembros del Equipo</h2>
+                  <p className="text-[10px] md:text-xs text-gray-400 font-semibold uppercase tracking-widest mt-1">Gestión de acceso y roles</p>
                 </div>
                 
                 <div className="flex flex-wrap gap-2">
@@ -368,7 +368,7 @@ export default function Equipo() {
                     />
                   </div>
                   <select 
-                    className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:bg-white focus:border-(--theme-500) transition-all cursor-pointer"
+                    className="flex-1 sm:flex-none px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs md:text-sm font-semibold text-gray-700 outline-none focus:bg-white focus:border-(--theme-500) transition-all cursor-pointer w-full sm:w-auto"
                     value={draftFilters.estado} 
                     onChange={e => setDraftFilters(prev => ({ ...prev, estado: e.target.value }))}
                   >
@@ -377,7 +377,7 @@ export default function Equipo() {
                     <option value="inactivo">Inactivos</option>
                   </select>
                   <button 
-                    className="px-6 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-bold shadow-sm hover:bg-black transition-all"
+                    className="flex-1 sm:flex-none px-4 py-2 md:px-6 md:py-2.5 bg-gray-900 text-white rounded-xl text-[11px] md:text-xs font-bold shadow-sm hover:bg-black transition-all whitespace-nowrap"
                     onClick={applyFilters}
                   >
                     FILTRAR
