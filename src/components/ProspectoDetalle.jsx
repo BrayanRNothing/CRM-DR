@@ -1955,6 +1955,7 @@ export default function ProspectoDetalle({
                 </div>
             )}
         </div>
+    </div>
     );
 
 
