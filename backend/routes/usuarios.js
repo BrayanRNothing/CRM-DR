@@ -133,6 +133,138 @@ router.post('/team-owners', auth, esAdminUnico, async (req, res) => {
     }
 });
 
+// @route   PUT api/usuarios/team-owners/:id
+// @desc    Editar propietario de equipo
+// @access  Private (Admin root único)
+router.put('/team-owners/:id', auth, esAdminUnico, async (req, res) => {
+    try {
+        const ownerId = parseInt(req.params.id, 10);
+        const { usuario, nombre, email, telefono, contraseña, equipoNombre } = req.body;
+
+        if (!ownerId) {
+            return res.status(400).json({ mensaje: 'ID inválido' });
+        }
+
+        const owner = await db.prepare(
+            'SELECT id, usuario, rol, "equipo_id" FROM usuarios WHERE id = ?'
+        ).get(ownerId);
+
+        if (!owner || owner.rol === 'admin') {
+            return res.status(404).json({ mensaje: 'Propietario de equipo no encontrado' });
+        }
+
+        const updates = [];
+        const params = [];
+
+        if (typeof usuario === 'string' && usuario.trim()) {
+            const existeUsuario = await db.prepare(
+                'SELECT id FROM usuarios WHERE LOWER(usuario) = LOWER(?) AND id <> ?'
+            ).get(usuario.trim(), ownerId);
+            if (existeUsuario) {
+                return res.status(400).json({ mensaje: 'El nombre de usuario ya está en uso' });
+            }
+            updates.push('usuario = ?');
+            params.push(usuario.trim());
+        }
+
+        if (typeof nombre === 'string' && nombre.trim()) {
+            updates.push('nombre = ?');
+            params.push(nombre.trim());
+        }
+
+        if (typeof email === 'string') {
+            const normalizedEmail = email.trim();
+            if (normalizedEmail) {
+                const existeEmail = await db.prepare(
+                    'SELECT id FROM usuarios WHERE LOWER(email) = LOWER(?) AND id <> ?'
+                ).get(normalizedEmail, ownerId);
+                if (existeEmail) {
+                    return res.status(400).json({ mensaje: 'El email ya está en uso' });
+                }
+            }
+            updates.push('email = ?');
+            params.push(normalizedEmail);
+        }
+
+        if (typeof telefono === 'string') {
+            updates.push('telefono = ?');
+            params.push(telefono.trim());
+        }
+
+        if (typeof contraseña === 'string' && contraseña.trim()) {
+            const hash = await bcrypt.hash(contraseña.trim(), 10);
+            updates.push('contraseña = ?');
+            params.push(hash);
+        }
+
+        if (updates.length > 0) {
+            params.push(ownerId);
+            await db.prepare(`UPDATE usuarios SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+        }
+
+        if (typeof equipoNombre === 'string' && equipoNombre.trim() && owner.equipo_id) {
+            await db.prepare('UPDATE equipos SET nombre = ? WHERE id = ?').run(equipoNombre.trim(), owner.equipo_id);
+        }
+
+        const updated = await db.prepare(
+            `SELECT
+                u.id,
+                u.usuario,
+                u.nombre,
+                u.rol,
+                u.email,
+                u.telefono,
+                u.activo,
+                e.id AS team_id,
+                e.nombre AS team_name,
+                e."fechaCreacion" AS team_created
+             FROM usuarios u
+             INNER JOIN equipos e ON e.id = u."equipo_id"
+             WHERE u.id = ?`
+        ).get(ownerId);
+
+        res.json({
+            mensaje: 'Propietario de equipo actualizado',
+            owner: formatTeamOwner(updated)
+        });
+    } catch (error) {
+        console.error('Error en PUT /api/usuarios/team-owners/:id:', error);
+        res.status(500).json({ mensaje: 'Error del servidor' });
+    }
+});
+
+// @route   DELETE api/usuarios/team-owners/:id
+// @desc    Borrar propietario de equipo (desactivar + liberar propiedad de equipo)
+// @access  Private (Admin root único)
+router.delete('/team-owners/:id', auth, esAdminUnico, async (req, res) => {
+    try {
+        const ownerId = parseInt(req.params.id, 10);
+
+        if (!ownerId) {
+            return res.status(400).json({ mensaje: 'ID inválido' });
+        }
+
+        const owner = await db.prepare(
+            'SELECT id, rol, "equipo_id" FROM usuarios WHERE id = ?'
+        ).get(ownerId);
+
+        if (!owner || owner.rol === 'admin') {
+            return res.status(404).json({ mensaje: 'Propietario de equipo no encontrado' });
+        }
+
+        await db.prepare('UPDATE usuarios SET activo = 0 WHERE id = ?').run(ownerId);
+
+        if (owner.equipo_id) {
+            await db.prepare('UPDATE equipos SET owner_id = NULL WHERE id = ?').run(owner.equipo_id);
+        }
+
+        res.json({ mensaje: 'Propietario de equipo eliminado correctamente' });
+    } catch (error) {
+        console.error('Error en DELETE /api/usuarios/team-owners/:id:', error);
+        res.status(500).json({ mensaje: 'Error del servidor' });
+    }
+});
+
 // @route   GET api/usuarios
 // @desc    Obtener usuarios del mismo equipo
 // @access  Private

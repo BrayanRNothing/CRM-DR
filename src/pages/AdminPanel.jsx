@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { UserPlus, ShieldCheck, Users, Building2, Loader2, KeyRound } from 'lucide-react';
+import { UserPlus, ShieldCheck, Users, Building2, Loader2, KeyRound, Pencil, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../config/api';
 import { getToken, getUser } from '../utils/authUtils';
@@ -21,6 +21,8 @@ export default function AdminPanel() {
   const [owners, setOwners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [editingOwner, setEditingOwner] = useState(null);
   const [form, setForm] = useState(initialForm);
 
   const isAdminRoot = currentUser?.rol === 'admin';
@@ -92,6 +94,95 @@ export default function AdminPanel() {
     }
   };
 
+  const handleStartEdit = (owner) => {
+    setEditingOwner(owner);
+    setForm({
+      usuario: owner.usuario || '',
+      contraseña: '',
+      nombre: owner.nombre || '',
+      email: owner.email || '',
+      telefono: owner.telefono || '',
+      equipoNombre: owner.equipo?.nombre || ''
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingOwner(null);
+    setForm(initialForm);
+  };
+
+  const handleUpdateOwner = async (event) => {
+    event.preventDefault();
+
+    if (!editingOwner) return;
+
+    if (!form.usuario.trim() || !form.nombre.trim()) {
+      toast.error('Usuario y nombre son obligatorios');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        usuario: form.usuario,
+        nombre: form.nombre,
+        email: form.email,
+        telefono: form.telefono,
+        equipoNombre: form.equipoNombre
+      };
+
+      if (form.contraseña.trim()) {
+        payload.contraseña = form.contraseña;
+      }
+
+      const res = await fetch(`${API_URL}/api/usuarios/team-owners/${editingOwner.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.mensaje || 'No se pudo actualizar propietario de equipo');
+
+      toast.success('Propietario de equipo actualizado');
+      handleCancelEdit();
+      fetchOwners();
+    } catch (error) {
+      toast.error(error.message || 'Error al actualizar propietario de equipo');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteOwner = async (owner) => {
+    const confirmDelete = window.confirm(`¿Seguro que quieres eliminar a ${owner.nombre}?`);
+    if (!confirmDelete) return;
+
+    setDeletingId(owner.id);
+    try {
+      const res = await fetch(`${API_URL}/api/usuarios/team-owners/${owner.id}`, {
+        method: 'DELETE',
+        headers: { 'x-auth-token': token }
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.mensaje || 'No se pudo eliminar propietario de equipo');
+
+      toast.success('Propietario de equipo eliminado');
+      if (editingOwner && editingOwner.id === owner.id) {
+        handleCancelEdit();
+      }
+      fetchOwners();
+    } catch (error) {
+      toast.error(error.message || 'Error al eliminar propietario de equipo');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="w-full min-h-full bg-slate-50 p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -125,9 +216,9 @@ export default function AdminPanel() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <form onSubmit={handleCreateOwner} className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
+          <form onSubmit={editingOwner ? handleUpdateOwner : handleCreateOwner} className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
             <h2 className="font-black text-slate-900 text-lg flex items-center gap-2">
-              <UserPlus className="w-5 h-5" /> Crear propietario de equipo
+              <UserPlus className="w-5 h-5" /> {editingOwner ? 'Editar propietario de equipo' : 'Crear propietario de equipo'}
             </h2>
 
             <input
@@ -151,9 +242,9 @@ export default function AdminPanel() {
               type="password"
               value={form.contraseña}
               onChange={handleInput}
-              placeholder="Contraseña"
+              placeholder={editingOwner ? 'Nueva contraseña (opcional)' : 'Contraseña'}
               className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-300"
-              required
+              required={!editingOwner}
             />
             <input
               name="equipoNombre"
@@ -178,14 +269,27 @@ export default function AdminPanel() {
               className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-300"
             />
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-              {saving ? 'Creando...' : 'Crear propietario'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex-1 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                {saving ? (editingOwner ? 'Guardando...' : 'Creando...') : (editingOwner ? 'Guardar cambios' : 'Crear propietario')}
+              </button>
+
+              {editingOwner && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center"
+                  title="Cancelar edición"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </form>
 
           <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
@@ -209,6 +313,7 @@ export default function AdminPanel() {
                       <th className="py-2">Equipo</th>
                       <th className="py-2">Email</th>
                       <th className="py-2">Teléfono</th>
+                      <th className="py-2 text-right">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -219,6 +324,25 @@ export default function AdminPanel() {
                         <td className="py-3">{owner.equipo?.nombre || '-'}</td>
                         <td className="py-3">{owner.email || '-'}</td>
                         <td className="py-3">{owner.telefono || '-'}</td>
+                        <td className="py-3">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleStartEdit(owner)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                            >
+                              <Pencil className="w-3.5 h-3.5" /> Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteOwner(owner)}
+                              disabled={deletingId === owner.id}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60 transition-colors"
+                            >
+                              {deletingId === owner.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Eliminar
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
