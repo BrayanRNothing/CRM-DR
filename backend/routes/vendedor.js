@@ -103,7 +103,7 @@ router.get('/dashboard', [auth, esVendedor], async (req, res) => {
         const clientes = await db.prepare(`
             SELECT DISTINCT c.* FROM clientes c
             LEFT JOIN actividades a ON c.id = a.cliente
-            WHERE c.prospectorAsignado = ? OR a.vendedor = ? OR c.prospectorAsignado IS NULL
+            WHERE c.prospectorAsignado = ? OR a.vendedor = ?
         `).all(prospectorId, prospectorId);
 
         // Filtrar solo prospectos activos (excluir perdidos y ventas ganadas)
