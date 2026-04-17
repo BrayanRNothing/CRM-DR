@@ -94,7 +94,7 @@ const LoginMobile = () => {
         <div className="flex items-center gap-5 overflow-x-auto no-scrollbar py-2.5">
           {[
             { name: 'Página web', to: 'https://solomycrm.com/', isExternal: true },
-            { name: 'Contáctanos', to: '#' },
+            { name: 'Contáctanos', to: 'https://www.solomycrm.com/#/contacto', isExternal: true },
             { name: 'Términos', to: '/terminos-y-condiciones', targetBlank: true },
             { name: 'Privacidad', to: '/politica-de-privacidad', targetBlank: true }
           ].map((link) => (
