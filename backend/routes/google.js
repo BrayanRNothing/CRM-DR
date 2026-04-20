@@ -507,7 +507,7 @@ router.get('/account-info', auth, async (req, res) => {
         const user = await db.prepare('SELECT googleRefreshToken, googleAccessToken, googleTokenExpiry FROM usuarios WHERE id = ?').get(userId);
 
         if (!user || (!user.googleRefreshToken && !user.googleAccessToken)) {
-            return res.status(400).json({ msg: 'No se ha vinculado Google Calendar', notLinked: true });
+            return res.json({ msg: 'No se ha vinculado Google Calendar', notLinked: true, connected: false });
         }
 
         const client = new OAuth2Client(

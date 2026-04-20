@@ -72,9 +72,15 @@ export default function VendedorAjustes() {
             });
             if (res.ok) {
                 const data = await res.json();
-                setGoogleAccountInfo(data);
-                setGoogleConnected(true);
-                localStorage.setItem('google_linked', 'true');
+                if (data?.notLinked || data?.connected === false) {
+                    setGoogleConnected(false);
+                    localStorage.removeItem('google_linked');
+                    setGoogleAccountInfo(null);
+                } else {
+                    setGoogleAccountInfo(data);
+                    setGoogleConnected(true);
+                    localStorage.setItem('google_linked', 'true');
+                }
             } else if (res.status === 401 || res.status === 404) {
                 setGoogleConnected(false);
                 localStorage.removeItem('google_linked');

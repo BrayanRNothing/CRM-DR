@@ -309,9 +309,18 @@ const Calendario = () => {
             });
             
             if (res.ok) {
-                // Recordar en sesión que el usuario está vinculado para no mostrar modal al volver
-                sessionStorage.setItem('googleLinkedConfirmed', 'true');
-                setGoogleLinked(true);
+                const data = await res.json().catch(() => ({}));
+                if (data?.notLinked || data?.connected === false) {
+                    sessionStorage.removeItem('googleLinkedConfirmed');
+                    setGoogleLinked(false);
+                    if (!isQuiet && !sessionStorage.getItem('dismissedSyncPrompt')) {
+                        setShowSyncPrompt(true);
+                    }
+                } else {
+                    // Recordar en sesión que el usuario está vinculado para no mostrar modal al volver
+                    sessionStorage.setItem('googleLinkedConfirmed', 'true');
+                    setGoogleLinked(true);
+                }
             } else {
                 const data = await res.json().catch(() => ({}));
                 // Solo marcar como no vinculado si el error es explícito de vinculación (401 o flag notLinked)

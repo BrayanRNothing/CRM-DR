@@ -321,7 +321,7 @@ router.get('/mi-equipo/metricas', auth, async (req, res) => {
         const periodo = getPeriodo(req.query.periodo);
 
         if (!equipoId) {
-            return res.status(404).json({ mensaje: 'No estás asignado a ningún equipo' });
+            return res.json({ periodo, metricas: [], noTeam: true, mensaje: 'No estás asignado a ningún equipo' });
         }
 
         await ensureGoalsTable();
