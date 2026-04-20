@@ -36,7 +36,7 @@ const formatTeamOwner = (row) => ({
 
 // @route   GET api/usuarios/team-owners
 // @desc    Listar propietarios de equipo
-// @access  Private (Admin root único)
+// @access  Private (Admins root)
 router.get('/team-owners', auth, esAdminUnico, async (req, res) => {
     try {
         const rows = await db.prepare(
@@ -66,7 +66,7 @@ router.get('/team-owners', auth, esAdminUnico, async (req, res) => {
 
 // @route   POST api/usuarios/team-owners
 // @desc    Crear un propietario de equipo (usuario + equipo propio)
-// @access  Private (Admin root único)
+// @access  Private (Admins root)
 router.post('/team-owners', auth, esAdminUnico, async (req, res) => {
     try {
         const { usuario, contraseña, nombre, email, telefono, equipoNombre } = req.body;
@@ -135,7 +135,7 @@ router.post('/team-owners', auth, esAdminUnico, async (req, res) => {
 
 // @route   PUT api/usuarios/team-owners/:id
 // @desc    Editar propietario de equipo
-// @access  Private (Admin root único)
+// @access  Private (Admins root)
 router.put('/team-owners/:id', auth, esAdminUnico, async (req, res) => {
     try {
         const ownerId = parseInt(req.params.id, 10);
@@ -235,7 +235,7 @@ router.put('/team-owners/:id', auth, esAdminUnico, async (req, res) => {
 
 // @route   DELETE api/usuarios/team-owners/:id
 // @desc    Borrar propietario de equipo (desactivar + liberar propiedad de equipo)
-// @access  Private (Admin root único)
+// @access  Private (Admins root)
 router.delete('/team-owners/:id', auth, esAdminUnico, async (req, res) => {
     try {
         const ownerId = parseInt(req.params.id, 10);

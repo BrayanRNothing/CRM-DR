@@ -81,7 +81,7 @@ const esTeamOwner = async (req, res, next) => {
 };
 
 /**
- * Middleware: permite acceso solo al admin root único del sistema.
+ * Middleware: permite acceso a los dos admins root del sistema.
  */
 const esAdminUnico = async (req, res, next) => {
     try {
@@ -93,16 +93,21 @@ const esAdminUnico = async (req, res, next) => {
             return res.status(403).json({ mensaje: 'Acceso denegado. Se requiere admin root.' });
         }
 
-        const adminRoot = await db.prepare('SELECT id, usuario FROM usuarios WHERE rol = ? ORDER BY id ASC LIMIT 1').get('admin');
-        if (!adminRoot) {
+        const adminsRoot = await db.prepare('SELECT id, usuario FROM usuarios WHERE rol = ? ORDER BY id ASC LIMIT 2').all('admin');
+        if (!adminsRoot || adminsRoot.length === 0) {
             return res.status(403).json({ mensaje: 'No existe admin root configurado' });
         }
 
-        const sameId = String(adminRoot.id) === String(req.usuario.id);
-        const sameUsername = String(req.usuario.usuario || '').toLowerCase() === String(adminRoot.usuario || '').toLowerCase();
+        const requesterId = String(req.usuario.id);
+        const requesterUsername = String(req.usuario.usuario || '').toLowerCase();
+        const isRootAdmin = adminsRoot.some((admin) => {
+            const sameId = String(admin.id) === requesterId;
+            const sameUsername = String(admin.usuario || '').toLowerCase() === requesterUsername;
+            return sameId && sameUsername;
+        });
 
-        if (!sameId || !sameUsername) {
-            return res.status(403).json({ mensaje: 'Solo el admin root puede realizar esta acción' });
+        if (!isRootAdmin) {
+            return res.status(403).json({ mensaje: 'Solo los admins root pueden realizar esta acción' });
         }
 
         next();

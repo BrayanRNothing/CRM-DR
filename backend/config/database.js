@@ -17,12 +17,28 @@ const ROOT_ADMIN_DEFAULTS = {
   telefono: '0000000000'
 };
 
+const ROOT_ADMIN_SECONDARY_DEFAULTS = {
+  username: '',
+  password: '',
+  nombre: '',
+  email: '',
+  telefono: ''
+};
+
 const getRootAdminCredentials = () => ({
   username: (process.env.ROOT_ADMIN_USER || ROOT_ADMIN_DEFAULTS.username).trim(),
   password: (process.env.ROOT_ADMIN_PASS || ROOT_ADMIN_DEFAULTS.password).trim(),
   nombre: (process.env.ROOT_ADMIN_NAME || ROOT_ADMIN_DEFAULTS.nombre).trim(),
   email: (process.env.ROOT_ADMIN_EMAIL || ROOT_ADMIN_DEFAULTS.email).trim(),
   telefono: (process.env.ROOT_ADMIN_PHONE || ROOT_ADMIN_DEFAULTS.telefono).trim()
+});
+
+const getSecondRootAdminCredentials = () => ({
+  username: (process.env.ROOT_ADMIN2_USER || ROOT_ADMIN_SECONDARY_DEFAULTS.username).trim(),
+  password: (process.env.ROOT_ADMIN2_PASS || ROOT_ADMIN_SECONDARY_DEFAULTS.password).trim(),
+  nombre: (process.env.ROOT_ADMIN2_NAME || ROOT_ADMIN_SECONDARY_DEFAULTS.nombre).trim(),
+  email: (process.env.ROOT_ADMIN2_EMAIL || ROOT_ADMIN_SECONDARY_DEFAULTS.email).trim(),
+  telefono: (process.env.ROOT_ADMIN2_PHONE || ROOT_ADMIN_SECONDARY_DEFAULTS.telefono).trim()
 });
 
 const isRunningOnRailway = Boolean(
@@ -761,11 +777,12 @@ const initDb = async () => {
     }
   }
 
-  // Asegurar que exista un único usuario admin root y que tenga su propio equipo.
+  // Asegurar que exista entre 1 y 2 usuarios admin root y que ambos queden activos.
   try {
     await db.prepare("UPDATE usuarios SET rol = 'vendedor' WHERE rol IN ('prospector', 'closer', 'superuser')").run();
 
     const creds = getRootAdminCredentials();
+    const creds2 = getSecondRootAdminCredentials();
     const admins = await db.prepare('SELECT id, usuario FROM usuarios WHERE rol = ? ORDER BY id ASC').all('admin');
 
     if (admins.length === 0) {
@@ -790,15 +807,28 @@ const initDb = async () => {
       }
     }
 
+    if (creds2.username && creds2.password && creds2.nombre) {
+      const admin2 = await db.prepare('SELECT id FROM usuarios WHERE LOWER(usuario) = LOWER(?)').get(creds2.username);
+      if (!admin2) {
+        const hashAdmin2 = await bcrypt.hash(creds2.password, 10);
+        const created2 = await db.prepare(
+          'INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono, activo) VALUES (?, ?, ?, ?, ?, ?, 1)'
+        ).run(creds2.username, hashAdmin2, 'admin', creds2.nombre, creds2.email, creds2.telefono);
+        console.log(`✅ Segundo admin root creado (id: ${created2.lastInsertRowid || 'n/a'})`);
+      } else {
+        await db.prepare('UPDATE usuarios SET rol = ?, activo = 1 WHERE id = ?').run('admin', admin2.id);
+      }
+    }
+
     await db.prepare('UPDATE usuarios SET activo = 1 WHERE id = ?').run(adminRoot.id);
 
     const adminsDespues = await db.prepare('SELECT id FROM usuarios WHERE rol = ? ORDER BY id ASC').all('admin');
-    if (adminsDespues.length > 1) {
-      const idsExtras = adminsDespues.slice(1).map((a) => a.id);
+    if (adminsDespues.length > 2) {
+      const idsExtras = adminsDespues.slice(2).map((a) => a.id);
       for (const extraId of idsExtras) {
         await db.prepare('UPDATE usuarios SET rol = ? WHERE id = ?').run('vendedor', extraId);
       }
-      console.log(`⚠️ Se normalizaron ${idsExtras.length} admins extra a rol vendedor para mantener admin único.`);
+      console.log(`⚠️ Se normalizaron ${idsExtras.length} admins extra a rol vendedor para mantener máximo 2 admins root.`);
     }
 
     if (!adminRoot.equipo_id) {
@@ -806,7 +836,7 @@ const initDb = async () => {
       await db.prepare('UPDATE usuarios SET "equipo_id" = ? WHERE id = ?').run(teamCreated.lastInsertRowid, adminRoot.id);
     }
   } catch (e) {
-    console.error('⚠️ Error asegurando admin root único:', e.message);
+    console.error('⚠️ Error asegurando admins root:', e.message);
   }
 };
 
