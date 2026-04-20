@@ -188,8 +188,9 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="w-full min-h-full bg-slate-50 p-6 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <>
+      <div className="w-full min-h-full bg-slate-50 p-6 md:p-8">
+        <div className="max-w-7xl mx-auto space-y-6">
         <div className="relative overflow-hidden bg-linear-to-r from-slate-900 to-slate-700 rounded-2xl p-6 text-white shadow-xl">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
@@ -402,6 +403,6 @@ export default function AdminPanel() {
           </form>
         </div>
       )}
-    </div>
+    </>
   );
 }
