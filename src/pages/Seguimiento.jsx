@@ -1341,30 +1341,47 @@ const Seguimiento = () => {
                     <div className="bg-white md:border md:border-slate-200 md:rounded-2xl md:shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="min-w-full text-sm">
-                                <thead className="bg-slate-50 text-slate-400 uppercase">
+                                <thead className="bg-slate-50/80 text-slate-400 uppercase">
                                     <tr>
-                                        <th className="px-4 py-4"><div className="h-3 bg-slate-100 rounded w-20 animate-pulse"></div></th>
-                                        <th className="px-4 py-4"><div className="h-3 bg-slate-100 rounded w-24 animate-pulse"></div></th>
-                                        <th className="px-4 py-4"><div className="h-3 bg-slate-100 rounded w-20 animate-pulse"></div></th>
-                                        <th className="px-4 py-4 text-center"><div className="h-3 bg-slate-100 rounded w-16 mx-auto animate-pulse"></div></th>
-                                        <th className="px-4 py-4"><div className="h-3 bg-slate-100 rounded w-32 animate-pulse"></div></th>
-                                        <th className="px-4 py-4 text-center"><div className="h-3 bg-slate-100 rounded w-12 mx-auto animate-pulse"></div></th>
+                                        <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-20 animate-pulse"></div></th>
+                                        <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-24 animate-pulse"></div></th>
+                                        <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-20 animate-pulse"></div></th>
+                                        <th className="px-4 py-4 text-center"><div className="h-2.5 bg-slate-200/80 rounded-full w-16 mx-auto animate-pulse"></div></th>
+                                        <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-28 animate-pulse"></div></th>
+                                        <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-24 animate-pulse"></div></th>
+                                        <th className="px-4 py-4 text-center"><div className="h-2.5 bg-slate-200/80 rounded-full w-14 mx-auto animate-pulse"></div></th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {[1, 2, 3, 4, 5, 6].map((idx) => (
+                                    {[1, 2, 3, 4, 5].map((idx) => (
                                         <tr key={idx}>
                                             <td className="px-4 py-5 font-medium">
                                                 <div className="space-y-2">
-                                                    <div className="h-4 bg-slate-100 rounded w-32 animate-pulse"></div>
-                                                    <div className="h-3 bg-slate-50 rounded w-20 animate-pulse"></div>
+                                                    <div className="h-4 bg-slate-200/80 rounded-md w-32 animate-pulse"></div>
+                                                    <div className="h-3 bg-slate-100 rounded-md w-24 animate-pulse"></div>
+                                                    <div className="flex items-center gap-1 pt-0.5">
+                                                        {[1, 2, 3, 4, 5].map((s) => (
+                                                            <div key={s} className="h-2.5 w-2.5 rounded-full bg-amber-100 animate-pulse"></div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-5"><div className="h-4 bg-slate-50 rounded w-24 animate-pulse"></div></td>
-                                            <td className="px-4 py-5"><div className="h-4 bg-slate-50 rounded w-28 animate-pulse"></div></td>
-                                            <td className="px-4 py-5 text-center"><div className="h-5 bg-slate-100 rounded-full w-20 mx-auto animate-pulse"></div></td>
-                                            <td className="px-4 py-5"><div className="h-4 bg-slate-50 rounded w-40 animate-pulse"></div></td>
-                                            <td className="px-4 py-5 text-center"><div className="h-4 bg-slate-50 rounded w-24 mx-auto animate-pulse"></div></td>
+                                            <td className="px-4 py-5"><div className="h-4 bg-slate-100 rounded-md w-24 animate-pulse"></div></td>
+                                            <td className="px-4 py-5">
+                                                <div className="space-y-1.5">
+                                                    <div className="h-3.5 bg-slate-100 rounded-md w-28 animate-pulse"></div>
+                                                    <div className="h-3.5 bg-slate-100 rounded-md w-20 animate-pulse"></div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-5 text-center"><div className="h-5 bg-slate-200/80 rounded-full w-20 mx-auto animate-pulse"></div></td>
+                                            <td className="px-4 py-5"><div className="h-4 bg-slate-100 rounded-md w-36 animate-pulse"></div></td>
+                                            <td className="px-4 py-5"><div className="h-4 bg-slate-100 rounded-md w-24 animate-pulse"></div></td>
+                                            <td className="px-4 py-5 text-center">
+                                                <div className="flex justify-center gap-1.5">
+                                                    <div className="h-7 w-7 rounded-lg bg-slate-100 animate-pulse"></div>
+                                                    <div className="h-7 w-7 rounded-lg bg-slate-100 animate-pulse"></div>
+                                                </div>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -1372,10 +1389,10 @@ const Seguimiento = () => {
                         </div>
                     </div>
                 ) : prospectosFiltrados.length === 0 ? (
-                    <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
-                        <User className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                    <div className="bg-white md:rounded-2xl p-12 min-h-60 flex flex-col items-center justify-center text-center">
+                        <User className="w-12 h-12 text-slate-300 mb-4" />
                         <p className="text-gray-500 font-medium">No se encontraron prospectos.</p>
-                        <p className="text-gray-400 text-sm mt-1">Intenta con otra búsqueda o crea uno nuevo.</p>
+                        <p className="text-gray-400 text-sm mt-1">Intenta con otra busqueda o crea uno nuevo.</p>
                     </div>
                 ) : (
                     <div className="bg-white md:border md:border-slate-200 md:rounded-2xl md:shadow-sm overflow-hidden">
