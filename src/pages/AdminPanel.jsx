@@ -198,9 +198,9 @@ export default function AdminPanel() {
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">Administración de usuarios líderes</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">Administración de usuarios del sistema</h1>
               <p className="text-xs md:text-sm text-gray-500 mt-0.5 leading-snug">
-                Gestiona líderes de equipo y revisa sus usuarios hijos
+                Gestiona propietarios de equipo y revisa los usuarios creados por cada uno
               </p>
             </div>
 
@@ -214,17 +214,17 @@ export default function AdminPanel() {
               className="w-full sm:w-auto justify-center flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors text-xs md:text-sm font-medium"
             >
               <UserPlus className="w-4 h-4 md:w-5 md:h-5" />
-              Crear usuario líder
+              Crear usuario del sistema
             </button>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="text-sm text-slate-600">
-                Líderes activos: <span className="font-bold text-slate-900">{owners.length}</span>
+                Usuarios propietarios activos: <span className="font-bold text-slate-900">{owners.length}</span>
               </div>
               <p className="text-xs text-slate-500">
-                Haz click en "usuarios hijos" para ver quién creó cada líder en su equipo.
+                Haz click en "usuarios creados" para ver el detalle de cada equipo.
               </p>
             </div>
           </div>
@@ -270,7 +270,7 @@ export default function AdminPanel() {
                                   className="self-start inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-200 transition-colors"
                                 >
                                   <Users className="w-3 h-3" />
-                                  {miembros.length} usuarios hijos
+                                  {miembros.length} usuarios creados
                                 </button>
                               </div>
                             </td>
@@ -304,7 +304,7 @@ export default function AdminPanel() {
                                 <div className="rounded-2xl border border-slate-200 bg-white p-4">
                                   <div className="flex items-center justify-between gap-3 mb-3">
                                     <div>
-                                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Usuarios hijos</p>
+                                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Usuarios creados por este usuario</p>
                                       <h3 className="text-sm font-black text-slate-900">{owner.nombre}</h3>
                                     </div>
                                     <button
@@ -317,7 +317,7 @@ export default function AdminPanel() {
                                   </div>
 
                                   {miembros.length === 0 ? (
-                                    <div className="text-sm text-slate-500">Este usuario aún no tiene usuarios hijos en su equipo.</div>
+                                    <div className="text-sm text-slate-500">Este usuario aún no tiene usuarios creados en su equipo.</div>
                                   ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                                       {miembros.map((miembro) => (
@@ -364,9 +364,9 @@ export default function AdminPanel() {
           <form onSubmit={editingOwner ? handleUpdateOwner : handleCreateOwner} className="w-full max-w-md bg-white rounded-3xl border border-slate-100 shadow-2xl overflow-hidden mt-0 md:mt-4">
             <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-slate-100 bg-slate-50/80">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Usuario líder</p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Usuario del sistema</p>
                 <h2 className="font-black text-slate-900 text-lg flex items-center gap-2 mt-1">
-                  <UserPlus className="w-5 h-5" /> {editingOwner ? 'Editar usuario líder' : 'Crear usuario líder'}
+                  <UserPlus className="w-5 h-5" /> {editingOwner ? 'Editar usuario del sistema' : 'Crear usuario del sistema'}
                 </h2>
               </div>
               <button
@@ -381,7 +381,7 @@ export default function AdminPanel() {
 
             <div className="p-5 space-y-4">
               <p className="text-sm text-slate-600">
-                Este usuario quedará como líder de su propio equipo y podrá crear usuarios hijos dentro de ese equipo.
+                Este usuario quedará como propietario de su equipo y podrá crear otros usuarios dentro de ese equipo.
               </p>
 
               <input
@@ -439,7 +439,7 @@ export default function AdminPanel() {
                   className="flex-1 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-                  {saving ? (editingOwner ? 'Guardando...' : 'Creando...') : (editingOwner ? 'Guardar cambios' : 'Crear usuario líder')}
+                  {saving ? (editingOwner ? 'Guardando...' : 'Creando...') : (editingOwner ? 'Guardar cambios' : 'Crear usuario del sistema')}
                 </button>
 
                 {editingOwner && (
