@@ -24,6 +24,7 @@ export default function AdminPanel() {
   const [deletingId, setDeletingId] = useState(null);
   const [editingOwner, setEditingOwner] = useState(null);
   const [form, setForm] = useState(initialForm);
+  const [creatorOpen, setCreatorOpen] = useState(false);
 
   const isAdminRoot = currentUser?.rol === 'admin';
 
@@ -86,6 +87,7 @@ export default function AdminPanel() {
 
       toast.success('Propietario de equipo creado correctamente');
       setForm(initialForm);
+      setCreatorOpen(false);
       fetchOwners();
     } catch (error) {
       toast.error(error.message || 'Error al crear propietario de equipo');
@@ -96,6 +98,7 @@ export default function AdminPanel() {
 
   const handleStartEdit = (owner) => {
     setEditingOwner(owner);
+    setCreatorOpen(true);
     setForm({
       usuario: owner.usuario || '',
       contraseña: '',
@@ -109,6 +112,7 @@ export default function AdminPanel() {
   const handleCancelEdit = () => {
     setEditingOwner(null);
     setForm(initialForm);
+    setCreatorOpen(false);
   };
 
   const handleUpdateOwner = async (event) => {
@@ -186,12 +190,31 @@ export default function AdminPanel() {
   return (
     <div className="w-full min-h-full bg-slate-50 p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="bg-gradient-to-r from-slate-900 to-slate-700 rounded-2xl p-6 text-white shadow-xl">
-          <div className="flex items-center gap-3 mb-2">
-            <ShieldCheck className="w-6 h-6" />
-            <h1 className="text-2xl font-black tracking-tight">Panel Admin Root</h1>
+        <div className="relative overflow-hidden bg-linear-to-r from-slate-900 to-slate-700 rounded-2xl p-6 text-white shadow-xl">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <ShieldCheck className="w-6 h-6" />
+                <h1 className="text-2xl font-black tracking-tight">Panel Admin Root</h1>
+              </div>
+              <p className="text-slate-200 text-sm max-w-2xl">
+                Desde este panel administras usuarios líderes y los equipos que nacen de ellos. Los usuarios creados aquí pueden convertirse en dueños de su propio equipo y luego crear sus usuarios hijos.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEditingOwner(null);
+                setForm(initialForm);
+                setCreatorOpen(true);
+              }}
+              className="inline-flex items-center gap-2 self-start rounded-xl bg-white/10 px-4 py-3 text-sm font-bold text-white ring-1 ring-white/20 backdrop-blur-sm transition hover:bg-white/15"
+            >
+              <UserPlus className="w-4 h-4" />
+              Crear usuario líder
+            </button>
           </div>
-          <p className="text-slate-200 text-sm">Desde este panel puedes crear propietarios de equipo para nuevos equipos.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -215,84 +238,7 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <form onSubmit={editingOwner ? handleUpdateOwner : handleCreateOwner} className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
-            <h2 className="font-black text-slate-900 text-lg flex items-center gap-2">
-              <UserPlus className="w-5 h-5" /> {editingOwner ? 'Editar propietario de equipo' : 'Crear propietario de equipo'}
-            </h2>
-
-            <input
-              name="nombre"
-              value={form.nombre}
-              onChange={handleInput}
-              placeholder="Nombre completo"
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-300"
-              required
-            />
-            <input
-              name="usuario"
-              value={form.usuario}
-              onChange={handleInput}
-              placeholder="Usuario"
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-300"
-              required
-            />
-            <input
-              name="contraseña"
-              type="password"
-              value={form.contraseña}
-              onChange={handleInput}
-              placeholder={editingOwner ? 'Nueva contraseña (opcional)' : 'Contraseña'}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-300"
-              required={!editingOwner}
-            />
-            <input
-              name="equipoNombre"
-              value={form.equipoNombre}
-              onChange={handleInput}
-              placeholder="Nombre del equipo (opcional)"
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-300"
-            />
-            <input
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={handleInput}
-              placeholder="Email"
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-300"
-            />
-            <input
-              name="telefono"
-              value={form.telefono}
-              onChange={handleInput}
-              placeholder="Teléfono"
-              className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-300"
-            />
-
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={saving}
-                className="flex-1 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-              >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-                {saving ? (editingOwner ? 'Guardando...' : 'Creando...') : (editingOwner ? 'Guardar cambios' : 'Crear propietario')}
-              </button>
-
-              {editingOwner && (
-                <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center"
-                  title="Cancelar edición"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </form>
-
-          <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
             <h2 className="font-black text-slate-900 text-lg mb-4">Propietarios creados</h2>
 
             {loading ? (
@@ -352,6 +298,110 @@ export default function AdminPanel() {
           </div>
         </div>
       </div>
+
+      {creatorOpen && (
+        <div
+          className="fixed inset-0 z-1200 bg-slate-950/50 backdrop-blur-sm flex items-start justify-end p-4 md:p-6"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) handleCancelEdit();
+          }}
+        >
+          <form onSubmit={editingOwner ? handleUpdateOwner : handleCreateOwner} className="w-full max-w-md bg-white rounded-3xl border border-slate-100 shadow-2xl overflow-hidden mt-0 md:mt-4">
+            <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-slate-100 bg-slate-50/80">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Usuario líder</p>
+                <h2 className="font-black text-slate-900 text-lg flex items-center gap-2 mt-1">
+                  <UserPlus className="w-5 h-5" /> {editingOwner ? 'Editar usuario líder' : 'Crear usuario líder'}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                title="Cerrar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-slate-600">
+                Este usuario quedará como líder de su propio equipo y podrá crear usuarios hijos dentro de ese equipo.
+              </p>
+
+              <input
+                name="nombre"
+                value={form.nombre}
+                onChange={handleInput}
+                placeholder="Nombre completo"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-300"
+                required
+              />
+              <input
+                name="usuario"
+                value={form.usuario}
+                onChange={handleInput}
+                placeholder="Usuario"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-300"
+                required
+              />
+              <input
+                name="contraseña"
+                type="password"
+                value={form.contraseña}
+                onChange={handleInput}
+                placeholder={editingOwner ? 'Nueva contraseña (opcional)' : 'Contraseña'}
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-300"
+                required={!editingOwner}
+              />
+              <input
+                name="equipoNombre"
+                value={form.equipoNombre}
+                onChange={handleInput}
+                placeholder="Nombre del equipo (opcional)"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-300"
+              />
+              <input
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleInput}
+                placeholder="Email"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-300"
+              />
+              <input
+                name="telefono"
+                value={form.telefono}
+                onChange={handleInput}
+                placeholder="Teléfono"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-slate-300"
+              />
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                  {saving ? (editingOwner ? 'Guardando...' : 'Creando...') : (editingOwner ? 'Guardar cambios' : 'Crear usuario líder')}
+                </button>
+
+                {editingOwner && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors flex items-center justify-center"
+                    title="Cancelar edición"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
