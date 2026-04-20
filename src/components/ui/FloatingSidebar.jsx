@@ -129,6 +129,16 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                     {/* Regular items */}
                     <div className="space-y-1">
                         {menuItems.filter(i => !i.isBottom).map((item, index) => {
+                            if (item.isSpacer) {
+                                return isCollapsed ? (
+                                    <div key={`sp-${index}`} className="h-3" />
+                                ) : (
+                                    <div key={`sp-${index}`} className={`my-2 pt-2 border-t ${borderClass}`}>
+                                        <p className="px-3 text-[10px] font-bold uppercase tracking-[0.16em] opacity-50">Módulos de Vendedor</p>
+                                    </div>
+                                );
+                            }
+
                             const isActive = item.path && location.pathname === item.path;
                             const hasActiveChild = item.children?.some(child => location.pathname === child.path);
 

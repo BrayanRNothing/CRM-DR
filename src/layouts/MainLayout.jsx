@@ -35,7 +35,17 @@ const MainLayout = () => {
         return 'Vendedor';
     };
 
-    const menuItems = [
+    const panelAdminItem = {
+        name: 'Panel Admin',
+        path: '/vendedor/admin',
+        icon: (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 2a1 1 0 01.707.293l6 6A1 1 0 0117 9v6a3 3 0 01-3 3H6a3 3 0 01-3-3V9a1 1 0 01.293-.707l6-6A1 1 0 0110 2zm0 3.414L5 10.414V15a1 1 0 001 1h8a1 1 0 001-1v-4.586L10 5.414z" clipRule="evenodd" />
+            </svg>
+        )
+    };
+
+    const vendedorMainItems = [
         {
             name: 'Dashboard',
             path: '/vendedor',
@@ -54,15 +64,6 @@ const MainLayout = () => {
                 </svg>
             )
         },
-        ...(isAdminRoot ? [{
-            name: 'Panel Admin',
-            path: '/vendedor/admin',
-            icon: (
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 2a1 1 0 01.707.293l6 6A1 1 0 0117 9v6a3 3 0 01-3 3H6a3 3 0 01-3-3V9a1 1 0 01.293-.707l6-6A1 1 0 0110 2zm0 3.414L5 10.414V15a1 1 0 001 1h8a1 1 0 001-1v-4.586L10 5.414z" clipRule="evenodd" />
-                </svg>
-            )
-        }] : []),
         {
             name: 'Prospectos',
             path: '/vendedor/prospectos',
@@ -80,7 +81,12 @@ const MainLayout = () => {
                     <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                 </svg>
             )
-        },
+        }
+    ];
+
+    const menuItems = [
+        ...(isAdminRoot ? [panelAdminItem, { name: '__admin-separator__', isSpacer: true }] : []),
+        ...vendedorMainItems,
         {
             name: 'Equipo',
             path: '/vendedor/equipo',

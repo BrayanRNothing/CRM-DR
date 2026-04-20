@@ -56,9 +56,9 @@ const MainLayoutMobile = ({ menuItems, userInfo }) => {
                 </main>
 
                 {/* ── Bottom Navigation Bar (Docked) ── */}
-                <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-2xl border-t border-white/40 rounded-t-[32px] shadow-[0_-10px_30px_-5px_rgba(0,0,0,0.1)]">
+                <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-2xl border-t border-white/40 rounded-t-4xl shadow-[0_-10px_30px_-5px_rgba(0,0,0,0.1)]">
                     <div className="px-2 py-2 flex items-center justify-between">
-                        {menuItems.map((item) => {
+                        {menuItems.filter((item) => !item.isSpacer).map((item) => {
                             const isActive = location.pathname === item.path;
                             return (
                                 <Link
@@ -69,7 +69,7 @@ const MainLayoutMobile = ({ menuItems, userInfo }) => {
                                 >
                                     <motion.div
                                         animate={isActive ? { scale: 1.1, y: -2 } : { scale: 1, y: 0 }}
-                                        className={`p-1.5 rounded-2xl transition-all duration-300 flex-shrink-0 ${
+                                        className={`p-1.5 rounded-2xl transition-all duration-300 shrink-0 ${
                                             isActive 
                                             ? 'bg-(--theme-500) text-white shadow-lg shadow-(--theme-500)/30' 
                                             : 'text-slate-400 hover:text-slate-600'
