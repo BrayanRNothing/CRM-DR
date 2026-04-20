@@ -242,7 +242,7 @@ export default function AdminPanel() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[620px] text-sm">
+                <table className="w-full min-w-[620px] text-sm border-collapse">
                   <thead>
                     <tr className="text-left text-slate-500 border-b border-slate-100">
                       <th className="py-2">Nombre</th>
