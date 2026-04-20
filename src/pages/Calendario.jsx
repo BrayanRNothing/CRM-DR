@@ -27,6 +27,7 @@ const Calendario = () => {
     const [busySlots, setBusySlots] = useState([]);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
     const [createdEventLink, setCreatedEventLink] = useState(null);
+    const [bookingCheck, setBookingCheck] = useState(null);
     const [closerLinkedToGoogle, setCloserLinkedToGoogle] = useState(true);
     const [googleLinked, setGoogleLinked] = useState(null);
     const [showSyncPrompt, setShowSyncPrompt] = useState(false);
@@ -89,9 +90,11 @@ const Calendario = () => {
             });
 
             setMisReuniones(processed);
+            return processed;
         } catch (error) {
             console.error('Error cargando reuniones del vendedor:', error);
             setMisReuniones([]);
+            return [];
         } finally {
             setLoadingMisReuniones(false);
         }
@@ -613,10 +616,12 @@ const Calendario = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setBookingCheck(null);
+        setCreatedEventLink(null);
 
         const closer = closers.find(c => String(c.id || c._id) === String(selectedCloser));
         if (!closer) {
-            toast.error(isVendedor ? 'Selecciona a quién asignar la reunión' : 'Selecciona un closer');
+            toast.error('Selecciona un vendedor');
             return;
         }
 
@@ -648,48 +653,79 @@ const Calendario = () => {
                 })
             });
 
-            if (resBackend.ok) {
-                const dataBackend = await resBackend.json();
-                toast.success('Cita agendada con éxito');
-
-                const finalLink = dataBackend.hangoutLink || dataBackend.meetLink;
-                if (finalLink) setCreatedEventLink(finalLink);
-
-                // Si venimos de un flujo de llamada, registrar la acción en el historial
-                if (location.state?.fromCall) {
-                    try {
-                        const rolePath = 'vendedor';
-                        
-                        await fetch(`${API_URL}/api/${rolePath}/registrar-actividad`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'x-auth-token': getToken()
-                            },
-                            body: JSON.stringify({
-                                clienteId: prospect.id,
-                                tipo: 'llamada',
-                                resultado: 'exitoso',
-                                notas: 'Agendó reunión'
-                            })
-                        });
-                        console.log("Call activity registered from deferred flow");
-                    } catch (err) {
-                        console.error("Error registering deferred call activity:", err);
-                    }
+            let dataBackend = null;
+            const rawBody = await resBackend.text();
+            if (rawBody) {
+                try {
+                    dataBackend = JSON.parse(rawBody);
+                } catch {
+                    throw new Error('Respuesta inválida del servidor al agendar la cita');
                 }
+            }
+            if (!resBackend.ok) {
+                if (dataBackend?.code === 'google_config_error') {
+                    throw new Error(`Error de configuración Google: ${dataBackend.googleError?.message || dataBackend.msg}. Revisa los permisos en Ajustes.`);
+                }
+                throw new Error(dataBackend?.msg || 'Error al agendar cita');
+            }
 
-                // ⚡ Refresco Inmediato
-                cargarMisReuniones();
-                cargarMisEventosGoogle();
-                fetchAvailability();
+            if (!dataBackend?.actividad && !dataBackend?.cliente) {
+                throw new Error('La cita no se confirmó correctamente en el servidor');
+            }
+
+            toast.success('Cita agendada con éxito');
+
+            const finalLink = dataBackend.hangoutLink || dataBackend.meetLink;
+            if (finalLink) {
+                setCreatedEventLink(finalLink);
             } else {
-                const dataError = await resBackend.json();
-                if (dataError.code === 'google_config_error') {
-                    toast.error(`Error de configuración Google: ${dataError.googleError?.message || dataError.msg}. Revisa los permisos en Ajustes.`, { duration: 6000 });
-                } else {
-                    toast.error(dataError.msg || 'Error al agendar cita');
+                toast('Cita guardada en CRM. No se generó enlace de Google Meet.');
+            }
+
+            // Si venimos de un flujo de llamada, registrar la acción en el historial
+            if (location.state?.fromCall) {
+                try {
+                    const rolePath = 'vendedor';
+
+                    await fetch(`${API_URL}/api/${rolePath}/registrar-actividad`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-auth-token': getToken()
+                        },
+                        body: JSON.stringify({
+                            clienteId: prospect.id,
+                            tipo: 'llamada',
+                            resultado: 'exitoso',
+                            notas: 'Agendó reunión'
+                        })
+                    });
+                    console.log("Call activity registered from deferred flow");
+                } catch (err) {
+                    console.error("Error registering deferred call activity:", err);
                 }
+            }
+
+            // ⚡ Refresco Inmediato
+            const reunionesActualizadas = await cargarMisReuniones();
+            await cargarMisEventosGoogle();
+            await fetchAvailability();
+
+            const actividadId = String(dataBackend?.actividad?.id || dataBackend?.actividad?._id || '');
+            const encontroEnAgenda = actividadId
+                ? reunionesActualizadas.some((r) => String(r.id || r._id) === actividadId)
+                : false;
+
+            if (encontroEnAgenda) {
+                setBookingCheck({
+                    type: 'success',
+                    message: 'Reunion confirmada y visible en tu agenda.'
+                });
+            } else {
+                setBookingCheck({
+                    type: 'warning',
+                    message: 'Reunion guardada, pero aun no aparece en lista. Recarga la agenda en unos segundos.'
+                });
             }
 
             toast.dismiss(loadingToast);
@@ -701,6 +737,10 @@ const Calendario = () => {
         } catch (error) {
             console.error(error);
             toast.dismiss(loadingToast);
+            setBookingCheck({
+                type: 'error',
+                message: error.message || 'No se pudo agendar la cita'
+            });
             toast.error(error.message || 'Error al agendar la cita');
         }
     };
@@ -873,11 +913,6 @@ const Calendario = () => {
                                     <h2 className="text-2xl font-bold text-gray-900">
                                         {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
                                     </h2>
-                                    {!selectedCloser && (
-                                        <p className="text-xs font-semibold text-orange-500 mt-1 uppercase tracking-wider">
-                                            Selecciona un closer para habilitar
-                                        </p>
-                                    )}
                                 </div>
                                 <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                                     <ChevronRight className="w-6 h-6 text-gray-600" />
@@ -1156,6 +1191,12 @@ const Calendario = () => {
                                                                 <Copy className="w-3.5 h-3.5" />
                                                                 COPIAR ENLACE
                                                             </button>
+                                                        </div>
+                                                    )}
+
+                                                    {bookingCheck && (
+                                                        <div className={`p-3 rounded-2xl border text-[11px] font-bold ${bookingCheck.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : bookingCheck.type === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-rose-50 border-rose-200 text-rose-700'}`}>
+                                                            {bookingCheck.message}
                                                         </div>
                                                     )}
                                                 </div>

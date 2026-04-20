@@ -120,7 +120,7 @@ export default function PlantillasMensajesModal({ contacto, scope = 'prospecto' 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="p-1.5 rounded-md bg-indigo-50 hover:bg-indigo-100 transition-colors shadow-xs border border-indigo-100"
+        className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-indigo-50 hover:bg-indigo-100 transition-colors shadow-xs border border-indigo-100"
         title="Plantillas de mensajes"
       >
         <FileText className="w-4.5 h-4.5 text-indigo-600" />

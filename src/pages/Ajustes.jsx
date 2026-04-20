@@ -205,13 +205,14 @@ export default function VendedorAjustes() {
         { id: 'perfil', label: 'Perfil', icon: User },
         { id: 'seguridad', label: 'Seguridad', icon: KeyRound },
         { id: 'integraciones', label: 'Google', icon: Link2 },
-        { id: 'preferencias', label: 'Preferencias', icon: Palette },
+        { id: 'colores', label: 'Colores del Sistema', icon: Palette },
+        { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
     ];
 
     return (
-        <div className="min-h-screen bg-white md:bg-(--theme-50)/20 -m-4 md:m-0">
-            <div>
-                <div className="max-w-(--breakpoint-2xl) mx-auto md:px-10 py-6 md:py-10 pb-16">
+        <div className="min-h-screen md:h-full md:min-h-0 bg-white md:bg-(--theme-50)/20 -m-4 md:m-0 md:overflow-hidden">
+            <div className="md:h-full md:min-h-0">
+                <div className="max-w-(--breakpoint-2xl) mx-auto md:px-10 py-6 md:py-4 pb-16 md:pb-0 md:h-full md:min-h-0 md:flex md:flex-col md:overflow-hidden">
 
                     {/* ═══ HERO HEADER ═══ */}
                     <div className="relative md:rounded-3xl overflow-hidden mb-6 md:mb-8 md:shadow-xl border-b md:border border-(--theme-200)/50">
@@ -262,11 +263,11 @@ export default function VendedorAjustes() {
                     </div>
 
                     {/* ═══ GRID CONTENT ═══ */}
-                    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 md:gap-8 items-start">
+                    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 md:gap-8 items-start lg:items-stretch md:flex-1 md:min-h-0">
                         
                         {/* ═══ TABS SIDEBAR (Hybrid) ═══ */}
-                        <div className="lg:sticky lg:top-8 z-10 px-3 md:px-0">
-                            <div className="flex lg:flex-col gap-2 bg-white/80 backdrop-blur-md p-1.5 lg:p-2 md:rounded-2xl lg:shadow-sm md:border border-(--theme-200) border-b overflow-x-auto no-scrollbar lg:overflow-visible">
+                        <div className="z-10 px-3 md:px-0 lg:flex lg:flex-col">
+                            <div className="flex lg:flex-col gap-2 bg-white/80 backdrop-blur-md p-1.5 lg:p-2 md:rounded-2xl lg:shadow-sm md:border border-(--theme-200) border-b overflow-x-auto no-scrollbar lg:overflow-visible lg:min-h-[250px]">
                                 {tabs.map(({ id, label, icon: Icon }) => {
                                     const isActive = activeTab === id;
                                     return (
@@ -286,7 +287,7 @@ export default function VendedorAjustes() {
                             </div>
 
                             {/* Info Card desktop only */}
-                            <div className="hidden lg:block mt-6 p-5 bg-linear-to-br from-(--theme-50) to-white rounded-3xl border border-(--theme-200) shadow-sm overflow-hidden relative group">
+                            <div className="hidden lg:flex mt-6 p-5 bg-linear-to-br from-(--theme-50) to-white rounded-3xl border border-(--theme-200) shadow-sm overflow-hidden relative group flex-col min-h-40">
                                 <div className={`absolute top-0 right-0 w-24 h-24 bg-linear-to-br ${roleBg} opacity-5 rounded-full -translate-y-8 translate-x-8 group-hover:scale-110 transition-transform duration-700`} />
                                 <h3 className="text-xs font-black text-(--theme-400) uppercase tracking-widest mb-2">Estado de Cuenta</h3>
                                 <div className="space-y-3">
@@ -308,16 +309,16 @@ export default function VendedorAjustes() {
                     {/* ═══ TAB: PERFIL ═══ */}
                     {activeTab === 'perfil' && (
                         <form onSubmit={handleSaveProfile}>
-                            <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-hidden">
+                            <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
                                 <div className="" />
-                                <div className="p-6 sm:p-8">
+                                <div className="p-6 sm:p-8 h-full flex flex-col">
                                     <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
                                         <div className={`p-2 rounded-xl bg-linear-to-br ${roleBg}`}>
                                             <User className="text-white" size={16} />
                                         </div>
                                         Información Personal
                                     </h2>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 flex-1 content-start">
                                         <div className="sm:col-span-2">
                                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nombre Completo</label>
                                             <div className="relative">
@@ -346,7 +347,7 @@ export default function VendedorAjustes() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="mt-8 flex justify-end">
+                                    <div className="mt-auto pt-8 flex justify-end">
                                         <button type="submit" disabled={savingProfile}
                                             className={`flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-linear-to-r ${roleBg} hover:opacity-90 active:scale-95 transition-all disabled:opacity-50`}>
                                             <Save size={16} />
@@ -361,16 +362,16 @@ export default function VendedorAjustes() {
                     {/* ═══ TAB: SEGURIDAD ═══ */}
                     {activeTab === 'seguridad' && (
                         <form onSubmit={handleSavePass}>
-                            <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-hidden">
+                            <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
                                 <div className="" />
-                                <div className="p-6 sm:p-8">
+                                <div className="p-6 sm:p-8 h-full flex flex-col">
                                     <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
                                         <div className="p-2 rounded-xl bg-linear-to-br from-(--theme-500) to-purple-600">
                                             <Shield className="text-white" size={16} />
                                         </div>
                                         Cambiar Contraseña
                                     </h2>
-                                    <div className="max-w-md space-y-5">
+                                    <div className="w-full space-y-5 flex-1">
                                         <div>
                                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nueva Contraseña</label>
                                             <div className="relative">
@@ -411,11 +412,13 @@ export default function VendedorAjustes() {
                                             </div>
                                         )}
 
-                                        <button type="submit" disabled={savingPass}
-                                            className="flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-linear-to-r from-(--theme-500) to-purple-600 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50">
-                                            <KeyRound size={16} />
-                                            {savingPass ? 'Actualizando...' : 'Actualizar Contraseña'}
-                                        </button>
+                                        <div className="mt-auto pt-8">
+                                            <button type="submit" disabled={savingPass}
+                                                className="flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-linear-to-r from-(--theme-500) to-purple-600 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50">
+                                                <KeyRound size={16} />
+                                                {savingPass ? 'Actualizando...' : 'Actualizar Contraseña'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -423,8 +426,8 @@ export default function VendedorAjustes() {
                     )}
 
                     {activeTab === 'integraciones' && (
-                        <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-hidden">
-                            <div className="p-4 sm:p-6">
+                        <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
+                            <div className="p-4 sm:p-6 h-full flex flex-col">
                                 <h2 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
                                     <div className="p-1.5 rounded-lg bg-white border border-slate-200 shadow-sm">
                                         <GoogleIcon size={14} />
@@ -433,7 +436,7 @@ export default function VendedorAjustes() {
                                 </h2>
 
                                 {googleConnected ? (
-                                    <div className="space-y-4 max-w-2xl">
+                                    <div className="space-y-4 w-full flex-1 flex flex-col">
                                         <div className="relative p-4 bg-linear-to-br from-(--theme-50) to-white border border-(--theme-100) rounded-2xl overflow-hidden shadow-xs">
                                             <div className="absolute top-0 right-0 w-24 h-24 bg-(--theme-200)/20 rounded-full -translate-y-8 translate-x-8" />
                                             
@@ -506,13 +509,13 @@ export default function VendedorAjustes() {
                                         </div>
 
                                         <button onClick={handleDisconnectGoogle}
-                                            className="w-full sm:w-auto flex items-center justify-center gap-2 py-2.5 px-6 bg-white border border-red-100 text-red-500 font-bold rounded-xl hover:bg-red-50 hover:border-red-200 active:scale-95 transition-all text-xs shadow-xs">
+                                            className="w-full sm:w-auto flex items-center justify-center gap-2 py-2.5 px-6 bg-white border border-red-100 text-red-500 font-bold rounded-xl hover:bg-red-50 hover:border-red-200 active:scale-95 transition-all text-xs shadow-xs mt-auto">
                                             <Link2Off size={14} />
                                             Desvincular Google
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="max-w-md text-center py-8 px-5 bg-(--theme-50)/40 rounded-2xl border border-dashed border-(--theme-300)">
+                                    <div className="w-full text-center py-8 px-5 bg-(--theme-50)/40 rounded-2xl border border-dashed border-(--theme-300) flex-1">
                                         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white shadow-lg flex items-center justify-center relative">
                                             <div className="absolute inset-0 bg-linear-to-br from-blue-50 to-red-50 rounded-full animate-pulse opacity-50" />
                                             <GoogleIcon size={32} />
@@ -534,75 +537,82 @@ export default function VendedorAjustes() {
                         </div>
                     )}
 
-                    {activeTab === 'preferencias' && (
-                        <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-slate-200 overflow-hidden">
-                            <div className="p-4 sm:p-6 max-h-[360px] overflow-y-auto space-y-6 custom-scrollbar bg-(--theme-50)/30 shadow-inner">
-                                
-                                {/* 1. Apariencia / Tema (Moved Up) */}
-                                <section>
-                                    <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
-                                        <div className="p-2 rounded-xl bg-(--theme-100) text-(--theme-600)">
-                                            <Palette size={15} />
-                                        </div>
-                                        Apariencia del Sistema
-                                    </h2>
-                                    <p className="text-sm text-slate-500 mb-6 font-medium">
-                                        Personaliza el color de acento principal del CRM en tu dispositivo.
-                                    </p>
-
-                                    <div className="flex flex-wrap gap-4">
-                                        {THEMES.map((theme) => {
-                                            const isActive = currentThemeId === theme.id;
-                                            return (
-                                                <button
-                                                    type="button"
-                                                    key={theme.id}
-                                                    onClick={() => setTheme(theme.id)}
-                                                    className={`group relative flex items-center gap-3 p-3 pr-5 rounded-2xl border-2 transition-all ${isActive ? 'bg-white border-(--theme-300) shadow-sm' : 'border-transparent hover:bg-white/50'}`}
-                                                >
-                                                    <div
-                                                        className={`w-8 h-8 rounded-full shadow-sm flex items-center justify-center transition-transform ${isActive ? 'scale-110 ring-2 ring-offset-2' : 'group-hover:scale-110'}`}
-                                                        style={{ backgroundColor: theme.color, ringColor: theme.color }}
-                                                    >
-                                                        {isActive && <CheckCircle2 size={16} className="text-white" />}
-                                                    </div>
-                                                    <span className={`text-sm font-semibold ${isActive ? 'text-slate-900' : 'text-slate-600'}`}>
-                                                        {theme.label}
-                                                    </span>
-                                                </button>
-                                            )
-                                        })}
+                    {activeTab === 'colores' && (
+                        <section className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-slate-200 overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
+                            <div className="p-4 sm:p-6 bg-(--theme-50)/30 shadow-inner h-full flex flex-col">
+                                <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
+                                    <div className="p-2 rounded-xl bg-(--theme-100) text-(--theme-600)">
+                                        <Palette size={15} />
                                     </div>
-                                </section>
+                                    Colores del Sistema
+                                </h2>
+                                <p className="text-sm text-slate-500 mb-6 font-medium">
+                                    Personaliza el color de acento principal del CRM en tu dispositivo.
+                                </p>
 
-                                {/* 2. Notificaciones (Moved Down) */}
-                                <section>
-                                    <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
-                                        <div className="p-2 rounded-xl bg-linear-to-br from-violet-500 to-purple-600">
-                                            <Bell className="text-white" size={15} />
-                                        </div>
-                                        Centro de Notificaciones
-                                    </h2>
-                                    <div className="space-y-3">
-                                        {[
-                                            { key: 'email', label: 'Por Email', desc: 'Alertas enviadas a tu correo' },
-                                            { key: 'tasks', label: 'Tareas', desc: 'Recordatorios de tareas pendientes' },
-                                            { key: 'updates', label: 'Actualizaciones', desc: 'Novedades del sistema' },
-                                            { key: 'push', label: 'Push Desktop', desc: 'Notificaciones en el navegador' },
-                                        ].map(({ key, label, desc }) => (
-                                            <div key={key} className="flex items-center justify-between p-4 bg-white/60 rounded-2xl border border-(--theme-100) hover:border-(--theme-300) transition-colors">
-                                                <div>
-                                                    <p className="font-bold text-(--theme-900) text-sm">{label}</p>
-                                                    <p className="text-[10px] text-(--theme-500) font-medium mt-0.5 uppercase tracking-wide">{desc}</p>
-                                                </div>
-                                                <Toggle value={notifs[key]} onChange={v => setNotifs(p => ({ ...p, [key]: v }))} />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </section>
-
+                                <div className="flex flex-wrap gap-4">
+                                    {THEMES.map((theme) => {
+                                        const isActive = currentThemeId === theme.id;
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={theme.id}
+                                                onClick={() => setTheme(theme.id)}
+                                                className={`group relative flex items-center gap-3 p-3 pr-5 rounded-2xl border-2 transition-all ${isActive ? 'bg-white border-(--theme-300) shadow-sm' : 'border-transparent hover:bg-white/50'}`}
+                                            >
+                                                    {theme.swatch === 'gradient' ? (
+                                                        <div
+                                                            className={`w-8 h-8 rounded-full shadow-sm flex items-center justify-center transition-transform ${isActive ? 'scale-110 ring-2 ring-offset-2 ring-cyan-300' : 'group-hover:scale-110'}`}
+                                                            style={{ backgroundImage: theme.swatchGradient || 'linear-gradient(135deg, #34d399 0%, #22d3ee 50%, #4f46e5 100%)' }}
+                                                        >
+                                                            {isActive && <CheckCircle2 size={16} className="text-white" />}
+                                                        </div>
+                                                    ) : (
+                                                        <div
+                                                            className={`w-8 h-8 rounded-full shadow-sm flex items-center justify-center transition-transform ${isActive ? 'scale-110 ring-2 ring-offset-2' : 'group-hover:scale-110'}`}
+                                                            style={{ backgroundColor: theme.color, ringColor: theme.color }}
+                                                        >
+                                                            {isActive && <CheckCircle2 size={16} className="text-white" />}
+                                                        </div>
+                                                    )}
+                                                <span className={`text-sm font-semibold ${isActive ? 'text-slate-900' : 'text-slate-600'}`}>
+                                                    {theme.label}
+                                                </span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
                             </div>
-                        </div>
+                        </section>
+                    )}
+
+                    {activeTab === 'notificaciones' && (
+                        <section className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-slate-200 overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
+                            <div className="p-4 sm:p-6 bg-(--theme-50)/30 shadow-inner h-full flex flex-col">
+                                <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
+                                    <div className="p-2 rounded-xl bg-linear-to-br from-violet-500 to-purple-600">
+                                        <Bell className="text-white" size={15} />
+                                    </div>
+                                    Notificaciones
+                                </h2>
+                                <div className="space-y-3">
+                                    {[
+                                        { key: 'email', label: 'Por Email', desc: 'Alertas enviadas a tu correo' },
+                                        { key: 'tasks', label: 'Tareas', desc: 'Recordatorios de tareas pendientes' },
+                                        { key: 'updates', label: 'Actualizaciones', desc: 'Novedades del sistema' },
+                                        { key: 'push', label: 'Push Desktop', desc: 'Notificaciones en el navegador' },
+                                    ].map(({ key, label, desc }) => (
+                                        <div key={key} className="flex items-center justify-between p-4 bg-white/60 rounded-2xl border border-(--theme-100) hover:border-(--theme-300) transition-colors">
+                                            <div>
+                                                <p className="font-bold text-(--theme-900) text-sm">{label}</p>
+                                                <p className="text-[10px] text-(--theme-500) font-medium mt-0.5 uppercase tracking-wide">{desc}</p>
+                                            </div>
+                                            <Toggle value={notifs[key]} onChange={v => setNotifs(p => ({ ...p, [key]: v }))} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
                     )}
 
                         </div>

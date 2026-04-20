@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import AnimatedGridBackground from '../components/ui/AnimatedGridBackground';
 import FloatingSidebar from '../components/ui/FloatingSidebar';
 import { getUser } from '../utils/authUtils';
@@ -9,6 +9,7 @@ import MainLayoutMobile from './MainLayoutMobile';
 
 const MainLayout = () => {
     const { width } = useWindowSize();
+    const location = useLocation();
     const [usuario, setUsuario] = useState(null);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -118,6 +119,8 @@ const MainLayout = () => {
         );
     }
 
+    const isAjustesRoute = location.pathname === '/vendedor/ajustes';
+
     return (
         <AnimatedGridBackground mode="light">
             <div className="h-screen flex p-4 gap-4">
@@ -137,7 +140,7 @@ const MainLayout = () => {
                 <main
                     className="flex-1 bg-white/80 backdrop-blur-md border border-white/40 rounded-3xl overflow-hidden transition-all duration-300 relative premium-reflejo"
                 >
-                    <div className="h-full overflow-y-auto scrollbar-hide">
+                    <div className={`h-full scrollbar-hide ${isAjustesRoute ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                         <Outlet />
                     </div>
                 </main>

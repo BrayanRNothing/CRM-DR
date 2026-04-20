@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -84,11 +84,17 @@ export default function ProspectoDetalle({
     const [guardandoMural, setGuardandoMural] = useState(false);
 
     const [llamadaFlow, setLlamadaFlow] = useState(null);
+    const [registrandoActividad, setRegistrandoActividad] = useState(false);
+    const registrandoActividadRef = useRef(false);
+    const registrandoActividadLockoutRef = useRef(0);
+    const [registrandoActividadBlockedUntil, setRegistrandoActividadBlockedUntil] = useState(0);
     const [editandoEtapa, setEditandoEtapa] = useState(false);
     const [loadingEtapa, setLoadingEtapa] = useState(false);
 
     const [modalRecordatorioAbierto, setModalRecordatorioAbierto] = useState(false);
     const [recordatorio, setRecordatorio] = useState({ fechaProxima: '', notas: '', editandoId: null });
+    const [guardandoRecordatorio, setGuardandoRecordatorio] = useState(false);
+    const [recordatorioBlockedUntil, setRecordatorioBlockedUntil] = useState(0);
     const [modalAccionesCierreAbierto, setModalAccionesCierreAbierto] = useState(false);
     const [recordatoriosLlamada, setRecordatoriosLlamada] = useState([]);
     const [loadingCitaId, setLoadingCitaId] = useState(null);
@@ -102,6 +108,18 @@ export default function ProspectoDetalle({
     const [customSections, setCustomSections] = useState(initialProspecto?.customSections || []);
     const [modalNuevaSeccion, setModalNuevaSeccion] = useState(false);
     const [drawerHistorialAbierto, setDrawerHistorialAbierto] = useState(false);
+
+    const telefonosContacto = useMemo(() => {
+        return [prospectoSeleccionado?.telefono, prospectoSeleccionado?.telefono2]
+            .filter(Boolean)
+            .flatMap((telefono) => telefono.split(',').map((valor) => valor.trim()))
+            .filter(Boolean);
+    }, [prospectoSeleccionado?.telefono, prospectoSeleccionado?.telefono2]);
+
+    const telefonoWhatsApp = telefonosContacto[0] || '';
+    const correoContacto = (prospectoSeleccionado?.correo || '').trim();
+    const tieneWhatsApp = Boolean(telefonoWhatsApp);
+    const tieneCorreo = Boolean(correoContacto);
 
     // Solo actualizar estado local al recibir nuevos datos
     useEffect(() => {
@@ -390,6 +408,15 @@ export default function ProspectoDetalle({
     const totalAlertas = alertasOrdenadas.length;
 
     const registrarActividad = async (payload) => {
+        // Guardia anti-doble envío: checkea tanto ref como lockout timer
+        const now = Date.now();
+        if (registrandoActividadRef.current || now - registrandoActividadLockoutRef.current < 1000) {
+            return false;
+        }
+
+        registrandoActividadRef.current = true;
+        setRegistrandoActividad(true);
+
         try {
             // Promover etapa automáticamente si corresponde
             const payloadFinal = { ...payload };
@@ -421,8 +448,29 @@ export default function ProspectoDetalle({
             }
             // Recargar historial
             handleSeleccionarProspecto(updated || prospectoSeleccionado);
-        } catch { toast.error('Error al registrar'); }
+            return true;
+        } catch { 
+            toast.error('Error al registrar');
+            return false;
+        } finally {
+            registrandoActividadRef.current = false;
+            setRegistrandoActividad(false);
+            // Bloquear por 3 segundos después de intentar (exitoso o error)
+            const blockedUntil = Date.now() + 3000;
+            setRegistrandoActividadBlockedUntil(blockedUntil);
+        }
     };
+
+    const registrarActividadConDelay = async (payload) => {
+        const now = Date.now();
+        if (now < registrandoActividadBlockedUntil) {
+            return false;
+        }
+        return await registrarActividad(payload);
+    };
+
+    // Constante para verificar si está bloqueado (validando o en cooldown de 3s)
+    const estaBloqueadoRegistro = Date.now() < registrandoActividadBlockedUntil || registrandoActividad || registrandoActividadRef.current;
 
     const registrarEnMural = async () => {
         const texto = muralTexto.trim();
@@ -741,106 +789,108 @@ export default function ProspectoDetalle({
                                     </div>
                                 </div>
 
-                                {/* Grid de Información de Contacto (Solo si hay datos) - Ahora más compacto */}
-                                {(prospectoSeleccionado.telefono || prospectoSeleccionado.correo || prospectoSeleccionado.ubicacion || prospectoSeleccionado.sitioWeb) && (
-                                    <div className="pt-3 border-t border-slate-100">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-                                            {/* Teléfonos */}
-                                            {(prospectoSeleccionado.telefono || prospectoSeleccionado.telefono2) && (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
-                                                        <Phone className="w-3.5 h-3.5" />
-                                                    </div>
-                                                    <div className="flex flex-col overflow-hidden">
-                                                        <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Teléfono</span>
-                                                        <div className="flex flex-wrap text-xs font-bold text-slate-700 truncate">
-                                                            {[prospectoSeleccionado.telefono, prospectoSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).slice(0, 1).map((tel, idx) => (
-                                                                <span key={idx}>{tel}</span>
-                                                            ))}
-                                                            {[prospectoSeleccionado.telefono, prospectoSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).length > 1 && (
-                                                                <span className="ml-1 text-slate-400 text-[10px]">...</span>
-                                                            )}
-                                                        </div>
+                                {/* Grid de Información de Contacto y acciones rápidas */}
+                                <div className="pt-3 border-t border-slate-100">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2 items-stretch">
+                                        {/* Teléfonos */}
+                                        {telefonosContacto.length > 0 && (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
+                                                    <Phone className="w-3.5 h-3.5" />
+                                                </div>
+                                                <div className="flex flex-col overflow-hidden">
+                                                    <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Teléfono</span>
+                                                    <div className="flex flex-wrap text-xs font-bold text-slate-700 truncate">
+                                                        {telefonosContacto.slice(0, 1).map((tel, idx) => (
+                                                            <span key={idx}>{tel}</span>
+                                                        ))}
+                                                        {telefonosContacto.length > 1 && (
+                                                            <span className="ml-1 text-slate-400 text-[10px]">...</span>
+                                                        )}
                                                     </div>
                                                 </div>
-                                            )}
+                                            </div>
+                                        )}
 
-                                            {/* Correo */}
-                                            {prospectoSeleccionado.correo && (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
-                                                        <Mail className="w-3.5 h-3.5" />
-                                                    </div>
-                                                    <div className="flex flex-col overflow-hidden">
-                                                        <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Correo</span>
-                                                        <span className="text-xs font-bold text-slate-700 truncate" title={prospectoSeleccionado.correo}>
-                                                            {prospectoSeleccionado.correo}
-                                                        </span>
-                                                    </div>
+                                        {/* Correo */}
+                                        {tieneCorreo && (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
+                                                    <Mail className="w-3.5 h-3.5" />
                                                 </div>
-                                            )}
+                                                <div className="flex flex-col overflow-hidden">
+                                                    <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Correo</span>
+                                                    <span className="text-xs font-bold text-slate-700 truncate" title={correoContacto}>
+                                                        {correoContacto}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
 
-                                            {/* Ubicación */}
-                                            {prospectoSeleccionado.ubicacion && (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
-                                                        <MapPin className="w-3.5 h-3.5" />
-                                                    </div>
-                                                    <div className="flex flex-col overflow-hidden">
-                                                        <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Ubicación</span>
-                                                        <span className="text-xs font-bold text-slate-700 truncate">
-                                                            {prospectoSeleccionado.ubicacion}
-                                                        </span>
-                                                    </div>
+                                        {/* Ubicación */}
+                                        {prospectoSeleccionado.ubicacion && (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
+                                                    <MapPin className="w-3.5 h-3.5" />
                                                 </div>
-                                            )}
+                                                <div className="flex flex-col overflow-hidden">
+                                                    <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Ubicación</span>
+                                                    <span className="text-xs font-bold text-slate-700 truncate">
+                                                        {prospectoSeleccionado.ubicacion}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
 
-                                            {/* Sitio Web */}
-                                            {prospectoSeleccionado.sitioWeb && (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
-                                                        <Globe className="w-3.5 h-3.5" />
-                                                    </div>
-                                                    <div className="flex-1 flex flex-row items-center justify-between min-w-0">
-                                                        <div className="flex flex-col overflow-hidden">
-                                                            <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Web</span>
-                                                            <a
-                                                                href={prospectoSeleccionado.sitioWeb.startsWith('http') ? prospectoSeleccionado.sitioWeb : `https://${prospectoSeleccionado.sitioWeb}`}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-xs font-bold text-(--theme-600) hover:underline truncate"
-                                                            >
-                                                                {prospectoSeleccionado.sitioWeb.replace(/^https?:\/\//, '')}
-                                                            </a>
-                                                        </div>
-                                                        
-                                                        <div className="flex items-center gap-3 ml-8 shrink-0">
-                                                            <PlantillasMensajesModal contacto={prospectoSeleccionado} scope="prospecto" />
-                                                            <a
-                                                                href={`https://wa.me/${[prospectoSeleccionado.telefono, prospectoSeleccionado.telefono2].filter(Boolean).join(',').replace(/\D/g, '')}`}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="p-1.5 rounded-md bg-green-50 hover:bg-green-100 transition-colors shadow-xs border border-green-100"
-                                                                title="Mensaje por WhatsApp"
-                                                            >
-                                                                <svg viewBox="0 0 24 24" className="w-4.5 h-4.5 fill-green-600">
-                                                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                                                                </svg>
-                                                            </a>
-                                                            <a
-                                                                href={`mailto:${prospectoSeleccionado.correo}`}
-                                                                className="p-1.5 rounded-md bg-slate-50 hover:bg-slate-100 transition-colors shadow-xs ring-1 ring-slate-200"
-                                                                title="Enviar correo por Gmail"
-                                                            >
-                                                                <img src={GmailIcon} alt="Gmail" className="w-4.5 h-4.5 object-contain" />
-                                                            </a>
-                                                        </div>
-                                                    </div>
+                                        {/* Sitio Web */}
+                                        {prospectoSeleccionado.sitioWeb && (
+                                            <div className="flex items-center gap-2 md:col-span-1 md:h-full">
+                                                <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
+                                                    <Globe className="w-3.5 h-3.5" />
                                                 </div>
-                                            )}
+                                                <div className="min-w-0 flex-1 flex flex-col overflow-hidden">
+                                                    <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Web</span>
+                                                    <a
+                                                        href={prospectoSeleccionado.sitioWeb.startsWith('http') ? prospectoSeleccionado.sitioWeb : `https://${prospectoSeleccionado.sitioWeb}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-xs font-bold text-(--theme-600) hover:underline truncate"
+                                                    >
+                                                        {prospectoSeleccionado.sitioWeb.replace(/^https?:\/\//, '')}
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="md:col-span-1 md:h-full flex items-center justify-end gap-2">
+                                            <PlantillasMensajesModal contacto={prospectoSeleccionado} scope="prospecto" />
+
+                                            <a
+                                                href={tieneWhatsApp ? `https://wa.me/${telefonoWhatsApp.replace(/\D/g, '')}` : undefined}
+                                                target={tieneWhatsApp ? '_blank' : undefined}
+                                                rel={tieneWhatsApp ? 'noopener noreferrer' : undefined}
+                                                aria-disabled={!tieneWhatsApp}
+                                                onClick={!tieneWhatsApp ? (e) => e.preventDefault() : undefined}
+                                                className={`h-8 w-8 inline-flex items-center justify-center rounded-md transition-colors shadow-xs border ${tieneWhatsApp ? 'bg-green-50 hover:bg-green-100 border-green-100' : 'bg-slate-100 border-slate-200 cursor-not-allowed opacity-60'}`}
+                                                title={tieneWhatsApp ? 'Mensaje por WhatsApp' : 'No hay teléfono para WhatsApp'}
+                                            >
+                                                <svg viewBox="0 0 24 24" className={`w-4.5 h-4.5 ${tieneWhatsApp ? 'fill-green-600' : 'fill-slate-400'}`}>
+                                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                                                </svg>
+                                            </a>
+
+                                            <a
+                                                href={tieneCorreo ? `mailto:${correoContacto}` : undefined}
+                                                aria-disabled={!tieneCorreo}
+                                                onClick={!tieneCorreo ? (e) => e.preventDefault() : undefined}
+                                                className={`h-8 w-8 inline-flex items-center justify-center rounded-md transition-colors shadow-xs ring-1 ${tieneCorreo ? 'bg-slate-50 hover:bg-slate-100 ring-slate-200' : 'bg-slate-100 ring-slate-200 cursor-not-allowed opacity-60'}`}
+                                                title={tieneCorreo ? 'Enviar correo por Gmail' : 'No hay correo para Gmail'}
+                                            >
+                                                <img src={GmailIcon} alt="Gmail" className={`w-4.5 h-4.5 object-contain ${tieneCorreo ? '' : 'grayscale opacity-60'}`} />
+                                            </a>
                                         </div>
                                     </div>
-                                )}
+                                </div>
                             </div>
                         </div>
 
@@ -1381,11 +1431,12 @@ export default function ProspectoDetalle({
                                         <button
                                             onClick={async () => {
                                                 // Registrar llamada fallida
-                                                await registrarActividad({ tipo: 'llamada', resultado: 'fallido', notas: 'No contestó' });
-                                                setLlamadaFlow(null);
+                                                const ok = await registrarActividadConDelay({ tipo: 'llamada', resultado: 'fallido', notas: 'No contestó' });
+                                                if (ok) setLlamadaFlow(null);
                                             }}
-                                            className="flex-1 py-2.5 bg-rose-500 text-white rounded-lg font-bold hover:bg-rose-600 transition-colors"
-                                        >✗ No contestó</button>
+                                            disabled={estaBloqueadoRegistro}
+                                            className="flex-1 py-2.5 bg-rose-500 text-white rounded-lg font-bold hover:bg-rose-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                        >{estaBloqueadoRegistro ? '⏳ Validando...' : '✗ No contestó'}</button>
                                     </div>
                                 </div>
                             )}
@@ -1428,6 +1479,16 @@ export default function ProspectoDetalle({
                                             onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'sin_interes' }))}
                                             className="py-2.5 bg-gray-400 text-white rounded-lg font-bold hover:bg-gray-500 transition-colors text-sm"
                                         >✗ Sin interés</button>
+
+                                        <button
+                                            onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'otro' }))}
+                                            className="py-2.5 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition-colors text-sm"
+                                        >📝 Otro</button>
+
+                                        <button
+                                            onClick={() => setLlamadaFlow(null)}
+                                            className="py-2.5 bg-slate-400 text-white rounded-lg font-bold hover:bg-slate-500 transition-colors text-sm"
+                                        >⏭️ Omitir</button>
                                     </div>
                                 </div>
                             )}
@@ -1462,6 +1523,8 @@ export default function ProspectoDetalle({
                                         <button
                                             onClick={async () => {
                                                 try {
+                                                    setRegistrandoActividadBlockedUntil(Date.now() + 3000);
+                                                    setRegistrandoActividad(true);
                                                     const pidLocal = prospectoSeleccionado.id || prospectoSeleccionado._id;
                                                     if (llamadaFlow.fechaProxima) {
                                                         const resRec = await axios.post(`${API_URL}/api/${rolePath}/prospectos/${pidLocal}/recordatorios`, {
@@ -1480,9 +1543,11 @@ export default function ProspectoDetalle({
                                                     const updated = res.data.find(p => p.id === pidLocal || p._id === pidLocal);
                                                     if (updated) { setProspectoSeleccionado(updated); setProspectos(res.data); }
                                                 } catch { toast.error('Error al programar reintento'); }
+                                                finally { setRegistrandoActividad(false); }
                                             }}
-                                            className="flex-1 py-2 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700"
-                                        >📅 Programar reintento</button>
+                                            disabled={estaBloqueadoRegistro}
+                                            className="flex-1 py-2 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                                        >{estaBloqueadoRegistro ? '⏳ Validando...' : '📅 Programar reintento'}</button>
                                         <button
                                             onClick={() => setLlamadaFlow(null)}
                                             className="px-4 py-2 border border-slate-200 text-gray-600 rounded-lg hover:bg-slate-50 text-sm"
@@ -1505,12 +1570,14 @@ export default function ProspectoDetalle({
                                     <button
                                         onClick={async () => {
                                             const notaFinal = llamadaFlow.notas ? `Prefiere atención por WhatsApp o correo - ${llamadaFlow.notas}` : 'Prefiere atención por WhatsApp o correo';
-                                            await registrarActividad({ tipo: 'llamada', resultado: 'exitoso', notas: notaFinal });
+                                            const ok = await registrarActividadConDelay({ tipo: 'llamada', resultado: 'exitoso', notas: notaFinal });
+                                            if (!ok) return;
                                             setLlamadaFlow(null);
                                             toast('Registrado: Prefiere WhatsApp/Correo', { icon: '💬' });
                                         }}
-                                        className="w-full py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700"
-                                    >✓ Guardar interacción</button>
+                                        disabled={estaBloqueadoRegistro}
+                                        className="w-full py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >{estaBloqueadoRegistro ? '⏳ Validando...' : '✓ Guardar interacción'}</button>
                                 </div>
                             )}
 
@@ -1528,12 +1595,39 @@ export default function ProspectoDetalle({
                                     <button
                                         onClick={async () => {
                                             const notaFinal = llamadaFlow.notas ? `Sin interés - ${llamadaFlow.notas}` : 'Contestó, sin interés';
-                                            await registrarActividad({ tipo: 'llamada', resultado: 'exitoso', notas: notaFinal });
+                                            const ok = await registrarActividadConDelay({ tipo: 'llamada', resultado: 'exitoso', notas: notaFinal });
+                                            if (!ok) return;
                                             setLlamadaFlow(null);
                                             toast('Sin interés — considera descartarlo', { icon: '💡' });
                                         }}
-                                        className="w-full py-2 bg-gray-500 text-white rounded-lg font-bold hover:bg-gray-600"
-                                    >✓ Guardar y cerrar</button>
+                                        disabled={estaBloqueadoRegistro}
+                                        className="w-full py-2 bg-gray-500 text-white rounded-lg font-bold hover:bg-gray-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >{estaBloqueadoRegistro ? '⏳ Validando...' : '✓ Guardar y cerrar'}</button>
+                                </div>
+                            )}
+
+                            {/* 3e: Otro */}
+                            {llamadaFlow.paso === 'otro' && (
+                                <div className="space-y-3">
+                                    <p className="font-semibold text-blue-700">📝 Describe qué pasó en la llamada</p>
+                                    <textarea
+                                        rows={2}
+                                        value={llamadaFlow.notas || ''}
+                                        onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))}
+                                        placeholder="Ej: Cliente preguntará de presupuesto luego, prometió repasar propuesta..."
+                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
+                                    />
+                                    <button
+                                        onClick={async () => {
+                                            const notaFinal = llamadaFlow.notas ? `Otro resultado - ${llamadaFlow.notas}` : 'Otro resultado de llamada';
+                                            const ok = await registrarActividadConDelay({ tipo: 'llamada', resultado: 'exitoso', notas: notaFinal });
+                                            if (!ok) return;
+                                            setLlamadaFlow(null);
+                                            toast('Resultado guardado', { icon: '✓' });
+                                        }}
+                                        disabled={estaBloqueadoRegistro}
+                                        className="w-full py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >{estaBloqueadoRegistro ? '⏳ Validando...' : '✓ Guardar resultado'}</button>
                                 </div>
                             )}
 
@@ -1578,11 +1672,12 @@ export default function ProspectoDetalle({
                                                 const pidLocal = prospectoSeleccionado.id || prospectoSeleccionado._id;
 
                                                 // 1. Registrar Actividad (usa el helper que auto-promueve la etapa)
-                                                await registrarActividad({
+                                                const ok = await registrarActividadConDelay({
                                                     tipo: 'llamada',
                                                     resultado: 'exitoso',
                                                     notas: notasFin
                                                 });
+                                                if (!ok) return;
 
                                                 if (llamadaFlow.fechaProxima) {
                                                     // 2. Crear Recordatorio para la sección de recordatorios
@@ -1605,8 +1700,9 @@ export default function ProspectoDetalle({
                                                 toast.error('Error al guardar el seguimiento completo');
                                             }
                                         }}
-                                        className="w-full py-2 bg-(--theme-600) text-white rounded-lg font-bold hover:bg-(--theme-700)"
-                                    >✓ Guardar seguimiento</button>
+                                        disabled={estaBloqueadoRegistro}
+                                        className="w-full py-2 bg-(--theme-600) text-white rounded-lg font-bold hover:bg-(--theme-700) disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >{estaBloqueadoRegistro ? '⏳ Validando...' : '✓ Guardar seguimiento'}</button>
                                 </div>
                             )}
                         </div>
@@ -1679,6 +1775,13 @@ export default function ProspectoDetalle({
                             </button>
                             <button
                                 onClick={async () => {
+                                    const now = Date.now();
+                                    if (now < recordatorioBlockedUntil) {
+                                        return;
+                                    }
+                                    setGuardandoRecordatorio(true);
+                                    setRecordatorioBlockedUntil(now + 3000);
+
                                     try {
                                         if (!recordatorio.fechaProxima) {
                                             toast.error('Selecciona una fecha');
@@ -1714,11 +1817,14 @@ export default function ProspectoDetalle({
                                     } catch (err) {
                                         console.error(err);
                                         toast.error('Error al guardar el recordatorio');
+                                    } finally {
+                                        setGuardandoRecordatorio(false);
                                     }
                                 }}
-                                className="sm:flex-1 px-4 py-2.5 bg-(--theme-600) text-white rounded-lg text-sm font-semibold hover:bg-(--theme-700) transition-colors"
+                                disabled={guardandoRecordatorio || Date.now() < recordatorioBlockedUntil}
+                                className="sm:flex-1 px-4 py-2.5 bg-(--theme-600) text-white rounded-lg text-sm font-semibold hover:bg-(--theme-700) transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                                ✓ Guardar recordatorio
+                                {guardandoRecordatorio || Date.now() < recordatorioBlockedUntil ? '⏳ Validando...' : '✓ Guardar recordatorio'}
                             </button>
                         </div>
                     </div>
