@@ -6,8 +6,8 @@ const { toMongoFormat, toMongoFormatMany, parseGoogleExpiryToMillis } = require(
 
 const esVendedor = (req, res, next) => {
     const rol = String(req.usuario.rol).toLowerCase();
-    if (rol !== 'vendedor') {
-        return res.status(403).json({ msg: 'Acceso denegado. Solo vendedores.' });
+    if (rol !== 'vendedor' && rol !== 'admin') {
+        return res.status(403).json({ msg: 'Acceso denegado. Solo vendedores o admin.' });
     }
     next();
 };

@@ -97,7 +97,7 @@ const MainLayoutMobile = ({ menuItems, userInfo }) => {
                     <div className="h-safe-bottom" />
                 </nav>
 
-                <style xs>{`
+                <style>{`
                     .pt-safe { padding-top: env(safe-area-inset-top, 16px); }
                     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
                     .h-safe-bottom { height: env(safe-area-inset-bottom, 20px); }
