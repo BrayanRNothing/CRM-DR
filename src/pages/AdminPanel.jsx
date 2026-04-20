@@ -254,13 +254,20 @@ export default function AdminPanel() {
                     </tr>
                   </thead>
                   <tbody>
-                    {owners.map((owner) => {
+                    {owners.map((owner, ownerIndex) => {
                       const miembros = Array.isArray(owner.miembros) ? owner.miembros : [];
                       const isExpanded = String(expandedOwnerId) === String(owner.id);
+                      const isEvenRow = ownerIndex % 2 === 0;
+                      const baseRowClass = isEvenRow
+                        ? 'bg-white hover:bg-slate-50/70'
+                        : 'bg-slate-100/70 hover:bg-slate-200/60';
+                      const expandedRowClass = isEvenRow
+                        ? 'bg-slate-100/80 border-b border-slate-200'
+                        : 'bg-slate-200/70 border-b border-slate-300/70';
 
                       return (
                         <React.Fragment key={owner.id}>
-                          <tr className="border-b border-slate-50 text-slate-800 align-top">
+                          <tr className={`border-b border-slate-200 text-slate-800 align-top transition-colors ${baseRowClass}`}>
                             <td className="py-3 font-semibold">
                               <div className="flex flex-col gap-2">
                                 <span>{owner.nombre}</span>
@@ -299,7 +306,7 @@ export default function AdminPanel() {
                             </td>
                           </tr>
                           {isExpanded && (
-                            <tr className="bg-slate-50/60 border-b border-slate-100">
+                            <tr className={expandedRowClass}>
                               <td colSpan="6" className="py-4 px-4">
                                 <div className="rounded-2xl border border-slate-200 bg-white p-4">
                                   <div className="flex items-center justify-between gap-3 mb-3">
