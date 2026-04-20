@@ -34,6 +34,18 @@ const formatTeamOwner = (row) => ({
     }
 });
 
+const formatTeamMember = (row) => ({
+    id: row.id,
+    usuario: row.usuario,
+    nombre: row.nombre,
+    rol: row.rol,
+    email: row.email,
+    telefono: row.telefono,
+    activo: !!row.activo,
+    fechaCreacion: row.fechaCreacion,
+    googleLinked: !!(row.googleRefreshToken || row.googleAccessToken)
+});
+
 // @route   GET api/usuarios/team-owners
 // @desc    Listar propietarios de equipo
 // @access  Private (Admins root)
@@ -57,7 +69,37 @@ router.get('/team-owners', auth, esAdminUnico, async (req, res) => {
             ORDER BY e."fechaCreacion" DESC, u.nombre ASC`
         ).all();
 
-        res.json(rows.map(formatTeamOwner));
+        const miembrosRows = await db.prepare(
+            `SELECT
+                u.id,
+                u.usuario,
+                u.nombre,
+                u.rol,
+                u.email,
+                u.telefono,
+                u.activo,
+                u.fechaCreacion,
+                u.googleRefreshToken,
+                u.googleAccessToken,
+                u."equipo_id" AS team_id
+            FROM usuarios u
+            WHERE u.activo = 1 AND u."equipo_id" IS NOT NULL AND u.rol <> 'admin'
+            ORDER BY u.nombre ASC`
+        ).all();
+
+        const miembrosByTeam = new Map();
+        for (const miembro of miembrosRows) {
+            const teamId = String(miembro.team_id);
+            const current = miembrosByTeam.get(teamId) || [];
+            current.push(formatTeamMember(miembro));
+            miembrosByTeam.set(teamId, current);
+        }
+
+        res.json(rows.map((row) => ({
+            ...formatTeamOwner(row),
+            miembros: miembrosByTeam.get(String(row.team_id))?.filter((miembro) => String(miembro.id) !== String(row.id)) || [],
+            miembrosCount: miembrosByTeam.get(String(row.team_id))?.filter((miembro) => String(miembro.id) !== String(row.id)).length || 0
+        })));
     } catch (error) {
         console.error('Error en GET /api/usuarios/team-owners:', error);
         res.status(500).json({ mensaje: 'Error del servidor' });
