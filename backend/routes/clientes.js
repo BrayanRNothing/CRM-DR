@@ -269,8 +269,8 @@ router.post('/', auth, esSuperUser, async (req, res) => {
         const now = new Date().toISOString();
         const hist = JSON.stringify([{ etapa, fecha: now, vendedor: vendedorId }]);
 
-        const prospectorAsignado = rol === 'prospector' ? usuarioId : null;
-        const closerAsignado = (rol === 'closer' || rol === 'vendedor') ? usuarioId : null;
+        const prospectorAsignado = usuarioId;
+        const closerAsignado = usuarioId;
 
         await db.prepare(`
             INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaEmbudo, historialEmbudo, vendedorAsignado, prospectorAsignado, closerAsignado, fechaUltimaEtapa, "equipo_id", "propietarioId", compartido)
@@ -359,7 +359,7 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
         if (notas !== undefined) { updates.push('notas = ?'); params.push(notas); }
 
         // Roles permitidos para reasignar
-        const esAdmin = req.usuario.rol === 'admin' || req.usuario.rol === 'closer';
+        const esAdmin = req.usuario.rol === 'admin';
         if (esAdmin && vendedorAsignado) {
             updates.push('vendedorAsignado = ?');
             params.push(parseInt(vendedorAsignado));

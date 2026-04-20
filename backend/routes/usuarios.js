@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const { db } = require('../config/database');
 const { auth, esSuperUser, esAdminUnico } = require('../middleware/auth');
 
-const ROLES_PERMITIDOS = ['prospector', 'closer', 'vendedor'];
+const ROLES_PERMITIDOS = ['vendedor'];
 
 // Helper para formatear respuesta (simulando lo que hacía toMongoFormat si es necesario, o simplificando)
 const formatUser = (row) => ({

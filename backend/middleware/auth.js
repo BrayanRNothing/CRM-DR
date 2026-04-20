@@ -39,16 +39,14 @@ const auth = async (req, res, next) => {
 };
 
 /**
- * Middleware para verificar si es superusuario (closer o prospector)
- * En el sistema v2.0 ambos roles tienen permisos totales.
+ * Middleware para verificar si el usuario puede operar módulos internos.
  */
 const esSuperUser = (req, res, next) => {
     if (!req.usuario) {
         return res.status(401).json({ mensaje: 'Usuario no autenticado' });
     }
 
-    // Lista de roles permitidos (ya no existe admin/vendedor_antiguo, pero se mantiene lógica limpia)
-    const rolesPermitidos = ['closer', 'prospector', 'vendedor'];
+    const rolesPermitidos = ['admin', 'vendedor'];
 
     if (rolesPermitidos.includes(req.usuario.rol)) {
         next();

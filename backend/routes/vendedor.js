@@ -6,8 +6,7 @@ const { toMongoFormat, toMongoFormatMany, parseGoogleExpiryToMillis } = require(
 
 const esVendedor = (req, res, next) => {
     const rol = String(req.usuario.rol).toLowerCase();
-    // Aceptamos vendedor (o los dueños 'admin' si existen), pero simplificamos a vendedor.
-    if (rol !== 'vendedor' && rol !== 'prospector' && rol !== 'closer') { // Temp backwards comp.
+    if (rol !== 'vendedor') {
         return res.status(403).json({ msg: 'Acceso denegado. Solo vendedores.' });
     }
     next();
@@ -669,8 +668,7 @@ router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
         const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, sitioWeb, ubicacion } = req.body;
 
         const prospectorId = parseInt(req.usuario.id);
-        const rol = String(req.usuario.rol).toLowerCase();
-        const closerId = rol === 'closer' ? prospectorId : null;
+        const closerId = prospectorId;
         const equipoId = req.usuario.equipo_id || null;
         const now = new Date().toISOString();
 
@@ -753,7 +751,7 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
         }
 
         // UNIFICADO: Cualquier prospector o closer puede registrar actividades (acceso compartido)
-        const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
+        const rolesPermitidos = ['admin', 'vendedor'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             console.log(`🚫 Bloqueado registro de actividad por rol: ${req.usuario.rol}`);
             return res.status(403).json({ msg: 'No tienes permisos de rol para registrar actividades' });
@@ -856,7 +854,7 @@ router.get('/prospecto/:id/historial-completo', auth, async (req, res) => {
         }
 
         // UNIFICADO: Cualquier prospector o closer puede ver el historial (acceso compartido)
-        const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
+        const rolesPermitidos = ['admin', 'vendedor'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permisos de rol para ver esto' });
         }
@@ -1242,7 +1240,7 @@ router.post('/agendar-reunion', [auth, esVendedor], async (req, res) => {
         }
 
         // UNIFICADO: Acceso por rol
-        const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
+        const rolesPermitidos = ['admin', 'vendedor'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permiso para agendar reunión' });
         }
@@ -1380,7 +1378,7 @@ router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
         }
 
         // UNIFICADO: Acceso por rol
-        const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
+        const rolesPermitidos = ['admin', 'vendedor'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permiso para modificar este prospecto' });
         }
@@ -1426,7 +1424,7 @@ router.post('/descartar-prospecto/:id', [auth, esVendedor], async (req, res) => 
         }
 
         // UNIFICADO: Acceso por rol
-        const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
+        const rolesPermitidos = ['admin', 'vendedor'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permiso para modificar este prospecto' });
         }
@@ -1972,7 +1970,7 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
         }
         const closerId = parseInt(req.usuario.id);
 
-        const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
+        const rolesPermitidos = ['admin', 'vendedor'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permiso para registrar actividades' });
         }
@@ -2102,7 +2100,7 @@ router.get(['/prospecto/:id/historial-completo', '/Cliente/:id/historial-complet
         }
 
         // UNIFICADO: Cualquier prospector o closer puede ver el historial (acceso compartido)
-        const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
+        const rolesPermitidos = ['admin', 'vendedor'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permisos de rol para ver esto' });
         }
@@ -2190,7 +2188,7 @@ router.get('/prospectos/:id/actividades', auth, async (req, res) => {
         const prospectoId = parseInt(req.params.id);
 
         // UNIFICADO: Acceso por rol
-        const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
+        const rolesPermitidos = ['admin', 'vendedor'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No autorizado' });
         }
@@ -2226,7 +2224,7 @@ router.post('/registrar-reunion', [auth, esVendedor], async (req, res) => {
         if (!c) return res.status(404).json({ msg: 'Cliente no encontrado' });
 
         // UNIFICADO: Acceso por rol
-        const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
+        const rolesPermitidos = ['admin', 'vendedor'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No autorizado' });
         }
@@ -2416,7 +2414,7 @@ router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
         }
 
         // UNIFICADO: Acceso por rol
-        const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
+        const rolesPermitidos = ['admin', 'vendedor'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permiso' });
         }
@@ -2458,7 +2456,7 @@ router.post('/descartar-prospecto/:id', [auth, esVendedor], async (req, res) => 
         }
 
         // UNIFICADO: Acceso por rol
-        const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
+        const rolesPermitidos = ['admin', 'vendedor'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permiso' });
         }
@@ -2981,7 +2979,7 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
         }
         const closerId = parseInt(req.usuario.id);
 
-        const rolesPermitidos = ['prospector', 'closer', 'vendedor'];
+        const rolesPermitidos = ['admin', 'vendedor'];
         if (!rolesPermitidos.includes(String(req.usuario.rol).toLowerCase())) {
             return res.status(403).json({ msg: 'No tienes permiso para registrar actividades' });
         }

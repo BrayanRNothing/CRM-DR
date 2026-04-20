@@ -5,7 +5,7 @@ import { Calendar, Phone, MessageSquare, User, CheckCircle2, AlertCircle, Zap, T
  * COMPONENTE MEJORADO: HistorialInteracciones
  * 
  * Muestra el timeline completo de un prospecto/cliente con claridad sobre:
- * - Quién registró cada interacción (prospector vs closer)
+ * - Quién registró cada interacción (vendedor vs admin)
  * - Cambios de etapa
  * - Fecha y hora exactas
  * - Rol del vendedor
@@ -109,12 +109,12 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
             return <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold">Sistema</span>;
         }
 
-        const esProspectorActividad = item.vendedorRol === 'prospector';
+        const esAdminActividad = item.vendedorRol === 'admin';
 
-        return esProspectorActividad ? (
-            <span className="text-xs bg-(--theme-100) text-(--theme-800) px-2 py-0.5 rounded-full font-semibold">🎯 Prospector</span>
+        return esAdminActividad ? (
+            <span className="text-xs bg-(--theme-100) text-(--theme-800) px-2 py-0.5 rounded-full font-semibold">🛡️ Admin</span>
         ) : (
-            <span className="text-xs bg-(--theme-100) text-(--theme-800) px-2 py-0.5 rounded-full font-semibold">🏁 Closer</span>
+            <span className="text-xs bg-(--theme-100) text-(--theme-800) px-2 py-0.5 rounded-full font-semibold">👤 Vendedor</span>
         );
     };
 
@@ -137,8 +137,8 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
             if (filtroTipo === 'etapas') return item.tipo === 'cambio_etapa';
             if (filtroTipo === 'reuniones') return item.tipoActividad === 'cita';
             if (filtroTipo === 'llamadas') return item.tipoActividad === 'llamada';
-            if (filtroTipo === 'prospector') return item.vendedorRol === 'prospector';
-            if (filtroTipo === 'closer') return item.vendedorRol === 'closer';
+            if (filtroTipo === 'prospector') return item.vendedorRol === 'vendedor';
+            if (filtroTipo === 'closer') return item.vendedorRol === 'admin';
             return item.tipoActividad === filtroTipo;
         });
 
@@ -183,7 +183,7 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
                             : 'bg-(--theme-100) text-(--theme-700) hover:bg-(--theme-200)'
                         }`}
                 >
-                    🎯 Prospector
+                    👤 Vendedor
                 </button>
                 <button
                     onClick={() => setFiltroTipo('closer')}
@@ -192,7 +192,7 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
                             : 'bg-(--theme-100) text-(--theme-700) hover:bg-(--theme-200)'
                         }`}
                 >
-                    🏁 Closer
+                    🛡️ Admin
                 </button>
                 <button
                     onClick={() => setFiltroTipo('reuniones')}
@@ -241,7 +241,7 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
                                                         : item.descripcion?.includes('No le interesó')
                                                             ? 'border-gray-200 bg-gray-50'
                                                             : 'border-(--theme-200) bg-(--theme-50)'
-                                        : item.vendedorRol === 'prospector'
+                                        : item.vendedorRol === 'vendedor'
                                             ? 'border-(--theme-200) bg-(--theme-50)'
                                             : 'border-(--theme-200) bg-(--theme-50)'
                                 }`}>
@@ -324,15 +324,15 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
             <div className="pt-4 border-t border-slate-200">
                 <div className="grid grid-cols-4 gap-3 text-sm">
                     <div className="bg-(--theme-50) border border-(--theme-200) rounded-lg p-3 text-center">
-                        <p className="text-xs text-(--theme-600) font-semibold mb-1">Del Prospector</p>
+                        <p className="text-xs text-(--theme-600) font-semibold mb-1">Del Vendedor</p>
                         <p className="text-xl font-bold text-(--theme-700)">
-                            {timeline.filter(i => i.vendedorRol === 'prospector').length}
+                            {timeline.filter(i => i.vendedorRol === 'vendedor').length}
                         </p>
                     </div>
                     <div className="bg-(--theme-50) border border-(--theme-200) rounded-lg p-3 text-center">
-                        <p className="text-xs text-(--theme-600) font-semibold mb-1">Del Closer</p>
+                        <p className="text-xs text-(--theme-600) font-semibold mb-1">Del Admin</p>
                         <p className="text-xl font-bold text-(--theme-700)">
-                            {timeline.filter(i => i.vendedorRol === 'closer').length}
+                            {timeline.filter(i => i.vendedorRol === 'admin').length}
                         </p>
                     </div>
                     <div className="bg-(--theme-50) border border-(--theme-200) rounded-lg p-3 text-center">

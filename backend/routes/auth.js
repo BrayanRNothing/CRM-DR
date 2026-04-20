@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const { db } = require('../config/database');
 const { auth } = require('../middleware/auth');
 
-const ROLES_PERMITIDOS = ['prospector', 'closer', 'vendedor'];
+const ROLES_PERMITIDOS = ['vendedor'];
 
 // @route   POST api/auth/login
 // @desc    Autenticar usuario y obtener token

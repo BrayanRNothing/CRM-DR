@@ -239,16 +239,16 @@ const Calendario = () => {
                     let closersList = data.filter(u => {
                         const isMe = (currentUserId && (String(u.id) === currentUserId || String(u._id) === currentUserId)) ||
                             (currentUser?.usuario && u.usuario && String(currentUser.usuario).toLowerCase() === String(u.usuario).toLowerCase());
-                        const roleMatch = String(u.rol).toLowerCase() === 'closer' || String(u.rol).toLowerCase() === 'vendedor';
+                        const roleMatch = String(u.rol).toLowerCase() === 'vendedor';
                         const isHidden = OCULTAR_USERS.includes(String(u.usuario || '').toLowerCase());
 
                         if (isMe) return roleMatch;
                         return roleMatch && !isHidden;
                     });
 
-                    // Garantizar que el usuario actual esté en la lista si es vendedor/closer
+                    // Garantizar que el usuario actual esté en la lista si es vendedor
                     const amIInList = closersList.some(u => (currentUserId && (String(u.id) === currentUserId || String(u._id) === currentUserId)) || (currentUser?.usuario && u.usuario && String(currentUser.usuario).toLowerCase() === String(u.usuario).toLowerCase()));
-                    if (!amIInList && (isVendedor || currentUser?.rol === 'closer')) {
+                    if (!amIInList && isVendedor) {
                         const meInFetch = data.find(u => (currentUserId && (String(u.id) === currentUserId || String(u._id) === currentUserId)) || (currentUser?.usuario && u.usuario && String(currentUser.usuario).toLowerCase() === String(u.usuario).toLowerCase()));
                         if (meInFetch) closersList.push(meInFetch);
                     }
@@ -649,8 +649,7 @@ const Calendario = () => {
                 // Si venimos de un flujo de llamada, registrar la acción en el historial
                 if (location.state?.fromCall) {
                     try {
-                        const rolePath = currentUser?.rol?.toLowerCase() === 'vendedor' ? 'vendedor' : 
-                                       currentUser?.rol?.toLowerCase() === 'closer' ? 'closer' : 'prospector';
+                        const rolePath = 'vendedor';
                         
                         await fetch(`${API_URL}/api/${rolePath}/registrar-actividad`, {
                             method: 'POST',

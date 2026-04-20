@@ -285,7 +285,7 @@ const initDb = async () => {
     id SERIAL PRIMARY KEY,
     usuario TEXT UNIQUE NOT NULL,
     contraseña TEXT NOT NULL,
-    rol TEXT NOT NULL CHECK(rol IN ('prospector','closer','vendedor','admin')),
+    rol TEXT NOT NULL CHECK(rol IN ('vendedor','admin')),
     nombre TEXT NOT NULL,
     email TEXT,
     telefono TEXT,
@@ -398,14 +398,10 @@ const initDb = async () => {
     const userCount = await db.prepare('SELECT COUNT(*) as count FROM usuarios').get();
     if (userCount && parseInt(userCount.count) === 0) {
       console.log('🌱 Base de datos vacía, insertando usuarios predeterminados...');
-      const hashProspector = await bcrypt.hash('prospector123', 10);
-      const hashCloser = await bcrypt.hash('closer123', 10);
+      const hashVendedor = await bcrypt.hash('vendedor123', 10);
 
       await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono) VALUES (?, ?, ?, ?, ?, ?)')
-        .run('prospector', hashProspector, 'prospector', 'Alex Mendoza', 'prospector@crm.com', '5554444444');
-
-      await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono) VALUES (?, ?, ?, ?, ?, ?)')
-        .run('closer', hashCloser, 'closer', 'Fernando Ruiz', 'closer@crm.com', '5555555555');
+        .run('vendedor', hashVendedor, 'vendedor', 'Vendedor Demo', 'vendedor@crm.com', '5554444444');
 
       console.log('✅ Usuarios predeterminados creados');
     }
@@ -684,7 +680,12 @@ const initDb = async () => {
         "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usuarios'"
       ).get();
 
-      const needsRoleMigration = usuariosSql?.sql && (!usuariosSql.sql.includes("'vendedor'") || !usuariosSql.sql.includes("'admin'"));
+      const needsRoleMigration = usuariosSql?.sql && (
+        usuariosSql.sql.includes("'prospector'") ||
+        usuariosSql.sql.includes("'closer'") ||
+        !usuariosSql.sql.includes("'vendedor'") ||
+        !usuariosSql.sql.includes("'admin'")
+      );
       if (needsRoleMigration) {
         internalDb.exec('PRAGMA foreign_keys = OFF');
         internalDb.exec('BEGIN TRANSACTION');
@@ -694,7 +695,7 @@ const initDb = async () => {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             usuario TEXT UNIQUE NOT NULL,
             contraseña TEXT NOT NULL,
-            rol TEXT NOT NULL CHECK(rol IN ('prospector','closer','vendedor','admin')),
+            rol TEXT NOT NULL CHECK(rol IN ('vendedor','admin')),
             nombre TEXT NOT NULL,
             email TEXT,
             telefono TEXT,
@@ -712,7 +713,9 @@ const initDb = async () => {
             fechaCreacion, googleRefreshToken, googleAccessToken, googleTokenExpiry
           )
           SELECT
-            id, usuario, contraseña, rol, nombre, email, telefono, activo,
+            id, usuario, contraseña,
+            CASE WHEN rol IN ('prospector', 'closer', 'superuser') THEN 'vendedor' ELSE rol END,
+            nombre, email, telefono, activo,
             fechaCreacion, googleRefreshToken, googleAccessToken, googleTokenExpiry
           FROM usuarios;
         `);
@@ -721,7 +724,7 @@ const initDb = async () => {
         internalDb.exec('ALTER TABLE usuarios_new RENAME TO usuarios');
         internalDb.exec('COMMIT');
         internalDb.exec('PRAGMA foreign_keys = ON');
-        console.log('✅ SQLite: migración de roles en usuarios completada (incluye vendedor)');
+        console.log('✅ SQLite: migración de roles en usuarios completada (admin/vendedor)');
       }
     } catch (e) {
       try { internalDb.exec('ROLLBACK'); } catch (_) { /* no-op */ }
@@ -749,9 +752,10 @@ const initDb = async () => {
         // Remover el constraint anterior y añadir el nuevo (con 'vendedor')
         await internalDb.query(`
             ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_check;
-            ALTER TABLE usuarios ADD CONSTRAINT usuarios_rol_check CHECK (rol IN ('prospector', 'closer', 'vendedor', 'admin'));
+            UPDATE usuarios SET rol = 'vendedor' WHERE rol IN ('prospector', 'closer', 'superuser');
+            ALTER TABLE usuarios ADD CONSTRAINT usuarios_rol_check CHECK (rol IN ('vendedor', 'admin'));
         `);
-        console.log('✅ Migración: Constraint de rol actualizado en Postgres para incluir "vendedor" y "admin"');
+          console.log('✅ Migración: Constraint de rol actualizado en Postgres (admin/vendedor)');
     } catch(e) {
         console.error('⚠️ Migración: Error actualizando constraint de rol en Postgres:', e.message);
     }
@@ -759,6 +763,8 @@ const initDb = async () => {
 
   // Asegurar que exista un único usuario admin root y que tenga su propio equipo.
   try {
+    await db.prepare("UPDATE usuarios SET rol = 'vendedor' WHERE rol IN ('prospector', 'closer', 'superuser')").run();
+
     const creds = getRootAdminCredentials();
     const admins = await db.prepare('SELECT id, usuario FROM usuarios WHERE rol = ? ORDER BY id ASC').all('admin');
 

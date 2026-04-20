@@ -17,13 +17,12 @@ router.get('/cliente/:clienteId/historial-completo', auth, async (req, res) => {
             return res.status(404).json({ msg: 'Cliente no encontrado' });
         }
 
-        // Validar permisos: prospector, closer asignado o admin
+        // Validar permisos: usuario asignado o admin
         const rol = String(req.usuario.rol).toLowerCase();
-        const esProspectorAsignado = cliente.prospectorAsignado === usuarioId && rol === 'prospector';
-        const esCloserAsignado = cliente.closerAsignado === usuarioId && rol === 'closer';
+        const esAsignado = cliente.prospectorAsignado === usuarioId || cliente.closerAsignado === usuarioId || cliente.vendedorAsignado === usuarioId;
         const esSuperUser = rol === 'admin' || rol === 'superuser';
 
-        if (!esProspectorAsignado && !esCloserAsignado && !esSuperUser) {
+        if (!esAsignado && !esSuperUser) {
             return res.status(403).json({ msg: 'No tienes permiso para ver este historial' });
         }
 
@@ -185,9 +184,9 @@ router.put('/:id', auth, async (req, res) => {
         const esSuperUser = rol === 'admin' || rol === 'superuser';
         const esOwner = a.vendedor === usuarioId;
 
-        // Verificar si es el closer o prospector asignado al cliente
-        const cliente = await db.prepare('SELECT prospectorAsignado, closerAsignado FROM clientes WHERE id = ?').get(a.cliente);
-        const esAsignado = cliente && (cliente.prospectorAsignado === usuarioId || cliente.closerAsignado === usuarioId);
+        // Verificar si es un usuario asignado al cliente
+        const cliente = await db.prepare('SELECT prospectorAsignado, closerAsignado, vendedorAsignado FROM clientes WHERE id = ?').get(a.cliente);
+        const esAsignado = cliente && (cliente.prospectorAsignado === usuarioId || cliente.closerAsignado === usuarioId || cliente.vendedorAsignado === usuarioId);
 
         if (!esOwner && !esSuperUser && !esAsignado) {
             return res.status(403).json({ mensaje: 'No tienes permiso para editar esta actividad' });
@@ -225,9 +224,9 @@ router.delete('/:id', auth, async (req, res) => {
         const esSuperUser = rol === 'admin' || rol === 'superuser';
         const esOwner = a.vendedor === usuarioId;
 
-        // Verificar si es el closer o prospector asignado al cliente
-        const cliente = await db.prepare('SELECT prospectorAsignado, closerAsignado FROM clientes WHERE id = ?').get(a.cliente);
-        const esAsignado = cliente && (cliente.prospectorAsignado === usuarioId || cliente.closerAsignado === usuarioId);
+        // Verificar si es un usuario asignado al cliente
+        const cliente = await db.prepare('SELECT prospectorAsignado, closerAsignado, vendedorAsignado FROM clientes WHERE id = ?').get(a.cliente);
+        const esAsignado = cliente && (cliente.prospectorAsignado === usuarioId || cliente.closerAsignado === usuarioId || cliente.vendedorAsignado === usuarioId);
 
         if (!esOwner && !esSuperUser && !esAsignado) {
             return res.status(403).json({ mensaje: 'No tienes permiso para eliminar esta actividad' });

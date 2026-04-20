@@ -15,25 +15,20 @@ const seedData = async () => {
         db.pragma('foreign_keys = ON');
         console.log('🗑️  Datos anteriores eliminados');
 
-        const hashProspector = await bcrypt.hash('prospector123', 10);
-        const hashCloser = await bcrypt.hash('closer123', 10);
+        const hashVendedor = await bcrypt.hash('vendedor123', 10);
         const hashAdmin = await bcrypt.hash('admin123', 10);
 
         await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono, activo) VALUES (?, ?, ?, ?, ?, ?, ?)')
-            .run('admin', hashAdmin, 'closer', 'Administrador Sistema', 'admin@crm.com', '5550000000', 1);
+            .run('admin', hashAdmin, 'admin', 'Administrador Sistema', 'admin@crm.com', '5550000000', 1);
 
         await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono, activo) VALUES (?, ?, ?, ?, ?, ?, ?)')
-            .run('prospector', hashProspector, 'prospector', 'Alex Mendoza', 'prospector@crm.com', '5554444444', 1);
+            .run('vendedor', hashVendedor, 'vendedor', 'Vendedor Demo', 'vendedor@crm.com', '5554444444', 1);
 
-        await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono, activo) VALUES (?, ?, ?, ?, ?, ?, ?)')
-            .run('closer', hashCloser, 'closer', 'Fernando Ruiz', 'closer@crm.com', '5555555555', 1);
-
-        console.log('👥 Usuarios creados (admin, prospector, closer)');
+        console.log('👥 Usuarios creados (admin, vendedor)');
         console.log('\n✅ Seed completado');
         console.log('\n📝 Credenciales:');
-        console.log('   Admin:      admin / admin123            →  /closer');
-        console.log('   Prospector: prospector / prospector123  →  /prospector');
-        console.log('   Closer:     closer / closer123          →  /closer');
+        console.log('   Admin:      admin / admin123            →  /vendedor/admin');
+        console.log('   Vendedor:   vendedor / vendedor123      →  /vendedor');
 
         process.exit(0);
     } catch (error) {

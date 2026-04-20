@@ -19,10 +19,10 @@ const MainLayout = () => {
             window.location.href = '/'; // Force redirect if no session
             return;
         }
-        // Protección de rol: si el usuario no es vendedor, redirigir a su dashboard correcto
-        if (userGuardado.rol && userGuardado.rol !== 'vendedor') {
-            if (userGuardado.rol === 'prospector') { window.location.href = '/prospector'; return; }
-            if (userGuardado.rol === 'closer') { window.location.href = '/closer'; return; }
+        // Protección de rol: permitir solo admin o vendedor en este layout
+        if (userGuardado.rol && userGuardado.rol !== 'vendedor' && userGuardado.rol !== 'admin') {
+            window.location.href = '/';
+            return;
         }
         setUsuario(userGuardado);
     }, []);
@@ -32,8 +32,6 @@ const MainLayout = () => {
     const getRoleLabel = () => {
         if (!usuario?.rol) return 'Usuario';
         if (usuario.rol === 'admin') return 'Admin Root';
-        if (usuario.rol === 'closer') return 'Closer';
-        if (usuario.rol === 'prospector') return 'Prospector';
         return 'Vendedor';
     };
 

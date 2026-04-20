@@ -39,9 +39,8 @@ const getAuthHeaders = () => ({
 const getCalendarRolePath = () => {
     const user = getUser();
     const role = String(user?.rol || '').toLowerCase();
-    if (role === 'vendedor') return 'vendedor';
-    if (role === 'closer') return 'closer';
-    return 'prospector';
+    if (role === 'admin') return 'vendedor';
+    return 'vendedor';
 };
 
 const formatHora = (date) => {

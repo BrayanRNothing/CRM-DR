@@ -17,18 +17,11 @@ const GoogleIcon = ({ size = 14 }) => (
 const inp = 'w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-[#8bc34a]/20 focus:border-[#8bc34a] outline-none transition-all shadow-sm';
 
 function ModalUsuario({ modoEdicion, formData, setFormData, handleSubmit, cerrarModal }) {
-    const isCloser = formData.rol === 'closer';
     const isVendedor = formData.rol === 'vendedor';
     const [showPassword, setShowPassword] = useState(false);
 
     // Theme configuration based on role
-    const theme = isCloser ? {
-        gradient: 'from-(--theme-600) to-(--theme-600)',
-        lightBg: 'bg-(--theme-50)/50',
-        iconColor: 'text-(--theme-500)',
-        ring: 'focus:ring-(--theme-500)',
-        button: 'bg-(--theme-600) hover:bg-(--theme-700) shadow-(--theme-600)/30'
-    } : isVendedor ? {
+    const theme = isVendedor ? {
         gradient: 'from-amber-500 to-orange-500',
         lightBg: 'bg-amber-50/50',
         iconColor: 'text-amber-500',
@@ -290,13 +283,6 @@ function Usuarios({ initialRole }) {
     const myGoogleToken = localStorage.getItem('google_access_token');
 
     const getRoleTheme = (role) => {
-        if (role === 'closer') return { 
-            bar: 'from-(--theme-500) to-(--theme-600)', 
-            badge: 'bg-(--theme-50) text-(--theme-700) border-(--theme-200)', 
-            label: '🎯 Closer',
-            button: 'bg-(--theme-600) hover:bg-(--theme-700) shadow-(--theme-600)/30',
-            ring: 'focus:ring-(--theme-500) focus:border-(--theme-500)'
-        };
         if (role === 'vendedor') return { 
             bar: 'from-amber-500 to-amber-600', 
             badge: 'bg-amber-50 text-amber-700 border-amber-200', 
@@ -305,15 +291,15 @@ function Usuarios({ initialRole }) {
             ring: 'focus:ring-amber-500 focus:border-amber-500'
         };
         return { 
-            bar: 'from-green-500 to-green-600', 
-            badge: 'bg-green-50 text-green-700 border-green-200', 
-            label: '🔍 Prospector',
-            button: 'bg-[#8bc34a] hover:bg-[#7cb342] shadow-[#8bc34a]/30',
-            ring: 'focus:ring-[#8bc34a] focus:border-[#8bc34a]'
+            bar: 'from-slate-500 to-slate-600', 
+            badge: 'bg-slate-50 text-slate-700 border-slate-200', 
+            label: '👤 Usuario',
+            button: 'bg-slate-600 hover:bg-slate-700 shadow-slate-600/30',
+            ring: 'focus:ring-slate-500 focus:border-slate-500'
         };
     };
 
-    const currentTheme = getRoleTheme(initialRole || 'prospector');
+    const currentTheme = getRoleTheme(initialRole || 'vendedor');
 
     return (
         <div className="w-full min-h-full bg-slate-50 p-6 md:p-8">

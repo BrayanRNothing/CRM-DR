@@ -33,7 +33,7 @@ const Toggle = ({ value, onChange }) => (
 
 export default function VendedorAjustes() {
     const navigate = useNavigate();
-    const [user, setUser] = useState({ nombre: 'Usuario', usuario: 'usuario', email: '', telefono: '', rol: 'prospector', id: null });
+    const [user, setUser] = useState({ nombre: 'Usuario', usuario: 'usuario', email: '', telefono: '', rol: 'vendedor', id: null });
     const [notifs, setNotifs] = useState({ email: true, tasks: true, updates: false });
     const [googleConnected, setGoogleConnected] = useState(false);
     const [googleUser, setGoogleUser] = useState(null);
