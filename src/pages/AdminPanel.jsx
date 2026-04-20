@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { UserPlus, ShieldCheck, Users, Building2, Loader2, KeyRound, Pencil, Trash2, X } from 'lucide-react';
+import { UserPlus, Users, Loader2, Pencil, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../config/api';
 import { getToken, getUser } from '../utils/authUtils';
@@ -196,15 +196,11 @@ export default function AdminPanel() {
     <>
       <div className="w-full min-h-full bg-slate-50 p-6 md:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div className="relative overflow-hidden bg-linear-to-r from-slate-900 to-slate-700 rounded-2xl p-6 text-white shadow-xl">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <ShieldCheck className="w-6 h-6" />
-                <h1 className="text-2xl font-black tracking-tight">Panel Admin Root</h1>
-              </div>
-              <p className="text-slate-200 text-sm max-w-2xl">
-                Desde este panel administras usuarios líderes y los equipos que nacen de ellos. Los usuarios creados aquí pueden convertirse en dueños de su propio equipo y luego crear sus usuarios hijos.
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">Administración de usuarios líderes</h1>
+              <p className="text-xs md:text-sm text-gray-500 mt-0.5 leading-snug">
+                Gestiona líderes de equipo y revisa sus usuarios hijos
               </p>
             </div>
 
@@ -215,34 +211,23 @@ export default function AdminPanel() {
                 setForm(initialForm);
                 setCreatorOpen(true);
               }}
-              className="inline-flex items-center gap-2 self-start rounded-xl bg-white/10 px-4 py-3 text-sm font-bold text-white ring-1 ring-white/20 backdrop-blur-sm transition hover:bg-white/15"
+              className="w-full sm:w-auto justify-center flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors text-xs md:text-sm font-medium"
             >
-              <UserPlus className="w-4 h-4" />
+              <UserPlus className="w-4 h-4 md:w-5 md:h-5" />
               Crear usuario líder
             </button>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-slate-500 text-sm font-semibold mb-2">
-              <Users className="w-4 h-4" /> Propietarios activos
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="text-sm text-slate-600">
+                Líderes activos: <span className="font-bold text-slate-900">{owners.length}</span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Haz click en "usuarios hijos" para ver quién creó cada líder en su equipo.
+              </p>
             </div>
-            <div className="text-3xl font-black text-slate-900">{owners.length}</div>
           </div>
-          <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-slate-500 text-sm font-semibold mb-2">
-              <Building2 className="w-4 h-4" /> Equipos creados
-            </div>
-            <div className="text-3xl font-black text-slate-900">{owners.length}</div>
-          </div>
-          <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-slate-500 text-sm font-semibold mb-2">
-              <KeyRound className="w-4 h-4" /> Acceso exclusivo
-            </div>
-            <div className="text-sm text-slate-700 font-semibold">Solo visible para usuario admin root</div>
-          </div>
-        </div>
 
           <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
             <h2 className="font-black text-slate-900 text-lg mb-4">Propietarios creados</h2>
