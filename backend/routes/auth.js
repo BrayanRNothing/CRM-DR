@@ -62,8 +62,17 @@ router.post('/login', async (req, res) => {
             payload,
             process.env.JWT_SECRET || 'secret',
             { expiresIn: '7d' },
-            (err, token) => {
+            async (err, token) => {
                 if (err) throw err;
+
+                // Registrar actividad de inicio de sesión
+                try {
+                    await db.prepare('INSERT INTO actividades (tipo, vendedor, descripcion, resultado) VALUES (?, ?, ?, ?)')
+                        .run('login', row.id, `Inicio de sesión exitoso`, 'exitoso');
+                } catch (actError) {
+                    console.error('Error al registrar actividad de login:', actError);
+                }
+
                 res.json({
                     token,
                     usuario: {
@@ -136,6 +145,15 @@ router.post('/register', async (req, res) => {
         const newUser = await db.prepare('SELECT id, usuario, nombre, rol, email, "equipo_id" FROM usuarios WHERE id = ?').get(nuevoUserId);
 
         console.log(`✅ Usuario registrado con éxito: ${newUser.usuario} (equipo_id: ${newUser.equipo_id})`);
+        
+        // Registrar actividad de registro
+        try {
+            await db.prepare('INSERT INTO actividades (tipo, vendedor, descripcion, resultado) VALUES (?, ?, ?, ?)')
+                .run('registro', nuevoUserId, `Nuevo usuario registrado: ${newUser.usuario}`, 'exitoso');
+        } catch (actError) {
+            console.error('Error al registrar actividad de registro:', actError);
+        }
+
         res.status(201).json({
             mensaje: 'Usuario registrado exitosamente',
             usuario: newUser

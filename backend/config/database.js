@@ -119,7 +119,7 @@ const CAMEL_COLS = [
   'googleRefreshToken', 'googleAccessToken', 'googleTokenExpiry',
   'vendedorNombre', 'vendedorRol', 'closerNombre', 'propietarioNombre', 'sitioWeb', 'googleMeetLink',
   'customMetricLabel', 'customMetricValue', 'createdAt', 'tipoActividad',
-  'ultimaInteraccion', 'proximaLlamada', 'customSections'
+  'ultimaInteraccion', 'proximaLlamada', 'customSections', 'fuente', 'motivoPerdida'
 ];
 
 // Helper: convierte '?' a '$1', '$2', etc. para Postgres y añade comillas dobles a columnas camelCase
@@ -153,7 +153,7 @@ const pgMap = {
   vendedornombre: 'vendedorNombre', vendedorrol: 'vendedorRol', closernombre: 'closerNombre', propietarionombre: 'propietarioNombre',
   sitioweb: 'sitioWeb', googlemeetlink: 'googleMeetLink',
   custommetriclabel: 'customMetricLabel', custommetricvalue: 'customMetricValue',
-  customsections: 'customSections'
+  customsections: 'customSections', fuente: 'fuente', motivoperdida: 'motivoPerdida'
 };
 
 const mapPgRow = (row) => {
@@ -339,17 +339,19 @@ const initDb = async () => {
     sitioWeb TEXT,
     ubicacion TEXT,
     etiquetas TEXT,
-    "customSections" TEXT
+    "customSections" TEXT,
+    fuente TEXT,
+    "motivoPerdida" TEXT
   );
 
   CREATE TABLE IF NOT EXISTS actividades (
     id SERIAL PRIMARY KEY,
-    tipo TEXT NOT NULL CHECK(tipo IN ('llamada','mensaje','correo','whatsapp','cita','prospecto')),
+    tipo TEXT NOT NULL,
     vendedor INTEGER NOT NULL REFERENCES usuarios(id),
-    cliente INTEGER NOT NULL REFERENCES clientes(id),
+    cliente INTEGER REFERENCES clientes(id),
     fecha TEXT DEFAULT CURRENT_TIMESTAMP,
     descripcion TEXT,
-    resultado TEXT DEFAULT 'pendiente' CHECK(resultado IN ('exitoso','pendiente','fallido')),
+    resultado TEXT DEFAULT 'pendiente' CHECK(resultado IN ('exitoso','pendiente','fallido','convertido','descartado','enviado')),
     cambioEtapa INTEGER DEFAULT 0,
     etapaAnterior TEXT,
     etapaNueva TEXT,
@@ -573,6 +575,9 @@ const initDb = async () => {
       ['equipos',     'icon',                'TEXT'],
       ['clientes',    'etiquetas',           'TEXT'],
       ['clientes',    '"customSections"',    'TEXT'],
+      ['clientes',    'fuente',              'TEXT'],
+      ['clientes',    '"motivoPerdida"',     'TEXT'],
+      ['actividades', '"equipo_id"',         'INTEGER'],
     ];
     for (const [table, col, type] of colsMissingPg) {
       try {
@@ -584,6 +589,19 @@ const initDb = async () => {
           console.error(`⚠️ Error agregando ${col} a ${table}:`, e.message);
         }
       }
+    }
+
+    // Migración específica para tabla actividades: remover constraints restrictivos
+    try {
+      await internalDb.query(`
+        ALTER TABLE actividades DROP CONSTRAINT IF EXISTS actividades_tipo_check;
+        ALTER TABLE actividades DROP CONSTRAINT IF EXISTS actividades_resultado_check;
+        ALTER TABLE actividades ALTER COLUMN cliente DROP NOT NULL;
+        ALTER TABLE actividades ADD CONSTRAINT actividades_resultado_check CHECK (resultado IN ('exitoso','pendiente','fallido','convertido','descartado','enviado'));
+      `);
+      console.log('✅ Migración: Tabla actividades actualizada (cliente nullable, tipo/resultado checks relajados)');
+    } catch (e) {
+      console.error('⚠️ Migración actividades falló:', e.message);
     }
     
     // Asegurar que todos los usuarios tengan activo = 1 si es NULL
@@ -679,6 +697,9 @@ const initDb = async () => {
       ['equipos', 'icon TEXT'],
       ['clientes', 'etiquetas TEXT'],
       ['clientes', 'customSections TEXT'],
+      ['clientes', 'fuente TEXT'],
+      ['clientes', 'motivoPerdida TEXT'],
+      ['tareas', 'equipo_id INTEGER'],
     ];
     for (const [table, colDef] of colsMissingSqlite) {
       try {

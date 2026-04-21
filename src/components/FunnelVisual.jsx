@@ -44,26 +44,26 @@ const FunnelVisual = ({ stages }) => {
                 return (
                     <React.Fragment key={index}>
                         {/* Card Principal - Ancho y Alto Igual */}
-                        <div className={`bg-linear-to-br ${gradientClass} rounded-lg p-3 shadow-md hover:shadow-lg transition-all duration-300 relative overflow-hidden group flex-1 h-48`}>
+                        <div className={`bg-linear-to-br ${gradientClass} rounded-lg p-2.5 shadow-md hover:shadow-lg transition-all duration-300 relative overflow-hidden group flex-1 h-48`}>
                             {/* Fondo decorativo */}
                             <div className="absolute right-0 top-0 h-full w-1/3 bg-white/5 skew-x-12 transform origin-top-right group-hover:scale-110 transition-transform duration-500"></div>
 
                             <div className="relative z-10 h-full flex flex-col">
                                 {/* Header: Título y Total */}
-                                <div className="flex items-start justify-between gap-2 mb-2">
-                                    <h4 className="text-white font-bold text-sm leading-tight">
+                                <div className="flex items-start justify-between gap-1.5 mb-1.5">
+                                    <h4 className="text-white font-bold text-[11px] leading-tight uppercase tracking-wider opacity-90">
                                         {stage.etapa}
                                     </h4>
-                                    <div className="text-4xl font-extrabold text-white tracking-tight drop-shadow-md">
+                                    <div className="text-3xl font-black text-white tracking-tight drop-shadow-md">
                                         {stage.cantidad}
                                     </div>
                                 </div>
 
                                 {/* Contador Hoy - Posicionado absoluto para no mover el layout */}
                                 {stage.contadorHoy > 0 && (
-                                    <div className="absolute top-11 right-3 z-20 inline-flex items-center gap-1 bg-white/20 backdrop-blur-md rounded-full px-2 py-0.5 border border-white/10">
-                                        <TrendingUp className="w-2.5 h-2.5 text-white" />
-                                        <span className="text-white text-[10px] font-bold">
+                                    <div className="absolute top-9 right-2.5 z-20 inline-flex items-center gap-1 bg-white/20 backdrop-blur-md rounded-full px-1.5 py-0.5 border border-white/10">
+                                        <TrendingUp className="w-2 h-2 text-white" />
+                                        <span className="text-white text-[9px] font-bold">
                                             +{stage.contadorHoy} {stage.labelContador || 'hoy'}
                                         </span>
                                     </div>
@@ -74,7 +74,7 @@ const FunnelVisual = ({ stages }) => {
 
                                 {/* Estadísticas al fondo */}
                                 {(stage.cantidadExito !== undefined || stage.cantidadPerdida !== undefined) && (
-                                    <div className="space-y-2 bg-black/10 rounded-md p-2.5 backdrop-blur-sm border border-white/5">
+                                    <div className="space-y-1.5 bg-black/10 rounded-md p-2 backdrop-blur-sm border border-white/5">
                                         {/* Éxito */}
                                         {stage.cantidadExito !== undefined && (
                                             <div className="flex items-center justify-between">
@@ -85,10 +85,10 @@ const FunnelVisual = ({ stages }) => {
                                                     </span>
                                                 </div>
                                                 <div className="flex items-baseline gap-1.5">
-                                                    <span className="text-xl font-bold text-white">
+                                                    <span className="text-lg font-bold text-white">
                                                         {stage.cantidadExito}
                                                     </span>
-                                                    <span className="text-xs font-semibold text-green-200 bg-green-500/30 px-1.5 py-0.5 rounded">
+                                                    <span className="text-[10px] font-semibold text-green-200 bg-green-500/30 px-1 py-0.5 rounded">
                                                         {formatPercent(stage.porcentajeExito)}
                                                     </span>
                                                 </div>
@@ -105,10 +105,10 @@ const FunnelVisual = ({ stages }) => {
                                                     </span>
                                                 </div>
                                                 <div className="flex items-baseline gap-1.5">
-                                                    <span className="text-xl font-bold text-white">
+                                                    <span className="text-lg font-bold text-white">
                                                         {stage.cantidadPerdida}
                                                     </span>
-                                                    <span className="text-xs font-semibold text-red-200 bg-red-500/30 px-1.5 py-0.5 rounded">
+                                                    <span className="text-[10px] font-semibold text-red-200 bg-red-500/30 px-1 py-0.5 rounded">
                                                         {formatPercent(stage.porcentajePerdida)}
                                                     </span>
                                                 </div>

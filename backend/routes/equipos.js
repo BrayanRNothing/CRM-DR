@@ -154,6 +154,15 @@ router.post('/agregar-miembro', auth, esTeamOwner, async (req, res) => {
         const newUser = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo FROM usuarios WHERE id = ?').get(result.lastInsertRowid);
 
         console.log(`✅ Miembro agregado al equipo ${equipoId}: ${newUser.usuario}`);
+        
+        // Registrar actividad de equipo
+        try {
+            await db.prepare('INSERT INTO actividades (tipo, vendedor, descripcion, resultado) VALUES (?, ?, ?, ?)')
+                .run('equipo', req.usuario.id, `Nuevo miembro añadido al equipo: ${newUser.usuario}`, 'exitoso');
+        } catch (actError) {
+            console.error('Error al registrar actividad de equipo:', actError);
+        }
+
         res.status(201).json({
             mensaje: 'Miembro agregado al equipo exitosamente',
             usuario: newUser

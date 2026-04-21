@@ -743,6 +743,12 @@ export default function ProspectoDetalle({
                                                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEtapaColor(prospectoSeleccionado.etapaEmbudo)}`}>
                                                         {getEtapaLabel(prospectoSeleccionado.etapaEmbudo)}
                                                     </span>
+                                                    {prospectoSeleccionado.fuente && (
+                                                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-500 border border-indigo-100">
+                                                            <Globe className="w-3 h-3" />
+                                                            {prospectoSeleccionado.fuente}
+                                                        </span>
+                                                    )}
                                                     <button
                                                         onClick={() => setEditandoEtapa(true)}
                                                         className="p-1 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded transition-all"

@@ -481,7 +481,7 @@ export default function ClienteDetalle({
 
     const manejarRegistrarVenta = () => {
         setVentaEnMantenimiento(true);
-        toast.info('En mantenimiento');
+        toast('En mantenimiento', { icon: '⚙️' });
         setTimeout(() => setVentaEnMantenimiento(false), 2500);
     };
 

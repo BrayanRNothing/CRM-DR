@@ -40,6 +40,7 @@ import TimeWheelPicker from '../components/TimeWheelPicker';
 
 import API_URL from '../config/api';
 import socket from '../config/socket';
+import SourcePicker from '../components/ui/SourcePicker';
 
 // --- CSV helpers ---
 const CSV_HEADERS = ['nombres', 'apellidoPaterno', 'apellidoMaterno', 'telefono', 'correo', 'empresa', 'sitioWeb', 'ubicacion', 'notas'];
@@ -169,7 +170,8 @@ const Seguimiento = () => {
         empresa: '',
         sitioWeb: '',
         ubicacion: '',
-        notas: ''
+        notas: '',
+        fuente: ''
     });
 
     // Estado para la edición de prospectos
@@ -182,6 +184,7 @@ const Seguimiento = () => {
     const [modalDescartarAbierto, setModalDescartarAbierto] = useState(false);
     const [notaConversion, setNotaConversion] = useState('');
     const [notaDescarte, setNotaDescarte] = useState('');
+    const [motivoPerdida, setMotivoPerdida] = useState('');
     const [loadingConversion, setLoadingConversion] = useState(false);
 
     // Estados para CSV y eliminar
@@ -560,7 +563,7 @@ const Seguimiento = () => {
             });
             toast.success('Prospecto creado');
             setModalCrearAbierto(false);
-            setFormCrear({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '' });
+            setFormCrear({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '', fuente: '' });
             cargarDatos();
         } catch (error) {
             toast.error(error.response?.data?.msg || 'Error al crear');
@@ -587,7 +590,10 @@ const Seguimiento = () => {
         setLoadingConversion(true);
         try {
             await axios.post(`${API_URL}/api/${rolePath}/descartar-prospecto/${pid}`,
-                { notas: notaDescarte || 'Prospecto descartado' },
+                { 
+                    notas: notaDescarte || 'Prospecto descartado',
+                    motivoPerdida: motivoPerdida || 'Otro'
+                },
                 { headers: getAuthHeaders() }
             );
             toast('Prospecto descartado', { icon: '🗑️' });
@@ -625,7 +631,7 @@ const Seguimiento = () => {
                             <button 
                                 onClick={() => {
                                     setModalCrearAbierto(false);
-                                    setFormCrear({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '' });
+                                    setFormCrear({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '', fuente: '' });
                                 }} 
                                 className="p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-400 hover:text-slate-600"
                             >
@@ -786,18 +792,26 @@ const Seguimiento = () => {
                                     </div>
                                 </div>
 
-                                {/* Fila Inferior: Notas de Ancho Completo */}
                                 <div className="md:col-span-3 space-y-4 pt-4 border-t border-slate-100">
                                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                        <div className="w-1 h-3 bg-amber-500 rounded-full"></div>
+                                        <div className="w-1 h-3 bg-indigo-500 rounded-full"></div>
                                         Notas & Contexto Inicial
                                     </h3>
                                     <textarea
-                                        rows={3}
+                                        rows={2}
                                         value={formCrear.notas}
                                         onChange={(e) => setFormCrear((f) => ({ ...f, notas: e.target.value }))}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium resize-none"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium resize-none mb-2"
                                         placeholder="Escribe aquí cualquier detalle relevante sobre el prospecto antes de crearlo..."
+                                    />
+
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 pt-2">
+                                        <div className="w-1 h-3 bg-indigo-500 rounded-full"></div>
+                                        Fuente del Prospecto
+                                    </h3>
+                                    <SourcePicker 
+                                        selectedSource={formCrear.fuente} 
+                                        onChange={(val) => setFormCrear(f => ({ ...f, fuente: val }))} 
                                     />
                                 </div>
                             </div>
@@ -1052,39 +1066,75 @@ const Seguimiento = () => {
                 </div>
             )}
 
-            {/* Modal Descartar Prospecto */}
+            {/* Modal Descartar Prospecto - Rediseño Premium */}
             {modalDescartarAbierto && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-lg max-w-sm w-full">
-                        <div className="p-4 border-b border-slate-100 bg-red-50">
-                            <h2 className="text-lg font-bold text-red-900">🗑️ Descartar prospecto</h2>
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in duration-300">
+                        <div className="w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                            <Trash2 className="w-8 h-8 text-rose-600" />
                         </div>
-                        <div className="p-4 space-y-3">
-                            <p className="text-gray-600 text-sm">
-                                ¿Descartar a <span className="font-semibold">{prospectoSeleccionado?.nombres} {prospectoSeleccionado?.apellidoPaterno}</span>? Se registrará en el historial.
-                            </p>
-                            <textarea
-                                rows={2}
-                                value={notaDescarte}
-                                onChange={e => setNotaDescarte(e.target.value)}
-                                placeholder="Motivo (opcional)..."
-                                className="w-full border border-slate-200 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-red-400"
-                            />
-                        </div>
-                        <div className="flex gap-2 p-4 border-t border-slate-100">
-                            <button
-                                onClick={() => { setModalDescartarAbierto(false); setNotaDescarte(''); }}
-                                className="flex-1 px-3 py-2 border border-slate-200 text-gray-700 rounded text-sm hover:bg-slate-50 font-medium"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleDescartar}
-                                disabled={loadingConversion}
-                                className="flex-1 px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {loadingConversion ? 'Procesando...' : '✓ Descartar'}
-                            </button>
+                        <h2 className="text-xl font-black text-gray-900 text-center mb-2">Descartar Prospecto</h2>
+                        <p className="text-sm text-gray-500 text-center mb-8 font-medium italic">¿Por qué este prospecto no avanzó? Esta información mejorará nuestras métricas.</p>
+                        
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Motivo de pérdida</label>
+                                <div className="flex flex-wrap justify-center gap-2">
+                                    {[
+                                        'Precio muy alto', 
+                                        'Eligió a la competencia', 
+                                        'No contestó', 
+                                        'Sin interés real', 
+                                        'Fuera de presupuesto', 
+                                        'Proyecto pausado', 
+                                        'Otro'
+                                    ].map((m) => (
+                                        <button
+                                            key={m}
+                                            type="button"
+                                            onClick={() => setMotivoPerdida(m)}
+                                            className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all border ${
+                                                motivoPerdida === m
+                                                    ? 'bg-rose-500 text-white border-rose-500 shadow-sm'
+                                                    : 'bg-gray-50 text-gray-400 border-gray-100 hover:border-gray-200 hover:text-gray-600'
+                                            }`}
+                                        >
+                                            {m}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Notas adicionales</label>
+                                <textarea
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-rose-500 outline-none transition-all resize-none"
+                                    rows="3"
+                                    placeholder="Comentarios opcionales..."
+                                    value={notaDescarte}
+                                    onChange={(e) => setNotaDescarte(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    onClick={() => {
+                                        setModalDescartarAbierto(false);
+                                        setMotivoPerdida('');
+                                        setNotaDescarte('');
+                                    }}
+                                    className="flex-1 px-6 py-3 bg-gray-100 text-gray-600 font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-gray-200 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    disabled={loadingConversion || !motivoPerdida}
+                                    onClick={handleDescartar}
+                                    className="flex-1 px-6 py-3 bg-rose-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 disabled:opacity-50 disabled:shadow-none"
+                                >
+                                    {loadingConversion ? 'Procesando...' : 'Confirmar'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

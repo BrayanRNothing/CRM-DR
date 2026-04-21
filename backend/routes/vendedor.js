@@ -209,7 +209,16 @@ router.get('/dashboard', [auth, esVendedor], async (req, res) => {
             correosEnviados: periodos.dia.mensajes
         };
 
-        res.json({ embudo, metricas, tasasConversion, periodos });
+        // Agregación por fuente
+        const fuentesRaw = await db.prepare(`
+            SELECT fuente, COUNT(*) as c FROM clientes 
+            WHERE prospectorAsignado = ? OR id IN (SELECT cliente FROM actividades WHERE vendedor = ?)
+            GROUP BY fuente
+        `).all(prospectorId, prospectorId);
+        const analisisFuentes = {};
+        fuentesRaw.forEach(f => { analisisFuentes[f.fuente || 'Desconocido'] = f.c; });
+
+        res.json({ embudo, metricas, tasasConversion, periodos, analisisFuentes });
     } catch (error) {
         console.error('Error en dashboard prospector:', error);
         // Fallback para no romper la UI del dashboard si hay datos históricos corruptos.
@@ -312,6 +321,84 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
             if (venta) embudo.venta_ganada++;
         }
 
+        // Agregación por motivo de pérdida (Premium)
+        const perdidasRaw = await db.prepare(`
+            SELECT "motivoPerdida", COUNT(*) as c FROM clientes 
+            WHERE (closerAsignado = ? ${equipoId ? 'OR equipo_id = ?' : ''}) AND etapaEmbudo = 'perdido'
+            GROUP BY "motivoPerdida"
+        `).all(...(equipoId ? [closerId, equipoId] : [closerId]));
+        
+        const analisisPerdidasPremium = {};
+        perdidasRaw.forEach(p => { analisisPerdidasPremium[p.motivoPerdida || 'Sin motivo'] = p.c; });
+
+        // Agregación por fuente (Premium - Ahora incluye Revenue)
+        const fuentesRawCloser = await db.prepare(`
+            SELECT c.fuente, COUNT(c.id) as count, SUM(v.monto) as revenue
+            FROM clientes c
+            LEFT JOIN ventas v ON v.cliente_id = c.id
+            WHERE (c.closerAsignado = ? ${equipoId ? 'OR c.equipo_id = ?' : ''})
+            GROUP BY c.fuente
+        `).all(...(equipoId ? [closerId, equipoId] : [closerId]));
+        
+        const analisisFuentesPremium = {};
+        fuentesRawCloser.forEach(f => { 
+            analisisFuentesPremium[f.fuente || 'Desconocido'] = {
+                count: f.count || 0,
+                revenue: f.revenue || 0
+            };
+        });
+
+        // --- MÉTRICAS DE EFICIENCIA (Velocidad en JS para compatibilidad) ---
+        
+        // 1. Ciclo de Venta Promedio (Días)
+        const cicloData = await db.prepare(`
+            SELECT v.fecha as fechaVenta, c.fechaRegistro
+            FROM ventas v
+            JOIN clientes c ON v.cliente_id = c.id
+            WHERE (v.vendedor = ? ${equipoId ? 'OR c.equipo_id = ?' : ''})
+        `).all(...(equipoId ? [closerId, equipoId] : [closerId]));
+
+        let totalDays = 0;
+        cicloData.forEach(d => {
+            const diff = new Date(d.fechaVenta) - new Date(d.fechaRegistro);
+            totalDays += diff / (1000 * 60 * 60 * 24);
+        });
+        const avgCycle = cicloData.length > 0 ? totalDays / cicloData.length : 0;
+
+        // 2. Lead Response Time (Promedio de horas hasta el primer contacto)
+        const responseData = await db.prepare(`
+            SELECT c.fechaRegistro, MIN(a.fecha) as firstContact
+            FROM clientes c
+            JOIN actividades a ON a.cliente = c.id
+            WHERE (c.closerAsignado = ? ${equipoId ? 'OR c.equipo_id = ?' : ''})
+            AND a.tipo IN ('llamada', 'mensaje', 'cita')
+            GROUP BY c.id
+        `).all(...(equipoId ? [closerId, equipoId] : [closerId]));
+
+        let totalHours = 0;
+        responseData.forEach(d => {
+            const diff = new Date(d.firstContact) - new Date(d.fechaRegistro);
+            totalHours += diff / (1000 * 60 * 60);
+        });
+        const avgResponse = responseData.length > 0 ? totalHours / responseData.length : 0;
+
+        // 3. Leads Estancados (> 7 días sin cambio de etapa)
+
+        // 3. Leads Estancados (> 7 días sin cambio de etapa)
+        const sieteDiasAtras = new Date();
+        sieteDiasAtras.setDate(sieteDiasAtras.getDate() - 7);
+        
+        const estancadosCount = clientes.filter(c => 
+            !['venta_ganada', 'perdido'].includes(c.etapaEmbudo) && 
+            new Date(c.fechaUltimaEtapa || c.fechaRegistro) < sieteDiasAtras
+        ).length;
+
+        const eficiencia = {
+            cicloVentaDias: Math.round(avgCycle * 10) / 10,
+            responseTimeHoras: Math.round(avgResponse * 10) / 10,
+            leadsEstancados: estancadosCount
+        };
+
         const hoyInicio = new Date();
         hoyInicio.setHours(0, 0, 0, 0);
         const hoyFin = new Date();
@@ -364,7 +451,10 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
                 negociaciones: { activas: embudo.en_negociacion }
             },
             tasasConversion,
-            analisisPerdidas
+            analisisPerdidas,
+            analisisPerdidasPremium,
+            analisisFuentes: analisisFuentesPremium,
+            eficiencia
         });
     } catch (error) {
         console.error('Error en dashboard-closer:', error);
@@ -665,7 +755,7 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
 // POST /api/vendedor/crear-prospecto
 router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
     try {
-        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, sitioWeb, ubicacion } = req.body;
+        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, sitioWeb, ubicacion, fuente } = req.body;
 
         const prospectorId = parseInt(req.usuario.id);
         const closerId = prospectorId;
@@ -673,8 +763,8 @@ router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
         const now = new Date().toISOString();
 
         const stmt = await db.prepare(`
-            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, sitioWeb, ubicacion, customMetricLabel, customMetricValue, vendedorAsignado, prospectorAsignado, closerAsignado, etapaEmbudo, fechaRegistro, fechaUltimaEtapa, "equipo_id", "propietarioId", compartido)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prospecto_nuevo', ?, ?, ?, ?, ?)
+            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, sitioWeb, ubicacion, fuente, customMetricLabel, customMetricValue, vendedorAsignado, prospectorAsignado, closerAsignado, etapaEmbudo, fechaRegistro, fechaUltimaEtapa, "equipo_id", "propietarioId", compartido)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prospecto_nuevo', ?, ?, ?, ?, ?)
         `);
         const result = await stmt.run(
             (nombres || '').trim(),
@@ -687,6 +777,7 @@ router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
             (notas || '').trim(),
             (sitioWeb || '').trim(),
             (ubicacion || '').trim(),
+            (fuente || 'Desconocido').trim(),
             (req.body.customMetricLabel || '').trim(),
             (req.body.customMetricValue || '').trim(),
             prospectorId,
@@ -1430,19 +1521,20 @@ router.post('/descartar-prospecto/:id', [auth, esVendedor], async (req, res) => 
         }
 
         const now = new Date().toISOString();
+        const { motivoPerdida } = req.body;
 
         // Registrar la actividad de descarte
         await db.prepare(`
             INSERT INTO actividades (tipo, vendedor, cliente, fecha, descripcion, resultado, notas)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).run('prospecto', prospectorId, clienteId, now, 'Prospecto descartado', 'fallido', notas || 'Descartado');
+        `).run('prospecto', prospectorId, clienteId, now, 'Prospecto descartado', 'fallido', notas || `Descartado: ${motivoPerdida || 'Sin motivo'}`);
 
         // Actualizar etapa del prospecto
         const hist = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
-        hist.push({ etapa: 'perdido', fecha: now, vendedor: prospectorId });
+        hist.push({ etapa: 'perdido', fecha: now, vendedor: prospectorId, motivoPerdida });
 
-        await db.prepare('UPDATE clientes SET etapaEmbudo = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, proximaLlamada = NULL WHERE id = ?')
-            .run('perdido', now, now, JSON.stringify(hist), clienteId);
+        await db.prepare('UPDATE clientes SET etapaEmbudo = ?, motivoPerdida = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, proximaLlamada = NULL WHERE id = ?')
+            .run('perdido', motivoPerdida || 'Otro', now, now, JSON.stringify(hist), clienteId);
 
         res.json({ msg: '✓ Prospecto descartado' });
     } catch (error) {

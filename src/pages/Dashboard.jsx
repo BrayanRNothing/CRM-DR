@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, UserPlus, Calendar, TrendingUp, RefreshCw, Clock, CheckCircle2, Target, MessageSquare, ExternalLink, Users, Award, DollarSign, AlertTriangle, TrendingDown, Zap, Bell, ArrowRightLeft, PercentCircle, BarChart3, Search, FileText, Video } from 'lucide-react';
+import { Phone, UserPlus, Calendar, TrendingUp, RefreshCw, Clock, CheckCircle2, Target, MessageSquare, ExternalLink, Users, Award, DollarSign, AlertTriangle, TrendingDown, Zap, Bell, ArrowRightLeft, PercentCircle, BarChart3, Search, FileText, Video, Globe, XCircle, Plus, Pencil, Trash2, Activity, ChevronRight, LogIn, LogOut, History, MousePointer2 } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import FunnelVisual from '../components/FunnelVisual';
@@ -7,7 +7,8 @@ import FunnelVisual from '../components/FunnelVisual';
 import API_URL from '../config/api';
 import socket from '../config/socket';
 import StatCard from '../components/ui/StatCard';
-import WeakStageAlert from '../components/WeakStageAlert';
+
+import MetricKPICard from '../components/ui/MetricKPICard';
 
 const PERIODOS = [
     { key: 'dia', label: 'Hoy', suffix: 'hoy' },
@@ -30,7 +31,10 @@ const INITIAL_CLOSER_DATA = {
         ventas: { mes: 0, montoMes: 0, totales: 0, montoTotal: 0, ventasHoy: 0 },
     },
     tasasConversion: { asistencia: 0, interes: 0, cierre: 0 },
-    analisisPerdidas: { no_asistio: 0, no_interesado: 0 }
+    analisisPerdidas: { no_asistio: 0, no_interesado: 0 },
+    analisisPerdidasPremium: {},
+    analisisFuentes: {},
+    eficiencia: { cicloVentaDias: 0, responseTimeHoras: 0, leadsEstancados: 0 }
 };
 
 const GOAL_LABELS = {
@@ -105,7 +109,8 @@ const sanitizeVendedorData = (rawData) => {
                 prospectos: getNumero(rawData?.periodos?.total?.prospectos ?? fallbackTotal.prospectos),
                 reuniones: getNumero(rawData?.periodos?.total?.reuniones ?? fallbackTotal.reuniones)
             }
-        }
+        },
+        analisisFuentes: rawData?.analisisFuentes || {}
     };
 };
 
@@ -126,7 +131,36 @@ const Dashboard = () => {
     const [loadingReuniones, setLoadingReuniones] = useState(true);
     const [periodo, setPeriodo] = useState('dia');
     const [healthTab, setHealthTab] = useState('resumen');
+    const [actividades, setActividades] = useState([]);
+    const [loadingActividades, setLoadingActividades] = useState(false);
+
+    const fetchActividades = async () => {
+        try {
+            setLoadingActividades(true);
+            const res = await axios.get(`${API_URL}/api/actividades`, {
+                headers: getAuthHeaders()
+            });
+            const data = Array.isArray(res.data) ? res.data : [];
+            setActividades(data);
+        } catch (error) {
+            console.error('Error al cargar actividades:', error);
+            setActividades([]);
+        } finally {
+            setLoadingActividades(false);
+        }
+    };
+
+    useEffect(() => {
+        if (healthTab === 'acciones') {
+            fetchActividades();
+        }
+    }, [healthTab]);
     const [metasEquipo, setMetasEquipo] = useState([]);
+    const [teamTasks, setTeamTasks] = useState([]);
+    const [loadingTasks, setLoadingTasks] = useState(false);
+    const [showTaskModal, setShowTaskModal] = useState(false);
+    const [editingTask, setEditingTask] = useState(null);
+    const [newTask, setNewTask] = useState({ titulo: '', descripcion: '', prioridad: 'media' });
     const navigate = useNavigate();
 
     const sanitizeCloserData = (rawData) => {
@@ -164,7 +198,10 @@ const Dashboard = () => {
             analisisPerdidas: {
                 no_asistio: getNumero(rawData?.analisisPerdidas?.no_asistio),
                 no_interesado: getNumero(rawData?.analisisPerdidas?.no_interesado)
-            }
+            },
+            analisisPerdidasPremium: rawData?.analisisPerdidasPremium || {},
+            analisisFuentes: rawData?.analisisFuentes || {},
+            eficiencia: rawData?.eficiencia || { cicloVentaDias: 0, responseTimeHoras: 0, leadsEstancados: 0 }
         };
     };
 
@@ -337,6 +374,10 @@ const Dashboard = () => {
                     });
                 }
 
+                const manualTasks = (resTareas.status === 'fulfilled' ? (resTareas.value.data || []) : [])
+                    .filter(t => t.titulo !== 'Recordatorio de llamada');
+                setTeamTasks(manualTasks);
+
                 const recordatoriosUnicos = [];
                 const recordatoriosVistos = new Set();
 
@@ -359,6 +400,49 @@ const Dashboard = () => {
         } catch (error) {
             console.error('Error al cargar listas:', error);
             setLoadingReuniones(false);
+        }
+    };
+
+    const handleSaveTask = async (e) => {
+        e.preventDefault();
+        setLoadingTasks(true);
+        try {
+            if (editingTask) {
+                await axios.put(`${API_URL}/api/tareas/${editingTask.id || editingTask._id}`, newTask, { headers: getAuthHeaders() });
+            } else {
+                await axios.post(`${API_URL}/api/tareas`, newTask, { headers: getAuthHeaders() });
+            }
+            setShowTaskModal(false);
+            setEditingTask(null);
+            setNewTask({ titulo: '', descripcion: '', prioridad: 'media' });
+            cargarListas(true);
+            socket.emit('prospectos_actualizados'); // Notificar cambios al equipo
+        } catch (error) {
+            console.error('Error al guardar tarea:', error);
+        } finally {
+            setLoadingTasks(false);
+        }
+    };
+
+    const handleDeleteTask = async (id) => {
+        if (!window.confirm('¿Estás seguro de eliminar esta tarea?')) return;
+        try {
+            await axios.delete(`${API_URL}/api/tareas/${id}`, { headers: getAuthHeaders() });
+            cargarListas(true);
+            socket.emit('prospectos_actualizados');
+        } catch (error) {
+            console.error('Error al eliminar tarea:', error);
+        }
+    };
+
+    const toggleTaskStatus = async (task) => {
+        try {
+            const nuevoEstado = task.estado === 'completada' ? 'pendiente' : 'completada';
+            await axios.put(`${API_URL}/api/tareas/${task.id || task._id}`, { estado: nuevoEstado }, { headers: getAuthHeaders() });
+            cargarListas(true);
+            socket.emit('prospectos_actualizados');
+        } catch (error) {
+            console.error('Error al cambiar estado de tarea:', error);
         }
     };
 
@@ -399,11 +483,12 @@ const Dashboard = () => {
 
     if (width < 1024) {
         return (
-            <DashboardMobile 
+            <DashboardMobile
                 vendedorData={vendedorData}
                 closerData={closerData}
                 recordatorios={recordatorios}
                 reuniones={reuniones}
+                teamTasks={teamTasks}
                 periodo={periodo}
                 setPeriodo={setPeriodo}
             />
@@ -446,13 +531,13 @@ const Dashboard = () => {
     ];
 
     return (
-        <div className="h-full flex flex-col gap-4 p-4 overflow-hidden bg-gray-50/50">
+        <div className="h-full flex flex-col gap-3 p-3 xl:overflow-hidden bg-gray-50/50 scrollbar-hide">
 
             <div className="shrink-0 flex flex-col">
-                <div className="flex items-center justify-between mb-2 px-1">
+                <div className="flex items-center justify-between mb-1.5 px-1">
                     <div className="flex items-center gap-1.5">
                         <TrendingUp className="w-4 h-4 text-(--theme-600)" />
-                        <span className="text-sm font-bold text-gray-700 uppercase tracking-widest">Pipeline General</span>
+                        <span className="text-sm font-bold text-gray-700 uppercase tracking-widest">Resumen de Ventas</span>
                     </div>
 
                     <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
@@ -470,7 +555,7 @@ const Dashboard = () => {
                         ))}
                     </div>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm w-full">
+                <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm w-full">
                     <FunnelVisual
                         stages={[
                             {
@@ -527,16 +612,17 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            <div className="flex-1 flex gap-4 min-h-0">
+            <div className="flex-1 flex flex-col xl:flex-row gap-4 min-h-0 overflow-y-auto xl:overflow-hidden pr-0.5 scrollbar-hide">
 
                 <div className="flex-1 flex flex-col min-w-0">
                     <div className="shrink-0 relative z-20">
-                        <div className="flex items-end gap-2.5 overflow-x-auto pb-px -mb-px" style={{ scrollbarWidth: 'thin' }}>
+                        <div className="flex items-end gap-2.5 overflow-x-auto pb-px -mb-px" style={{ scrollbarWidth: 'none' }}>
                             {[
                                 { key: 'resumen', label: 'Resumen', Icon: TrendingUp },
                                 { key: 'kpis', label: 'Métricas', Icon: BarChart3 },
                                 { key: 'tareas', label: 'Tareas', Icon: Bell },
-                                { key: 'alertas', label: 'Alertas', Icon: AlertTriangle }
+                                { key: 'acciones', label: 'Acciones', Icon: Activity },
+                                { key: 'proximamente', label: 'Próximamente', Icon: Zap }
                             ].map(tab => (
                                 <button
                                     key={tab.key}
@@ -553,82 +639,135 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    <div className={`flex-1 min-h-0 relative z-10 bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col ${healthTab === 'resumen' ? 'rounded-tl-none' : ''}`}>
-                        <div className="flex-1 min-h-0 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                    <div className={`flex-1 min-h-0 relative z-10 bg-white border border-gray-200 rounded-xl p-3 shadow-sm flex flex-col ${healthTab === 'resumen' ? 'rounded-tl-none' : ''}`}>
+                        <div className="flex-1 min-h-0 overflow-y-auto xl:pr-1 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
                             {healthTab === 'resumen' && (
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-                                        {cardsResumen.map(card => (
-                                            <StatCard
-                                                key={card.title}
-                                                title={card.title}
-                                                value={card.value}
-                                                icon={card.icon}
-                                                color={card.color}
-                                            />
-                                        ))}
+                                <div className="h-full flex flex-col gap-4 animate-in fade-in duration-500">
+                                    {/* SECCIÓN 1: SALUD OPERATIVA (KPIs DE PROCESO) */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
+                                        <MetricKPICard
+                                            title="Velocidad de Respuesta"
+                                            value={closerData?.eficiencia?.responseTimeHoras || 0}
+                                            format="number"
+                                            icon={<Zap />}
+                                            detail="Horas prom. 1er contacto"
+                                            thresholds={{ good: 2, okay: 6 }}
+                                            reverse={true}
+                                        />
+                                        <MetricKPICard
+                                            title="Tasa de Asistencia"
+                                            value={closerData?.tasasConversion?.asistencia || 0}
+                                            format="percent"
+                                            icon={<Users />}
+                                            detail="Show-up en citas agendadas"
+                                            thresholds={{ good: 75, okay: 50 }}
+                                        />
+                                        <MetricKPICard
+                                            title="Ciclo de Cierre"
+                                            value={closerData?.eficiencia?.cicloVentaDias || 0}
+                                            format="number"
+                                            icon={<RefreshCw />}
+                                            detail="Días prom. entrada a cierre"
+                                            thresholds={{ good: 5, okay: 12 }}
+                                            reverse={true}
+                                        />
+                                        <MetricKPICard
+                                            title="Ticket Promedio"
+                                            value={closerData.metricas.ventas.montoMes / (closerData.metricas.ventas.mes || 1)}
+                                            format="money"
+                                            icon={<DollarSign />}
+                                            detail="Valor promedio de cierre"
+                                            color="emerald"
+                                        />
                                     </div>
 
-                                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                                        <div className="xl:col-span-2 bg-gray-50 border border-gray-200 rounded-xl p-4">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div>
-                                                    <h3 className="text-sm font-bold uppercase tracking-widest text-gray-700">Lectura rápida</h3>
-                                                    <p className="text-xs text-gray-400 mt-1">Lo más importante del día y del mes en una sola vista.</p>
-                                                </div>
-                                                <span className="text-xs font-bold text-(--theme-600) bg-(--theme-50) px-3 py-1 rounded-full border border-(--theme-100)">
-                                                    {formatPercent(tasaGlobal)} cierre global
-                                                </span>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                {panelesActividad.map(panel => (
-                                                    <div key={panel.label} className="bg-white border border-gray-200 rounded-lg p-3">
-                                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{panel.label}</p>
-                                                        <div className="mt-2 text-2xl font-black text-gray-800">{panel.value}</div>
-                                                        <p className="text-xs text-gray-400 mt-1">{panel.detail}</p>
+                                    {/* SECCIÓN 2: CENTRO DE ACCIÓN (ENFOQUE INMEDIATO) */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0 pb-1">
+                                        {/* Agenda Prioritaria */}
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full">
+                                            <div className="flex items-center justify-between mb-6 shrink-0">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 shadow-xs">
+                                                        <Calendar className="w-5 h-5" />
                                                     </div>
-                                                ))}
+                                                    <div>
+                                                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-800">Agenda Prioritaria</h3>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Próximos compromisos</p>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => navigate('/vendedor/calendario')} className="text-(--theme-600) text-[10px] font-black uppercase tracking-widest hover:underline px-2 py-1">Ver Calendario</button>
+                                            </div>
+
+                                            <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-hide">
+                                                {reuniones.length === 0 ? (
+                                                    <div className="h-full flex flex-col items-center justify-center text-center opacity-40 py-8">
+                                                        <Calendar className="w-8 h-8 mb-2" />
+                                                        <p className="text-[10px] font-black uppercase tracking-widest leading-tight">Sin citas próximas</p>
+                                                    </div>
+                                                ) : (
+                                                    reuniones.map((reunion, i) => (
+                                                        <div key={i} className="group p-3 bg-gray-50/50 rounded-xl border border-gray-100 hover:border-indigo-200 hover:bg-white transition-all">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-8 h-8 bg-white border border-gray-100 rounded-lg flex items-center justify-center text-xs font-black text-indigo-600">
+                                                                        {new Date(reunion.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-xs font-black text-gray-800 leading-tight uppercase truncate max-w-[150px]">{reunion.cliente?.nombres} {reunion.cliente?.apellidoPaterno || ''}</p>
+                                                                        <p className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">{new Date(reunion.fecha).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric' })}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    {reunion.googleMeetLink && <Video className="w-4 h-4 text-indigo-400" />}
+                                                                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
                                             </div>
                                         </div>
 
-                                        <div className="bg-(--theme-50)/50 border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
-                                            <div>
-                                                <h3 className="text-sm font-bold uppercase tracking-widest text-gray-700">Estado actual</h3>
-                                                <p className="text-xs text-gray-400 mt-1">Indicadores clave del pipeline.</p>
+                                        {/* Tareas Críticas del Equipo */}
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full">
+                                            <div className="flex items-center justify-between mb-6 shrink-0">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 shadow-xs">
+                                                        <Bell className="w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-800">Tareas Críticas</h3>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Acciones prioritarias</p>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => setHealthTab('tareas')} className="text-rose-500 text-[10px] font-black uppercase tracking-widest hover:underline px-2 py-1">Ver Todas</button>
                                             </div>
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <div className="flex items-center justify-between text-xs font-bold text-gray-600 mb-1">
-                                                        <span>Contacto</span>
-                                                        <span>{formatPercent(tasaContacto)}</span>
+
+                                            <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-hide">
+                                                {teamTasks.filter(t => t.prioridad === 'alta' && t.estado !== 'completada').length === 0 ? (
+                                                    <div className="h-full flex flex-col items-center justify-center text-center opacity-40 py-8">
+                                                        <CheckCircle2 className="w-8 h-8 mb-2 text-emerald-500" />
+                                                        <p className="text-[10px] font-black uppercase tracking-widest leading-tight">Sin tareas críticas</p>
                                                     </div>
-                                                    <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                                                        <div className="h-full bg-(--theme-500)" style={{ width: `${tasaContacto}%` }} />
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center justify-between text-xs font-bold text-gray-600 mb-1">
-                                                        <span>Agendamiento</span>
-                                                        <span>{formatPercent(tasaAgendamiento)}</span>
-                                                    </div>
-                                                    <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                                                        <div className="h-full bg-slate-500" style={{ width: `${tasaAgendamiento}%` }} />
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center justify-between text-xs font-bold text-gray-600 mb-1">
-                                                        <span>Cierre</span>
-                                                        <span>{formatPercent(tasaCierre)}</span>
-                                                    </div>
-                                                    <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                                                        <div className="h-full bg-green-500" style={{ width: `${tasaCierre}%` }} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="mt-auto rounded-lg bg-white border border-gray-200 p-3">
-                                                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Pendientes hoy</p>
-                                                <p className="text-2xl font-black text-gray-800 mt-1">{recordatorios.length}</p>
-                                                <p className="text-xs text-gray-400">Recordatorios activos y oportunidades de seguimiento.</p>
+                                                ) : (
+                                                    teamTasks
+                                                        .filter(t => t.prioridad === 'alta' && t.estado !== 'completada')
+                                                        .slice(0, 4)
+                                                        .map((tarea, i) => (
+                                                            <div key={i} className="group p-3 bg-gray-50/50 rounded-xl border border-gray-100 hover:border-rose-200 hover:bg-white transition-all border-l-4 border-l-rose-500">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <h4 className="text-xs font-black text-gray-800 uppercase tracking-tight truncate">{tarea.titulo}</h4>
+                                                                        <p className="text-[9px] text-gray-400 font-bold uppercase mt-0.5 truncate">{tarea.descripcion || 'Sin descripción'}</p>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2 ml-3">
+                                                                        <span className="text-[8px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 uppercase">Hoy</span>
+                                                                        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-rose-500 group-hover:translate-x-1 transition-all" />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -636,161 +775,381 @@ const Dashboard = () => {
                             )}
 
                             {healthTab === 'kpis' && (
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <div className="bg-white border border-gray-200 rounded-xl p-4">
-                                            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Contacto inicial</p>
-                                            <p className="text-3xl font-black text-gray-800 mt-2">{formatPercent(tasaContacto)}</p>
-                                            <p className="text-xs text-gray-400 mt-1">De prospectos activos a contacto real</p>
-                                        </div>
-                                        <div className="bg-white border border-gray-200 rounded-xl p-4">
-                                            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Agendamiento</p>
-                                            <p className="text-3xl font-black text-gray-800 mt-2">{formatPercent(tasaAgendamiento)}</p>
-                                            <p className="text-xs text-gray-400 mt-1">De contacto a cita o negociación</p>
-                                        </div>
-                                        <div className="bg-white border border-gray-200 rounded-xl p-4">
-                                            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Cierre</p>
-                                            <p className="text-3xl font-black text-gray-800 mt-2">{formatPercent(tasaCierre)}</p>
-                                            <p className="text-xs text-gray-400 mt-1">De negociación a venta ganada</p>
-                                        </div>
+                                <div className="flex flex-col gap-6 h-full">
+                                    {/* Fila 1: KPIs de Alto Impacto */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+                                        <MetricKPICard
+                                            title="Tasa de Show-up"
+                                            value={closerData.embudo.reunion_agendada > 0
+                                                ? (closerData.embudo.reunion_realizada / closerData.embudo.reunion_agendada) * 100
+                                                : 0}
+                                            format="percent"
+                                            icon={<Video className="w-5 h-5" />}
+                                            detail={`${closerData.embudo.reunion_realizada} citas realizadas de ${closerData.embudo.reunion_agendada}`}
+                                            thresholds={{ good: 70, okay: 45 }}
+                                        />
+                                        <MetricKPICard
+                                            title="Ticket Promedio"
+                                            value={closerData.metricas.ventas.totales > 0
+                                                ? closerData.metricas.ventas.montoTotal / closerData.metricas.ventas.totales
+                                                : 0}
+                                            format="money"
+                                            icon={<DollarSign className="w-5 h-5" />}
+                                            detail={`Basado en ${closerData.metricas.ventas.totales} ventas totales`}
+                                            color="emerald"
+                                        />
+                                        <MetricKPICard
+                                            title="Conversión Global"
+                                            value={tasaGlobal}
+                                            format="percent"
+                                            icon={<Target className="w-5 h-5" />}
+                                            detail="De prospecto nuevo a venta ganada"
+                                            thresholds={{ good: 15, okay: 8 }}
+                                        />
                                     </div>
 
-                                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-700">Metas del equipo (mes actual)</h3>
-                                            <span className="text-[11px] font-bold text-(--theme-700) bg-(--theme-50) border border-(--theme-100) rounded-full px-2.5 py-1">
-                                                {new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}
-                                            </span>
-                                        </div>
-
-                                        {metasEquipo.length === 0 ? (
-                                            <p className="text-sm text-gray-400 text-center py-6">Aún no hay metas guardadas en Equipos.</p>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                {metasEquipo.map((meta) => (
-                                                    <div key={meta.tipo} className="bg-white border border-gray-200 rounded-lg p-3">
-                                                        <div className="flex items-center justify-between gap-3 mb-2">
-                                                            <p className="text-sm font-bold text-gray-800">{GOAL_LABELS[meta.tipo] || meta.tipo}</p>
-                                                            <p className="text-xs font-bold text-gray-600">{formatPercent(meta.progreso)}</p>
-                                                        </div>
-                                                        <div className="h-2 rounded-full bg-gray-200 overflow-hidden mb-2">
-                                                            <div className="h-full bg-(--theme-500)" style={{ width: `${meta.progreso}%` }} />
-                                                        </div>
-                                                        <p className="text-xs text-gray-500">
-                                                            Actual: <span className="font-semibold text-gray-700">{meta.tipo === 'ventas_monto' ? formatMoney.format(meta.actual) : formatNumber.format(meta.actual)}</span>
-                                                            {' '}de{' '}
-                                                            <span className="font-semibold text-gray-700">{meta.tipo === 'ventas_monto' ? formatMoney.format(meta.objetivo) : formatNumber.format(meta.objetivo)}</span>
-                                                        </p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
+                                    {/* Fila 2: Métricas de Eficiencia (Velocidad) */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 shrink-0">
+                                        <MetricKPICard
+                                            title="Tiempo de Respuesta"
+                                            value={closerData?.eficiencia?.responseTimeHoras || 0}
+                                            format="number"
+                                            icon={<Clock className="w-5 h-5" />}
+                                            detail="Horas promedio hasta el 1er contacto"
+                                            thresholds={{ good: 2, okay: 6 }}
+                                            reverse={true}
+                                        />
+                                        <MetricKPICard
+                                            title="Ciclo de Cierre"
+                                            value={closerData?.eficiencia?.cicloVentaDias || 0}
+                                            format="number"
+                                            icon={<ArrowRightLeft className="w-5 h-5" />}
+                                            detail="Días promedio desde entrada a cierre"
+                                            thresholds={{ good: 5, okay: 12 }}
+                                            reverse={true}
+                                        />
+                                        <MetricKPICard
+                                            title="Leads Estancados"
+                                            value={closerData?.eficiencia?.leadsEstancados || 0}
+                                            format="number"
+                                            icon={<AlertTriangle className="w-5 h-5" />}
+                                            detail="Prospectos con >7 días sin actividad"
+                                            color="rose"
+                                        />
                                     </div>
 
-                                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                                        <h3 className="text-sm font-bold uppercase tracking-widest text-gray-700 mb-4">Desglose del embudo</h3>
-                                        <div className="space-y-3">
-                                            {[
-                                                { label: 'Entrada', value: totalEntrada, helper: `${mP.prospectos || 0} nuevos ${periodoSuffix}` },
-                                                { label: 'Contacto', value: enContacto, helper: `${sinContactar} sin tocar` },
-                                                { label: 'Negociación', value: negociacion, helper: `${closerData.metricas.reuniones.realizadasHoy || 0} realizadas hoy` },
-                                                { label: 'Cierre', value: ganadas, helper: `${closerData.metricas.ventas.mes || 0} ventas en el mes` }
-                                            ].map(item => (
-                                                <div key={item.label} className="bg-white border border-gray-200 rounded-lg p-3">
-                                                    <div className="flex items-center justify-between gap-3">
-                                                        <div>
-                                                            <p className="text-sm font-bold text-gray-800">{item.label}</p>
-                                                            <p className="text-xs text-gray-400 mt-1">{item.helper}</p>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <div className="text-2xl font-black text-gray-800">{formatNumber.format(item.value)}</div>
-                                                        </div>
-                                                    </div>
+
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 flex-1 min-h-0 mt-auto">
+                                        {/* Distribución por Fuente */}
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col">
+                                            <div className="flex items-center gap-2 mb-6 shrink-0">
+                                                <div className="w-10 h-10 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 shadow-xs">
+                                                    <Globe className="w-5 h-5" />
                                                 </div>
-                                            ))}
+                                                <div>
+                                                    <h3 className="text-xs font-black uppercase tracking-widest text-gray-800">Distribución por Fuente</h3>
+                                                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Análisis de Origen</p>
+                                                </div>
+                                            </div>
+
+                                            {Object.keys(closerData.analisisFuentes).length === 0 ? (
+                                                <div className="flex-1 flex flex-col items-center justify-center py-8 opacity-40">
+                                                    <p className="text-[9px] uppercase font-black tracking-widest">Sin datos de origen</p>
+                                                </div>
+                                            ) : (
+                                                <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
+                                                    {Object.entries(closerData.analisisFuentes)
+                                                        .sort((a, b) => {
+                                                            const revA = typeof b[1] === 'object' ? (b[1].revenue || 0) : 0;
+                                                            const revB = typeof a[1] === 'object' ? (a[1].revenue || 0) : 0;
+                                                            return revA - revB;
+                                                        })
+                                                        .map(([fuente, data]) => {
+                                                            const count = typeof data === 'object' ? (data.count || 0) : data;
+                                                            const revenue = typeof data === 'object' ? (data.revenue || 0) : 0;
+                                                            return (
+                                                                <div key={fuente} className="space-y-1.5">
+                                                                    <div className="flex justify-between text-[11px] items-end">
+                                                                        <div>
+                                                                            <span className="font-black text-gray-700 block">{fuente}</span>
+                                                                            <span className="text-[9px] text-gray-400 font-bold">{count} leads</span>
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <span className="text-indigo-600 font-black block">{formatMoney.format(revenue)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
+                                                                        <div
+                                                                            className="h-full bg-indigo-500 rounded-full"
+                                                                            style={{ width: `${Math.min((count / (closerData.embudo.total || 1) * 100), 100).toFixed(0)}%` }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })
+                                                    }
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Análisis de Pérdidas (Motivos) */}
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col">
+                                            <div className="flex items-center gap-2 mb-6 shrink-0">
+                                                <div className="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 shadow-xs">
+                                                    <XCircle className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-xs font-black uppercase tracking-widest text-gray-800">Motivos de Pérdida</h3>
+                                                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Motivos de Descarte</p>
+                                                </div>
+                                            </div>
+
+                                            {Object.keys(closerData.analisisPerdidasPremium).length === 0 ? (
+                                                <div className="flex-1 flex flex-col items-center justify-center py-8 opacity-40">
+                                                    <p className="text-[9px] uppercase font-black tracking-widest">Sin datos de descarte</p>
+                                                </div>
+                                            ) : (
+                                                <div className="flex-1 overflow-y-auto space-y-5 pr-1 scrollbar-hide">
+                                                    {Object.entries(closerData.analisisPerdidasPremium)
+                                                        .sort((a, b) => b[1] - a[1])
+                                                        .map(([motivo, count]) => {
+                                                            const percent = (count / (closerData.embudo.perdido || 1)) * 100;
+                                                            return (
+                                                                <div key={motivo} className="flex items-center gap-4">
+                                                                    <span className="text-xs font-black text-rose-600 bg-rose-50 w-8 h-8 flex items-center justify-center rounded-xl border border-rose-100 shrink-0">{count}</span>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="flex justify-between items-center mb-1.5">
+                                                                            <p className="text-[11px] font-black text-gray-700 truncate">{motivo}</p>
+                                                                            <p className="text-[10px] font-black text-gray-400">{percent.toFixed(0)}%</p>
+                                                                        </div>
+                                                                        <div className="h-1.5 bg-gray-50 rounded-full overflow-hidden">
+                                                                            <div className="h-full bg-rose-400" style={{ width: `${percent}%` }} />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })
+                                                    }
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Espacio para Métricas en Desarrollo (Simplificada y Centrada) */}
+                                        <div className="bg-gray-50/20 border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center text-center opacity-70 group transition-all">
+                                            <div className="max-w-[220px]">
+                                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] leading-tight mb-2">Métricas en Desarrollo</h3>
+                                                <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
+                                                    Nuevos análisis y predicciones inteligentes próximamente.
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-
-                                    <WeakStageAlert etapasDebiles={etapasDebiles} />
                                 </div>
                             )}
 
                             {healthTab === 'tareas' && (
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h3 className="text-sm font-bold uppercase tracking-widest text-gray-700">Recordatorios prioritarios</h3>
-                                                <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-100">{recordatorios.length}</span>
+                                <div className="space-y-3 h-full flex flex-col">
+                                    <div className="flex-1 bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col min-h-0">
+                                        <div className="flex items-center justify-between mb-4 px-1">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-(--theme-50) rounded-2xl flex items-center justify-center text-(--theme-600) shadow-xs">
+                                                    <Bell className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-800">Tareas de Equipo</h3>
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Gestión colaborativa</p>
+                                                </div>
                                             </div>
-                                            <div className="space-y-2">
-                                                {recordatorios.slice(0, 6).map((p, idx) => {
-                                                    const esVencido = new Date(p.proximaLlamada) < new Date();
-                                                    return (
-                                                        <div
-                                                            key={p.id || p._id || `task-${idx}`}
-                                                            className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 ${esVencido ? 'border-rose-200 bg-rose-50' : 'border-gray-200 bg-white'}`}
-                                                        >
-                                                            <div className="min-w-0">
-                                                                <p className="text-sm font-semibold text-gray-800 truncate">{p.nombre || `${p.nombres || ''} ${p.apellidoPaterno || ''}`.trim()}</p>
-                                                                <p className="text-xs text-gray-500 truncate">{p.esCliente ? 'Cliente ganado' : 'Prospecto'} · {p.telefono || 'Sin teléfono'}</p>
-                                                            </div>
-                                                            <div className="text-right shrink-0">
-                                                                <p className={`text-xs font-bold ${esVencido ? 'text-rose-600' : 'text-gray-600'}`}>{new Date(p.proximaLlamada).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
-                                                                <p className="text-[10px] uppercase tracking-widest text-gray-400">{esVencido ? 'vencido' : 'pendiente'}</p>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                                {recordatorios.length === 0 && <p className="text-sm text-gray-400 text-center py-6">Sin recordatorios pendientes.</p>}
-                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setEditingTask(null);
+                                                    setNewTask({ titulo: '', descripcion: '', prioridad: 'media' });
+                                                    setShowTaskModal(true);
+                                                }}
+                                                className="px-4 py-2 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded-xl shadow-lg shadow-(--theme-500)/20 transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                NUEVA TAREA
+                                            </button>
                                         </div>
 
-                                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h3 className="text-sm font-bold uppercase tracking-widest text-gray-700">Próximas citas</h3>
-                                                <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">{reuniones.length}</span>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {reuniones.slice(0, 6).map((r, idx) => (
-                                                    <div key={r.id || r._id || `meet-${idx}`} className="rounded-lg border border-gray-200 bg-white px-3 py-2">
-                                                        <div className="flex items-center justify-between gap-3">
-                                                            <div className="min-w-0">
-                                                                <p className="text-sm font-semibold text-gray-800 truncate">{r.cliente?.nombres} {r.cliente?.apellidoPaterno}</p>
-                                                                <p className="text-xs text-gray-500 truncate">{r.esCliente ? 'Cliente' : 'Prospecto'} · {r.cliente?.telefono || 'Sin teléfono'}</p>
+                                        <div className="flex-1 overflow-y-auto space-y-2.5 pr-2 scrollbar-hide">
+                                            {teamTasks.map((t) => (
+                                                <div key={t.id || t._id} className={`group relative p-4 rounded-xl border transition-all ${t.estado === 'completada' ? 'bg-gray-50/50 border-gray-100 opacity-60' : 'bg-white border-gray-100 hover:border-(--theme-200) hover:shadow-md'}`}>
+                                                    <div className="flex items-start gap-4">
+                                                        <button
+                                                            onClick={() => toggleTaskStatus(t)}
+                                                            className={`mt-1 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-colors ${t.estado === 'completada' ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-(--theme-500)'}`}
+                                                        >
+                                                            {t.estado === 'completada' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                                                        </button>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-3 mb-1">
+                                                                <h4 className={`text-sm font-bold truncate ${t.estado === 'completada' ? 'line-through text-gray-400' : 'text-gray-800'}`}>{t.titulo}</h4>
+                                                                <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase border ${t.prioridad === 'alta' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                                                    t.prioridad === 'media' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                                                        'bg-blue-50 text-blue-600 border-blue-100'
+                                                                    }`}>
+                                                                    {t.prioridad}
+                                                                </span>
                                                             </div>
-                                                            <div className="text-right shrink-0">
-                                                                <p className="text-xs font-bold text-gray-700">{new Date(r.fecha).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
-                                                                <p className="text-[10px] uppercase tracking-widest text-gray-400">{new Date(r.fecha).toDateString() === new Date().toDateString() ? 'hoy' : 'próxima'}</p>
+                                                            {t.descripcion && <p className="text-xs text-gray-500 leading-relaxed max-w-2xl">{t.descripcion}</p>}
+                                                            <div className="flex items-center gap-4 mt-2.5">
+                                                                <span className="text-[10px] font-bold text-gray-400 flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-lg">
+                                                                    <Users className="w-3 h-3 text-gray-400" />
+                                                                    POR: <span className="text-gray-600">{t.vendedorNombre || 'Cargando...'}</span>
+                                                                </span>
+                                                                {t.fechaLimite && (
+                                                                    <span className={`text-[10px] font-bold flex items-center gap-1.5 px-2 py-1 rounded-lg ${new Date(t.fechaLimite) < new Date() && t.estado !== 'completada' ? 'bg-rose-50 text-rose-600' : 'bg-gray-50 text-gray-400'}`}>
+                                                                        <Calendar className="w-3 h-3" />
+                                                                        LIMITE: {new Date(t.fechaLimite).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
+                                                        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditingTask(t);
+                                                                    setNewTask({ titulo: t.titulo, descripcion: t.descripcion, prioridad: t.prioridad, fechaLimite: t.fechaLimite });
+                                                                    setShowTaskModal(true);
+                                                                }}
+                                                                className="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-(--theme-600) transition-colors border border-transparent hover:border-gray-200"
+                                                            >
+                                                                <Pencil className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteTask(t.id || t._id)}
+                                                                className="p-2 hover:bg-rose-50 rounded-xl text-gray-400 hover:text-rose-600 transition-colors border border-transparent hover:border-rose-100"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                ))}
-                                                {reuniones.length === 0 && <p className="text-sm text-gray-400 text-center py-6">No hay citas próximas.</p>}
-                                            </div>
+                                                </div>
+                                            ))}
+                                            {teamTasks.length === 0 && (
+                                                <div className="flex-1 flex flex-col items-center justify-center py-20 bg-gray-50/30 rounded-2xl border-2 border-dashed border-gray-100">
+                                                    <div className="w-16 h-16 bg-white rounded-3xl shadow-sm flex items-center justify-center mb-4 border border-gray-100">
+                                                        <Bell className="w-8 h-8 text-gray-200" />
+                                                    </div>
+                                                    <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Sin tareas activas</p>
+                                                    <p className="text-[10px] text-gray-300 font-bold uppercase mt-1">Tu equipo está al día</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
                             )}
 
-                            {healthTab === 'alertas' && (
-                                <div className="space-y-4">
-                                    <WeakStageAlert etapasDebiles={etapasDebiles} />
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <div className="bg-white border border-gray-200 rounded-xl p-4">
-                                            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Prioridad 1</p>
-                                            <p className="text-lg font-black text-gray-800 mt-2">Reactivar prospectos sin contacto</p>
-                                            <p className="text-sm text-gray-500 mt-1">{sinContactar} oportunidades siguen sin seguimiento.</p>
+
+                            {healthTab === 'acciones' && (
+                                <div className="h-full flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                    <div className="flex items-center justify-between mb-4 px-1">
+                                        <div>
+                                            <h3 className="text-xs font-black uppercase tracking-widest text-gray-800">Acciones Realizadas</h3>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Historial de actividad reciente</p>
                                         </div>
-                                        <div className="bg-white border border-gray-200 rounded-xl p-4">
-                                            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Prioridad 2</p>
-                                            <p className="text-lg font-black text-gray-800 mt-2">Cerrar citas abiertas</p>
-                                            <p className="text-sm text-gray-500 mt-1">{closerData.metricas.reuniones.pendientes || 0} reuniones aún pendientes de atender.</p>
+                                        <button
+                                            onClick={fetchActividades}
+                                            disabled={loadingActividades}
+                                            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400"
+                                        >
+                                            <RefreshCw className={`w-3.5 h-3.5 ${loadingActividades ? 'animate-spin' : ''}`} />
+                                        </button>
+                                    </div>
+
+                                    {loadingActividades ? (
+                                        <div className="flex-1 flex items-center justify-center py-20">
+                                            <RefreshCw className="w-8 h-8 text-(--theme-200) animate-spin" />
                                         </div>
-                                        <div className="bg-white border border-gray-200 rounded-xl p-4">
-                                            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Prioridad 3</p>
-                                            <p className="text-lg font-black text-gray-800 mt-2">Revisar cierres del mes</p>
-                                            <p className="text-sm text-gray-500 mt-1">{closerData.metricas.ventas.mes || 0} ventas y {formatMoney.format(closerData.metricas.ventas.montoMes || 0)} acumulados.</p>
+                                    ) : actividades.length === 0 ? (
+                                        <div className="flex-1 flex flex-col items-center justify-center py-20 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-100">
+                                            <History className="w-10 h-10 text-gray-200 mb-3" />
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sin actividad registrada</p>
+                                        </div>
+                                    ) : (
+                                        <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 scrollbar-hide">
+                                            {actividades.map((act, idx) => {
+                                                const IconMap = {
+                                                    login: LogIn,
+                                                    registro: UserPlus,
+                                                    equipo: Users,
+                                                    llamada: Phone,
+                                                    whatsapp: MessageSquare,
+                                                    cita: Calendar,
+                                                    mensaje: FileText,
+                                                    correo: Globe,
+                                                    prospecto: UserPlus
+                                                };
+                                                const ColorMap = {
+                                                    login: 'text-emerald-500 bg-emerald-50 border-emerald-100',
+                                                    registro: 'text-indigo-500 bg-indigo-50 border-indigo-100',
+                                                    equipo: 'text-amber-500 bg-amber-50 border-amber-100',
+                                                    llamada: 'text-blue-500 bg-blue-50 border-blue-100',
+                                                    whatsapp: 'text-green-500 bg-green-50 border-green-100',
+                                                    cita: 'text-purple-500 bg-purple-50 border-purple-100',
+                                                    mensaje: 'text-slate-500 bg-slate-50 border-slate-100',
+                                                    correo: 'text-rose-500 bg-rose-50 border-rose-100',
+                                                    prospecto: 'text-cyan-500 bg-cyan-50 border-cyan-100'
+                                                };
+                                                const ActionIcon = IconMap[act.tipo] || Activity;
+                                                const colors = ColorMap[act.tipo] || 'text-gray-500 bg-gray-50 border-gray-100';
+
+                                                return (
+                                                    <div key={act.id || idx} className="group relative flex gap-3 p-3 bg-white border border-gray-100 rounded-xl hover:border-gray-200 hover:shadow-xs transition-all duration-300">
+                                                        <div className={`shrink-0 w-9 h-9 rounded-xl border flex items-center justify-center ${colors.split(' ').slice(0, 3).join(' ')} shadow-xs`}>
+                                                            <ActionIcon className="w-4 h-4" />
+                                                        </div>
+
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <p className="text-[11px] font-black text-gray-800 uppercase tracking-tight truncate">
+                                                                    {act.vendedor?.nombre || 'Sistema'}
+                                                                </p>
+                                                                <span className="text-[9px] font-bold text-gray-400 whitespace-nowrap bg-gray-50 px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
+                                                                    {new Date(act.fecha || act.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                            </div>
+                                                            <h4 className="text-[10px] font-bold text-gray-500 mt-0.5 line-clamp-1 uppercase tracking-tight">
+                                                                {act.descripcion}
+                                                            </h4>
+                                                            {act.cliente && (
+                                                                <div className="mt-1.5 flex items-center gap-1.5 px-2 py-1 bg-gray-50/50 rounded-lg border border-gray-100/50 w-fit">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-(--theme-400)"></div>
+                                                                    <p className="text-[9px] font-black text-(--theme-600) uppercase tracking-widest truncate max-w-[150px]">
+                                                                        {act.cliente.nombres} {act.cliente.apellidoPaterno}
+                                                                        {act.cliente.empresa && <span className="ml-1 opacity-50 font-bold">({act.cliente.empresa})</span>}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Línea decorativa para el feed */}
+                                                        {idx < actividades.length - 1 && (
+                                                            <div className="absolute left-[29.5px] top-[48px] bottom-[-20px] w-px bg-linear-to-b from-gray-100 to-transparent z-0"></div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {healthTab === 'proximamente' && (
+                                <div className="h-full flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in-95 duration-500">
+                                    <div className="w-16 h-16 bg-(--theme-50) rounded-2xl flex items-center justify-center mb-6 shadow-xs border border-(--theme-100)">
+                                        <Zap className="w-8 h-8 text-(--theme-500)" />
+                                    </div>
+                                    <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-3">CRM en Desarrollo</h3>
+                                    <p className="text-xs text-gray-400 font-bold leading-relaxed max-w-xs uppercase tracking-tight">
+                                        Este CRM está en desarrollo continuo. Si tienes ideas para nuevas funciones o necesitas ayuda, no dudes en contactarnos.
+                                    </p>
+                                    <div className="mt-8 flex gap-3">
+                                        <div className="px-4 py-2 bg-white border border-gray-100 rounded-xl shadow-xs text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                            Feedback v2.0
                                         </div>
                                     </div>
                                 </div>
@@ -799,13 +1158,13 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                <div className="w-80 shrink-0 flex flex-col gap-3 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                <div className="w-80 shrink-0 flex flex-col gap-3 overflow-y-auto scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
 
                     <div className="bg-(--theme-50)/40 border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col flex-1 min-h-0">
                         <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 shrink-0 uppercase tracking-widest">
                             <Phone className="w-4 h-4 text-rose-500" /> Recordatorios Pendientes
                         </h3>
-                        <div className="flex-1 overflow-y-auto space-y-2" style={{ scrollbarWidth: 'thin' }}>
+                        <div className="flex-1 overflow-y-auto space-y-2" style={{ scrollbarWidth: 'none' }}>
                             {recordatorios.length === 0 ? (
                                 <p className="text-xs text-gray-400 text-center py-3">Sin recordatorios hoy.</p>
                             ) : (
@@ -861,7 +1220,7 @@ const Dashboard = () => {
                         <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 shrink-0 uppercase tracking-widest">
                             <Calendar className="w-4 h-4 text-(--theme-500)" /> Próximas Citas
                         </h3>
-                        <div className="flex-1 overflow-y-auto space-y-2" style={{ scrollbarWidth: 'thin' }}>
+                        <div className="flex-1 overflow-y-auto space-y-2" style={{ scrollbarWidth: 'none' }}>
                             {loadingReuniones ? (
                                 <div className="flex justify-center p-4"><RefreshCw className="animate-spin text-gray-400 w-4 h-4" /></div>
                             ) : reuniones.length === 0 ? (
@@ -872,8 +1231,8 @@ const Dashboard = () => {
                                     const esHoy = rFecha.toDateString() === new Date().toDateString();
 
                                     return (
-                                        <div 
-                                            key={r.id || r._id} 
+                                        <div
+                                            key={r.id || r._id}
                                             className={`relative overflow-hidden group ${esHoy ? 'bg-linear-to-br from-emerald-500 to-emerald-600' : 'bg-linear-to-br from-indigo-600 to-indigo-700'} rounded-lg p-2.5 shadow-sm hover:shadow-md transition-all cursor-pointer`}
                                             onClick={() => {
                                                 // Navegar al perfil del cliente/prospecto
@@ -937,6 +1296,85 @@ const Dashboard = () => {
 
                 </div>
             </div>
+            {/* Modal de Tarea - Movido al final para evitar problemas de stacking context */}
+            {showTaskModal && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100 flex flex-col">
+                        <div className="p-6">
+                            <h3 className="text-lg font-black text-gray-800 mb-1 uppercase tracking-tight">
+                                {editingTask ? 'Editar Tarea' : 'Nueva Tarea de Equipo'}
+                            </h3>
+                            <p className="text-xs text-gray-400 font-bold mb-6 uppercase tracking-widest">Colaboración en tiempo real</p>
+
+                            <form onSubmit={handleSaveTask} className="space-y-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Título</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        value={newTask.titulo}
+                                        onChange={(e) => setNewTask({ ...newTask, titulo: e.target.value })}
+                                        placeholder="¿Qué hay que hacer?"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-hidden"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Descripción (opcional)</label>
+                                    <textarea
+                                        rows="3"
+                                        value={newTask.descripcion}
+                                        onChange={(e) => setNewTask({ ...newTask, descripcion: e.target.value })}
+                                        placeholder="Detalles adicionales..."
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-hidden resize-none"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Prioridad</label>
+                                        <select
+                                            value={newTask.prioridad}
+                                            onChange={(e) => setNewTask({ ...newTask, prioridad: e.target.value })}
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-hidden appearance-none"
+                                        >
+                                            <option value="baja">Baja</option>
+                                            <option value="media">Media</option>
+                                            <option value="alta">Alta</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Fecha Límite</label>
+                                        <input
+                                            type="date"
+                                            value={newTask.fechaLimite ? newTask.fechaLimite.split('T')[0] : ''}
+                                            onChange={(e) => setNewTask({ ...newTask, fechaLimite: e.target.value })}
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-hidden"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 mt-8">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowTaskModal(false)}
+                                        className="flex-1 px-6 py-3 border border-gray-200 text-gray-500 font-black text-[11px] rounded-xl hover:bg-gray-50 transition-all uppercase tracking-widest"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loadingTasks}
+                                        className="flex-3 px-6 py-3 bg-(--theme-600) text-white font-black text-[11px] rounded-xl hover:bg-(--theme-700) transition-all uppercase tracking-widest shadow-lg shadow-(--theme-500)/20 flex items-center justify-center gap-2"
+                                    >
+                                        {loadingTasks ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : editingTask ? 'Actualizar Tarea' : 'Crear Tarea'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

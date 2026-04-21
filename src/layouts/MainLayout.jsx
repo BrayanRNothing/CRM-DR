@@ -120,6 +120,7 @@ const MainLayout = () => {
     }
 
     const isAjustesRoute = location.pathname === '/vendedor/ajustes';
+    const isDashboard = location.pathname === '/vendedor';
 
     return (
         <AnimatedGridBackground mode="light">
@@ -140,7 +141,7 @@ const MainLayout = () => {
                 <main
                     className="flex-1 bg-white/80 backdrop-blur-md border border-white/40 rounded-3xl overflow-hidden transition-all duration-300 relative premium-reflejo"
                 >
-                    <div className={`h-full scrollbar-hide ${isAjustesRoute ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+                    <div className={`h-full scrollbar-hide ${isAjustesRoute || isDashboard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                         <Outlet />
                     </div>
                 </main>

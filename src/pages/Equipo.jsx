@@ -264,11 +264,11 @@ export default function Equipo() {
   });
 
   return (
-    <div className="min-h-screen bg-white md:bg-linear-to-br md:from-gray-50 md:to-gray-100 p-4 md:p-8 -m-4 md:m-0 pb-8 md:pb-8">
+    <div className="min-h-screen md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 pb-8 md:pb-6">
       {/* Team Info Card - NOW AT THE TOP */}
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-full mx-auto space-y-6">
         {!loading && !error && equipo && (
-          <div className="bg-white md:rounded-3xl p-6 border-b border-gray-100 md:shadow-sm md:border md:border-gray-200 premium-reflejo transition-all hover:shadow-md">
+          <div className="bg-white md:rounded-2xl p-5 border border-slate-200 shadow-sm md:shadow-md transition-all">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-(--theme-500) to-(--theme-600) flex items-center justify-center shadow-lg shadow-(--theme-500)/20">
@@ -295,7 +295,7 @@ export default function Equipo() {
                       <div className="flex items-center gap-3">
                         <h1 className="text-xl md:text-2xl font-bold tracking-tight text-gray-900 leading-tight">{equipo.nombre}</h1>
                         {esOwner && (
-                          <button 
+                          <button
                             className="p-1.5 text-gray-400 hover:text-(--theme-600) hover:bg-(--theme-50) rounded-lg transition-all"
                             onClick={() => setRenameMode(true)}
                           >
@@ -312,7 +312,7 @@ export default function Equipo() {
               </div>
 
               <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 md:gap-3 w-full md:w-auto mt-2 md:mt-0">
-                <button 
+                <button
                   className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2.5 bg-white border border-gray-200 rounded-xl text-[11px] md:text-xs font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm"
                   onClick={fetchEquipo}
                 >
@@ -320,7 +320,7 @@ export default function Equipo() {
                   ACTUALIZAR
                 </button>
                 {esOwner && (
-                  <button 
+                  <button
                     className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2.5 bg-linear-to-r from-(--theme-600) to-(--theme-500) text-white rounded-xl text-[11px] md:text-xs font-bold shadow-lg shadow-(--theme-600)/20 hover:-translate-y-0.5 transition-all"
                     onClick={() => setShowAddModal(true)}
                   >
@@ -350,13 +350,13 @@ export default function Equipo() {
         {/* Member List Section */}
         {!loading && equipo && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="bg-white md:rounded-3xl p-6 border-b border-gray-100 md:shadow-sm md:border md:border-gray-200 overflow-hidden">
+            <div className="bg-white md:rounded-2xl p-5 border border-slate-200 shadow-sm overflow-hidden">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                   <h2 className="text-lg md:text-xl font-bold text-gray-900 leading-tight">Miembros del Equipo</h2>
                   <p className="text-[10px] md:text-xs text-gray-400 font-semibold uppercase tracking-widest mt-1">Gestión de acceso y roles</p>
                 </div>
-                
+
                 <div className="flex flex-wrap gap-2">
                   <div className="relative group">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-(--theme-500) transition-colors" size={16} />
@@ -367,23 +367,23 @@ export default function Equipo() {
                       placeholder="Buscar por nombre, usuario..."
                     />
                   </div>
-                  <select 
+                  <select
                     className="flex-1 sm:flex-none px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs md:text-sm font-semibold text-gray-700 outline-none focus:bg-white focus:border-(--theme-500) transition-all cursor-pointer w-full sm:w-auto"
-                    value={draftFilters.estado} 
+                    value={draftFilters.estado}
                     onChange={e => setDraftFilters(prev => ({ ...prev, estado: e.target.value }))}
                   >
                     <option value="todos">Todos los estados</option>
                     <option value="activo">Activos</option>
                     <option value="inactivo">Inactivos</option>
                   </select>
-                  <button 
+                  <button
                     className="flex-1 sm:flex-none px-4 py-2 md:px-6 md:py-2.5 bg-gray-900 text-white rounded-xl text-[11px] md:text-xs font-bold shadow-sm hover:bg-black transition-all whitespace-nowrap"
                     onClick={applyFilters}
                   >
                     FILTRAR
                   </button>
                   {esOwner && (
-                    <button 
+                    <button
                       className="p-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all"
                       onClick={handleExportCSV}
                       title="Exportar a CSV"
@@ -402,8 +402,8 @@ export default function Equipo() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {miembrosFiltrados.map(m => (
-                    <div 
-                      key={m.id} 
+                    <div
+                      key={m.id}
                       className={`group relative p-5 bg-white border border-gray-200 rounded-2xl transition-all hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 ${!m.activo ? 'grayscale opacity-70' : ''}`}
                     >
                       <div className="flex items-start justify-between mb-4">
@@ -418,10 +418,10 @@ export default function Equipo() {
                               {m.googleLinked && (
                                 <div title="Google Calendar Vinculado">
                                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                                    <path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z" fill="#FBBC05"/>
-                                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+                                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                    <path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z" fill="#FBBC05" />
+                                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
                                   </svg>
                                 </div>
                               )}
@@ -447,14 +447,14 @@ export default function Equipo() {
 
                       {esOwner && String(m.id) !== String(userAuth?.id) && (
                         <div className="flex items-center gap-2 pt-4 border-t border-gray-50">
-                          <button 
+                          <button
                             className="flex-1 py-2 bg-gray-50 text-gray-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-gray-100 transition-all flex items-center justify-center gap-1"
                             onClick={() => openEditModal(m)}
                           >
                             <Edit2 size={12} /> EDITAR
                           </button>
                           {m.activo ? (
-                            <button 
+                            <button
                               className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
                               onClick={() => handleToggleMember(m)}
                               title="Desactivar"
@@ -462,7 +462,7 @@ export default function Equipo() {
                               <Power size={14} />
                             </button>
                           ) : (
-                            <button 
+                            <button
                               className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all"
                               onClick={() => handleReactivateMember(m)}
                               title="Reactivar"
@@ -470,7 +470,7 @@ export default function Equipo() {
                               <Check size={14} />
                             </button>
                           )}
-                          <button 
+                          <button
                             className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                             onClick={() => handleDeleteMember(m)}
                             title="Eliminar"
@@ -479,7 +479,7 @@ export default function Equipo() {
                           </button>
                         </div>
                       )}
-                      
+
                       {String(m.id) === String(userAuth?.id) && (
                         <div className="pt-4 border-t border-gray-50 text-center">
                           <span className="text-[10px] font-bold text-(--theme-600) bg-(--theme-50) px-3 py-1 rounded-full border border-(--theme-100)">ESTE ERES TÚ</span>
@@ -510,7 +510,7 @@ export default function Equipo() {
                   <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest mt-1">Integrar al equipo</p>
                 </div>
               </div>
-              <button 
+              <button
                 className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-all"
                 onClick={() => { setShowAddModal(false); setFormError(''); setForm(initialForm); }}
               >
@@ -532,35 +532,35 @@ export default function Equipo() {
             <form onSubmit={handleAddMember} className="space-y-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Nombre Completo *</label>
-                <input 
-                  className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 focus:shadow-lg focus:shadow-indigo-500/10 transition-all" 
-                  value={form.nombre} 
-                  onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))} 
-                  required 
-                  placeholder="Ej: Ana María García" 
+                <input
+                  className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 focus:shadow-lg focus:shadow-indigo-500/10 transition-all"
+                  value={form.nombre}
+                  onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))}
+                  required
+                  placeholder="Ej: Ana María García"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Usuario *</label>
-                  <input 
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all font-mono" 
-                    value={form.usuario} 
-                    onChange={e => setForm(p => ({ ...p, usuario: e.target.value }))} 
-                    required 
-                    placeholder="amgarcia" 
+                  <input
+                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all font-mono"
+                    value={form.usuario}
+                    onChange={e => setForm(p => ({ ...p, usuario: e.target.value }))}
+                    required
+                    placeholder="amgarcia"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Contraseña *</label>
-                  <input 
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all" 
-                    type="password" 
-                    value={form.contraseña} 
-                    onChange={e => setForm(p => ({ ...p, contraseña: e.target.value }))} 
-                    required 
-                    placeholder="••••••••" 
+                  <input
+                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all"
+                    type="password"
+                    value={form.contraseña}
+                    onChange={e => setForm(p => ({ ...p, contraseña: e.target.value }))}
+                    required
+                    placeholder="••••••••"
                   />
                 </div>
               </div>
@@ -568,36 +568,36 @@ export default function Equipo() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Correo Electrónico</label>
-                  <input 
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all" 
-                    type="email" 
-                    value={form.email} 
-                    onChange={e => setForm(p => ({ ...p, email: e.target.value }))} 
-                    placeholder="ana@empresa.com" 
+                  <input
+                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all"
+                    type="email"
+                    value={form.email}
+                    onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                    placeholder="ana@empresa.com"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Teléfono</label>
-                  <input 
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all" 
-                    value={form.telefono} 
-                    onChange={e => setForm(p => ({ ...p, telefono: e.target.value }))} 
-                    placeholder="+52 55 ..." 
+                  <input
+                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all"
+                    value={form.telefono}
+                    onChange={e => setForm(p => ({ ...p, telefono: e.target.value }))}
+                    placeholder="+52 55 ..."
                   />
                 </div>
               </div>
 
               <div className="pt-6 flex gap-4">
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="flex-1 py-4 bg-indigo-600 text-white rounded-[20px] text-xs font-bold uppercase tracking-widest shadow-xl shadow-indigo-600/30 hover:-translate-y-1 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   disabled={formLoading}
                 >
                   {formLoading ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
                   {formLoading ? 'PROCESANDO...' : 'DAR DE ALTA EN EQUIPO'}
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="px-8 py-4 bg-gray-100 text-gray-500 rounded-[20px] text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition-all"
                   onClick={() => { setShowAddModal(false); setFormError(''); setForm(initialForm); }}
                 >
@@ -623,7 +623,7 @@ export default function Equipo() {
                   <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest mt-1">{editMember.nombre}</p>
                 </div>
               </div>
-              <button 
+              <button
                 className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-all"
                 onClick={() => setEditMember(null)}
               >
@@ -634,44 +634,44 @@ export default function Equipo() {
             <form onSubmit={handleEditMember} className="space-y-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Nombre Completo *</label>
-                <input 
-                  className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-amber-500 transition-all" 
-                  value={editForm.nombre} 
-                  onChange={e => setEditForm(p => ({ ...p, nombre: e.target.value }))} 
-                  required 
+                <input
+                  className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-amber-500 transition-all"
+                  value={editForm.nombre}
+                  onChange={e => setEditForm(p => ({ ...p, nombre: e.target.value }))}
+                  required
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Correo Electrónico</label>
-                  <input 
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-amber-500 transition-all" 
-                    type="email" 
-                    value={editForm.email} 
-                    onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} 
+                  <input
+                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-amber-500 transition-all"
+                    type="email"
+                    value={editForm.email}
+                    onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Teléfono</label>
-                  <input 
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-amber-500 transition-all" 
-                    value={editForm.telefono} 
-                    onChange={e => setEditForm(p => ({ ...p, telefono: e.target.value }))} 
+                  <input
+                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-amber-500 transition-all"
+                    value={editForm.telefono}
+                    onChange={e => setEditForm(p => ({ ...p, telefono: e.target.value }))}
                   />
                 </div>
               </div>
 
               <div className="pt-6 flex gap-4">
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="flex-1 py-4 bg-amber-500 text-white rounded-[20px] text-xs font-bold uppercase tracking-widest shadow-xl shadow-amber-500/30 hover:-translate-y-1 transition-all disabled:opacity-50"
                   disabled={editLoading}
                 >
                   {editLoading ? 'GUARDANDO...' : 'ACTUALIZAR DATOS'}
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="px-8 py-4 bg-gray-100 text-gray-500 rounded-[20px] text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition-all"
                   onClick={() => setEditMember(null)}
                 >

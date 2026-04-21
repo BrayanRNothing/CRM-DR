@@ -126,12 +126,31 @@ router.get('/cliente/:clienteId/historial-completo', auth, async (req, res) => {
     }
 });
 
-router.get('/', auth, esSuperUser, async (req, res) => {
+router.get('/', auth, async (req, res) => {
     try {
-        let sql = `SELECT a.*, v.nombre as vendedorNombre, c.nombres as c_nombres, c.apellidoPaterno as c_apellido, c.empresa as c_empresa
-            FROM actividades a JOIN usuarios v ON a.vendedor = v.id JOIN clientes c ON a.cliente = c.id WHERE 1=1`;
+        const usuarioId = parseInt(req.usuario.id);
+        const rol = String(req.usuario.rol).toLowerCase();
+        const equipoId = req.usuario.equipo_id;
+
+        let sql = `SELECT a.*, v.nombre as vendedorNombre, v."equipo_id" as vendedorEquipo, c.nombres as c_nombres, c.apellidoPaterno as c_apellido, c.empresa as c_empresa
+            FROM actividades a 
+            LEFT JOIN usuarios v ON a.vendedor = v.id 
+            LEFT JOIN clientes c ON a.cliente = c.id 
+            WHERE 1=1`;
+        
         const params = [];
-        // Removed vendor role check
+
+        // Filtrado por permisos
+        if (rol !== 'admin' && rol !== 'superuser') {
+            if (equipoId) {
+                sql += ' AND (v."equipo_id" = ? OR c."equipo_id" = ? OR a.vendedor = ?)';
+                params.push(equipoId, equipoId, usuarioId);
+            } else {
+                sql += ' AND a.vendedor = ?';
+                params.push(usuarioId);
+            }
+        }
+
         if (req.query.tipo) {
             sql += ' AND a.tipo = ?';
             params.push(req.query.tipo);
@@ -140,15 +159,19 @@ router.get('/', auth, esSuperUser, async (req, res) => {
             sql += ' AND a.cliente = ?';
             params.push(parseInt(req.query.clienteId));
         }
+
         sql += ' ORDER BY a.fecha DESC LIMIT 100';
+        
         const rows = await db.prepare(sql).all(...params);
         const actividades = rows.map(r => ({
             ...toMongoFormat(r),
-            vendedor: { nombre: r.vendedorNombre },
-            cliente: { nombres: r.c_nombres, apellidoPaterno: r.c_apellido, empresa: r.c_empresa }
+            vendedor: { nombre: r.vendedorNombre || 'Sistema' },
+            cliente: r.cliente ? { nombres: r.c_nombres, apellidoPaterno: r.c_apellido, empresa: r.c_empresa } : null
         }));
+        
         res.json(actividades);
     } catch (error) {
+        console.error('Error en GET /api/actividades:', error);
         res.status(500).json({ mensaje: 'Error del servidor' });
     }
 });

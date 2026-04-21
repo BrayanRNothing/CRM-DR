@@ -19,6 +19,7 @@ const DashboardMobile = ({
     closerData, 
     recordatorios, 
     reuniones, 
+    teamTasks,
     periodo, 
     setPeriodo 
 }) => {
@@ -183,6 +184,40 @@ const DashboardMobile = ({
                                     </div>
                                 ))}
                                 {recordatorios.length === 0 && <p className="text-[10px] text-center text-slate-400 py-4 font-bold uppercase">Todo al día</p>}
+                            </div>
+
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mt-8 mb-4">Tareas de Equipo</h3>
+                            <div className="space-y-3">
+                                {teamTasks.map((t, i) => (
+                                    <div key={i} className={`p-4 rounded-2xl border shadow-sm ${t.estado === 'completada' ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-white border-slate-100'}`}>
+                                        <div className="flex items-start gap-3">
+                                            <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                                                t.prioridad === 'alta' ? 'bg-rose-500' :
+                                                t.prioridad === 'media' ? 'bg-amber-500' :
+                                                'bg-blue-500'
+                                            }`} />
+                                            <div className="flex-1 min-w-0">
+                                                <span className={`text-xs font-black uppercase tracking-tight block ${t.estado === 'completada' ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                                                    {t.titulo}
+                                                </span>
+                                                {t.descripcion && <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{t.descripcion}</p>}
+                                                <div className="flex items-center gap-3 mt-2">
+                                                    <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
+                                                        <Users size={10} />
+                                                        {t.vendedorNombre}
+                                                    </span>
+                                                    {t.fechaLimite && (
+                                                        <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
+                                                            <Calendar size={10} />
+                                                            {new Date(t.fechaLimite).toLocaleDateString()}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {teamTasks.length === 0 && <p className="text-[10px] text-center text-slate-400 py-4 font-bold uppercase">Sin tareas de equipo</p>}
                             </div>
                         </motion.div>
                     )}
