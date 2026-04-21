@@ -62,6 +62,8 @@ const Calendario = () => {
   );
   const [closers, setClosers] = useState([]);
   const [prospectos, setProspectos] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [contactType, setContactType] = useState("prospecto"); // "prospecto" | "cliente"
   const [selectedProspect, setSelectedProspect] = useState("");
   const [busySlots, setBusySlots] = useState([]);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
@@ -396,7 +398,6 @@ const Calendario = () => {
         });
         if (res.ok) {
           const data = await res.json();
-          // Filter mainly 'en_contacto' or 'prospecto_nuevo' if needed, or allow all
           setProspectos(data);
         }
       } catch (error) {
@@ -404,9 +405,24 @@ const Calendario = () => {
       }
     };
 
+    const fetchClientes = async () => {
+      try {
+        const token = getToken();
+        const res = await fetch(`${API_URL}/api/vendedor/clientes-ganados`, {
+          headers: { "x-auth-token": token },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setClientes(data || []);
+        }
+      } catch (error) {
+        console.error("Error fetching clients:", error);
+      }
+    };
+
     const init = async () => {
       try {
-        await Promise.all([fetchClosers(), fetchProspectos()]);
+        await Promise.all([fetchClosers(), fetchProspectos(), fetchClientes()]);
       } catch (error) {
         console.error("Error en inicialización:", error);
       }
@@ -615,11 +631,11 @@ const Calendario = () => {
     current.setHours(6, 0, 0, 0); // Start 6:00 AM
 
     const endOfDay = new Date(date);
-    endOfDay.setHours(17, 0, 0, 0); // End 5:00 PM
+    endOfDay.setHours(23, 59, 0, 0); // End 11:59 PM
 
     while (current < endOfDay) {
       const slotStart = new Date(current);
-      const slotEnd = new Date(current.getTime() + 45 * 60000); // 45 mins
+      const slotEnd = new Date(current.getTime() + 30 * 60000); // 30 mins
 
       if (slotEnd <= endOfDay) {
         const isBusy = busySlots.some((busy) => {
@@ -792,11 +808,13 @@ const Calendario = () => {
       return;
     }
 
-    const prospect = prospectos.find(
-      (p) => String(p.id) === String(selectedProspect),
+    // Buscar en la lista correcta según el tipo de contacto
+    const sourceList = contactType === "cliente" ? clientes : prospectos;
+    const prospect = sourceList.find(
+      (p) => String(p.id || p._id) === String(selectedProspect),
     );
     if (!prospect) {
-      toast.error("Selecciona un prospecto");
+      toast.error(contactType === "cliente" ? "Selecciona un cliente" : "Selecciona un prospecto");
       return;
     }
 
@@ -1386,147 +1404,164 @@ const Calendario = () => {
                 {activeTab === "agendar" ? (
                   <div className="animate-in fade-in slide-in-from-right-2 duration-200 flex-1 flex flex-col min-h-0">
                     <div className="flex flex-col flex-1 min-h-0 space-y-4 px-1">
-                      {/* Form Header & Warning Compact */}
-                      <div className="flex items-start justify-between shrink-0 mb-2">
+                      {/* ── HEADER ───────────────────────── */}
+                      <div className="shrink-0 flex items-center justify-between">
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2">
                             <span className="p-1.5 bg-(--theme-50) text-(--theme-600) rounded-lg border border-(--theme-100)">
                               <CalendarIcon className="w-4 h-4" />
                             </span>
-                            <h3 className="text-sm font-black text-slate-800 tracking-tight">
-                              Agendar Cita
-                            </h3>
+                            <h3 className="text-sm font-black text-slate-800 tracking-tight">Agendar Cita</h3>
                           </div>
-                          <p className="text-[10px] font-bold text-(--theme-600) uppercase tracking-wider">
-                            PARA EL{" "}
-                            {selectedDate
-                              .toLocaleDateString("es-MX", {
-                                weekday: "long",
-                                day: "numeric",
-                                month: "short",
-                              })
-                              .toUpperCase()}
+                          <p className="text-[10px] font-bold text-(--theme-500) uppercase tracking-wider mt-1 ml-0.5">
+                            {selectedDate.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "short" }).toUpperCase()}
                           </p>
                         </div>
-
                         {selectedCloser && !closerLinkedToGoogle && (
-                          <div
-                            className="px-2 py-1 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-1.5 animate-in fade-in slide-in-from-right-2 duration-300"
-                            title="No se verificará disponibilidad de Google"
-                          >
-                            <AlertCircle className="w-3 h-3 text-amber-500 shadow-sm" />
-                            <span className="text-[8px] font-black text-amber-600 uppercase tracking-tighter">
-                              SIN SYNC
-                            </span>
+                          <div className="px-2 py-1 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3 text-amber-500" />
+                            <span className="text-[8px] font-black text-amber-600 uppercase tracking-tighter">SIN SYNC</span>
                           </div>
                         )}
+                      </div>
+
+                      {/* Toggle Prospecto / Cliente — simple */}
+                      <div className="shrink-0 flex gap-1 border-b border-slate-100 pb-0">
+                        <button
+                          type="button"
+                          onClick={() => { setContactType("prospecto"); setSelectedProspect(""); }}
+                          className={`px-3 py-2 text-xs font-bold transition-all border-b-2 -mb-px ${
+                            contactType === "prospecto"
+                              ? "border-(--theme-500) text-(--theme-600)"
+                              : "border-transparent text-slate-400 hover:text-slate-600"
+                          }`}
+                        >
+                          Prospecto
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setContactType("cliente"); setSelectedProspect(""); }}
+                          className={`px-3 py-2 text-xs font-bold transition-all border-b-2 -mb-px ${
+                            contactType === "cliente"
+                              ? "border-(--theme-500) text-(--theme-600)"
+                              : "border-transparent text-slate-400 hover:text-slate-600"
+                          }`}
+                        >
+                          Cliente
+                        </button>
                       </div>
 
                       <form
                         onSubmit={handleSubmit}
                         className="flex-1 flex flex-col min-h-0 space-y-3 pb-2 pr-1 custom-scrollbar overflow-y-auto"
                       >
-                        {/* 1. Selecciones de Personas */}
-                        <div className="grid grid-cols-2 gap-3 shrink-0">
+                        {/* 1. Selección de contacto + closer */}
+                        <div className="space-y-2.5 shrink-0">
+                          {/* Contacto */}
                           <div>
-                            <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-                              <User className="w-3 h-3 text-slate-400" />{" "}
-                              Prospecto
+                            <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-0.5">
+                              {contactType === "cliente" ? <Briefcase className="w-3 h-3 text-(--theme-500)" /> : <User className="w-3 h-3 text-(--theme-500)" />}
+                              {contactType === "cliente" ? "Cliente" : "Prospecto"}
                             </label>
-                            <select
-                              value={selectedProspect}
-                              onChange={(e) =>
-                                setSelectedProspect(e.target.value)
-                              }
-                              className="w-full h-9 px-3 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all cursor-pointer"
-                              required
-                            >
-                              <option value="" disabled>
-                                Seleccionar...
-                              </option>
-                              {prospectos.map((p) => (
-                                <option
-                                  key={p.id || p._id}
-                                  value={p.id || p._id}
-                                >
-                                  {p.nombres} {p.apellidoPaterno.charAt(0)}.
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div>
-                            <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-                              <Briefcase className="w-3 h-3 text-slate-400" />{" "}
-                              {currentUser?.rol === "vendedor"
-                                ? "Responsable"
-                                : "Closer"}
-                            </label>
-                            <select
-                              value={selectedCloser}
-                              onChange={(e) =>
-                                setSelectedCloser(e.target.value)
-                              }
-                              className="w-full h-9 px-3 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all cursor-pointer"
-                              required
-                            >
-                              <option value="" disabled>
-                                Seleccionar...
-                              </option>
-                              {closers.map((c) => (
-                                <option
-                                  key={c.id || c._id}
-                                  value={c.id || c._id}
-                                >
-                                  {c.nombre}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-
-                        {/* 2. Invitados Seccion (Movida Arriba) */}
-                        <div className="shrink-0 bg-slate-50/50 p-2.5 rounded-2xl border border-slate-100">
-                          <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                            <Users className="w-3 h-3 text-(--theme-500)" />{" "}
-                            Invitados Adicionales
-                          </label>
-                          <div className="flex gap-2 mb-2">
-                            <input
-                              type="email"
-                              value={invitadoInput}
-                              onChange={(e) => setInvitadoInput(e.target.value)}
-                              placeholder="correo@ejemplo.com"
-                              className="flex-1 h-8 px-3 text-[10px] font-medium border border-slate-200 bg-white rounded-lg focus:ring-2 focus:ring-(--theme-500)/30 outline-none transition-all"
-                            />
-                            <button
-                              type="button"
-                              onClick={addInvitadoLocal}
-                              className="w-8 h-8 flex items-center justify-center bg-(--theme-500) text-white rounded-lg hover:bg-(--theme-600) transition-all shadow-sm"
-                            >
-                              <UserPlus className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {formData.invitados.map((inv, idx) => (
-                              <span
-                                key={idx}
-                                className="flex items-center gap-1 px-2 py-0.5 bg-white text-slate-600 rounded-md text-[9px] font-bold border border-slate-200 animate-in zoom-in-95"
+                            <div className="relative">
+                              <select
+                                value={selectedProspect}
+                                onChange={(e) => setSelectedProspect(e.target.value)}
+                                className="w-full h-10 pl-3 pr-8 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all cursor-pointer appearance-none"
+                                required
                               >
-                                {inv}
-                                <X
-                                  className="w-2.5 h-2.5 cursor-pointer hover:text-red-500"
-                                  onClick={() =>
-                                    setFormData({
-                                      ...formData,
-                                      invitados: formData.invitados.filter(
-                                        (i) => i !== inv,
-                                      ),
-                                    })
-                                  }
+                                <option value="" disabled>
+                                  {contactType === "cliente" ? "Seleccionar cliente..." : "Seleccionar prospecto..."}
+                                </option>
+                                {(contactType === "cliente" ? clientes : prospectos).map((p) => (
+                                  <option key={p.id || p._id} value={p.id || p._id}>
+                                    {p.nombres} {p.apellidoPaterno ? p.apellidoPaterno.charAt(0) + "." : ""}
+                                    {p.empresa ? ` — ${p.empresa}` : ""}
+                                  </option>
+                                ))}
+                              </select>
+                              <ChevronRight className="w-3 h-3 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+                            </div>
+                            {contactType === "cliente" && clientes.length === 0 && (
+                              <p className="text-[9px] text-amber-500 font-bold mt-1 ml-1">No hay clientes ganados registrados aún.</p>
+                            )}
+                            {contactType === "prospecto" && prospectos.length === 0 && (
+                              <p className="text-[9px] text-amber-500 font-bold mt-1 ml-1">No hay prospectos disponibles.</p>
+                            )}
+                          </div>
+
+                          {/* Closer / Responsable + Invitados — misma fila */}
+                          <div className="grid grid-cols-2 gap-2">
+                            {/* Closer */}
+                            <div>
+                              <label className="flex items-center gap-1 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-0.5">
+                                <Users className="w-3 h-3 text-(--theme-500)" />
+                                {currentUser?.rol === "vendedor" ? "Responsable" : "Closer"}
+                              </label>
+                              <div className="relative">
+                                <select
+                                  value={selectedCloser}
+                                  onChange={(e) => setSelectedCloser(e.target.value)}
+                                  className="w-full h-9 pl-2.5 pr-7 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all cursor-pointer appearance-none"
+                                  required
+                                >
+                                  <option value="" disabled>Seleccionar...</option>
+                                  {closers.map((c) => (
+                                    <option key={c.id || c._id} value={c.id || c._id}>
+                                      {c.nombre}
+                                    </option>
+                                  ))}
+                                </select>
+                                <ChevronRight className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+                              </div>
+                            </div>
+
+                            {/* Invitados */}
+                            <div>
+                              <label className="flex items-center gap-1 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-0.5">
+                                <UserPlus className="w-3 h-3 text-(--theme-500)" />
+                                Invitados
+                              </label>
+                              <div className="flex gap-1.5">
+                                <input
+                                  type="email"
+                                  value={invitadoInput}
+                                  onChange={(e) => setInvitadoInput(e.target.value)}
+                                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInvitadoLocal())}
+                                  placeholder="correo@..."
+                                  className="flex-1 h-9 px-2.5 text-[10px] font-medium border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-(--theme-500)/30 outline-none transition-all min-w-0"
                                 />
-                              </span>
-                            ))}
+                                <button
+                                  type="button"
+                                  onClick={addInvitadoLocal}
+                                  className="w-9 h-9 shrink-0 flex items-center justify-center bg-(--theme-500) text-white rounded-xl hover:bg-(--theme-600) transition-all"
+                                >
+                                  <UserPlus className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              {/* Pills de invitados agregados */}
+                              {formData.invitados.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                  {formData.invitados.map((inv, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="flex items-center gap-1 px-1.5 py-0.5 bg-white text-slate-600 rounded text-[8px] font-bold border border-slate-200"
+                                    >
+                                      {inv.split("@")[0]}
+                                      <X
+                                        className="w-2 h-2 cursor-pointer hover:text-red-500"
+                                        onClick={() =>
+                                          setFormData({
+                                            ...formData,
+                                            invitados: formData.invitados.filter((i) => i !== inv),
+                                          })
+                                        }
+                                      />
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -1535,7 +1570,7 @@ const Calendario = () => {
                           <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
                             <Clock className="w-3 h-3" /> Horarios Disponibles
                           </label>
-                          <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                          <div className="grid grid-cols-3 gap-1.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
                             {selectedDate && selectedDate.getDay() !== 0 ? (
                               generateSlotsForDay(selectedDate).length > 0 ? (
                                 generateSlotsForDay(selectedDate).map(
@@ -1557,11 +1592,11 @@ const Calendario = () => {
                                           !slot.isBusy &&
                                           setSelectedTimeSlot(slot)
                                         }
-                                        className={`w-full py-2 border rounded-xl text-[10px] font-black text-center transition-all duration-200 
-                                                                                ${slot.isBusy
+                                        className={`w-full py-1.5 border rounded-lg text-[10px] font-bold text-center transition-all duration-150
+                                          ${slot.isBusy
                                             ? "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed line-through"
                                             : isSelected
-                                              ? "bg-(--theme-600) border-(--theme-600) text-white shadow-lg shadow-(--theme-500)/30 ring-2 ring-white ring-offset-1"
+                                              ? "bg-(--theme-600) border-(--theme-600) text-white shadow-md ring-1 ring-white ring-offset-1"
                                               : "bg-white border-slate-200 text-slate-600 hover:border-(--theme-500) hover:text-(--theme-600) hover:bg-(--theme-50)"
                                           }`}
                                       >
@@ -1571,13 +1606,13 @@ const Calendario = () => {
                                   },
                                 )
                               ) : (
-                                <div className="col-span-2 text-[10px] text-slate-400 text-center py-6 bg-slate-50/50 rounded-2xl italic border border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
+                                <div className="col-span-3 text-[10px] text-slate-400 text-center py-6 bg-slate-50/50 rounded-2xl italic border border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
                                   <VideoOff className="w-4 h-4 opacity-30" />
                                   Sin horarios disponibles
                                 </div>
                               )
                             ) : (
-                              <div className="col-span-2 text-[10px] text-slate-400 text-center py-6 bg-slate-50/50 rounded-2xl italic border border-dashed border-slate-200">
+                              <div className="col-span-3 text-[10px] text-slate-400 text-center py-6 bg-slate-50/50 rounded-2xl italic border border-dashed border-slate-200">
                                 Día festivo / descanso
                               </div>
                             )}
@@ -1599,20 +1634,27 @@ const Calendario = () => {
                                   notas: e.target.value,
                                 })
                               }
-                              rows="1"
-                              className="w-full h-8 p-2 text-[10px] font-bold border border-slate-100 bg-slate-50/50 rounded-lg focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all resize-none"
-                              placeholder="Instrucciones..."
+                              rows="2"
+                              className="w-full p-2.5 text-[10px] font-medium border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all resize-none placeholder:text-slate-300"
+                              placeholder="Agrega contexto, agenda o instrucciones para la reunión..."
                             />
                           </div>
 
                           <button
                             type="submit"
                             disabled={!selectedTimeSlot || !selectedProspect}
-                            className="w-full py-3.5 px-4 bg-(--theme-500) text-white rounded-2xl font-black uppercase tracking-widest text-[11px] hover:bg-(--theme-600) shadow-xl shadow-(--theme-500)/20 transition-all disabled:opacity-40 disabled:grayscale disabled:shadow-none disabled:cursor-not-allowed"
+                            className="w-full py-3.5 px-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-all disabled:opacity-40 disabled:grayscale disabled:shadow-none disabled:cursor-not-allowed"
+                            style={{
+                              background: (!selectedTimeSlot || !selectedProspect)
+                                ? undefined
+                                : "linear-gradient(135deg, var(--theme-600) 0%, var(--theme-500) 100%)",
+                              color: "white",
+                              boxShadow: (!selectedTimeSlot || !selectedProspect) ? "none" : "0 8px 24px -4px color-mix(in srgb, var(--theme-500) 35%, transparent)",
+                            }}
                           >
                             {selectedTimeSlot
-                              ? `Confirmar ${selectedTimeSlot.start.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`
-                              : "Selecciona un horario"}
+                              ? `✓ Confirmar · ${selectedTimeSlot.start.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`
+                              : "Selecciona un horario primero"}
                           </button>
 
                           {createdEventLink && (
