@@ -256,7 +256,7 @@ router.get('/:id', auth, esSuperUser, async (req, res) => {
 
 router.post('/', auth, esSuperUser, async (req, res) => {
     try {
-        const { nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, vendedorAsignado, etapaEmbudo } = req.body;
+        const { nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, vendedorAsignado, etapaEmbudo, fuente } = req.body;
         if (!nombres || !telefono || !correo) {
             return res.status(400).json({ mensaje: 'Complete los campos requeridos' });
         }
@@ -273,8 +273,8 @@ router.post('/', auth, esSuperUser, async (req, res) => {
         const closerAsignado = usuarioId;
 
         await db.prepare(`
-            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaEmbudo, historialEmbudo, vendedorAsignado, prospectorAsignado, closerAsignado, fechaUltimaEtapa, "equipo_id", "propietarioId", compartido)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaEmbudo, historialEmbudo, vendedorAsignado, prospectorAsignado, closerAsignado, fechaUltimaEtapa, "equipo_id", "propietarioId", compartido, fuente)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
             nombres,
             apellidoPaterno || '',
@@ -291,7 +291,8 @@ router.post('/', auth, esSuperUser, async (req, res) => {
             now,
             equipoId,
             usuarioId,
-            false
+            false,
+            (fuente || 'Desconocido').trim()
         );
 
         const row = await db.prepare('SELECT * FROM clientes ORDER BY id DESC LIMIT 1').get();
@@ -310,7 +311,7 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
             return res.status(403).json({ mensaje: 'Solo el propietario puede editar este cliente' });
         }
 
-        const { nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, notas, vendedorAsignado, etapaEmbudo, customSections } = req.body;
+        const { nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, notas, vendedorAsignado, etapaEmbudo, customSections, fuente } = req.body;
         const updates = [];
         const params = [];
         const now = new Date().toISOString();
@@ -354,6 +355,10 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
         } else if (estado) {
             updates.push('estado = ?');
             params.push(estado);
+        }
+        if (fuente !== undefined) {
+            updates.push('fuente = ?');
+            params.push(fuente);
         }
 
         if (notas !== undefined) { updates.push('notas = ?'); params.push(notas); }

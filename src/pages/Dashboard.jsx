@@ -516,6 +516,22 @@ const Dashboard = () => {
         { etapa: 'Negociación → Venta', tasa: tasaCierre }
     ].filter(item => item.tasa < 30);
 
+    const analisisFuentesCombinado = {};
+    const mergeFuentes = (fuentesData) => {
+        if (!fuentesData) return;
+        Object.entries(fuentesData).forEach(([fuente, data]) => {
+            const count = typeof data === 'object' ? (data.count || 0) : data;
+            const revenue = typeof data === 'object' ? (data.revenue || 0) : 0;
+            if (!analisisFuentesCombinado[fuente]) {
+                analisisFuentesCombinado[fuente] = { count: 0, revenue: 0 };
+            }
+            analisisFuentesCombinado[fuente].count += count;
+            analisisFuentesCombinado[fuente].revenue += revenue;
+        });
+    };
+    mergeFuentes(vendedorData?.analisisFuentes);
+    mergeFuentes(closerData?.analisisFuentes);
+
     const cardsResumen = [
         { title: 'Prospectos activos', value: formatNumber.format(totalEntrada), icon: '👥', color: 'blue', subtext: `${mP.prospectos || 0} recibidos ${periodoSuffix}` },
         { title: 'En contacto', value: formatNumber.format(enContacto), icon: '📞', color: 'green', subtext: `${sinContactar} todavía sin tocar` },
@@ -853,21 +869,17 @@ const Dashboard = () => {
                                                 </div>
                                             </div>
 
-                                            {Object.keys(closerData.analisisFuentes).length === 0 ? (
+                                            {Object.keys(analisisFuentesCombinado).length === 0 ? (
                                                 <div className="flex-1 flex flex-col items-center justify-center py-8 opacity-40">
                                                     <p className="text-[9px] uppercase font-black tracking-widest">Sin datos de origen</p>
                                                 </div>
                                             ) : (
                                                 <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
-                                                    {Object.entries(closerData.analisisFuentes)
-                                                        .sort((a, b) => {
-                                                            const revA = typeof b[1] === 'object' ? (b[1].revenue || 0) : 0;
-                                                            const revB = typeof a[1] === 'object' ? (a[1].revenue || 0) : 0;
-                                                            return revA - revB;
-                                                        })
+                                                    {Object.entries(analisisFuentesCombinado)
+                                                        .sort((a, b) => b[1].revenue - a[1].revenue)
                                                         .map(([fuente, data]) => {
-                                                            const count = typeof data === 'object' ? (data.count || 0) : data;
-                                                            const revenue = typeof data === 'object' ? (data.revenue || 0) : 0;
+                                                            const count = data.count;
+                                                            const revenue = data.revenue;
                                                             return (
                                                                 <div key={fuente} className="space-y-1.5">
                                                                     <div className="flex justify-between text-[11px] items-end">

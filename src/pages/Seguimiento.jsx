@@ -43,8 +43,8 @@ import socket from '../config/socket';
 import SourcePicker from '../components/ui/SourcePicker';
 
 // --- CSV helpers ---
-const CSV_HEADERS = ['nombres', 'apellidoPaterno', 'apellidoMaterno', 'telefono', 'correo', 'empresa', 'sitioWeb', 'ubicacion', 'notas'];
-const CSV_LABELS = ['Nombres', 'Apellido Paterno', 'Apellido Materno', 'Telefono', 'Correo', 'Empresa', 'Sitio Web', 'Ubicacion', 'Notas'];
+const CSV_HEADERS = ['nombres', 'apellidoPaterno', 'apellidoMaterno', 'telefono', 'correo', 'empresa', 'sitioWeb', 'ubicacion', 'notas', 'fuente'];
+const CSV_LABELS = ['Nombres', 'Apellido Paterno', 'Apellido Materno', 'Telefono', 'Correo', 'Empresa', 'Sitio Web', 'Ubicacion', 'Notas', 'Fuente'];
 
 function prospectosToCsv(prospectos) {
     const escape = (val) => {
@@ -214,6 +214,7 @@ const Seguimiento = () => {
             sitioWeb: p.sitioWeb || '',
             ubicacion: p.ubicacion || '',
             notas: p.notas || '',
+            fuente: p.fuente || p.origen || '',
             etapaEmbudo: p.etapaEmbudo || 'prospecto_nuevo',
             proximaLlamada: p.proximaLlamada ? p.proximaLlamada.slice(0, 16) : '',
             interes: p.interes || 0
@@ -225,7 +226,7 @@ const Seguimiento = () => {
         setLoadingEditar(true);
         try {
             const telefonosLimpios = (prospectoAEditar.telefonos || []).filter(t => t.trim());
-            const payload = { ...prospectoAEditar, telefono: telefonosLimpios[0] || '', telefono2: telefonosLimpios.slice(1).join(', ') || '', interes: prospectoAEditar.interes || 0 };
+            const payload = { ...prospectoAEditar, telefono: telefonosLimpios[0] || '', telefono2: telefonosLimpios.slice(1).join(', ') || '', interes: prospectoAEditar.interes || 0, fuente: prospectoAEditar.fuente || '' };
             delete payload.telefonos;
             await axios.put(`${API_URL}/api/${rolePath}/prospectos/${prospectoAEditar.id}/editar`, payload, {
                 headers: getAuthHeaders()
@@ -583,7 +584,27 @@ const Seguimiento = () => {
 
     
     
-    
+    const handlePasarACliente = async () => {
+        if (!prospectoSeleccionado) return;
+        const pid = prospectoSeleccionado.id || prospectoSeleccionado._id;
+        setLoadingConversion(true);
+        try {
+            await axios.post(`${API_URL}/api/${rolePath}/pasar-a-cliente/${pid}`,
+                { notas: notaConversion, fuente: prospectoSeleccionado.fuente || prospectoSeleccionado.origen || '' },
+                { headers: getAuthHeaders() }
+            );
+            toast.success('¡Prospecto convertido a cliente exitosamente! 🎉');
+            setModalPasarClienteAbierto(false);
+            setNotaConversion('');
+            setProspectoSeleccionado(null);
+            cargarDatos();
+        } catch (err) {
+            toast.error(err.response?.data?.msg || 'Error al convertir a cliente');
+        } finally {
+            setLoadingConversion(false);
+        }
+    };
+
     const handleDescartar = async () => {
         if (!prospectoSeleccionado) return;
         const pid = prospectoSeleccionado.id || prospectoSeleccionado._id;
@@ -822,7 +843,7 @@ const Seguimiento = () => {
                             <button
                                 onClick={() => {
                                     setModalCrearAbierto(false);
-                                    setFormCrear({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '' });
+                                    setFormCrear({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '', fuente: '' });
                                 }}
                                 className="flex-1 px-6 py-3.5 bg-white border border-slate-200 text-slate-500 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 hover:text-slate-700 transition-all shadow-sm"
                             >
@@ -1004,6 +1025,13 @@ const Seguimiento = () => {
                                             <option key={key} value={key}>{value.label}</option>
                                         ))}
                                     </select>
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Origen del Prospecto</label>
+                                    <SourcePicker
+                                        selectedSource={prospectoAEditar.fuente || ''}
+                                        onChange={(val) => setProspectoAEditar((f) => ({ ...f, fuente: val }))}
+                                    />
                                 </div>
                             </div>
                         </div>

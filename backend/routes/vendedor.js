@@ -777,7 +777,7 @@ router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
             (notas || '').trim(),
             (sitioWeb || '').trim(),
             (ubicacion || '').trim(),
-            (fuente || 'Desconocido').trim(),
+            (fuente || '').trim(),
             (req.body.customMetricLabel || '').trim(),
             (req.body.customMetricValue || '').trim(),
             prospectorId,
@@ -1240,7 +1240,7 @@ router.patch('/prospectos/:id/compartir', auth, async (req, res) => {
 router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
     try {
         const prospectoId = parseInt(req.params.id);
-        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, ubicacion, notas, etapaEmbudo, sitioWeb, customMetricLabel, customMetricValue } = req.body;
+        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, ubicacion, notas, etapaEmbudo, sitioWeb, customMetricLabel, customMetricValue, fuente } = req.body;
         const prospectorId = parseInt(req.usuario.id);
         const now = new Date().toISOString();
 
@@ -1256,7 +1256,7 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
         const updates = [
             'nombres = ?', 'apellidoPaterno = ?', 'apellidoMaterno = ?',
             'telefono = ?', 'telefono2 = ?', 'correo = ?', 'empresa = ?', 'notas = ?', 'sitioWeb = ?', 'ubicacion = ?',
-            'interes = ?', 'proximaLlamada = ?', 'customMetricLabel = ?', 'customMetricValue = ?'
+            'interes = ?', 'proximaLlamada = ?', 'customMetricLabel = ?', 'customMetricValue = ?', 'fuente = ?'
             // ultimaInteraccion NO se actualiza al editar datos — solo al registrar actividades reales
         ];
         const params = [
@@ -1273,7 +1273,8 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
             req.body.interes !== undefined ? req.body.interes : cliente.interes,
             req.body.proximaLlamada || null,
             customMetricLabel !== undefined ? customMetricLabel : cliente.customMetricLabel,
-            customMetricValue !== undefined ? customMetricValue : cliente.customMetricValue
+            customMetricValue !== undefined ? customMetricValue : cliente.customMetricValue,
+            (fuente !== undefined ? fuente : (cliente.fuente || ''))
         ];
 
         // Manejo de cambio de etapa
@@ -1455,7 +1456,7 @@ router.post('/agendar-reunion', [auth, esVendedor], async (req, res) => {
 // POST /api/vendedor/pasar-a-cliente/:id
 router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
     try {
-        const { notas } = req.body;
+        const { notas, fuente } = req.body;
         const clienteId = parseInt(req.params.id);
         const prospectorId = parseInt(req.usuario.id);
 
@@ -1488,8 +1489,8 @@ router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
 
         const closerParaAsignar = cliente.closerAsignado || prospectorId;
 
-        await db.prepare('UPDATE clientes SET etapaEmbudo = ?, estado = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, proximaLlamada = NULL, closerAsignado = ? WHERE id = ?')
-            .run('venta_ganada', 'ganado', now, now, JSON.stringify(hist), closerParaAsignar, clienteId);
+        await db.prepare('UPDATE clientes SET etapaEmbudo = ?, estado = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, proximaLlamada = NULL, closerAsignado = ?, fuente = ? WHERE id = ?')
+            .run('venta_ganada', 'ganado', now, now, JSON.stringify(hist), closerParaAsignar, (fuente || cliente.fuente || '').trim(), clienteId);
 
         res.json({ msg: '✓ Prospecto convertido a cliente' });
     } catch (error) {
@@ -2397,7 +2398,7 @@ router.post('/registrar-reunion', [auth, esVendedor], async (req, res) => {
 router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
     try {
         const prospectoId = parseInt(req.params.id);
-        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, etapaEmbudo, interes, proximaLlamada, customSections } = req.body;
+        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, etapaEmbudo, interes, proximaLlamada, customSections, fuente } = req.body;
         const now = new Date().toISOString();
 
         const c = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(prospectoId);
@@ -2426,6 +2427,7 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
             updates.push('customSections = ?'); 
             params.push(typeof customSections === 'string' ? customSections : JSON.stringify(customSections)); 
         }
+        if (fuente !== undefined) { updates.push('fuente = ?'); params.push(fuente); }
 
         // Manejo de cambio de etapa
         if (etapaEmbudo && etapaEmbudo !== c.etapaEmbudo) {
@@ -2496,7 +2498,7 @@ router.delete('/prospectos/:id', [auth, esVendedor], async (req, res) => {
 // POST /api/closer/pasar-a-cliente/:id
 router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
     try {
-        const { notas } = req.body;
+        const { notas, fuente } = req.body;
         const clienteId = parseInt(req.params.id);
         const closerId = parseInt(req.usuario.id);
 
@@ -2525,8 +2527,8 @@ router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
 
         const closerParaAsignar = cliente.closerAsignado || closerId;
 
-        await db.prepare('UPDATE clientes SET etapaEmbudo = ?, estado = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, closerAsignado = ? WHERE id = ?')
-            .run('venta_ganada', 'ganado', now, now, JSON.stringify(hist), closerParaAsignar, clienteId);
+        await db.prepare('UPDATE clientes SET etapaEmbudo = ?, estado = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, closerAsignado = ?, fuente = ? WHERE id = ?')
+            .run('venta_ganada', 'ganado', now, now, JSON.stringify(hist), closerParaAsignar, (fuente || cliente.fuente || '').trim(), clienteId);
 
         res.json({ msg: '✓ Prospecto convertido a cliente' });
     } catch (error) {

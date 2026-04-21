@@ -743,10 +743,10 @@ export default function ProspectoDetalle({
                                                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEtapaColor(prospectoSeleccionado.etapaEmbudo)}`}>
                                                         {getEtapaLabel(prospectoSeleccionado.etapaEmbudo)}
                                                     </span>
-                                                    {prospectoSeleccionado.fuente && (
+                                                    {(prospectoSeleccionado.fuente || prospectoSeleccionado.origen) && (
                                                         <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-500 border border-indigo-100">
                                                             <Globe className="w-3 h-3" />
-                                                            {prospectoSeleccionado.fuente}
+                                                            {prospectoSeleccionado.fuente || prospectoSeleccionado.origen}
                                                         </span>
                                                     )}
                                                     <button
@@ -797,7 +797,7 @@ export default function ProspectoDetalle({
 
                                 {/* Grid de Información de Contacto y acciones rápidas */}
                                 <div className="pt-3 border-t border-slate-100">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2 items-stretch">
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                                         {/* Teléfonos */}
                                         {telefonosContacto.length > 0 && (
                                             <div className="flex items-center gap-2">
@@ -850,11 +850,11 @@ export default function ProspectoDetalle({
 
                                         {/* Sitio Web */}
                                         {prospectoSeleccionado.sitioWeb && (
-                                            <div className="flex items-center gap-2 md:col-span-1 md:h-full">
+                                            <div className="flex items-center gap-2">
                                                 <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
                                                     <Globe className="w-3.5 h-3.5" />
                                                 </div>
-                                                <div className="min-w-0 flex-1 flex flex-col overflow-hidden">
+                                                <div className="min-w-0 flex flex-col overflow-hidden">
                                                     <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Web</span>
                                                     <a
                                                         href={prospectoSeleccionado.sitioWeb.startsWith('http') ? prospectoSeleccionado.sitioWeb : `https://${prospectoSeleccionado.sitioWeb}`}
@@ -868,7 +868,8 @@ export default function ProspectoDetalle({
                                             </div>
                                         )}
 
-                                        <div className="md:col-span-1 md:h-full flex items-center justify-end gap-2">
+                                        {/* Botones de acción — siempre al final derecho */}
+                                        <div className="ml-auto flex items-center gap-2 shrink-0">
                                             <PlantillasMensajesModal contacto={prospectoSeleccionado} scope="prospecto" />
 
                                             <a

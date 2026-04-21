@@ -7,6 +7,7 @@ import { getToken } from '../utils/authUtils';
 import { HistorialInteracciones } from '../components/HistorialInteracciones';
 import TimeWheelPicker from '../components/TimeWheelPicker';
 import ClienteDetalle from '../components/ClienteDetalle';
+import SourcePicker from '../components/ui/SourcePicker';
 
 import API_URL from '../config/api';
 
@@ -64,7 +65,8 @@ const Clientes = () => {
         nombreCompleto: '',
         telefono: '',
         correo: '',
-        empresa: ''
+        empresa: '',
+        fuente: ''
     });
 
     // Estados para la vista detallada
@@ -505,6 +507,13 @@ const Clientes = () => {
                                     placeholder="Mi Empresa S.A."
                                 />
                             </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Origen / Fuente</label>
+                                <SourcePicker
+                                    selectedSource={formCliente.fuente}
+                                    onChange={(val) => setFormCliente({ ...formCliente, fuente: val })}
+                                />
+                            </div>
                         </div>
 
                         <div className="flex gap-3 justify-end">
@@ -801,7 +810,9 @@ const Clientes = () => {
                     correo: formCliente.correo,
                     empresa: formCliente.empresa,
                     estado: 'ganado',
-                    etapaEmbudo: 'venta_ganada'
+                    etapaEmbudo: 'venta_ganada',
+                    fuente: formCliente.fuente,
+                    origen: formCliente.fuente
                 },
                 { headers: getAuthHeaders() }
             );
@@ -811,7 +822,8 @@ const Clientes = () => {
                 nombreCompleto: '',
                 telefono: '',
                 correo: '',
-                empresa: ''
+                empresa: '',
+                fuente: ''
             });
             alert('Cliente creado exitosamente.');
         } catch (error) {
