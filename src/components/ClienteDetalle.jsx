@@ -101,7 +101,6 @@ export default function ClienteDetalle({
     const [guardandoRecordatorio, setGuardandoRecordatorio] = useState(false);
     const [recordatorioBlockedUntil, setRecordatorioBlockedUntil] = useState(0);
     const [modalAccionesCierreAbierto, setModalAccionesCierreAbierto] = useState(false);
-    const [ventaEnMantenimiento, setVentaEnMantenimiento] = useState(false);
     const [recordatoriosLlamada, setRecordatoriosLlamada] = useState([]);
     const [loadingCitaId, setLoadingCitaId] = useState(null);
     const [modalCita, setModalCita] = useState({ abierto: false, cita: null, editando: false });
@@ -109,6 +108,14 @@ export default function ClienteDetalle({
     const [monedaSeleccionada, setMonedaSeleccionada] = useState(initialCliente?.customMetricLabel || 'MXN');
     const [valorCliente, setValorCliente] = useState(initialCliente?.customMetricValue || '');
     const [guardandoMetrica, setGuardandoMetrica] = useState(false);
+    // Toggle: mostrar botón de Venta o Llamada
+    const [modoBotonPrincipal, setModoBotonPrincipal] = useState(() => {
+        return localStorage.getItem('crm_modo_boton_principal') || 'llamada';
+    });
+    // Modal de registro de venta
+    const [modalVenta, setModalVenta] = useState(false);
+    const [ventaForm, setVentaForm] = useState({ descripcion: '', monto: '', tipo: 'venta', notas: '' });
+    const [guardandoVenta, setGuardandoVenta] = useState(false);
 
     // SECCIONES PERSONALIZADAS
     const [customSections, setCustomSections] = useState(() => {
@@ -370,6 +377,10 @@ export default function ClienteDetalle({
         if (act.tipo === 'whatsapp') return { icon: '💬', color: 'bg-green-500', label: 'WhatsApp' };
         if (act.tipo === 'cliente') return { icon: '🏆', color: 'bg-yellow-500', label: 'Convertido a cliente' };
         if (act.tipo === 'descartado') return { icon: '🗑️', color: 'bg-gray-400', label: 'Descartado' };
+        if (act.tipo === 'venta') {
+            if (act.descripcion?.includes('Suscripción')) return { icon: '🔁', color: 'bg-violet-500', label: act.descripcion };
+            return { icon: '🛒', color: 'bg-emerald-500', label: act.descripcion || 'Venta registrada' };
+        }
         return { icon: '📝', color: 'bg-slate-400', label: act.tipo || 'Interacción' };
     };
     const getResultadoTexto = (act) => {
@@ -520,9 +531,28 @@ export default function ClienteDetalle({
     };
 
     const manejarRegistrarVenta = () => {
-        setVentaEnMantenimiento(true);
-        toast('En mantenimiento', { icon: '⚙️' });
-        setTimeout(() => setVentaEnMantenimiento(false), 2500);
+        setVentaForm({ descripcion: '', monto: '', tipo: 'venta', notas: '' });
+        setModalVenta(true);
+    };
+
+    const handleGuardarVenta = async () => {
+        if (!ventaForm.descripcion.trim()) return toast.error('Escribe una descripción para la venta');
+        setGuardandoVenta(true);
+        try {
+            const desc = `${ventaForm.tipo === 'venta' ? '🛒 Venta' : '🔁 Suscripción'}: ${ventaForm.descripcion}${ventaForm.monto ? ` — $${ventaForm.monto}` : ''}${ventaForm.notas ? ` · ${ventaForm.notas}` : ''}`;
+            await registrarActividad({
+                tipo: 'venta',
+                resultado: 'exitoso',
+                descripcion: desc,
+                notas: ventaForm.notas
+            });
+            setModalVenta(false);
+            toast.success('Venta registrada en el historial');
+        } catch {
+            toast.error('Error al registrar la venta');
+        } finally {
+            setGuardandoVenta(false);
+        }
     };
 
     const handleEditarRecordatorio = (rec) => {
@@ -903,14 +933,34 @@ export default function ClienteDetalle({
                         {/* ==================== ÁRBOL DE LLAMADA ==================== */}
                         <div className="space-y-3">
                             <div className="grid grid-cols-3 gap-3">
-                                {/* Registrar Venta */}
-                                <button
-                                    onClick={manejarRegistrarVenta}
-                                    className={`flex flex-col items-center justify-center gap-2 border-2 rounded-xl p-4 transition-all shadow-sm font-bold text-sm text-center leading-tight ${ventaEnMantenimiento ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-slate-200 hover:border-(--theme-500) text-gray-700 hover:text-(--theme-600)'}`}
-                                >
-                                    <TrendingUp className={`w-6 h-6 ${ventaEnMantenimiento ? 'text-amber-600' : 'text-(--theme-500)'}`} />
-                                    {ventaEnMantenimiento ? 'En mantenimiento' : 'Registrar Venta'}
-                                </button>
+                                {/* Botón principal intercambiable: Registrar Venta / Registrar Llamada */}
+                                <div className="relative group/main">
+                                    <button
+                                        onClick={modoBotonPrincipal === 'venta' ? manejarRegistrarVenta : () => setLlamadaFlow({ paso: 'contesto' })}
+                                        className={`flex flex-col items-center justify-center gap-2 border-2 rounded-xl p-4 transition-all shadow-sm font-bold text-sm text-center leading-tight w-full ${
+                                            modoBotonPrincipal === 'venta'
+                                                ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:border-emerald-500'
+                                                : 'bg-white border-slate-200 hover:border-(--theme-500) text-gray-700 hover:text-(--theme-600)'
+                                        }`}
+                                    >
+                                        {modoBotonPrincipal === 'venta'
+                                            ? <><TrendingUp className="w-6 h-6 text-emerald-600" /> Registrar Venta</>
+                                            : <><Phone className="w-6 h-6 text-(--theme-500)" /> Registrar Llamada</>
+                                        }
+                                    </button>
+                                    {/* Botón pequeño para cambiar modo */}
+                                    <button
+                                        onClick={() => {
+                                            const nuevo = modoBotonPrincipal === 'venta' ? 'llamada' : 'venta';
+                                            setModoBotonPrincipal(nuevo);
+                                            localStorage.setItem('crm_modo_boton_principal', nuevo);
+                                        }}
+                                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-slate-200 hover:bg-(--theme-500) hover:text-white text-slate-500 rounded-full text-[9px] flex items-center justify-center transition-all shadow-sm opacity-0 group-hover/main:opacity-100"
+                                        title={`Cambiar a ${modoBotonPrincipal === 'venta' ? 'Registrar Llamada' : 'Registrar Venta'}`}
+                                    >
+                                        ⇄
+                                    </button>
+                                </div>
                                 {/* Recordatorio de llamada */}
                                 <button
                                     onClick={abrirNuevoRecordatorio}
@@ -939,11 +989,11 @@ export default function ClienteDetalle({
                                 rolePath={rolePath}
                                 handleGuardarSeccionesPersonalizadas={handleGuardarSeccionesPersonalizadas}
                                 containerClassName="mt-0"
-                                fixedCardHeightClass="h-[280px]"
+                                fixedCardHeightClass="h-[240px]"
                             >
                                 {/* Slot 1: Recordatorios / Notas Toggle */}
                                 {mostrarNotasDefault ? (
-                                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col h-[280px] animate-in fade-in slide-in-from-right-4 duration-300">
+                                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col h-[240px] animate-in fade-in slide-in-from-right-4 duration-300">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <FileText className="w-3.5 h-3.5 text-(--theme-500)" />
@@ -975,7 +1025,7 @@ export default function ClienteDetalle({
                                         />
                                     </div>
                                 ) : (
-                                    <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-2 shadow-sm relative h-[280px] animate-in fade-in slide-in-from-left-4 duration-300">
+                                    <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-2 shadow-sm relative h-[240px] animate-in fade-in slide-in-from-left-4 duration-300">
                                         <div className="flex items-center justify-between gap-2 shrink-0">
                                             <div className="flex items-center gap-2">
                                                 <Bell className="w-3.5 h-3.5 text-(--theme-500)" />
@@ -990,7 +1040,7 @@ export default function ClienteDetalle({
                                         </div>
 
                                         {/* Contenido con altura fija y scroll */}
-                                        <div className="overflow-y-auto hide-scrollbar flex flex-col gap-2 shrink-0 h-[200px]">
+                                        <div className="overflow-y-auto hide-scrollbar flex flex-col gap-2 shrink-0 h-[160px]">
 
                                             {alertasOrdenadas.map((alerta) => {
                                                 if (alerta.tipo === 'cita') {
@@ -1799,6 +1849,30 @@ export default function ClienteDetalle({
                                     <p className="text-[10px] text-slate-400 mt-0.5">Historial de compras</p>
                                 </div>
                             </button>
+                            <button
+                                onClick={() => { addSeccion('sales', 'Historial de Ventas'); setModalNuevaSeccion(false); }}
+                                className="flex flex-col items-center gap-2 p-4 border-2 border-emerald-100 hover:border-emerald-400 hover:bg-emerald-50 rounded-xl transition-all group"
+                            >
+                                <div className="p-2.5 bg-emerald-50 group-hover:bg-white rounded-xl text-emerald-600 transition-colors">
+                                    <TrendingUp className="w-6 h-6" />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-sm font-bold text-gray-800">Historial de Ventas</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">Ventas cerradas y montos</p>
+                                </div>
+                            </button>
+                            <button
+                                onClick={() => { addSeccion('subscriptions', 'Suscripciones'); setModalNuevaSeccion(false); }}
+                                className="flex flex-col items-center gap-2 p-4 border-2 border-violet-100 hover:border-violet-400 hover:bg-violet-50 rounded-xl transition-all group"
+                            >
+                                <div className="p-2.5 bg-violet-50 group-hover:bg-white rounded-xl text-violet-600 transition-colors">
+                                    <ArrowRightLeft className="w-6 h-6" />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-sm font-bold text-gray-800">Suscripciones</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">Servicios recurrentes</p>
+                                </div>
+                            </button>
                             {/* Módulos genéricos */}
                             <button
                                 onClick={() => { addSeccion('note'); setModalNuevaSeccion(false); }}
@@ -1823,6 +1897,83 @@ export default function ClienteDetalle({
                                     <p className="text-sm font-bold text-gray-800">Lista de verificación</p>
                                     <p className="text-[10px] text-slate-400">Checklist de tareas o ítems</p>
                                 </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL REGISTRO DE VENTA */}
+            {modalVenta && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
+                        <div className="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-white flex items-center justify-between">
+                            <span className="font-bold text-emerald-700 flex items-center gap-2">
+                                <TrendingUp className="w-4 h-4" /> Registrar Venta
+                            </span>
+                            <button onClick={() => setModalVenta(false)} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-white/60">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            {/* Tipo */}
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setVentaForm(f => ({ ...f, tipo: 'venta' }))}
+                                    className={`flex-1 py-2 rounded-lg text-sm font-bold border-2 transition-all ${
+                                        ventaForm.tipo === 'venta' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-500'
+                                    }`}
+                                >🛒 Venta</button>
+                                <button
+                                    onClick={() => setVentaForm(f => ({ ...f, tipo: 'suscripcion' }))}
+                                    className={`flex-1 py-2 rounded-lg text-sm font-bold border-2 transition-all ${
+                                        ventaForm.tipo === 'suscripcion' ? 'bg-violet-500 border-violet-500 text-white' : 'bg-white border-slate-200 text-slate-500'
+                                    }`}
+                                >🔁 Suscripción</button>
+                            </div>
+                            {/* Descripción */}
+                            <div>
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 block">Descripción *</label>
+                                <input
+                                    type="text"
+                                    value={ventaForm.descripcion}
+                                    onChange={(e) => setVentaForm(f => ({ ...f, descripcion: e.target.value }))}
+                                    placeholder="Ej: Plan Premium anual"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400/20 focus:border-emerald-400 outline-none"
+                                    autoFocus
+                                />
+                            </div>
+                            {/* Monto */}
+                            <div>
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 block">Monto</label>
+                                <div className="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-emerald-400/20 focus-within:border-emerald-400">
+                                    <span className="text-slate-400 font-bold text-sm">$</span>
+                                    <input
+                                        type="number"
+                                        value={ventaForm.monto}
+                                        onChange={(e) => setVentaForm(f => ({ ...f, monto: e.target.value }))}
+                                        placeholder="0.00"
+                                        className="flex-1 text-sm outline-none bg-transparent"
+                                    />
+                                </div>
+                            </div>
+                            {/* Notas */}
+                            <div>
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 block">Notas adicionales</label>
+                                <textarea
+                                    rows={2}
+                                    value={ventaForm.notas}
+                                    onChange={(e) => setVentaForm(f => ({ ...f, notas: e.target.value }))}
+                                    placeholder="Ej: Pagó con tarjeta, incluye instalación..."
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400/20 focus:border-emerald-400 outline-none resize-none"
+                                />
+                            </div>
+                            <button
+                                onClick={handleGuardarVenta}
+                                disabled={guardandoVenta || !ventaForm.descripcion.trim()}
+                                className="w-full py-2.5 bg-emerald-600 text-white rounded-lg font-bold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {guardandoVenta ? '⏳ Guardando...' : '✓ Registrar en historial'}
                             </button>
                         </div>
                     </div>

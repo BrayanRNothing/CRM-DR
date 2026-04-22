@@ -3,7 +3,8 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
     Edit2, Trash2, X, Plus, CreditCard, FolderOpen, Package,
-    FileText, CheckCircle2, Upload, FilePlus, ChevronDown, Eye, Download
+    FileText, CheckCircle2, Upload, FilePlus, ChevronDown, Eye, Download,
+    ShoppingBag, Repeat, TrendingUp, Star
 } from 'lucide-react';
 import { getToken } from '../utils/authUtils';
 import API_URL from '../config/api';
@@ -376,6 +377,155 @@ export default function ModulosCliente({
         );
     };
 
+    const renderModuloSales = (seccion) => {
+        const ventas = Array.isArray(seccion.contenido) ? seccion.contenido : [];
+        const total = ventas.reduce((sum, v) => sum + (parseFloat(v.monto) || 0), 0);
+        return (
+            <div className="flex flex-col flex-1 min-h-0 space-y-2">
+                <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 shrink-0">
+                    <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Total ventas</span>
+                    <span className="text-sm font-black text-emerald-700">${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1 hide-scrollbar min-h-0">
+                    {ventas.map((venta, idx) => (
+                        <div key={venta.id || idx} className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 group/item">
+                            <div className="flex items-start gap-2">
+                                <div className="p-1.5 bg-emerald-100 text-emerald-600 rounded-md shrink-0 mt-0.5">
+                                    <ShoppingBag className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="flex-1 min-w-0 space-y-1.5">
+                                    <input type="text" value={venta.descripcion || ''}
+                                        onChange={(e) => { const n=[...ventas]; n[idx].descripcion=e.target.value; updateSeccion(seccion.id,'contenido',n); }}
+                                        onBlur={commitSecciones}
+                                        placeholder="Descripción del producto/servicio"
+                                        className="w-full text-xs font-bold bg-transparent border-none outline-none text-slate-700 placeholder:font-normal placeholder:text-slate-400"
+                                    />
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-slate-400 text-[10px] font-bold">$</span>
+                                            <input type="number" value={venta.monto || ''}
+                                                onChange={(e) => { const n=[...ventas]; n[idx].monto=e.target.value; updateSeccion(seccion.id,'contenido',n); }}
+                                                onBlur={commitSecciones}
+                                                placeholder="0.00" className="w-20 text-[10px] px-1.5 py-0.5 border border-slate-200 rounded outline-none bg-white"
+                                            />
+                                        </div>
+                                        <input type="date" value={venta.fecha || ''}
+                                            onChange={(e) => { const n=[...ventas]; n[idx].fecha=e.target.value; updateSeccion(seccion.id,'contenido',n); commitSecciones(); }}
+                                            className="text-[10px] px-1.5 py-0.5 border border-slate-200 rounded outline-none bg-white flex-1 min-w-[130px]"
+                                        />
+                                        <select value={venta.estado || 'completada'}
+                                            onChange={(e) => { const n=[...ventas]; n[idx].estado=e.target.value; updateSeccion(seccion.id,'contenido',n); commitSecciones(); }}
+                                            className={`text-[10px] px-1.5 py-0.5 border rounded outline-none ${
+                                                venta.estado === 'completada' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                : venta.estado === 'cancelada' ? 'bg-red-50 text-red-700 border-red-200'
+                                                : 'bg-amber-50 text-amber-700 border-amber-200'
+                                            }`}>
+                                            <option value="completada">Completada</option>
+                                            <option value="pendiente">Pendiente</option>
+                                            <option value="cancelada">Cancelada</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button onClick={() => { const n=ventas.filter((_,i)=>i!==idx); updateSeccion(seccion.id,'contenido',n); commitSecciones(); }}
+                                    className="p-1 text-slate-200 hover:text-red-500 rounded opacity-0 group-hover/item:opacity-100 transition-all shrink-0"
+                                ><Trash2 className="w-3 h-3" /></button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <button
+                    onClick={() => {
+                        const n = [...ventas, { id: Date.now().toString(), descripcion: '', monto: '', estado: 'completada', fecha: new Date().toISOString().slice(0,10) }];
+                        updateSeccion(seccion.id, 'contenido', n);
+                    }}
+                    className="flex items-center justify-center gap-1.5 w-full py-2 border border-dashed border-emerald-300 rounded-lg text-xs font-bold text-emerald-600 hover:bg-emerald-50 hover:border-emerald-400 transition-all mt-auto shrink-0"
+                >
+                    <Plus className="w-3.5 h-3.5" /> Registrar Venta
+                </button>
+            </div>
+        );
+    };
+
+    const renderModuloSubscriptions = (seccion) => {
+        const subs = Array.isArray(seccion.contenido) ? seccion.contenido : [];
+        const activasCount = subs.filter(s => s.estado === 'activa').length;
+        return (
+            <div className="flex flex-col flex-1 min-h-0 space-y-2">
+                <div className="flex items-center justify-between bg-violet-50 border border-violet-100 rounded-lg px-3 py-2 shrink-0">
+                    <span className="text-[10px] font-bold text-violet-700 uppercase tracking-wider">Suscripciones activas</span>
+                    <span className="text-sm font-black text-violet-700">{activasCount} / {subs.length}</span>
+                </div>
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1 hide-scrollbar min-h-0">
+                    {subs.map((sub, idx) => (
+                        <div key={sub.id || idx} className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 group/item">
+                            <div className="flex items-start gap-2">
+                                <div className="p-1.5 bg-violet-100 text-violet-600 rounded-md shrink-0 mt-0.5">
+                                    <Repeat className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="flex-1 min-w-0 space-y-1.5">
+                                    <input type="text" value={sub.nombre || ''}
+                                        onChange={(e) => { const n=[...subs]; n[idx].nombre=e.target.value; updateSeccion(seccion.id,'contenido',n); }}
+                                        onBlur={commitSecciones}
+                                        placeholder="Nombre de la suscripción"
+                                        className="w-full text-xs font-bold bg-transparent border-none outline-none text-slate-700 placeholder:font-normal placeholder:text-slate-400"
+                                    />
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-slate-400 text-[10px] font-bold">$</span>
+                                            <input type="number" value={sub.monto || ''}
+                                                onChange={(e) => { const n=[...subs]; n[idx].monto=e.target.value; updateSeccion(seccion.id,'contenido',n); }}
+                                                onBlur={commitSecciones}
+                                                placeholder="0.00" className="w-20 text-[10px] px-1.5 py-0.5 border border-slate-200 rounded outline-none bg-white"
+                                            />
+                                        </div>
+                                        <select value={sub.ciclo || 'mensual'}
+                                            onChange={(e) => { const n=[...subs]; n[idx].ciclo=e.target.value; updateSeccion(seccion.id,'contenido',n); commitSecciones(); }}
+                                            className="text-[10px] px-1.5 py-0.5 border border-slate-200 rounded outline-none bg-white">
+                                            <option value="semanal">Semanal</option>
+                                            <option value="mensual">Mensual</option>
+                                            <option value="trimestral">Trimestral</option>
+                                            <option value="anual">Anual</option>
+                                        </select>
+                                        <select value={sub.estado || 'activa'}
+                                            onChange={(e) => { const n=[...subs]; n[idx].estado=e.target.value; updateSeccion(seccion.id,'contenido',n); commitSecciones(); }}
+                                            className={`text-[10px] px-1.5 py-0.5 border rounded outline-none ${
+                                                sub.estado === 'activa' ? 'bg-violet-50 text-violet-700 border-violet-200'
+                                                : sub.estado === 'pausada' ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                : 'bg-slate-50 text-slate-500 border-slate-200'
+                                            }`}>
+                                            <option value="activa">Activa</option>
+                                            <option value="pausada">Pausada</option>
+                                            <option value="cancelada">Cancelada</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-slate-400">Renovación:</span>
+                                        <input type="date" value={sub.proximaRenovacion || ''}
+                                            onChange={(e) => { const n=[...subs]; n[idx].proximaRenovacion=e.target.value; updateSeccion(seccion.id,'contenido',n); commitSecciones(); }}
+                                            className="text-[10px] px-1.5 py-0.5 border border-slate-200 rounded outline-none bg-white"
+                                        />
+                                    </div>
+                                </div>
+                                <button onClick={() => { const n=subs.filter((_,i)=>i!==idx); updateSeccion(seccion.id,'contenido',n); commitSecciones(); }}
+                                    className="p-1 text-slate-200 hover:text-red-500 rounded opacity-0 group-hover/item:opacity-100 transition-all shrink-0"
+                                ><Trash2 className="w-3 h-3" /></button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <button
+                    onClick={() => {
+                        const n = [...subs, { id: Date.now().toString(), nombre: '', monto: '', estado: 'activa', ciclo: 'mensual', proximaRenovacion: '' }];
+                        updateSeccion(seccion.id, 'contenido', n);
+                    }}
+                    className="flex items-center justify-center gap-1.5 w-full py-2 border border-dashed border-violet-300 rounded-lg text-xs font-bold text-violet-600 hover:bg-violet-50 hover:border-violet-400 transition-all mt-auto shrink-0"
+                >
+                    <Plus className="w-3.5 h-3.5" /> Agregar Suscripción
+                </button>
+            </div>
+        );
+    };
+
     return (
         <div className={`grid grid-cols-1 xl:grid-cols-2 gap-4 ${containerClassName}`}>
             {children}
@@ -386,6 +536,8 @@ export default function ModulosCliente({
                             {seccion.tipo === 'payments' && <CreditCard className="w-5 h-5 text-green-500 shrink-0" />}
                             {seccion.tipo === 'contracts' && <FolderOpen className="w-5 h-5 text-purple-500 shrink-0" />}
                             {seccion.tipo === 'products' && <Package className="w-5 h-5 text-blue-500 shrink-0" />}
+                            {seccion.tipo === 'sales' && <ShoppingBag className="w-5 h-5 text-emerald-500 shrink-0" />}
+                            {seccion.tipo === 'subscriptions' && <Repeat className="w-5 h-5 text-violet-500 shrink-0" />}
                             
                             <input
                                 type="text"
@@ -410,6 +562,8 @@ export default function ModulosCliente({
                         {seccion.tipo === 'payments' && renderModuloPayments(seccion)}
                         {seccion.tipo === 'contracts' && renderModuloContracts(seccion)}
                         {seccion.tipo === 'products' && renderModuloProducts(seccion)}
+                        {seccion.tipo === 'sales' && renderModuloSales(seccion)}
+                        {seccion.tipo === 'subscriptions' && renderModuloSubscriptions(seccion)}
                         
                         {/* Notas genéricas (mantener compatibilidad) */}
                         {seccion.tipo === 'note' && (
@@ -481,7 +635,7 @@ export default function ModulosCliente({
                 <div className={`${(visibleSections.length + React.Children.count(children)) % 2 === 0 ? 'xl:col-span-2' : ''}`}>
                     <button
                         onClick={onAgregar}
-                        className="w-full group flex flex-col items-center justify-center gap-4 p-8 bg-slate-50 hover:bg-(--theme-50)/30 border-2 border-dashed border-slate-200 hover:border-(--theme-400) rounded-2xl transition-all duration-300 min-h-[220px] h-full"
+                        className="w-full group flex flex-col items-center justify-center gap-4 p-8 bg-slate-50 hover:bg-(--theme-50)/30 border-[3px] border-dashed border-slate-300 hover:border-(--theme-400) rounded-2xl transition-all duration-300 min-h-[220px] h-full"
                     >
                         <div className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-sm text-slate-400 group-hover:text-(--theme-500) group-hover:scale-110 transition-all border border-slate-100">
                             <Plus className="w-7 h-7" />
