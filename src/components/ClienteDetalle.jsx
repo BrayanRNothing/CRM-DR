@@ -264,7 +264,8 @@ export default function ClienteDetalle({
         if (!ClienteSeleccionado) return;
         try {
             const pidLoc = ClienteSeleccionado.id || ClienteSeleccionado._id;
-            const endpoint = `${API_URL}/api/${rolePath}/prospectos/${pidLoc}/editar`;
+            // Quitamos el /editar para que no sobrescriba los demás datos con vacíos
+            const endpoint = `${API_URL}/api/${rolePath}/prospectos/${pidLoc}`;
             await axios.put(endpoint, {
                 customSections: nuevasSecciones
             }, { headers: getAuthHeaders() });

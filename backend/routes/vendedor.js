@@ -1187,7 +1187,7 @@ router.put('/prospectos/:id', auth, async (req, res) => {
     try {
         const prospectoId = parseInt(req.params.id);
         const usuarioId = parseInt(req.usuario.id, 10);
-        const { interes, proximaLlamada, customMetricLabel, customMetricValue } = req.body;
+        const { interes, proximaLlamada, customMetricLabel, customMetricValue, customSections } = req.body;
 
         const cliente = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(prospectoId);
         if (!cliente) return res.status(404).json({ msg: 'Prospecto no encontrado' });
@@ -1202,6 +1202,10 @@ router.put('/prospectos/:id', auth, async (req, res) => {
         if (proximaLlamada !== undefined) { updates.push('proximaLlamada = ?'); params.push(proximaLlamada); }
         if (customMetricLabel !== undefined) { updates.push('customMetricLabel = ?'); params.push(customMetricLabel); }
         if (customMetricValue !== undefined) { updates.push('customMetricValue = ?'); params.push(customMetricValue); }
+        if (customSections !== undefined) { 
+            updates.push('customSections = ?'); 
+            params.push(typeof customSections === 'string' ? customSections : JSON.stringify(customSections)); 
+        }
 
         if (updates.length > 0) {
             params.push(prospectoId);
@@ -2155,13 +2159,19 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
 router.put('/prospectos/:id', auth, async (req, res) => {
     try {
         const prospectoId = parseInt(req.params.id);
-        const { interes, proximaLlamada } = req.body;
+        const { interes, proximaLlamada, customMetricLabel, customMetricValue, customSections } = req.body;
 
         const updates = [];
         const params = [];
 
         if (interes !== undefined) { updates.push('interes = ?'); params.push(interes); }
         if (proximaLlamada !== undefined) { updates.push('proximaLlamada = ?'); params.push(proximaLlamada); }
+        if (customMetricLabel !== undefined) { updates.push('customMetricLabel = ?'); params.push(customMetricLabel); }
+        if (customMetricValue !== undefined) { updates.push('customMetricValue = ?'); params.push(customMetricValue); }
+        if (customSections !== undefined) { 
+            updates.push('customSections = ?'); 
+            params.push(typeof customSections === 'string' ? customSections : JSON.stringify(customSections)); 
+        }
 
         if (updates.length > 0) {
             params.push(prospectoId);
