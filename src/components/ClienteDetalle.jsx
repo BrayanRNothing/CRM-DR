@@ -111,7 +111,17 @@ export default function ClienteDetalle({
     const [guardandoMetrica, setGuardandoMetrica] = useState(false);
 
     // SECCIONES PERSONALIZADAS
-    const [customSections, setCustomSections] = useState(initialCliente?.customSections || []);
+    const [customSections, setCustomSections] = useState(() => {
+        const val = initialCliente?.customSections;
+        if (!val) return [];
+        if (Array.isArray(val)) return val;
+        try {
+            return JSON.parse(val);
+        } catch (e) {
+            console.error("Error parsing customSections:", e);
+            return [];
+        }
+    });
     const [modalNuevaSeccion, setModalNuevaSeccion] = useState(false);
     const [drawerHistorialAbierto, setDrawerHistorialAbierto] = useState(false);
 
@@ -127,7 +137,21 @@ export default function ClienteDetalle({
                 setNotasRapidas(initialCliente.notas || '');
                 setMonedaSeleccionada(initialCliente.customMetricLabel || 'MXN');
                 setValorCliente(initialCliente.customMetricValue || '');
-                setCustomSections(initialCliente.customSections || []);
+                
+                // Parsear customSections si viene como string
+                let parsedSections = [];
+                if (initialCliente.customSections) {
+                    if (Array.isArray(initialCliente.customSections)) {
+                        parsedSections = initialCliente.customSections;
+                    } else {
+                        try {
+                            parsedSections = JSON.parse(initialCliente.customSections);
+                        } catch (e) {
+                            parsedSections = [];
+                        }
+                    }
+                }
+                setCustomSections(parsedSections);
             }
         }
     }, [initialCliente]);

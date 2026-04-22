@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ArrowRightLeft, TrendingUp, AlertTriangle, ChevronDown } from 'lucide-react';
 
 export default function KpiRotativas({
@@ -16,18 +16,31 @@ export default function KpiRotativas({
 }) {
     const [mostrarNuevasKpis, setMostrarNuevasKpis] = useState(false);
 
+    // Asegurar que customSections sea un array (por si viene como string JSON)
+    const sections = useMemo(() => {
+        if (Array.isArray(customSections)) return customSections;
+        if (typeof customSections === 'string') {
+            try {
+                return JSON.parse(customSections || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+        return [];
+    }, [customSections]);
+
     // Calcular valores de módulos
-    const tieneModulosData = customSections?.some(s => ['payments', 'contracts', 'products'].includes(s.tipo));
+    const tieneModulosData = sections.some(s => ['payments', 'contracts', 'products'].includes(s.tipo));
     
     // Total facturado (suma de pagos 'pagado')
-    const totalFacturado = customSections
+    const totalFacturado = sections
         ?.filter(s => s.tipo === 'payments')
         ?.flatMap(s => s.contenido || [])
         ?.filter(p => p.estado === 'pagado')
         ?.reduce((sum, p) => sum + (parseFloat(p.monto) || 0), 0) || 0;
 
     // Pagos Pendientes / Vencidos
-    const pagosPendientes = customSections
+    const pagosPendientes = sections
         ?.filter(s => s.tipo === 'payments')
         ?.flatMap(s => s.contenido || [])
         ?.filter(p => p.estado === 'pendiente' || p.estado === 'vencido');
@@ -37,13 +50,13 @@ export default function KpiRotativas({
 
     // Contratos activos
     const hoy = new Date().toISOString().slice(0,10);
-    const contratosActivos = customSections
+    const contratosActivos = sections
         ?.filter(s => s.tipo === 'contracts')
         ?.flatMap(s => s.contenido || [])
         ?.filter(c => c.fechaVencimiento && c.fechaVencimiento >= hoy).length || 0;
 
     // Productos comprados
-    const totalProductos = customSections
+    const totalProductos = sections
         ?.filter(s => s.tipo === 'products')
         ?.flatMap(s => s.contenido || [])
         ?.reduce((sum, p) => sum + (parseInt(p.cantidad) || 1), 0) || 0;

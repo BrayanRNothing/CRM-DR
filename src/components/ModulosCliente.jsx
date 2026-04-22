@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
@@ -20,6 +20,19 @@ export default function ModulosCliente({
 }) {
     const fileInputRef = useRef(null);
     const [uploadingToSeccion, setUploadingToSeccion] = useState(null);
+
+    // Asegurar que customSections sea un array (por si viene como string JSON del backend)
+    const sections = useMemo(() => {
+        if (Array.isArray(customSections)) return customSections;
+        if (typeof customSections === 'string') {
+            try {
+                return JSON.parse(customSections || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+        return [];
+    }, [customSections]);
 
     const handleFileUpload = async (e, seccionId) => {
         const file = e.target.files[0];
@@ -50,7 +63,7 @@ export default function ModulosCliente({
             const nuevaUrl = res.data.url;
             const nuevoNombre = res.data.nombreArchivo;
 
-            const seccion = customSections.find(s => s.id === seccionId);
+            const seccion = sections.find(s => s.id === seccionId);
             const nuevoContenido = [...(seccion.contenido || [])];
             nuevoContenido.push({
                 id: Date.now().toString(),
@@ -329,7 +342,7 @@ export default function ModulosCliente({
 
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
-            {customSections.map(seccion => (
+            {sections.map(seccion => (
                 <div key={seccion.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm group flex flex-col h-full min-h-[220px]">
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-2 flex-1 group/title relative">
@@ -427,7 +440,7 @@ export default function ModulosCliente({
                 </div>
             ))}
 
-            <div className={`${customSections.length % 2 === 0 ? 'xl:col-span-2' : ''}`}>
+            <div className={`${sections.length % 2 === 0 ? 'xl:col-span-2' : ''}`}>
                 <button
                     onClick={onAgregar}
                     className="w-full group flex flex-col items-center justify-center gap-4 p-8 bg-slate-50 hover:bg-(--theme-50)/30 border-2 border-dashed border-slate-200 hover:border-(--theme-400) rounded-2xl transition-all duration-300 min-h-[220px] h-full"
