@@ -264,7 +264,7 @@ export default function VendedorAjustes() {
 
                     {/* ═══ GRID CONTENT ═══ */}
                     <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 md:gap-8 items-start lg:items-stretch md:flex-1 md:min-h-0">
-                        
+
                         {/* ═══ TABS SIDEBAR (Hybrid) ═══ */}
                         <div className="z-10 px-3 md:px-0 lg:flex lg:flex-col">
                             <div className="flex lg:flex-col gap-2 bg-white/80 backdrop-blur-md p-1.5 lg:p-2 md:rounded-2xl lg:shadow-sm md:border border-(--theme-200) border-b overflow-x-auto no-scrollbar lg:overflow-visible lg:min-h-[250px]">
@@ -306,314 +306,316 @@ export default function VendedorAjustes() {
                         {/* ═══ MAIN CONTENT ═══ */}
                         <div className="space-y-6">
 
-                    {/* ═══ TAB: PERFIL ═══ */}
-                    {activeTab === 'perfil' && (
-                        <form onSubmit={handleSaveProfile}>
-                            <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
-                                <div className="" />
-                                <div className="p-6 sm:p-8 h-full flex flex-col">
-                                    <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
-                                        <div className={`p-2 rounded-xl bg-linear-to-br ${roleBg}`}>
-                                            <User className="text-white" size={16} />
-                                        </div>
-                                        Información Personal
-                                    </h2>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 flex-1 content-start">
-                                        <div className="sm:col-span-2">
-                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nombre Completo</label>
-                                            <div className="relative">
-                                                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
-                                                <input type="text" value={profileForm.nombre}
-                                                    onChange={e => setProfileForm(p => ({ ...p, nombre: e.target.value }))}
-                                                    className={`${inp} pl-10`} placeholder="Tu nombre completo" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email</label>
-                                            <div className="relative">
-                                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
-                                                <input type="email" value={profileForm.email}
-                                                    onChange={e => setProfileForm(p => ({ ...p, email: e.target.value }))}
-                                                    className={`${inp} pl-10`} placeholder="correo@ejemplo.com" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Teléfono</label>
-                                            <div className="relative">
-                                                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
-                                                <input type="tel" value={profileForm.telefono}
-                                                    onChange={e => setProfileForm(p => ({ ...p, telefono: e.target.value }))}
-                                                    className={`${inp} pl-10`} placeholder="+52 000 000 0000" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="mt-auto pt-8 flex justify-end">
-                                        <button type="submit" disabled={savingProfile}
-                                            className={`flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-linear-to-r ${roleBg} hover:opacity-90 active:scale-95 transition-all disabled:opacity-50`}>
-                                            <Save size={16} />
-                                            {savingProfile ? 'Guardando...' : 'Guardar Cambios'}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    )}
-
-                    {/* ═══ TAB: SEGURIDAD ═══ */}
-                    {activeTab === 'seguridad' && (
-                        <form onSubmit={handleSavePass}>
-                            <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
-                                <div className="" />
-                                <div className="p-6 sm:p-8 h-full flex flex-col">
-                                    <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
-                                        <div className="p-2 rounded-xl bg-linear-to-br from-(--theme-500) to-purple-600">
-                                            <Shield className="text-white" size={16} />
-                                        </div>
-                                        Cambiar Contraseña
-                                    </h2>
-                                    <div className="w-full space-y-5 flex-1">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nueva Contraseña</label>
-                                            <div className="relative">
-                                                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
-                                                <input type="password" value={passForm.next}
-                                                    onChange={e => setPassForm(p => ({ ...p, next: e.target.value }))}
-                                                    className={`${inp} pl-10`} placeholder="Mínimo 6 caracteres" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Confirmar Contraseña</label>
-                                            <div className="relative">
-                                                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
-                                                <input type="password" value={passForm.confirm}
-                                                    onChange={e => setPassForm(p => ({ ...p, confirm: e.target.value }))}
-                                                    className={`${inp} pl-10 ${passForm.confirm && passForm.confirm !== passForm.next ? 'border-red-400 ring-2 ring-red-400/20' : ''}`}
-                                                    placeholder="Repite la contraseña" />
-                                            </div>
-                                            {passForm.confirm && passForm.confirm !== passForm.next && (
-                                                <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
-                                                    <AlertCircle size={12} /> Las contraseñas no coinciden
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        {/* Password strength indicator */}
-                                        {passForm.next && (
-                                            <div>
-                                                <p className="text-xs text-slate-500 mb-1.5">Fortaleza</p>
-                                                <div className="flex gap-1">
-                                                    {[6, 10, 14].map((len, i) => (
-                                                        <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${passForm.next.length >= len ? ['bg-red-400', 'bg-yellow-400', 'bg-green-500'][i] : 'bg-slate-100'}`} />
-                                                    ))}
+                            {/* ═══ TAB: PERFIL ═══ */}
+                            {activeTab === 'perfil' && (
+                                <form onSubmit={handleSaveProfile}>
+                                    <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
+                                        <div className="" />
+                                        <div className="p-6 sm:p-8 h-full flex flex-col">
+                                            <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
+                                                <div className={`p-2 rounded-xl bg-linear-to-br ${roleBg}`}>
+                                                    <User className="text-white" size={16} />
                                                 </div>
-                                                <p className="text-xs text-slate-400 mt-1">
-                                                    {passForm.next.length < 6 ? 'Muy corta' : passForm.next.length < 10 ? 'Débil' : passForm.next.length < 14 ? 'Buena' : 'Excelente'}
-                                                </p>
+                                                Información Personal
+                                            </h2>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 flex-1 content-start">
+                                                <div className="sm:col-span-2">
+                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nombre Completo</label>
+                                                    <div className="relative">
+                                                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                                                        <input type="text" value={profileForm.nombre}
+                                                            onChange={e => setProfileForm(p => ({ ...p, nombre: e.target.value }))}
+                                                            className={`${inp} pl-10`} placeholder="Tu nombre completo" />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email</label>
+                                                    <div className="relative">
+                                                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                                                        <input type="email" value={profileForm.email}
+                                                            onChange={e => setProfileForm(p => ({ ...p, email: e.target.value }))}
+                                                            className={`${inp} pl-10`} placeholder="correo@ejemplo.com" />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Teléfono</label>
+                                                    <div className="relative">
+                                                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                                                        <input type="tel" value={profileForm.telefono}
+                                                            onChange={e => setProfileForm(p => ({ ...p, telefono: e.target.value }))}
+                                                            className={`${inp} pl-10`} placeholder="+52 000 000 0000" />
+                                                    </div>
+                                                </div>
                                             </div>
-                                        )}
-
-                                        <div className="mt-auto pt-8">
-                                            <button type="submit" disabled={savingPass}
-                                                className="flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-linear-to-r from-(--theme-500) to-purple-600 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50">
-                                                <KeyRound size={16} />
-                                                {savingPass ? 'Actualizando...' : 'Actualizar Contraseña'}
-                                            </button>
+                                            <div className="mt-auto pt-8 flex justify-end">
+                                                <button type="submit" disabled={savingProfile}
+                                                    className={`flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-linear-to-r ${roleBg} hover:opacity-90 active:scale-95 transition-all disabled:opacity-50`}>
+                                                    <Save size={16} />
+                                                    {savingProfile ? 'Guardando...' : 'Guardar Cambios'}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        </form>
-                    )}
+                                </form>
+                            )}
 
-                    {activeTab === 'integraciones' && (
-                        <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
-                            <div className="p-4 sm:p-6 h-full flex flex-col">
-                                <h2 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                    <div className="p-1.5 rounded-lg bg-white border border-slate-200 shadow-sm">
-                                        <GoogleIcon size={14} />
-                                    </div>
-                                    Cuenta Google
-                                </h2>
+                            {/* ═══ TAB: SEGURIDAD ═══ */}
+                            {activeTab === 'seguridad' && (
+                                <form onSubmit={handleSavePass}>
+                                    <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
+                                        <div className="" />
+                                        <div className="p-6 sm:p-8 h-full flex flex-col">
+                                            <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2.5">
+                                                <div className={`p-2 rounded-xl bg-linear-to-br ${roleBg}`}>
+                                                    <Shield className="text-white" size={16} />
+                                                </div>
+                                                Cambiar Contraseña
+                                            </h2>
+                                            <div className="w-full space-y-5 flex-1">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Nueva Contraseña</label>
+                                                    <div className="relative">
+                                                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                                                        <input type="password" value={passForm.next}
+                                                            onChange={e => setPassForm(p => ({ ...p, next: e.target.value }))}
+                                                            className={`${inp} pl-10`} placeholder="Mínimo 6 caracteres" />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Confirmar Contraseña</label>
+                                                    <div className="relative">
+                                                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                                                        <input type="password" value={passForm.confirm}
+                                                            onChange={e => setPassForm(p => ({ ...p, confirm: e.target.value }))}
+                                                            className={`${inp} pl-10 ${passForm.confirm && passForm.confirm !== passForm.next ? 'border-red-400 ring-2 ring-red-400/20' : ''}`}
+                                                            placeholder="Repite la contraseña" />
+                                                    </div>
+                                                    {passForm.confirm && passForm.confirm !== passForm.next && (
+                                                        <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+                                                            <AlertCircle size={12} /> Las contraseñas no coinciden
+                                                        </p>
+                                                    )}
+                                                </div>
 
-                                {googleConnected ? (
-                                    <div className="space-y-4 w-full flex-1 flex flex-col">
-                                        <div className="relative p-4 bg-linear-to-br from-(--theme-50) to-white border border-(--theme-100) rounded-2xl overflow-hidden shadow-xs">
-                                            <div className="absolute top-0 right-0 w-24 h-24 bg-(--theme-200)/20 rounded-full -translate-y-8 translate-x-8" />
-                                            
-                                            <div className="flex flex-col sm:flex-row items-center gap-4 relative z-10">
-                                                {googleAccountInfo?.picture ? (
-                                                    <img src={googleAccountInfo.picture} alt="Google Profile" className="w-14 h-14 rounded-xl shadow-md ring-2 ring-white" />
-                                                ) : (
-                                                    <div className="w-14 h-14 rounded-xl bg-white flex items-center justify-center shadow-md ring-2 ring-white">
-                                                        <GoogleIcon size={24} />
+                                                {/* Password strength indicator */}
+                                                {passForm.next && (
+                                                    <div>
+                                                        <p className="text-xs text-slate-500 mb-1.5">Fortaleza</p>
+                                                        <div className="flex gap-1">
+                                                            {[6, 10, 14].map((len, i) => (
+                                                                <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${passForm.next.length >= len ? ['bg-red-400', 'bg-yellow-400', 'bg-green-500'][i] : 'bg-slate-100'}`} />
+                                                            ))}
+                                                        </div>
+                                                        <p className="text-xs text-slate-400 mt-1">
+                                                            {passForm.next.length < 6 ? 'Muy corta' : passForm.next.length < 10 ? 'Débil' : passForm.next.length < 14 ? 'Buena' : 'Excelente'}
+                                                        </p>
                                                     </div>
                                                 )}
-                                                
-                                                <div className="flex-1 text-center sm:text-left">
-                                                    <h3 className="text-base font-black text-(--theme-900) leading-tight">{googleAccountInfo?.name || 'Vínculo Activo'}</h3>
-                                                    <p className="text-(--theme-700) text-xs font-medium flex items-center justify-center sm:justify-start gap-1">
-                                                        <Mail size={12} />
-                                                        {googleAccountInfo?.email || 'Cargando información...'}
-                                                    </p>
-                                                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
-                                                        <span className="px-1.5 py-0.5 rounded-md bg-white/60 text-[9px] font-bold text-(--theme-700) uppercase tracking-wider backdrop-blur-sm border border-(--theme-200)">
-                                                            Calendar
-                                                        </span>
-                                                        <span className="px-1.5 py-0.5 rounded-md bg-(--theme-100)/80 text-[9px] font-bold text-(--theme-700) uppercase tracking-wider border border-(--theme-200)">
-                                                            ONLINE
-                                                        </span>
-                                                    </div>
-                                                </div>
 
-                                                <div className="shrink-0 flex items-center justify-center w-8 h-8 bg-white rounded-lg shadow-xs border border-(--theme-200)">
-                                                    <CheckCircle2 className="text-(--theme-500)" size={18} fill="currentColor" />
+                                                <div className="mt-auto pt-8">
+                                                    <button type="submit" disabled={savingPass}
+                                                        className={`flex items-center gap-2 px-8 py-3 rounded-xl text-white font-bold text-sm shadow-lg bg-linear-to-r ${roleBg} hover:opacity-90 active:scale-95 transition-all disabled:opacity-50`}>
+                                                        <KeyRound size={16} />
+                                                        {savingPass ? 'Actualizando...' : 'Actualizar Contraseña'}
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            <div className="p-4 bg-(--theme-50)/50 border border-(--theme-100) rounded-xl">
-                                                <h4 className="text-[10px] font-black text-(--theme-400) uppercase tracking-widest mb-2 flex items-center gap-2">
-                                                    <Shield size={12} /> Permisos
-                                                </h4>
-                                                <div className="space-y-1">
-                                                    {['Calendario', 'Eventos', 'Perfil'].map((p, i) => (
-                                                        <div key={i} className="flex items-center gap-2 text-xs font-semibold text-(--theme-600)">
-                                                            <div className="w-1 h-1 rounded-full bg-(--theme-500)" />
-                                                            {p}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="p-4 bg-(--theme-50)/50 border border-(--theme-100) rounded-xl">
-                                                <h4 className="text-[10px] font-black text-(--theme-400) uppercase tracking-widest mb-2 flex items-center gap-2">
-                                                    <Monitor size={12} /> Estado
-                                                </h4>
-                                                <div className="space-y-1.5">
-                                                    <div className="flex justify-between text-[11px] font-semibold">
-                                                        <span className="text-(--theme-500)">Sesión:</span>
-                                                        <span className="text-(--theme-600) uppercase">Activa</span>
-                                                    </div>
-                                                    <div className="flex justify-between text-[11px] font-semibold">
-                                                        <span className="text-(--theme-500)">ID:</span>
-                                                        <span className="text-(--theme-400) font-mono italic">{googleAccountInfo?.id?.slice(0, 6)}...</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-start gap-3 p-3 bg-amber-50/50 rounded-xl border border-amber-100 text-[11px] text-amber-700 font-medium">
-                                            <AlertCircle size={16} className="shrink-0" />
-                                            <span>Para cambiar de cuenta, desvincula la actual primero. Esto detendrá la sincronización.</span>
-                                        </div>
-
-                                        <button onClick={handleDisconnectGoogle}
-                                            className="w-full sm:w-auto flex items-center justify-center gap-2 py-2.5 px-6 bg-white border border-red-100 text-red-500 font-bold rounded-xl hover:bg-red-50 hover:border-red-200 active:scale-95 transition-all text-xs shadow-xs mt-auto">
-                                            <Link2Off size={14} />
-                                            Desvincular Google
-                                        </button>
                                     </div>
-                                ) : (
-                                    <div className="w-full text-center py-8 px-5 bg-(--theme-50)/40 rounded-2xl border border-dashed border-(--theme-300) flex-1">
-                                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white shadow-lg flex items-center justify-center relative">
-                                            <div className="absolute inset-0 bg-linear-to-br from-blue-50 to-red-50 rounded-full animate-pulse opacity-50" />
-                                            <GoogleIcon size={32} />
-                                        </div>
-                                        <h3 className="font-black text-slate-800 text-lg mb-1">Conecta con Google</h3>
-                                        <p className="text-slate-500 text-xs mb-5 leading-snug">
-                                            Sincroniza agenda y tareas para gestionar tu tiempo desde el CRM.
+                                </form>
+                            )}
+
+                            {activeTab === 'integraciones' && (
+                                <div className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-(--theme-200) overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
+                                    <div className="p-4 sm:p-6 h-full flex flex-col">
+                                        <h2 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                            <div className="p-1.5 rounded-lg bg-white border border-slate-200 shadow-sm">
+                                                <GoogleIcon size={14} />
+                                            </div>
+                                            Cuenta Google
+                                        </h2>
+
+                                        {googleConnected ? (
+                                            <div className="space-y-4 w-full flex-1 flex flex-col">
+                                                <div className="relative p-4 bg-linear-to-br from-(--theme-50) to-white border border-(--theme-100) rounded-2xl overflow-hidden shadow-xs">
+                                                    <div className="absolute top-0 right-0 w-24 h-24 bg-(--theme-200)/20 rounded-full -translate-y-8 translate-x-8" />
+
+                                                    <div className="flex flex-col sm:flex-row items-center gap-4 relative z-10">
+                                                        {googleAccountInfo?.picture ? (
+                                                            <img src={googleAccountInfo.picture} alt="Google Profile" className="w-14 h-14 rounded-xl shadow-md ring-2 ring-white" />
+                                                        ) : (
+                                                            <div className="w-14 h-14 rounded-xl bg-white flex items-center justify-center shadow-md ring-2 ring-white">
+                                                                <GoogleIcon size={24} />
+                                                            </div>
+                                                        )}
+
+                                                        <div className="flex-1 text-center sm:text-left">
+                                                            <h3 className="text-base font-black text-(--theme-900) leading-tight">{googleAccountInfo?.name || 'Vínculo Activo'}</h3>
+                                                            <p className="text-(--theme-700) text-xs font-medium flex items-center justify-center sm:justify-start gap-1">
+                                                                <Mail size={12} />
+                                                                {googleAccountInfo?.email || 'Cargando información...'}
+                                                            </p>
+                                                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 mt-2">
+                                                                <span className="px-1.5 py-0.5 rounded-md bg-white/60 text-[9px] font-bold text-(--theme-700) uppercase tracking-wider backdrop-blur-sm border border-(--theme-200)">
+                                                                    Calendar
+                                                                </span>
+                                                                <span className="px-1.5 py-0.5 rounded-md bg-(--theme-100)/80 text-[9px] font-bold text-(--theme-700) uppercase tracking-wider border border-(--theme-200)">
+                                                                    ONLINE
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="shrink-0 flex items-center justify-center w-8 h-8 bg-white rounded-lg shadow-xs border border-(--theme-200)">
+                                                            <CheckCircle2 className="text-(--theme-500)" size={18} fill="currentColor" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    <div className="p-4 bg-(--theme-50)/50 border border-(--theme-100) rounded-xl">
+                                                        <h4 className="text-[10px] font-black text-(--theme-400) uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                            <Shield size={12} /> Permisos
+                                                        </h4>
+                                                        <div className="space-y-1">
+                                                            {['Calendario', 'Eventos', 'Perfil'].map((p, i) => (
+                                                                <div key={i} className="flex items-center gap-2 text-xs font-semibold text-(--theme-600)">
+                                                                    <div className="w-1 h-1 rounded-full bg-(--theme-500)" />
+                                                                    {p}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="p-4 bg-(--theme-50)/50 border border-(--theme-100) rounded-xl">
+                                                        <h4 className="text-[10px] font-black text-(--theme-400) uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                            <Monitor size={12} /> Estado
+                                                        </h4>
+                                                        <div className="space-y-1.5">
+                                                            <div className="flex justify-between text-[11px] font-semibold">
+                                                                <span className="text-(--theme-500)">Sesión:</span>
+                                                                <span className="text-(--theme-600) uppercase">Activa</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-[11px] font-semibold">
+                                                                <span className="text-(--theme-500)">ID:</span>
+                                                                <span className="text-(--theme-400) font-mono italic">{googleAccountInfo?.id?.slice(0, 6)}...</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-start gap-3 p-3 bg-amber-50/50 rounded-xl border border-amber-100 text-[11px] text-amber-700 font-medium">
+                                                    <AlertCircle size={16} className="shrink-0" />
+                                                    <span>Para cambiar de cuenta, desvincula la actual primero. Esto detendrá la sincronización.</span>
+                                                </div>
+
+                                                <button onClick={handleDisconnectGoogle}
+                                                    className="w-full sm:w-auto flex items-center justify-center gap-2 py-2.5 px-6 bg-white border border-red-100 text-red-500 font-bold rounded-xl hover:bg-red-50 hover:border-red-200 active:scale-95 transition-all text-xs shadow-xs mt-auto">
+                                                    <Link2Off size={14} />
+                                                    Desvincular Google
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="w-full text-center py-8 px-5 bg-(--theme-50)/40 rounded-2xl border border-dashed border-(--theme-300) flex-1">
+                                                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white shadow-lg flex items-center justify-center relative">
+                                                    <div className="absolute inset-0 bg-linear-to-br from-blue-50 to-red-50 rounded-full animate-pulse opacity-50" />
+                                                    <GoogleIcon size={32} />
+                                                </div>
+                                                <h3 className="font-black text-slate-800 text-lg mb-1">Conecta con Google</h3>
+                                                <p className="text-slate-500 text-xs mb-5 leading-snug">
+                                                    Sincroniza agenda y tareas para gestionar tu tiempo desde el CRM.
+                                                </p>
+                                                <button onClick={() => loginGoogle()}
+                                                    className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 font-black rounded-xl hover:border-(--theme-400) hover:shadow-xl hover:shadow-(--theme-500)/10 active:scale-95 transition-all text-xs group">
+                                                    <div className="group-hover:rotate-12 transition-transform">
+                                                        <GoogleIcon size={18} />
+                                                    </div>
+                                                    Vincular ahora
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'colores' && (
+                                <section className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-slate-200 overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
+                                    <div className="p-4 sm:p-6 bg-(--theme-50)/30 shadow-inner h-full flex flex-col">
+                                        <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
+                                            <div className="p-2 rounded-xl bg-(--theme-100) text-(--theme-600)">
+                                                <Palette size={15} />
+                                            </div>
+                                            Colores del Sistema
+                                        </h2>
+                                        <p className="text-sm text-slate-500 mb-6 font-medium">
+                                            Personaliza el color de acento principal del CRM en tu dispositivo.
                                         </p>
-                                        <button onClick={() => loginGoogle()}
-                                            className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 font-black rounded-xl hover:border-(--theme-400) hover:shadow-xl hover:shadow-(--theme-500)/10 active:scale-95 transition-all text-xs group">
-                                            <div className="group-hover:rotate-12 transition-transform">
-                                                <GoogleIcon size={18} />
-                                            </div>
-                                            Vincular ahora
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
 
-                    {activeTab === 'colores' && (
-                        <section className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-slate-200 overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
-                            <div className="p-4 sm:p-6 bg-(--theme-50)/30 shadow-inner h-full flex flex-col">
-                                <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
-                                    <div className="p-2 rounded-xl bg-(--theme-100) text-(--theme-600)">
-                                        <Palette size={15} />
-                                    </div>
-                                    Colores del Sistema
-                                </h2>
-                                <p className="text-sm text-slate-500 mb-6 font-medium">
-                                    Personaliza el color de acento principal del CRM en tu dispositivo.
-                                </p>
-
-                                <div className="flex flex-wrap gap-4">
-                                    {THEMES.map((theme) => {
-                                        const isActive = currentThemeId === theme.id;
-                                        return (
-                                            <button
-                                                type="button"
-                                                key={theme.id}
-                                                onClick={() => setTheme(theme.id)}
-                                                className={`group relative flex items-center gap-3 p-3 pr-5 rounded-2xl border-2 transition-all ${isActive ? 'bg-white border-(--theme-300) shadow-sm' : 'border-transparent hover:bg-white/50'}`}
-                                            >
-                                                    {theme.swatch === 'gradient' ? (
-                                                        <div
-                                                            className={`w-8 h-8 rounded-full shadow-sm flex items-center justify-center transition-transform ${isActive ? 'scale-110 ring-2 ring-offset-2 ring-cyan-300' : 'group-hover:scale-110'}`}
-                                                            style={{ backgroundImage: theme.swatchGradient || 'linear-gradient(135deg, #34d399 0%, #22d3ee 50%, #4f46e5 100%)' }}
-                                                        >
-                                                            {isActive && <CheckCircle2 size={16} className="text-white" />}
-                                                        </div>
-                                                    ) : (
-                                                        <div
-                                                            className={`w-8 h-8 rounded-full shadow-sm flex items-center justify-center transition-transform ${isActive ? 'scale-110 ring-2 ring-offset-2' : 'group-hover:scale-110'}`}
-                                                            style={{ backgroundColor: theme.color, ringColor: theme.color }}
-                                                        >
-                                                            {isActive && <CheckCircle2 size={16} className="text-white" />}
-                                                        </div>
-                                                    )}
-                                                <span className={`text-sm font-semibold ${isActive ? 'text-slate-900' : 'text-slate-600'}`}>
-                                                    {theme.label}
-                                                </span>
-                                            </button>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        </section>
-                    )}
-
-                    {activeTab === 'notificaciones' && (
-                        <section className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-slate-200 overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
-                            <div className="p-4 sm:p-6 bg-(--theme-50)/30 shadow-inner h-full flex flex-col">
-                                <h2 className="text-base font-bold text-slate-800 mb-5 flex items-center gap-2">
-                                    <div className="p-2 rounded-xl bg-linear-to-br from-violet-500 to-purple-600">
-                                        <Bell className="text-white" size={15} />
-                                    </div>
-                                    Notificaciones
-                                </h2>
-                                <div className="space-y-3">
-                                    {[
-                                        { key: 'email', label: 'Por Email', desc: 'Alertas enviadas a tu correo' },
-                                        { key: 'tasks', label: 'Tareas', desc: 'Recordatorios de tareas pendientes' },
-                                        { key: 'updates', label: 'Actualizaciones', desc: 'Novedades del sistema' },
-                                        { key: 'push', label: 'Push Desktop', desc: 'Notificaciones en el navegador' },
-                                    ].map(({ key, label, desc }) => (
-                                        <div key={key} className="flex items-center justify-between p-4 bg-white/60 rounded-2xl border border-(--theme-100) hover:border-(--theme-300) transition-colors">
-                                            <div>
-                                                <p className="font-bold text-(--theme-900) text-sm">{label}</p>
-                                                <p className="text-[10px] text-(--theme-500) font-medium mt-0.5 uppercase tracking-wide">{desc}</p>
-                                            </div>
-                                            <Toggle value={notifs[key]} onChange={v => setNotifs(p => ({ ...p, [key]: v }))} />
+                                        <div className="flex flex-wrap gap-4">
+                                            {THEMES.map((theme) => {
+                                                const isActive = currentThemeId === theme.id;
+                                                return (
+                                                    <button
+                                                        type="button"
+                                                        key={theme.id}
+                                                        onClick={() => setTheme(theme.id)}
+                                                        className={`group relative flex items-center gap-3 p-3 pr-5 rounded-2xl border-2 transition-all ${isActive ? 'bg-white border-(--theme-300) shadow-sm' : 'border-transparent hover:bg-white/50'}`}
+                                                    >
+                                                        {theme.swatch === 'gradient' ? (
+                                                            <div
+                                                                className={`w-8 h-8 rounded-full shadow-sm flex items-center justify-center transition-transform ${isActive ? 'scale-110 ring-2 ring-offset-2 ring-cyan-300' : 'group-hover:scale-110'}`}
+                                                                style={{ backgroundImage: theme.swatchGradient || 'linear-gradient(135deg, #34d399 0%, #22d3ee 50%, #4f46e5 100%)' }}
+                                                            >
+                                                                {isActive && <CheckCircle2 size={16} className="text-white" />}
+                                                            </div>
+                                                        ) : (
+                                                            <div
+                                                                className={`w-8 h-8 rounded-full shadow-sm flex items-center justify-center transition-transform ${isActive ? 'scale-110 ring-2 ring-offset-2' : 'group-hover:scale-110'}`}
+                                                                style={{ backgroundColor: theme.color, ringColor: theme.color }}
+                                                            >
+                                                                {isActive && <CheckCircle2 size={16} className="text-white" />}
+                                                            </div>
+                                                        )}
+                                                        <span className={`text-sm font-semibold ${isActive ? 'text-slate-900' : 'text-slate-600'}`}>
+                                                            {theme.label}
+                                                        </span>
+                                                    </button>
+                                                )
+                                            })}
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </section>
-                    )}
+                                    </div>
+                                </section>
+                            )}
+
+                            {activeTab === 'notificaciones' && (
+                                <section className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-slate-200 overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
+                                    <div className="p-8 sm:p-12 h-full flex flex-col items-center justify-center text-center">
+                                        <div className="relative mb-6">
+                                            <div className="absolute inset-0 bg-(--theme-500)/20 blur-3xl rounded-full" />
+                                            <div className="relative w-20 h-20 rounded-3xl bg-linear-to-br from-(--theme-500) to-(--theme-600) flex items-center justify-center shadow-2xl shadow-(--theme-500)/30 rotate-12">
+                                                <Bell className="text-white animate-bounce" size={40} />
+                                            </div>
+                                            <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-amber-100 border-2 border-white flex items-center justify-center shadow-md">
+                                                <AlertCircle className="text-amber-600" size={16} />
+                                            </div>
+                                        </div>
+                                        
+                                        <h2 className="text-2xl font-black text-slate-800 mb-2">Próximamente</h2>
+                                        <p className="text-slate-500 text-sm max-w-xs leading-relaxed font-medium">
+                                            Estamos trabajando en un sistema de notificaciones inteligente para que no te pierdas nada. 
+                                            <span className="block mt-2 text-(--theme-600) font-bold">¡Disponible muy pronto!</span>
+                                        </p>
+                                        
+                                        <div className="mt-8 flex gap-2">
+                                            <div className="px-3 py-1 rounded-full bg-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest border border-slate-200">
+                                                V2.1 Beta
+                                            </div>
+                                            <div className="px-3 py-1 rounded-full bg-(--theme-50) text-[10px] font-black text-(--theme-600) uppercase tracking-widest border border-(--theme-100)">
+                                                En Desarrollo
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            )}
 
                         </div>
                     </div>

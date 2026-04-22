@@ -791,7 +791,7 @@ const Dashboard = () => {
                             )}
 
                             {healthTab === 'kpis' && (
-                                <div className="flex flex-col gap-6 h-full">
+                                <div className="flex flex-col gap-4 h-full min-h-0">
                                     {/* Fila 1: KPIs de Alto Impacto */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
                                         <MetricKPICard
@@ -858,7 +858,7 @@ const Dashboard = () => {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 flex-1 min-h-0 mt-auto">
                                         {/* Distribución por Fuente */}
-                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col">
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full min-h-0">
                                             <div className="flex items-center gap-2 mb-6 shrink-0">
                                                 <div className="w-10 h-10 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 shadow-xs">
                                                     <Globe className="w-5 h-5" />
@@ -874,7 +874,7 @@ const Dashboard = () => {
                                                     <p className="text-[9px] uppercase font-black tracking-widest">Sin datos de origen</p>
                                                 </div>
                                             ) : (
-                                                <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
+                                                <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
                                                     {Object.entries(analisisFuentesCombinado)
                                                         .sort((a, b) => b[1].revenue - a[1].revenue)
                                                         .map(([fuente, data]) => {
@@ -906,7 +906,7 @@ const Dashboard = () => {
                                         </div>
 
                                         {/* Análisis de Pérdidas (Motivos) */}
-                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col">
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full min-h-0">
                                             <div className="flex items-center gap-2 mb-6 shrink-0">
                                                 <div className="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 shadow-xs">
                                                     <XCircle className="w-5 h-5" />
@@ -922,7 +922,7 @@ const Dashboard = () => {
                                                     <p className="text-[9px] uppercase font-black tracking-widest">Sin datos de descarte</p>
                                                 </div>
                                             ) : (
-                                                <div className="flex-1 overflow-y-auto space-y-5 pr-1 scrollbar-hide">
+                                                <div className="flex-1 overflow-y-auto space-y-5 pr-2 custom-scrollbar">
                                                     {Object.entries(closerData.analisisPerdidasPremium)
                                                         .sort((a, b) => b[1] - a[1])
                                                         .map(([motivo, count]) => {
@@ -948,7 +948,8 @@ const Dashboard = () => {
                                         </div>
 
                                         {/* Espacio para Métricas en Desarrollo (Simplificada y Centrada) */}
-                                        <div className="bg-gray-50/20 border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center text-center opacity-70 group transition-all">
+                                        {/* Espacio para Métricas en Desarrollo */}
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full min-h-0 items-center justify-center text-center opacity-70 group transition-all">
                                             <div className="max-w-[220px]">
                                                 <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] leading-tight mb-2">Métricas en Desarrollo</h3>
                                                 <p className="text-[10px] text-gray-400 font-bold leading-relaxed">

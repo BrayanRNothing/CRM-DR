@@ -398,10 +398,24 @@
 
 /* --- Efecto Premium de Reflejo de Cristal (Elegant Glass Shimmer) --- */
 @keyframes glass-shimmer {
-  0% { transform: translateX(-150%) skewX(-25deg); opacity: 0; }
-  20% { opacity: 1; }
-  50% { transform: translateX(250%) skewX(-25deg); opacity: 0; }
-  100% { transform: translateX(250%) skewX(-25deg); opacity: 0; }
+  0% {
+    transform: translateX(-150%) skewX(-25deg);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  50% {
+    transform: translateX(250%) skewX(-25deg);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(250%) skewX(-25deg);
+    opacity: 0;
+  }
 }
 
 .premium-reflejo {
@@ -416,14 +430,12 @@
   left: 0;
   width: 40%;
   height: 100%;
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(255, 255, 255, 0.05),
-    rgba(255, 255, 255, 0.3),
-    rgba(255, 255, 255, 0.05),
-    transparent
-  );
+  background: linear-gradient(to right,
+      transparent,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.3),
+      rgba(255, 255, 255, 0.05),
+      transparent);
   transform: skewX(-25deg);
   animation: glass-shimmer 8s infinite ease-in-out;
   pointer-events: none;

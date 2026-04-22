@@ -4,7 +4,8 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
     Phone, MessageSquare, Mail, Calendar, CheckCircle2,
-    XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown, Save, History, TrendingUp
+    XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown, Save, History, TrendingUp,
+    CreditCard, Package, FolderOpen, Upload, ArrowRightLeft, BadgeDollarSign, AlertTriangle, RotateCcw, FilePlus
 } from 'lucide-react';
 
 import { getToken, getUser } from '../utils/authUtils';
@@ -12,6 +13,8 @@ import API_URL from '../config/api';
 import TimeWheelPicker from './TimeWheelPicker';
 import HistorialInteracciones from './HistorialInteracciones';
 import PlantillasMensajesModal from './PlantillasMensajesModal';
+import ModulosCliente from './ModulosCliente';
+import KpiRotativas from './KpiRotativas';
 import GmailIcon from '../assets/google-gmail-svgrepo-com.svg';
 
 const ETAPAS_EMBUDO = {
@@ -844,82 +847,20 @@ export default function ClienteDetalle({
                             </div>
                         </div>
 
-                        {/* Estadísticas de Seguimiento */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            {/* Cuadro 1: Antigüedad */}
-                            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Antigüedad</p>
-                                <p className="text-2xl font-black text-(--theme-600)">
-                                    {ClienteSeleccionado.fechaRegistro || ClienteSeleccionado.createdAt 
-                                        ? `${Math.max(1, Math.ceil(Math.abs(new Date() - new Date(ClienteSeleccionado.fechaRegistro || ClienteSeleccionado.createdAt)) / (1000 * 60 * 60 * 24)))} días`
-                                        : 'N/A'}
-                                </p>
-                                <p className="text-[10px] text-gray-400 mt-1">
-                                    {ClienteSeleccionado.fechaRegistro || ClienteSeleccionado.createdAt
-                                        ? `Desde: ${new Date(ClienteSeleccionado.fechaRegistro || ClienteSeleccionado.createdAt).toLocaleDateString('es-MX')}`
-                                        : 'Sin fecha'}
-                                </p>
-                            </div>
-
-                            {/* Cuadro 2: Llamadas (Contestadas / No contestadas) */}
-                            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Llamadas</p>
-                                <div className="flex items-center justify-center gap-1">
-                                    <span className="text-2xl font-black text-(--theme-500)" title="Contestadas">{llamadasExitosas}</span>
-                                    <span className="text-xl font-bold text-slate-300">/</span>
-                                    <span className="text-2xl font-black text-rose-500" title="No contestadas">{llamadasFallidas}</span>
-                                </div>
-                                <p className="text-[10px] text-gray-400 mt-1 font-bold italic">Si / No contestó</p>
-                            </div>
-
-                            {/* Cuadro 3: Reuniones Realizadas */}
-                            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Reuniones</p>
-                                <p className="text-3xl font-black text-(--theme-500)">
-                                    {actividadesContext.filter(a => a.tipo === 'cita' && a.resultado === 'exitoso').length}
-                                </p>
-                                <p className="text-[10px] text-gray-400 mt-1 font-bold">Realizadas</p>
-                            </div>
-
-                            {/* Cuadro 4: Valor del Cliente (Editable) */}
-                            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center relative min-h-[100px] overflow-hidden group">
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Valor del Cliente</p>
-                                
-                                <div className="flex items-center justify-center gap-1 w-full">
-                                    <div className="flex items-center gap-0.5 px-2 py-1 rounded-xl bg-white focus-within:bg-slate-50 transition-colors border border-transparent focus-within:border-slate-200">
-                                        <span className="text-xl font-black text-(--theme-600) opacity-50">$</span>
-                                        <input
-                                            type="text"
-                                            value={valorCliente}
-                                            onChange={(e) => {
-                                                const val = e.target.value.replace(/[^0-9.,]/g, '');
-                                                setValorCliente(val);
-                                            }}
-                                            onBlur={handleGuardarMetricaPersonalizada}
-                                            placeholder="0.00"
-                                            className="text-2xl font-black text-(--theme-600) bg-transparent border-none text-center outline-none focus:ring-0 p-0"
-                                            style={{ width: `${Math.max((valorCliente || '').length, 4)}ch`, minWidth: '4ch', maxWidth: '14ch' }}
-                                        />
-                                        
-                                        <div className="relative flex items-center bg-slate-50 border border-slate-100 rounded-md px-1 py-0.5 group/moneda hover:bg-white transition-all cursor-pointer ml-1">
-                                            <select
-                                                value={monedaSeleccionada}
-                                                onChange={(e) => setMonedaSeleccionada(e.target.value)}
-                                                onBlur={handleGuardarMetricaPersonalizada}
-                                                className="text-[9px] font-black text-slate-400 bg-transparent border-none appearance-none cursor-pointer outline-none focus:ring-0 p-0 pr-3 uppercase"
-                                            >
-                                                <option value="MXN">MXN</option>
-                                                <option value="USD">USD</option>
-                                            </select>
-                                            <ChevronDown className="w-2 h-2 text-slate-300 absolute right-0.5 group-hover/moneda:text-(--theme-500) transition-colors pointer-events-none" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <p className="text-[10px] text-gray-400 mt-1 font-bold">
-                                    {guardandoMetrica ? 'Guardando...' : 'Monto total'}
-                                </p>
-                            </div>
-                        </div>
+                        {/* ==================== KPIs ROTATIVAS ==================== */}
+                        <KpiRotativas
+                            ClienteSeleccionado={ClienteSeleccionado}
+                            actividadesContext={actividadesContext}
+                            llamadasExitosas={llamadasExitosas}
+                            llamadasFallidas={llamadasFallidas}
+                            valorCliente={valorCliente}
+                            setValorCliente={setValorCliente}
+                            monedaSeleccionada={monedaSeleccionada}
+                            setMonedaSeleccionada={setMonedaSeleccionada}
+                            guardandoMetrica={guardandoMetrica}
+                            handleGuardarMetricaPersonalizada={handleGuardarMetricaPersonalizada}
+                            customSections={customSections}
+                        />
 
 
                         {/* ==================== ÁRBOL DE LLAMADA ==================== */}
@@ -1083,111 +1024,16 @@ export default function ClienteDetalle({
                             </div>
 
                             {/* ==================== MÓDULOS / SECCIONES PERSONALIZADAS ==================== */}
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
-                                {customSections.map(seccion => (
-                                    <div key={seccion.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm group flex flex-col h-full min-h-[140px]">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="flex items-center gap-2 flex-1 group/title relative">
-                                                <input
-                                                    type="text"
-                                                    value={seccion.titulo}
-                                                    onChange={e => updateSeccion(seccion.id, 'titulo', e.target.value)}
-                                                    onBlur={commitSecciones}
-                                                    className="font-bold text-gray-800 text-sm bg-transparent border-none outline-none focus:ring-1 focus:ring-slate-100 rounded px-1 -ml-1 w-full hover:bg-slate-50 transition-colors cursor-text"
-                                                    placeholder="Título del módulo"
-                                                />
-                                                <Edit2 className="w-3 h-3 text-slate-300 opacity-0 group-hover/title:opacity-100 transition-opacity pointer-events-none" />
-                                            </div>
-                                            <button
-                                                onClick={() => deleteSeccion(seccion.id)}
-                                                className="p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all ml-2"
-                                                title="Eliminar módulo"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-
-                                        <div className="flex-1">
-                                            {seccion.tipo === 'note' && (
-                                                <textarea
-                                                    value={seccion.contenido}
-                                                    onChange={e => updateSeccion(seccion.id, 'contenido', e.target.value)}
-                                                    onBlur={commitSecciones}
-                                                    className="w-full bg-slate-50 border border-slate-100 rounded-lg p-3 text-xs focus:ring-1 focus:ring-(--theme-300) outline-none resize-none h-full min-h-[100px]"
-                                                    placeholder="Escribe tus notas aquí..."
-                                                />
-                                            )}
-
-                                            {seccion.tipo === 'list' && (
-                                                <div className="space-y-2">
-                                                    {seccion.contenido.map((item, idx) => (
-                                                        <div key={idx} className="flex items-center gap-2">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={item.checked}
-                                                                onChange={e => {
-                                                                    const newCont = [...seccion.contenido];
-                                                                    newCont[idx].checked = e.target.checked;
-                                                                    updateSeccion(seccion.id, 'contenido', newCont);
-                                                                    commitSecciones();
-                                                                }}
-                                                                className="w-4 h-4 text-(--theme-500) rounded border-slate-300 focus:ring-(--theme-500)"
-                                                            />
-                                                            <input
-                                                                type="text"
-                                                                value={item.text}
-                                                                onChange={e => {
-                                                                    const newCont = [...seccion.contenido];
-                                                                    newCont[idx].text = e.target.value;
-                                                                    updateSeccion(seccion.id, 'contenido', newCont);
-                                                                }}
-                                                                onBlur={commitSecciones}
-                                                                className={`flex-1 text-xs bg-transparent border-none outline-none focus:ring-1 focus:ring-slate-100 rounded px-1 py-0.5 ${item.checked ? 'line-through text-slate-400' : 'text-slate-700'}`}
-                                                                placeholder="Elemento de lista"
-                                                            />
-                                                            <button
-                                                                onClick={() => {
-                                                                    const newCont = seccion.contenido.filter((_, i) => i !== idx);
-                                                                    updateSeccion(seccion.id, 'contenido', newCont);
-                                                                    commitSecciones();
-                                                                }}
-                                                                className="p-1 text-slate-300 hover:text-red-500"
-                                                            >
-                                                                <X className="w-3 h-3" />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                    <button
-                                                        onClick={() => {
-                                                            const newCont = [...seccion.contenido, { text: '', checked: false }];
-                                                            updateSeccion(seccion.id, 'contenido', newCont);
-                                                        }}
-                                                        className="text-[10px] text-(--theme-600) hover:text-(--theme-700) font-bold flex items-center gap-1 mt-2 uppercase tracking-wider"
-                                                    >
-                                                        <Plus className="w-3 h-3" /> Añadir elemento
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-
-                                {/* Botón para agregar nueva sección */}
-                                <div className={`${customSections.length % 2 === 0 ? 'xl:col-span-2' : ''}`}>
-                                    <button
-                                        onClick={() => setModalNuevaSeccion(true)}
-                                        className="w-full group flex flex-col items-center justify-center gap-4 p-8 bg-slate-50 hover:bg-(--theme-50)/30 border-2 border-dashed border-slate-200 hover:border-(--theme-400) rounded-2xl transition-all duration-300 min-h-[140px] h-full"
-                                    >
-                                        <div className="w-12 h-12 flex items-center justify-center bg-white rounded-full shadow-sm text-slate-400 group-hover:text-(--theme-500) group-hover:scale-110 transition-all border border-slate-100">
-                                            <Plus className="w-6 h-6" />
-                                        </div>
-                                        <div className="text-center">
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-(--theme-600) transition-colors">Añadir Módulo</p>
-                                            <p className="text-[9px] text-slate-400 mt-1">Notas libres o Checklists</p>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
+                            <ModulosCliente
+                                customSections={customSections}
+                                updateSeccion={updateSeccion}
+                                commitSecciones={commitSecciones}
+                                deleteSeccion={deleteSeccion}
+                                onAgregar={() => setModalNuevaSeccion(true)}
+                                clienteId={pid}
+                                rolePath={rolePath}
+                                handleGuardarSeccionesPersonalizadas={handleGuardarSeccionesPersonalizadas}
+                            />
                         </div>
                     </div>
 
@@ -1847,58 +1693,78 @@ export default function ClienteDetalle({
             {/* MODAL NUEVA SECCIÓN */}
             {modalNuevaSeccion && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
                         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                            <h2 className="text-base font-bold text-gray-900">Añadir Nuevo Módulo</h2>
+                            <div>
+                                <h2 className="text-base font-bold text-gray-900">Añadir Módulo al Cliente</h2>
+                                <p className="text-[10px] text-slate-400 mt-0.5">Elige el tipo de información a registrar</p>
+                            </div>
                             <button onClick={() => setModalNuevaSeccion(false)} className="p-1.5 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="p-5 grid grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div className="p-5 grid grid-cols-2 gap-3">
+                            {/* Módulos estructurados */}
                             <button
-                                onClick={() => addSeccion('list', '💰 Historial de Pagos / Ventas')}
-                                className="flex flex-col items-center gap-2 p-4 border border-slate-200 hover:border-green-400 hover:bg-green-50 rounded-xl transition-all group"
+                                onClick={() => { addSeccion('payments', 'Estado de Pagos'); setModalNuevaSeccion(false); }}
+                                className="flex flex-col items-center gap-2 p-4 border-2 border-green-100 hover:border-green-400 hover:bg-green-50 rounded-xl transition-all group"
                             >
-                                <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg text-slate-500 group-hover:text-green-600 transition-colors">
-                                    <DollarSign className="w-6 h-6" />
+                                <div className="p-2.5 bg-green-50 group-hover:bg-white rounded-xl text-green-600 transition-colors">
+                                    <CreditCard className="w-6 h-6" />
                                 </div>
-                                <span className="text-sm font-semibold text-gray-700 text-center leading-tight">Pagos y<br/>Ventas</span>
+                                <div className="text-center">
+                                    <p className="text-sm font-bold text-gray-800">Estado de Pagos</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">Registro de cobros y abonos</p>
+                                </div>
                             </button>
                             <button
-                                onClick={() => addSeccion('note', '🔄 Detalles de la Suscripción')}
-                                className="flex flex-col items-center gap-2 p-4 border border-slate-200 hover:border-blue-400 hover:bg-blue-50 rounded-xl transition-all group"
+                                onClick={() => { addSeccion('contracts', 'Baúl de Contratos'); setModalNuevaSeccion(false); }}
+                                className="flex flex-col items-center gap-2 p-4 border-2 border-purple-100 hover:border-purple-400 hover:bg-purple-50 rounded-xl transition-all group"
                             >
-                                <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg text-slate-500 group-hover:text-blue-600 transition-colors">
-                                    <RefreshCw className="w-6 h-6" />
+                                <div className="p-2.5 bg-purple-50 group-hover:bg-white rounded-xl text-purple-600 transition-colors">
+                                    <FolderOpen className="w-6 h-6" />
                                 </div>
-                                <span className="text-sm font-semibold text-gray-700 text-center leading-tight">Gestión de<br/>Suscripción</span>
+                                <div className="text-center">
+                                    <p className="text-sm font-bold text-gray-800">Baúl de Contratos</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">PDFs y fechas de vencimiento</p>
+                                </div>
                             </button>
                             <button
-                                onClick={() => addSeccion('note', '📝 Notas del Contrato')}
-                                className="flex flex-col items-center gap-2 p-4 border border-slate-200 hover:border-purple-400 hover:bg-purple-50 rounded-xl transition-all group"
+                                onClick={() => { addSeccion('products', 'Historial de Productos'); setModalNuevaSeccion(false); }}
+                                className="flex flex-col items-center gap-2 p-4 border-2 border-blue-100 hover:border-blue-400 hover:bg-blue-50 rounded-xl transition-all group"
                             >
-                                <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg text-slate-500 group-hover:text-purple-600 transition-colors">
+                                <div className="p-2.5 bg-blue-50 group-hover:bg-white rounded-xl text-blue-600 transition-colors">
+                                    <Package className="w-6 h-6" />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-sm font-bold text-gray-800">Productos Vendidos</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">Historial de compras</p>
+                                </div>
+                            </button>
+                            {/* Módulos genéricos */}
+                            <button
+                                onClick={() => { addSeccion('note'); setModalNuevaSeccion(false); }}
+                                className="flex flex-col items-center gap-2 p-4 border-2 border-slate-100 hover:border-(--theme-300) hover:bg-(--theme-50) rounded-xl transition-all group"
+                            >
+                                <div className="p-2.5 bg-slate-50 group-hover:bg-white rounded-xl text-slate-500 group-hover:text-(--theme-600) transition-colors">
                                     <FileText className="w-6 h-6" />
                                 </div>
-                                <span className="text-sm font-semibold text-gray-700 text-center leading-tight">Notas de<br/>Contratos</span>
+                                <div className="text-center">
+                                    <p className="text-sm font-bold text-gray-800">Notas libres</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">Texto personalizado</p>
+                                </div>
                             </button>
                             <button
-                                onClick={() => addSeccion('note')}
-                                className="flex flex-col items-center gap-2 p-4 border border-slate-200 hover:border-(--theme-400) hover:bg-(--theme-50) rounded-xl transition-all group"
+                                onClick={() => { addSeccion('list'); setModalNuevaSeccion(false); }}
+                                className="col-span-2 flex items-center justify-center gap-3 p-3 border-2 border-slate-100 hover:border-(--theme-300) hover:bg-(--theme-50) rounded-xl transition-all group"
                             >
-                                <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg text-slate-500 group-hover:text-(--theme-600) transition-colors">
-                                    <FileText className="w-6 h-6" />
+                                <div className="p-2 bg-slate-50 group-hover:bg-white rounded-xl text-slate-500 group-hover:text-(--theme-600) transition-colors">
+                                    <CheckCircle2 className="w-5 h-5" />
                                 </div>
-                                <span className="text-sm font-semibold text-gray-700">Notas libres</span>
-                            </button>
-                            <button
-                                onClick={() => addSeccion('list')}
-                                className="flex flex-col items-center gap-2 p-4 border border-slate-200 hover:border-(--theme-400) hover:bg-(--theme-50) rounded-xl transition-all group"
-                            >
-                                <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg text-slate-500 group-hover:text-(--theme-600) transition-colors">
-                                    <CheckCircle2 className="w-6 h-6" />
+                                <div className="text-left">
+                                    <p className="text-sm font-bold text-gray-800">Lista de verificación</p>
+                                    <p className="text-[10px] text-slate-400">Checklist de tareas o ítems</p>
                                 </div>
-                                <span className="text-sm font-semibold text-gray-700">Lista simple</span>
                             </button>
                         </div>
                     </div>

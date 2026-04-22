@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import socket from '../config/socket';
 import {
     Phone, MessageSquare, Mail, Calendar, CheckCircle2,
-    XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown, VideoIcon, Save, History
+    XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown, VideoIcon, Save, History, Target
 } from 'lucide-react';
 
 import { getToken, getUser } from '../utils/authUtils';
@@ -743,12 +743,6 @@ export default function ProspectoDetalle({
                                                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEtapaColor(prospectoSeleccionado.etapaEmbudo)}`}>
                                                         {getEtapaLabel(prospectoSeleccionado.etapaEmbudo)}
                                                     </span>
-                                                    {(prospectoSeleccionado.fuente || prospectoSeleccionado.origen) && (
-                                                        <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-500 border border-indigo-100">
-                                                            <Globe className="w-3 h-3" />
-                                                            {prospectoSeleccionado.fuente || prospectoSeleccionado.origen}
-                                                        </span>
-                                                    )}
                                                     <button
                                                         onClick={() => setEditandoEtapa(true)}
                                                         className="p-1 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded transition-all"
@@ -864,6 +858,21 @@ export default function ProspectoDetalle({
                                                     >
                                                         {prospectoSeleccionado.sitioWeb.replace(/^https?:\/\//, '')}
                                                     </a>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Origen / Fuente */}
+                                        {(prospectoSeleccionado.fuente || prospectoSeleccionado.origen) && (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-7 flex items-center justify-center text-slate-400 shrink-0">
+                                                    <Target className="w-3.5 h-3.5" />
+                                                </div>
+                                                <div className="flex flex-col overflow-hidden">
+                                                    <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Origen</span>
+                                                    <span className="text-xs font-bold text-slate-700 truncate">
+                                                        {prospectoSeleccionado.fuente || prospectoSeleccionado.origen}
+                                                    </span>
                                                 </div>
                                             </div>
                                         )}

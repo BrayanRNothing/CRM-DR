@@ -43,6 +43,11 @@ app.use(express.urlencoded({ extended: true }));
 
 
 
+// ✅ Servir archivos subidos (contratos PDF) antes de cualquier otra ruta
+const uploadsPath = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsPath)) fs.mkdirSync(uploadsPath, { recursive: true });
+app.use('/archivos', express.static(uploadsPath));
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/usuarios', require('./routes/usuarios'));
@@ -57,7 +62,9 @@ app.use('/api/vendedor', require('./routes/vendedor'));
 app.use('/api/google', require('./routes/google'));
 app.use('/api/equipos', require('./routes/equipos'));
 app.use('/api/plantillas', require('./routes/plantillas'));
+app.use('/api/documentos', require('./routes/documentos'));
 console.log('🚀 Rutas registradas correctamente');
+
 
 // Ruta de prueba API
 app.get('/api', (req, res) => {
