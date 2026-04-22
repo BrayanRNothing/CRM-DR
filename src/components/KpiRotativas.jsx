@@ -48,25 +48,25 @@ export default function KpiRotativas({
         ?.flatMap(s => s.contenido || [])
         ?.reduce((sum, p) => sum + (parseInt(p.cantidad) || 1), 0) || 0;
 
+    const ToggleButton = () => (
+        <button
+            onClick={() => setMostrarNuevasKpis(!mostrarNuevasKpis)}
+            className="absolute top-2 right-2 p-1 text-slate-300 hover:text-(--theme-600) hover:bg-(--theme-50) rounded-lg transition-all z-20 group-hover:opacity-100 opacity-40"
+            title={mostrarNuevasKpis ? 'Ver Seguimiento' : 'Ver Finanzas'}
+        >
+            <ArrowRightLeft className="w-3.5 h-3.5" />
+        </button>
+    );
+
     return (
         <div className="relative">
-            {/* Botón Switcher (Solo aparece si hay datos en los nuevos módulos) */}
-            {tieneModulosData && (
-                <button
-                    onClick={() => setMostrarNuevasKpis(!mostrarNuevasKpis)}
-                    className="absolute -top-10 right-0 flex items-center gap-1.5 px-3 py-1.5 bg-(--theme-50) hover:bg-(--theme-100) text-(--theme-700) rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors border border-(--theme-200) z-10 shadow-sm"
-                >
-                    <ArrowRightLeft className="w-3.5 h-3.5" />
-                    {mostrarNuevasKpis ? 'Ver Seguimiento' : 'Ver Finanzas'}
-                </button>
-            )}
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 relative overflow-hidden">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 relative overflow-hidden min-h-[110px]">
                 {/* SET 1: SEGUIMIENTO TRADICIONAL */}
                 <div className={`col-span-4 grid grid-cols-2 sm:grid-cols-4 gap-3 transition-all duration-500 ease-in-out ${mostrarNuevasKpis ? 'absolute inset-0 opacity-0 pointer-events-none translate-x-full' : 'opacity-100 translate-x-0'}`}>
                     
                     {/* Cuadro 1: Antigüedad */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center relative group">
+                        {tieneModulosData && <ToggleButton />}
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Antigüedad</p>
                         <p className="text-2xl font-black text-(--theme-600)">
                             {ClienteSeleccionado?.fechaRegistro || ClienteSeleccionado?.createdAt 
@@ -81,7 +81,8 @@ export default function KpiRotativas({
                     </div>
 
                     {/* Cuadro 2: Llamadas */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center relative group">
+                        {tieneModulosData && <ToggleButton />}
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Llamadas</p>
                         <div className="flex items-center justify-center gap-1">
                             <span className="text-2xl font-black text-(--theme-500)" title="Contestadas">{llamadasExitosas}</span>
@@ -92,7 +93,8 @@ export default function KpiRotativas({
                     </div>
 
                     {/* Cuadro 3: Reuniones */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center relative group">
+                        {tieneModulosData && <ToggleButton />}
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Reuniones</p>
                         <p className="text-3xl font-black text-(--theme-500)">
                             {actividadesContext?.filter(a => a.tipo === 'cita' && a.resultado === 'exitoso').length || 0}
@@ -102,6 +104,7 @@ export default function KpiRotativas({
 
                     {/* Cuadro 4: Valor del Cliente (Editable) */}
                     <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center relative min-h-[100px] overflow-hidden group">
+                        {tieneModulosData && <ToggleButton />}
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Valor Estimado</p>
                         <div className="flex items-center justify-center gap-1 w-full">
                             <div className="flex items-center gap-0.5 px-2 py-1 rounded-xl bg-white focus-within:bg-slate-50 transition-colors border border-transparent focus-within:border-slate-200">
@@ -140,7 +143,8 @@ export default function KpiRotativas({
                     <div className={`col-span-4 grid grid-cols-2 sm:grid-cols-4 gap-3 transition-all duration-500 ease-in-out ${!mostrarNuevasKpis ? 'absolute inset-0 opacity-0 pointer-events-none -translate-x-full' : 'opacity-100 translate-x-0'}`}>
                         
                         {/* Cuadro 1: Total Facturado */}
-                        <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
+                        <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center relative group">
+                            <ToggleButton />
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Total Facturado</p>
                             <p className="text-2xl font-black text-green-600 flex items-center justify-center gap-1">
                                 <span className="opacity-50 text-xl">$</span>{totalFacturado.toLocaleString()}
@@ -151,7 +155,8 @@ export default function KpiRotativas({
                         </div>
 
                         {/* Cuadro 2: Pagos Pendientes */}
-                        <div className={`bg-white border rounded-xl p-4 text-center shadow-sm flex flex-col justify-center ${cantidadPendientes > 0 ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200'}`}>
+                        <div className={`bg-white border rounded-xl p-4 text-center shadow-sm flex flex-col justify-center relative group ${cantidadPendientes > 0 ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200'}`}>
+                            <ToggleButton />
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Por Cobrar</p>
                             <p className={`text-2xl font-black ${cantidadPendientes > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
                                 <span className="opacity-50 text-xl">$</span>{montoPendiente.toLocaleString()}
@@ -163,7 +168,8 @@ export default function KpiRotativas({
                         </div>
 
                         {/* Cuadro 3: Contratos */}
-                        <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
+                        <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center relative group">
+                            <ToggleButton />
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Contratos</p>
                             <p className="text-3xl font-black text-purple-600">
                                 {contratosActivos}
@@ -172,7 +178,8 @@ export default function KpiRotativas({
                         </div>
 
                         {/* Cuadro 4: Productos */}
-                        <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
+                        <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center relative group">
+                            <ToggleButton />
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Productos</p>
                             <p className="text-3xl font-black text-blue-600">
                                 {totalProductos}
