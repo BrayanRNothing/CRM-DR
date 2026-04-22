@@ -377,10 +377,8 @@ export default function ClienteDetalle({
         if (act.tipo === 'whatsapp') return { icon: '💬', color: 'bg-green-500', label: 'WhatsApp' };
         if (act.tipo === 'cliente') return { icon: '🏆', color: 'bg-yellow-500', label: 'Convertido a cliente' };
         if (act.tipo === 'descartado') return { icon: '🗑️', color: 'bg-gray-400', label: 'Descartado' };
-        if (act.tipo === 'venta') {
-            if (act.descripcion?.includes('Suscripción')) return { icon: '🔁', color: 'bg-violet-500', label: act.descripcion };
-            return { icon: '🛒', color: 'bg-emerald-500', label: act.descripcion || 'Venta registrada' };
-        }
+        if (act.tipo === 'venta') return { icon: '🛒', color: 'bg-emerald-500', label: act.descripcion || 'Venta registrada' };
+        if (act.tipo === 'suscripcion') return { icon: '🔁', color: 'bg-violet-500', label: act.descripcion || 'Suscripción registrada' };
         return { icon: '📝', color: 'bg-slate-400', label: act.tipo || 'Interacción' };
     };
     const getResultadoTexto = (act) => {
@@ -541,7 +539,7 @@ export default function ClienteDetalle({
         try {
             const desc = `${ventaForm.tipo === 'venta' ? '🛒 Venta' : '🔁 Suscripción'}: ${ventaForm.descripcion}${ventaForm.monto ? ` — $${ventaForm.monto}` : ''}${ventaForm.notas ? ` · ${ventaForm.notas}` : ''}`;
             await registrarActividad({
-                tipo: 'venta',
+                tipo: ventaForm.tipo === 'suscripcion' ? 'suscripcion' : 'venta',
                 resultado: 'exitoso',
                 descripcion: desc,
                 notas: ventaForm.notas

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const actividadSchema = new mongoose.Schema({
     tipo: {
         type: String,
-        enum: ['llamada', 'mensaje', 'correo', 'whatsapp', 'cita', 'prospecto'],
+        enum: ['llamada', 'mensaje', 'correo', 'whatsapp', 'cita', 'prospecto', 'venta', 'suscripcion'],
         required: [true, 'El tipo de actividad es requerido']
     },
     vendedor: {
