@@ -124,6 +124,10 @@ export default function ClienteDetalle({
     });
     const [modalNuevaSeccion, setModalNuevaSeccion] = useState(false);
     const [drawerHistorialAbierto, setDrawerHistorialAbierto] = useState(false);
+    const [mostrarNotasDefault, setMostrarNotasDefault] = useState(() => {
+        const saved = localStorage.getItem('crm_mostrar_notas_default');
+        return saved === null ? true : saved === 'true';
+    });
 
     // Solo actualizar estado local al recibir nuevos datos
     useEffect(() => {
@@ -325,6 +329,12 @@ export default function ClienteDetalle({
         const updated = customSections.filter(s => s.id !== id);
         setCustomSections(updated);
         handleGuardarSeccionesPersonalizadas(updated);
+    };
+
+    const toggleNotasDefault = () => {
+        const newValue = !mostrarNotasDefault;
+        setMostrarNotasDefault(newValue);
+        localStorage.setItem('crm_mostrar_notas_default', newValue.toString());
     };
 
     const setClientes = () => {
@@ -917,11 +927,21 @@ export default function ClienteDetalle({
                                 </button>
                             </div>
 
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                            <div className={`grid grid-cols-1 ${mostrarNotasDefault ? 'xl:grid-cols-2' : ''} gap-4`}>
                                 <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-2 shadow-sm relative max-h-[280px]">
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        <Bell className="w-3.5 h-3.5 text-(--theme-500)" />
-                                        <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Recordatorios</p>
+                                    <div className="flex items-center justify-between gap-2 shrink-0">
+                                        <div className="flex items-center gap-2">
+                                            <Bell className="w-3.5 h-3.5 text-(--theme-500)" />
+                                            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Recordatorios</p>
+                                        </div>
+                                        {!mostrarNotasDefault && (
+                                            <button 
+                                                onClick={toggleNotasDefault}
+                                                className="text-[9px] font-bold text-(--theme-600) hover:text-(--theme-700) flex items-center gap-1 bg-(--theme-50) px-2 py-1 rounded-lg transition-colors"
+                                            >
+                                                <FileText className="w-3 h-3" /> Mostrar Notas
+                                            </button>
+                                        )}
                                     </div>
 
                                     {/* Contenido con altura fija y scroll */}
@@ -935,8 +955,8 @@ export default function ClienteDetalle({
                                                     <div key={`cita-${alerta.id}`} className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
                                                         <div className="flex items-center justify-between gap-2">
                                                             <div className="flex items-center gap-2">
-                                                                <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                                                                <p className="text-xs font-semibold text-blue-900">Reunión agendada</p>
+                                                                 <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                                                                 <p className="text-xs font-semibold text-blue-900">Reunión agendada</p>
                                                             </div>
                                                             <p className="text-[10px] text-gray-400 shrink-0">
                                                                 {new Date(fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
@@ -1026,26 +1046,40 @@ export default function ClienteDetalle({
                                     )}
                                 </div>
 
-                                {/* ========= CUADRO DE NOTAS EDITABLE ========= */}
-                                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col h-full">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Notas del Cliente</p>
-                                        <button
-                                            onClick={handleGuardarNotasRapidas}
-                                            disabled={loadingNotas}
-                                            className={`p-1.5 rounded-lg transition-colors ${notasRapidas !== (ClienteSeleccionado?.notas || '') ? 'bg-(--theme-500) text-white hover:bg-(--theme-600) shadow-sm' : 'text-slate-300 hover:bg-slate-50'}`}
-                                            title="Guardar notas"
-                                        >
-                                            <Save className="w-3.5 h-3.5" />
-                                        </button>
+                                {/* ========= CUADRO DE NOTAS EDITABLE (Desactivable) ========= */}
+                                {mostrarNotasDefault && (
+                                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="w-3.5 h-3.5 text-slate-400" />
+                                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Notas del Cliente</p>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    onClick={handleGuardarNotasRapidas}
+                                                    disabled={loadingNotas}
+                                                    className={`p-1.5 rounded-lg transition-colors ${notasRapidas !== (ClienteSeleccionado?.notas || '') ? 'bg-(--theme-500) text-white hover:bg-(--theme-600) shadow-sm' : 'text-slate-300 hover:bg-slate-50'}`}
+                                                    title="Guardar notas"
+                                                >
+                                                    <Save className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                    onClick={toggleNotasDefault}
+                                                    className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                                                    title="Desactivar sección de notas"
+                                                >
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <textarea
+                                            value={notasRapidas}
+                                            onChange={(e) => setNotasRapidas(e.target.value)}
+                                            placeholder="Escribe notas importantes aquí..."
+                                            className="w-full flex-1 bg-slate-50/50 border border-slate-100 rounded-lg p-3 text-sm focus:ring-2 focus:ring-(--theme-400)/20 focus:border-(--theme-400) outline-none resize-none scrollbar-hide mt-3"
+                                        />
                                     </div>
-                                    <textarea
-                                        value={notasRapidas}
-                                        onChange={(e) => setNotasRapidas(e.target.value)}
-                                        placeholder="Escribe notas importantes aquí..."
-                                        className="w-full flex-1 bg-slate-50/50 border border-slate-100 rounded-lg p-3 text-sm focus:ring-2 focus:ring-(--theme-400)/20 focus:border-(--theme-400) outline-none resize-none scrollbar-hide mt-3"
-                                    />
-                                </div>
+                                )}
                             </div>
 
                             {/* ==================== MÓDULOS / SECCIONES PERSONALIZADAS ==================== */}
