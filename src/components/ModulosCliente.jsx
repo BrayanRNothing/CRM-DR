@@ -56,7 +56,7 @@ export default function ModulosCliente({
             const res = await axios.post(`${API_URL}/api/documentos/upload`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
-                    ...getToken()
+                    'x-auth-token': getToken()
                 }
             });
 
