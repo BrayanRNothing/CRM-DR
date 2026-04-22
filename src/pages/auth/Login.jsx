@@ -281,7 +281,7 @@ const Login = () => {
               {/* Top Right: Status Box (Subtle) */}
               <div className="absolute -top-4 -right-4 md:-top-6 md:-right-6 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200/50 bg-white/30 backdrop-blur-sm opacity-60 hover:opacity-100 transition-opacity z-30">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">SoloMyCRM V15</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">SoloMyCRM V15 Beta</span>
               </div>
             </div>
 
@@ -318,7 +318,10 @@ const Login = () => {
                     <img src={logosolomycrm} alt="SoloMyCRM" className="w-full h-full object-contain relative z-10 drop-shadow-[0_10px_10px_rgba(0,0,0,0.05)] transition-transform duration-500 group-hover:scale-110" />
                   </div>
                   <div className="text-center">
-                    <h2 className="text-3xl font-black tracking-tighter text-(--theme-600) leading-tight">Inicia sesión</h2>
+                    <h2 className="text-3xl font-black tracking-tighter text-(--theme-600) leading-tight flex items-center gap-3">
+                      Inicia sesión
+                      <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200 uppercase tracking-widest font-black">Beta</span>
+                    </h2>
 
                   </div>
                 </div>

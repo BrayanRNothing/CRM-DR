@@ -87,7 +87,7 @@ const LoginMobile = () => {
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">En línea</span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Beta</span>
           </div>
         </div>
         {/* Secciones en fila scrollable */}
@@ -134,7 +134,11 @@ const LoginMobile = () => {
         >
 
           <h1 className="text-3xl font-black tracking-tighter text-slate-900 leading-tight">
-            Bienvenido de <br /><span style={{ color: 'var(--theme-600)' }}>vuelta.</span>
+            Bienvenido de <br />
+            <div className="flex items-center gap-3">
+              <span style={{ color: 'var(--theme-600)' }}>vuelta.</span>
+              <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200 uppercase tracking-widest font-black">Beta</span>
+            </div>
           </h1>
         </motion.div>
 
