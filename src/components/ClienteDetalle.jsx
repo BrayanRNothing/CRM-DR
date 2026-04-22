@@ -422,6 +422,8 @@ export default function ClienteDetalle({
 
     const totalAlertas = alertasOrdenadas.length;
 
+
+
     const registrarActividad = async (payload) => {
         // Guardia anti-doble envío: checkea tanto ref como lockout timer
         const now = Date.now();
@@ -927,131 +929,24 @@ export default function ClienteDetalle({
                                 </button>
                             </div>
 
-                            <div className={`grid grid-cols-1 ${mostrarNotasDefault ? 'xl:grid-cols-2' : ''} gap-4`}>
-                                <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-2 shadow-sm relative max-h-[280px]">
-                                    <div className="flex items-center justify-between gap-2 shrink-0">
-                                        <div className="flex items-center gap-2">
-                                            <Bell className="w-3.5 h-3.5 text-(--theme-500)" />
-                                            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Recordatorios</p>
-                                        </div>
-                                        {!mostrarNotasDefault && (
-                                            <button 
-                                                onClick={toggleNotasDefault}
-                                                className="text-[9px] font-bold text-(--theme-600) hover:text-(--theme-700) flex items-center gap-1 bg-(--theme-50) px-2 py-1 rounded-lg transition-colors"
-                                            >
-                                                <FileText className="w-3 h-3" /> Mostrar Notas
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* Contenido con altura fija y scroll */}
-                                    <div className="overflow-y-auto hide-scrollbar flex flex-col gap-2 shrink-0" style={{ maxHeight: '200px', height: '200px' }}>
-
-                                        {alertasOrdenadas.map((alerta) => {
-                                            if (alerta.tipo === 'cita') {
-                                                const cita = alerta.data;
-                                                const fechaCita = cita.fechaCita || cita.fecha;
-                                                return (
-                                                    <div key={`cita-${alerta.id}`} className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <div className="flex items-center gap-2">
-                                                                 <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                                                                 <p className="text-xs font-semibold text-blue-900">Reunión agendada</p>
-                                                            </div>
-                                                            <p className="text-[10px] text-gray-400 shrink-0">
-                                                                {new Date(fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="flex gap-1.5">
-                                                            <button
-                                                                onClick={() => handleMarcarCitaRealizada(cita)}
-                                                                disabled={loadingCitaId === cita.id}
-                                                                title="Marcar como realizada"
-                                                                className="flex-1 flex items-center justify-center gap-1.5 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded py-1.5 text-[10px] font-bold transition-colors disabled:opacity-50"
-                                                            >
-                                                                <CheckCircle2 className="w-3 h-3" />
-                                                                {loadingCitaId === cita.id ? '...' : 'Realizada'}
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setModalCita({ abierto: true, cita, editando: false })}
-                                                                className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
-                                                                title="Ver"
-                                                            >
-                                                                <Eye className="w-3.5 h-3.5" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setEditDataCita({ fecha: fechaCita, notas: cita.notas || '' });
-                                                                    setModalCita({ abierto: true, cita, editando: true });
-                                                                }}
-                                                                className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
-                                                                title="Editar"
-                                                            >
-                                                                <Edit2 className="w-3.5 h-3.5" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDescartarCita(cita)}
-                                                                className="flex items-center justify-center bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded px-2 py-1.5 transition-colors shadow-sm"
-                                                                title="Descartar"
-                                                            >
-                                                                <Trash2 className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-
-                                            const rec = alerta.data;
-                                            return (
-                                                <div key={`rec-${alerta.id}`} className="bg-(--theme-50) border border-(--theme-100) rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
-                                                    <div className="flex justify-between items-start gap-2">
-                                                        <p className="text-[10px] font-bold text-(--theme-700) bg-white/50 px-1.5 py-0.5 rounded border border-(--theme-100)">
-                                                            📌 {new Date(rec.fechaLimite).toLocaleDateString()} - {new Date(rec.fechaLimite).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </p>
-                                                    </div>
-                                                    {rec.descripcion && (
-                                                        <p className="text-[10px] text-slate-500 italic">{rec.descripcion}</p>
-                                                    )}
-                                                    <div className="flex gap-1.5">
-                                                        <button
-                                                            onClick={() => handleEditarRecordatorio(rec)}
-                                                            className="flex-1 flex items-center justify-center gap-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded py-1.5 text-[10px] font-bold transition-colors"
-                                                        >
-                                                            <Edit2 className="w-3 h-3" /> Editar
-                                                        </button>
-                                                        <button
-                                                            onClick={() => descartarRecordatorio(rec.id)}
-                                                            className="flex-1 flex items-center justify-center gap-1 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded py-1.5 text-[10px] font-bold transition-colors"
-                                                        >
-                                                            <Trash2 className="w-3 h-3" /> Quitar
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-
-                                        {citasPendientes.length === 0 && recordatoriosLlamada.length === 0 && (
-                                            <p className="text-[11px] text-slate-500 px-1 italic">Sin alertas por ahora.</p>
-                                        )}
-                                    </div>
-
-                                    {/* Indicador de scroll discreto */}
-                                    {(citasPendientes.length + recordatoriosLlamada.length > 2) && (
-                                        <div className="absolute left-0 right-0 flex justify-center pointer-events-none" style={{ bottom: '-6px' }}>
-                                            <svg className="w-5 h-5 text-slate-400 animate-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M7 10l5 5 5-5z" />
-                                            </svg>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* ========= CUADRO DE NOTAS EDITABLE (Desactivable) ========= */}
-                                {mostrarNotasDefault && (
-                                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300">
+                            <ModulosCliente
+                                customSections={customSections}
+                                updateSeccion={updateSeccion}
+                                commitSecciones={commitSecciones}
+                                deleteSeccion={deleteSeccion}
+                                onAgregar={() => setModalNuevaSeccion(true)}
+                                clienteId={pid}
+                                rolePath={rolePath}
+                                handleGuardarSeccionesPersonalizadas={handleGuardarSeccionesPersonalizadas}
+                                containerClassName="mt-0"
+                                fixedCardHeightClass="h-[280px]"
+                            >
+                                {/* Slot 1: Recordatorios / Notas Toggle */}
+                                {mostrarNotasDefault ? (
+                                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col h-[280px] animate-in fade-in slide-in-from-right-4 duration-300">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <FileText className="w-3.5 h-3.5 text-slate-400" />
+                                                <FileText className="w-3.5 h-3.5 text-(--theme-500)" />
                                                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Notas del Cliente</p>
                                             </div>
                                             <div className="flex items-center gap-1.5">
@@ -1065,10 +960,10 @@ export default function ClienteDetalle({
                                                 </button>
                                                 <button
                                                     onClick={toggleNotasDefault}
-                                                    className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                                                    title="Desactivar sección de notas"
+                                                    className="text-[9px] font-bold text-(--theme-600) hover:text-(--theme-700) flex items-center gap-1 bg-(--theme-50) px-2 py-1 rounded-lg transition-colors"
+                                                    title="Ver Recordatorios"
                                                 >
-                                                    <X className="w-3.5 h-3.5" />
+                                                    <Bell className="w-3 h-3" /> Ver Recordatorios
                                                 </button>
                                             </div>
                                         </div>
@@ -1079,20 +974,124 @@ export default function ClienteDetalle({
                                             className="w-full flex-1 bg-slate-50/50 border border-slate-100 rounded-lg p-3 text-sm focus:ring-2 focus:ring-(--theme-400)/20 focus:border-(--theme-400) outline-none resize-none scrollbar-hide mt-3"
                                         />
                                     </div>
-                                )}
-                            </div>
+                                ) : (
+                                    <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-2 shadow-sm relative h-[280px] animate-in fade-in slide-in-from-left-4 duration-300">
+                                        <div className="flex items-center justify-between gap-2 shrink-0">
+                                            <div className="flex items-center gap-2">
+                                                <Bell className="w-3.5 h-3.5 text-(--theme-500)" />
+                                                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Recordatorios</p>
+                                            </div>
+                                            <button 
+                                                onClick={toggleNotasDefault}
+                                                className="text-[9px] font-bold text-(--theme-600) hover:text-(--theme-700) flex items-center gap-1 bg-(--theme-50) px-2 py-1 rounded-lg transition-colors"
+                                            >
+                                                <FileText className="w-3 h-3" /> Mostrar Notas
+                                            </button>
+                                        </div>
 
-                            {/* ==================== MÓDULOS / SECCIONES PERSONALIZADAS ==================== */}
-                            <ModulosCliente
-                                customSections={customSections}
-                                updateSeccion={updateSeccion}
-                                commitSecciones={commitSecciones}
-                                deleteSeccion={deleteSeccion}
-                                onAgregar={() => setModalNuevaSeccion(true)}
-                                clienteId={pid}
-                                rolePath={rolePath}
-                                handleGuardarSeccionesPersonalizadas={handleGuardarSeccionesPersonalizadas}
-                            />
+                                        {/* Contenido con altura fija y scroll */}
+                                        <div className="overflow-y-auto hide-scrollbar flex flex-col gap-2 shrink-0 h-[200px]">
+
+                                            {alertasOrdenadas.map((alerta) => {
+                                                if (alerta.tipo === 'cita') {
+                                                    const cita = alerta.data;
+                                                    const fechaCita = cita.fechaCita || cita.fecha;
+                                                    return (
+                                                        <div key={`cita-${alerta.id}`} className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <div className="flex items-center gap-2">
+                                                                     <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                                                                     <p className="text-xs font-semibold text-blue-900">Reunión agendada</p>
+                                                                </div>
+                                                                <p className="text-[10px] text-gray-400 shrink-0">
+                                                                    {new Date(fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                                                                </p>
+                                                            </div>
+
+                                                            <div className="flex gap-1.5">
+                                                                <button
+                                                                    onClick={() => handleMarcarCitaRealizada(cita)}
+                                                                    disabled={loadingCitaId === cita.id}
+                                                                    title="Marcar como realizada"
+                                                                    className="flex-1 flex items-center justify-center gap-1.5 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded py-1.5 text-[10px] font-bold transition-colors disabled:opacity-50"
+                                                                >
+                                                                    <CheckCircle2 className="w-3 h-3" />
+                                                                    {loadingCitaId === cita.id ? '...' : 'Realizada'}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setModalCita({ abierto: true, cita, editando: false })}
+                                                                    className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                                    title="Ver"
+                                                                >
+                                                                    <Eye className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setEditDataCita({ fecha: fechaCita, notas: cita.notas || '' });
+                                                                        setModalCita({ abierto: true, cita, editando: true });
+                                                                    }}
+                                                                    className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                                    title="Editar"
+                                                                >
+                                                                    <Edit2 className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDescartarCita(cita)}
+                                                                    className="flex items-center justify-center bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                                    title="Descartar"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                const rec = alerta.data;
+                                                return (
+                                                    <div key={`rec-${alerta.id}`} className="bg-(--theme-50) border border-(--theme-100) rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
+                                                        <div className="flex justify-between items-start gap-2">
+                                                            <p className="text-[10px] font-bold text-(--theme-700) bg-white/50 px-1.5 py-0.5 rounded border border-(--theme-100)">
+                                                                📌 {new Date(rec.fechaLimite).toLocaleDateString()} - {new Date(rec.fechaLimite).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </p>
+                                                        </div>
+                                                        {rec.descripcion && (
+                                                            <p className="text-[10px] text-slate-500 italic">{rec.descripcion}</p>
+                                                        )}
+                                                        <div className="flex gap-1.5">
+                                                            <button
+                                                                onClick={() => handleEditarRecordatorio(rec)}
+                                                                className="flex-1 flex items-center justify-center gap-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded py-1.5 text-[10px] font-bold transition-colors"
+                                                            >
+                                                                <Edit2 className="w-3 h-3" /> Editar
+                                                            </button>
+                                                            <button
+                                                                onClick={() => descartarRecordatorio(rec.id)}
+                                                                className="flex-1 flex items-center justify-center gap-1 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded py-1.5 text-[10px] font-bold transition-colors"
+                                                            >
+                                                                <Trash2 className="w-3 h-3" /> Quitar
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {citasPendientes.length === 0 && recordatoriosLlamada.length === 0 && (
+                                                <p className="text-[11px] text-slate-500 px-1 italic">Sin alertas por ahora.</p>
+                                            )}
+                                        </div>
+
+                                        {/* Indicador de scroll discreto */}
+                                        {(citasPendientes.length + recordatoriosLlamada.length > 2) && (
+                                            <div className="absolute left-0 right-0 flex justify-center pointer-events-none bottom-1">
+                                                <svg className="w-5 h-5 text-slate-400 animate-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                                    <path d="M7 10l5 5 5-5z" />
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </ModulosCliente>
                         </div>
                     </div>
 

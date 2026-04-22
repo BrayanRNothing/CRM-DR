@@ -3,7 +3,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
     Edit2, Trash2, X, Plus, CreditCard, FolderOpen, Package,
-    FileText, CheckCircle2, Upload, FilePlus, ChevronDown
+    FileText, CheckCircle2, Upload, FilePlus, ChevronDown, Eye, Download
 } from 'lucide-react';
 import { getToken } from '../utils/authUtils';
 import API_URL from '../config/api';
@@ -16,7 +16,13 @@ export default function ModulosCliente({
     onAgregar,
     clienteId,
     rolePath,
-    handleGuardarSeccionesPersonalizadas
+    handleGuardarSeccionesPersonalizadas,
+    visibleSectionIds = null,
+    showAddCard = true,
+    containerClassName = 'mt-6',
+    fixedCardHeightClass = '',
+    horizontalPayments = false,
+    children
 }) {
     const fileInputRef = useRef(null);
     const [uploadingToSeccion, setUploadingToSeccion] = useState(null);
@@ -33,6 +39,14 @@ export default function ModulosCliente({
         }
         return [];
     }, [customSections]);
+
+    const visibleSections = useMemo(() => {
+        if (!Array.isArray(visibleSectionIds) || visibleSectionIds.length === 0) {
+            return sections;
+        }
+        const allowed = new Set(visibleSectionIds.map(id => String(id)));
+        return sections.filter(seccion => allowed.has(String(seccion.id)));
+    }, [sections, visibleSectionIds]);
 
     const handleFileUpload = async (e, seccionId) => {
         const file = e.target.files[0];
@@ -93,9 +107,10 @@ export default function ModulosCliente({
     const renderModuloPayments = (seccion) => {
         const pagos = Array.isArray(seccion.contenido) ? seccion.contenido : [];
         return (
-            <div className="flex flex-col h-full space-y-3">
+            <div className="flex flex-col flex-1 min-h-0 space-y-3">
+                <div className={`${horizontalPayments ? 'flex gap-2 overflow-x-auto hide-scrollbar pb-1' : 'space-y-2 overflow-y-auto hide-scrollbar pr-1'} flex-1 min-h-0`}>
                 {pagos.map((pago, idx) => (
-                    <div key={pago.id || idx} className="flex flex-wrap sm:flex-nowrap items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <div key={pago.id || idx} className={`bg-slate-50 p-2.5 rounded-lg border border-slate-100 space-y-2 ${horizontalPayments ? 'min-w-[230px] max-w-[260px] shrink-0' : ''}`}>
                         <input
                             type="text"
                             value={pago.descripcion || ''}
@@ -106,22 +121,24 @@ export default function ModulosCliente({
                             }}
                             onBlur={commitSecciones}
                             placeholder="Descripción (ej. Mes Abril)"
-                            className="flex-1 text-xs px-2 py-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-(--theme-300)"
+                            className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-(--theme-300)"
                         />
-                        <div className="flex items-center gap-1 w-full sm:w-auto">
-                            <span className="text-slate-400 text-xs font-bold">$</span>
-                            <input
-                                type="number"
-                                value={pago.monto || ''}
-                                onChange={(e) => {
-                                    const newCont = [...pagos];
-                                    newCont[idx].monto = e.target.value;
-                                    updateSeccion(seccion.id, 'contenido', newCont);
-                                }}
-                                onBlur={commitSecciones}
-                                placeholder="0.00"
-                                className="w-20 text-xs px-2 py-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-(--theme-300)"
-                            />
+                        <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex items-center gap-1 w-full sm:w-auto min-w-[120px]">
+                                <span className="text-slate-400 text-xs font-bold">$</span>
+                                <input
+                                    type="number"
+                                    value={pago.monto || ''}
+                                    onChange={(e) => {
+                                        const newCont = [...pagos];
+                                        newCont[idx].monto = e.target.value;
+                                        updateSeccion(seccion.id, 'contenido', newCont);
+                                    }}
+                                    onBlur={commitSecciones}
+                                    placeholder="0.00"
+                                    className="w-full sm:w-24 text-xs px-2 py-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-(--theme-300)"
+                                />
+                            </div>
                             <select
                                 value={pago.estado || 'pendiente'}
                                 onChange={(e) => {
@@ -130,7 +147,7 @@ export default function ModulosCliente({
                                     updateSeccion(seccion.id, 'contenido', newCont);
                                     commitSecciones();
                                 }}
-                                className={`text-xs px-2 py-1.5 border border-slate-200 rounded outline-none ${
+                                className={`w-full sm:w-auto min-w-[130px] text-xs px-2 py-1.5 border border-slate-200 rounded outline-none ${
                                     pago.estado === 'pagado' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
                                 }`}
                             >
@@ -147,7 +164,7 @@ export default function ModulosCliente({
                                     updateSeccion(seccion.id, 'contenido', newCont);
                                     commitSecciones();
                                 }}
-                                className="w-32 text-xs px-2 py-1.5 border border-slate-200 rounded outline-none"
+                                className="w-full sm:w-auto min-w-[145px] text-xs px-2 py-1.5 border border-slate-200 rounded outline-none"
                             />
                             <button
                                 onClick={() => {
@@ -155,19 +172,20 @@ export default function ModulosCliente({
                                     updateSeccion(seccion.id, 'contenido', newCont);
                                     commitSecciones();
                                 }}
-                                className="p-1.5 text-slate-300 hover:text-red-500 rounded bg-white border border-slate-200"
+                                className="sm:ml-auto p-1.5 text-slate-300 hover:text-red-500 rounded bg-white border border-slate-200"
                             >
                                 <Trash2 className="w-3.5 h-3.5" />
                             </button>
                         </div>
                     </div>
                 ))}
+                </div>
                 <button
                     onClick={() => {
                         const newCont = [...pagos, { id: Date.now().toString(), descripcion: '', monto: '', estado: 'pendiente', fecha: new Date().toISOString().slice(0,10) }];
                         updateSeccion(seccion.id, 'contenido', newCont);
                     }}
-                    className="flex items-center justify-center gap-1.5 w-full py-2 border border-dashed border-slate-300 rounded-lg text-xs font-bold text-slate-500 hover:text-(--theme-600) hover:bg-(--theme-50) hover:border-(--theme-300) transition-all mt-auto"
+                    className="flex items-center justify-center gap-1.5 w-full py-2 border border-dashed border-slate-300 rounded-lg text-xs font-bold text-slate-500 hover:text-(--theme-600) hover:bg-(--theme-50) hover:border-(--theme-300) transition-all"
                 >
                     <Plus className="w-3.5 h-3.5" /> Registrar Nuevo Pago
                 </button>
@@ -178,7 +196,7 @@ export default function ModulosCliente({
     const renderModuloContracts = (seccion) => {
         const contratos = Array.isArray(seccion.contenido) ? seccion.contenido : [];
         return (
-            <div className="flex flex-col h-full space-y-3">
+            <div className="flex flex-col flex-1 min-h-0 space-y-3">
                 <input 
                     type="file" 
                     accept=".pdf,application/pdf"
@@ -187,65 +205,79 @@ export default function ModulosCliente({
                     onChange={(e) => handleFileUpload(e, uploadingToSeccion)} 
                 />
                 
-                {contratos.map((contrato, idx) => (
-                    <div key={contrato.id || idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
-                            <div className="p-2 bg-purple-100 text-purple-600 rounded-lg shrink-0">
-                                <FileText className="w-4 h-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <input
-                                    type="text"
-                                    value={contrato.nombre || ''}
-                                    onChange={(e) => {
-                                        const newCont = [...contratos];
-                                        newCont[idx].nombre = e.target.value;
-                                        updateSeccion(seccion.id, 'contenido', newCont);
-                                    }}
-                                    onBlur={commitSecciones}
-                                    placeholder="Nombre del contrato"
-                                    className="w-full text-sm font-bold bg-transparent border-none outline-none focus:ring-1 focus:ring-(--theme-300) rounded px-1 -ml-1 text-slate-700 placeholder:font-normal"
-                                />
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[10px] text-slate-400 font-medium">Vence:</span>
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1 hide-scrollbar min-h-0">
+                    {contratos.map((contrato, idx) => (
+                        <div key={contrato.id || idx} className="flex flex-col bg-slate-50 p-3 rounded-lg border border-slate-100 gap-3 group/contract relative">
+                            <div className="flex items-start gap-3 flex-1 min-w-0">
+                                {/* PDF Icon style */}
+                                <div className="p-2.5 bg-rose-100 text-rose-600 rounded-lg shrink-0 shadow-sm border border-rose-200">
+                                    <FileText className="w-5 h-5" />
+                                    <div className="text-[7px] font-black absolute -bottom-1 -right-1 bg-rose-500 text-white px-1 rounded-sm border border-white">PDF</div>
+                                </div>
+                                <div className="flex-1 min-w-0">
                                     <input
-                                        type="date"
-                                        value={contrato.fechaVencimiento || ''}
+                                        type="text"
+                                        value={contrato.nombre || ''}
                                         onChange={(e) => {
                                             const newCont = [...contratos];
-                                            newCont[idx].fechaVencimiento = e.target.value;
+                                            newCont[idx].nombre = e.target.value;
                                             updateSeccion(seccion.id, 'contenido', newCont);
-                                            commitSecciones();
                                         }}
-                                        className="text-[10px] px-1.5 py-0.5 border border-slate-200 rounded text-slate-600 outline-none"
+                                        onBlur={commitSecciones}
+                                        placeholder="Nombre del documento (ej. Contrato Confidencialidad)"
+                                        className="w-full text-sm font-bold bg-transparent border-none outline-none focus:ring-1 focus:ring-rose-300 rounded px-1 -ml-1 text-slate-700 placeholder:font-normal placeholder:text-slate-400"
                                     />
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Vencimiento:</span>
+                                        <input
+                                            type="date"
+                                            value={contrato.fechaVencimiento || ''}
+                                            onChange={(e) => {
+                                                const newCont = [...contratos];
+                                                newCont[idx].fechaVencimiento = e.target.value;
+                                                updateSeccion(seccion.id, 'contenido', newCont);
+                                                commitSecciones();
+                                            }}
+                                            className="text-[10px] px-1.5 py-0.5 border border-slate-200 rounded text-slate-600 outline-none bg-white focus:ring-1 focus:ring-rose-300"
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                            {contrato.url && (
-                                <a 
-                                    href={API_URL + contrato.url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-(--theme-600) hover:bg-slate-50 transition-colors"
+                                <button
+                                    onClick={() => {
+                                        const newCont = contratos.filter((_, i) => i !== idx);
+                                        updateSeccion(seccion.id, 'contenido', newCont);
+                                        commitSecciones();
+                                    }}
+                                    className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0 opacity-0 group-hover/contract:opacity-100"
+                                    title="Eliminar documento"
                                 >
-                                    Ver PDF
-                                </a>
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            {contrato.url && (
+                                <div className="flex items-center gap-2 pt-2 border-t border-slate-200/60">
+                                    <a 
+                                        href={API_URL + contrato.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
+                                    >
+                                        <Eye className="w-3.5 h-3.5" /> Ver PDF
+                                    </a>
+                                    <a 
+                                        href={API_URL + contrato.url} 
+                                        download={contrato.nombre || 'contrato'}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-rose-600 border border-rose-700 rounded-lg text-[10px] font-bold text-white hover:bg-rose-700 transition-colors shadow-sm"
+                                    >
+                                        <Download className="w-3.5 h-3.5" /> Descargar
+                                    </a>
+                                </div>
                             )}
-                            <button
-                                onClick={() => {
-                                    const newCont = contratos.filter((_, i) => i !== idx);
-                                    updateSeccion(seccion.id, 'contenido', newCont);
-                                    commitSecciones();
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
+                
                 <button
                     onClick={() => {
                         setUploadingToSeccion(seccion.id);
@@ -271,62 +303,66 @@ export default function ModulosCliente({
     const renderModuloProducts = (seccion) => {
         const productos = Array.isArray(seccion.contenido) ? seccion.contenido : [];
         return (
-            <div className="flex flex-col h-full space-y-3">
-                {productos.map((producto, idx) => (
-                    <div key={producto.id || idx} className="grid grid-cols-[1fr_auto_auto_auto] gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100 items-center">
-                        <input
-                            type="text"
-                            value={producto.nombre || ''}
-                            onChange={(e) => {
-                                const newCont = [...productos];
-                                newCont[idx].nombre = e.target.value;
-                                updateSeccion(seccion.id, 'contenido', newCont);
-                            }}
-                            onBlur={commitSecciones}
-                            placeholder="Nombre del producto"
-                            className="text-xs px-2 py-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-(--theme-300) min-w-[120px]"
-                        />
-                        <div className="flex items-center gap-1">
-                            <span className="text-[10px] text-slate-400">Cant:</span>
+            <div className="flex flex-col flex-1 min-h-0 space-y-3">
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1 hide-scrollbar min-h-0">
+                    {productos.map((producto, idx) => (
+                        <div key={producto.id || idx} className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                            <div className="flex flex-wrap items-center gap-2">
                             <input
-                                type="number"
-                                value={producto.cantidad || 1}
+                                type="text"
+                                value={producto.nombre || ''}
                                 onChange={(e) => {
                                     const newCont = [...productos];
-                                    newCont[idx].cantidad = e.target.value;
+                                    newCont[idx].nombre = e.target.value;
                                     updateSeccion(seccion.id, 'contenido', newCont);
                                 }}
                                 onBlur={commitSecciones}
-                                className="w-14 text-xs px-2 py-1.5 border border-slate-200 rounded outline-none text-center"
+                                placeholder="Nombre del producto"
+                                className="flex-1 min-w-40 text-xs px-2 py-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-(--theme-300)"
                             />
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <span className="text-slate-400 text-xs font-bold">$</span>
-                            <input
-                                type="number"
-                                value={producto.precio || ''}
-                                onChange={(e) => {
-                                    const newCont = [...productos];
-                                    newCont[idx].precio = e.target.value;
+                            <div className="flex items-center gap-1 min-w-[92px]">
+                                <span className="text-[10px] text-slate-400">Cant:</span>
+                                <input
+                                    type="number"
+                                    value={producto.cantidad || 1}
+                                    onChange={(e) => {
+                                        const newCont = [...productos];
+                                        newCont[idx].cantidad = e.target.value;
+                                        updateSeccion(seccion.id, 'contenido', newCont);
+                                    }}
+                                    onBlur={commitSecciones}
+                                    className="w-14 text-xs px-2 py-1.5 border border-slate-200 rounded outline-none text-center"
+                                />
+                            </div>
+                            <div className="flex items-center gap-1 min-w-[118px]">
+                                <span className="text-slate-400 text-xs font-bold">$</span>
+                                <input
+                                    type="number"
+                                    value={producto.precio || ''}
+                                    onChange={(e) => {
+                                        const newCont = [...productos];
+                                        newCont[idx].precio = e.target.value;
+                                        updateSeccion(seccion.id, 'contenido', newCont);
+                                    }}
+                                    onBlur={commitSecciones}
+                                    placeholder="Precio"
+                                    className="w-20 text-xs px-2 py-1.5 border border-slate-200 rounded outline-none"
+                                />
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const newCont = productos.filter((_, i) => i !== idx);
                                     updateSeccion(seccion.id, 'contenido', newCont);
+                                    commitSecciones();
                                 }}
-                                onBlur={commitSecciones}
-                                placeholder="Precio"
-                                className="w-20 text-xs px-2 py-1.5 border border-slate-200 rounded outline-none"
-                            />
+                                className="sm:ml-auto p-1.5 text-slate-300 hover:text-red-500 rounded bg-white border border-slate-200"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                            </div>
                         </div>
-                        <button
-                            onClick={() => {
-                                const newCont = productos.filter((_, i) => i !== idx);
-                                updateSeccion(seccion.id, 'contenido', newCont);
-                                commitSecciones();
-                            }}
-                            className="p-1.5 text-slate-300 hover:text-red-500 rounded bg-white border border-slate-200"
-                        >
-                            <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-                ))}
+                    ))}
+                </div>
                 <button
                     onClick={() => {
                         const newCont = [...productos, { id: Date.now().toString(), nombre: '', cantidad: 1, precio: '' }];
@@ -341,9 +377,10 @@ export default function ModulosCliente({
     };
 
     return (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
-            {sections.map(seccion => (
-                <div key={seccion.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm group flex flex-col h-full min-h-[220px]">
+        <div className={`grid grid-cols-1 xl:grid-cols-2 gap-4 ${containerClassName}`}>
+            {children}
+            {visibleSections.map(seccion => (
+                <div key={seccion.id} className={`bg-white border border-slate-200 rounded-xl p-4 shadow-sm group flex flex-col overflow-hidden ${fixedCardHeightClass || 'min-h-[220px] h-full'}`}>
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-2 flex-1 group/title relative">
                             {seccion.tipo === 'payments' && <CreditCard className="w-5 h-5 text-green-500 shrink-0" />}
@@ -369,7 +406,7 @@ export default function ModulosCliente({
                         </button>
                     </div>
 
-                    <div className="flex-1 flex flex-col">
+                    <div className="flex-1 min-h-0 flex flex-col overflow-y-auto pr-1 hide-scrollbar">
                         {seccion.tipo === 'payments' && renderModuloPayments(seccion)}
                         {seccion.tipo === 'contracts' && renderModuloContracts(seccion)}
                         {seccion.tipo === 'products' && renderModuloProducts(seccion)}
@@ -440,20 +477,22 @@ export default function ModulosCliente({
                 </div>
             ))}
 
-            <div className={`${sections.length % 2 === 0 ? 'xl:col-span-2' : ''}`}>
-                <button
-                    onClick={onAgregar}
-                    className="w-full group flex flex-col items-center justify-center gap-4 p-8 bg-slate-50 hover:bg-(--theme-50)/30 border-2 border-dashed border-slate-200 hover:border-(--theme-400) rounded-2xl transition-all duration-300 min-h-[220px] h-full"
-                >
-                    <div className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-sm text-slate-400 group-hover:text-(--theme-500) group-hover:scale-110 transition-all border border-slate-100">
-                        <Plus className="w-7 h-7" />
-                    </div>
-                    <div className="text-center">
-                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest group-hover:text-(--theme-600) transition-colors">Añadir Módulo</p>
-                        <p className="text-[10px] text-slate-400 mt-1">Pagos, contratos, productos, etc.</p>
-                    </div>
-                </button>
-            </div>
+            {showAddCard && (
+                <div className={`${(visibleSections.length + React.Children.count(children)) % 2 === 0 ? 'xl:col-span-2' : ''}`}>
+                    <button
+                        onClick={onAgregar}
+                        className="w-full group flex flex-col items-center justify-center gap-4 p-8 bg-slate-50 hover:bg-(--theme-50)/30 border-2 border-dashed border-slate-200 hover:border-(--theme-400) rounded-2xl transition-all duration-300 min-h-[220px] h-full"
+                    >
+                        <div className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-sm text-slate-400 group-hover:text-(--theme-500) group-hover:scale-110 transition-all border border-slate-100">
+                            <Plus className="w-7 h-7" />
+                        </div>
+                        <div className="text-center">
+                            <p className="text-xs font-black text-slate-500 uppercase tracking-widest group-hover:text-(--theme-600) transition-colors">Añadir Módulo</p>
+                            <p className="text-[10px] text-slate-400 mt-1">Pagos, contratos, productos, etc.</p>
+                        </div>
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

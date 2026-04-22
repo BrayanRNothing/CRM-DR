@@ -217,6 +217,11 @@ const Clientes = () => {
     const handleVerDetalles = async (cliente) => {
         setProspectoSeleccionado(cliente);
         setLlamadaFlow(null);
+        if (!cliente) {
+            setTimeline([]);
+            setLoadingTimeline(false);
+            return;
+        }
         await cargarTimelineCliente(cliente);
     };
 
