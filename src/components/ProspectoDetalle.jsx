@@ -104,8 +104,16 @@ export default function ProspectoDetalle({
     const [valorProspecto, setValorProspecto] = useState(initialProspecto?.customMetricValue || '');
     const [guardandoMetrica, setGuardandoMetrica] = useState(false);
 
+    const parseSafeArray = (val) => {
+        if (Array.isArray(val)) return val;
+        if (typeof val === 'string' && val.trim()) {
+            try { return JSON.parse(val); } catch (e) { return []; }
+        }
+        return [];
+    };
+
     // SECCIONES PERSONALIZADAS
-    const [customSections, setCustomSections] = useState(initialProspecto?.customSections || []);
+    const [customSections, setCustomSections] = useState(parseSafeArray(initialProspecto?.customSections));
     const [modalNuevaSeccion, setModalNuevaSeccion] = useState(false);
     const [drawerHistorialAbierto, setDrawerHistorialAbierto] = useState(false);
 
@@ -132,7 +140,7 @@ export default function ProspectoDetalle({
                 setNotasRapidas(initialProspecto.notas || '');
                 setMonedaSeleccionada(initialProspecto.customMetricLabel || 'MXN');
                 setValorProspecto(initialProspecto.customMetricValue || '');
-                setCustomSections(initialProspecto.customSections || []);
+                setCustomSections(parseSafeArray(initialProspecto.customSections));
             }
         }
     }, [initialProspecto]);

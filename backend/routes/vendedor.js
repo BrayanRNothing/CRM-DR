@@ -665,6 +665,8 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
                 out.ultimaActNotas = act?.notas || null;
                 out.esPropietario = getOwnerId(c) === prospectorId;
                 out.compartido = isShared(c);
+                out.customSections = parseHistorialSeguro(c.customSections);
+                out.historialEmbudo = parseHistorialSeguro(c.historialEmbudo);
                 out.propietarioNombre = propietarioNombre || null;
             }
             return out || c;
@@ -1943,6 +1945,8 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
                 out.prospectorAsignado = { nombre: prospectorNombre };
                 // Asegurar proximaLlamada unificada
                 out.proximaLlamada = out.proximaLlamada || out.proximallamada || null;
+                out.customSections = parseHistorialSeguro(c.customSections);
+                out.historialEmbudo = parseHistorialSeguro(c.historialEmbudo);
             }
             return out;
         }));
@@ -2959,6 +2963,8 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
                 out.prospectorAsignado = { nombre: prospectorNombre };
                 // Asegurar proximaLlamada unificada
                 out.proximaLlamada = out.proximaLlamada || out.proximallamada || null;
+                out.customSections = parseHistorialSeguro(c.customSections);
+                out.historialEmbudo = parseHistorialSeguro(c.historialEmbudo);
             }
             return out;
         }));
