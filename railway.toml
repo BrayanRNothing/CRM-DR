@@ -1,4 +1,5 @@
 [build]
+builder = "nixpacks"
 buildCommand = "npm install --omit=dev"
 
 [deploy]
