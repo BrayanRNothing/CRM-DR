@@ -327,7 +327,7 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
             WHERE (closerAsignado = ? ${equipoId ? 'OR equipo_id = ?' : ''}) AND etapaEmbudo = 'perdido'
             GROUP BY "motivoPerdida"
         `).all(...(equipoId ? [closerId, equipoId] : [closerId]));
-        
+
         const analisisPerdidasPremium = {};
         perdidasRaw.forEach(p => { analisisPerdidasPremium[p.motivoPerdida || 'Sin motivo'] = p.c; });
 
@@ -335,13 +335,13 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
         const fuentesRawCloser = await db.prepare(`
             SELECT c.fuente, COUNT(c.id) as count, SUM(v.monto) as revenue
             FROM clientes c
-            LEFT JOIN ventas v ON v.cliente_id = c.id
+            LEFT JOIN ventas v ON v.cliente = c.id
             WHERE (c.closerAsignado = ? ${equipoId ? 'OR c.equipo_id = ?' : ''})
             GROUP BY c.fuente
         `).all(...(equipoId ? [closerId, equipoId] : [closerId]));
-        
+
         const analisisFuentesPremium = {};
-        fuentesRawCloser.forEach(f => { 
+        fuentesRawCloser.forEach(f => {
             analisisFuentesPremium[f.fuente || 'Desconocido'] = {
                 count: f.count || 0,
                 revenue: f.revenue || 0
@@ -349,12 +349,12 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
         });
 
         // --- MÉTRICAS DE EFICIENCIA (Velocidad en JS para compatibilidad) ---
-        
+
         // 1. Ciclo de Venta Promedio (Días)
         const cicloData = await db.prepare(`
             SELECT v.fecha as fechaVenta, c.fechaRegistro
             FROM ventas v
-            JOIN clientes c ON v.cliente_id = c.id
+            JOIN clientes c ON v.cliente = c.id
             WHERE (v.vendedor = ? ${equipoId ? 'OR c.equipo_id = ?' : ''})
         `).all(...(equipoId ? [closerId, equipoId] : [closerId]));
 
@@ -387,9 +387,9 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
         // 3. Leads Estancados (> 7 días sin cambio de etapa)
         const sieteDiasAtras = new Date();
         sieteDiasAtras.setDate(sieteDiasAtras.getDate() - 7);
-        
-        const estancadosCount = clientes.filter(c => 
-            !['venta_ganada', 'perdido'].includes(c.etapaEmbudo) && 
+
+        const estancadosCount = clientes.filter(c =>
+            !['venta_ganada', 'perdido'].includes(c.etapaEmbudo) &&
             new Date(c.fechaUltimaEtapa || c.fechaRegistro) < sieteDiasAtras
         ).length;
 
@@ -545,7 +545,7 @@ router.get('/calendario', [auth, esVendedor], async (req, res) => {
                         if (!evento.start || !evento.start.dateTime) return false;
                         const fechaEvento = new Date(evento.start.dateTime);
                         const diferencia = Math.abs(fechaEvento - fechaReunion);
-                        return diferencia < 5 * 60 * 1000; 
+                        return diferencia < 5 * 60 * 1000;
                     });
 
                     if (existeEnGoogle) {
@@ -1202,9 +1202,9 @@ router.put('/prospectos/:id', auth, async (req, res) => {
         if (proximaLlamada !== undefined) { updates.push('proximaLlamada = ?'); params.push(proximaLlamada); }
         if (customMetricLabel !== undefined) { updates.push('customMetricLabel = ?'); params.push(customMetricLabel); }
         if (customMetricValue !== undefined) { updates.push('customMetricValue = ?'); params.push(customMetricValue); }
-        if (customSections !== undefined) { 
-            updates.push('customSections = ?'); 
-            params.push(typeof customSections === 'string' ? customSections : JSON.stringify(customSections)); 
+        if (customSections !== undefined) {
+            updates.push('customSections = ?');
+            params.push(typeof customSections === 'string' ? customSections : JSON.stringify(customSections));
         }
 
         if (updates.length > 0) {
@@ -2168,9 +2168,9 @@ router.put('/prospectos/:id', auth, async (req, res) => {
         if (proximaLlamada !== undefined) { updates.push('proximaLlamada = ?'); params.push(proximaLlamada); }
         if (customMetricLabel !== undefined) { updates.push('customMetricLabel = ?'); params.push(customMetricLabel); }
         if (customMetricValue !== undefined) { updates.push('customMetricValue = ?'); params.push(customMetricValue); }
-        if (customSections !== undefined) { 
-            updates.push('customSections = ?'); 
-            params.push(typeof customSections === 'string' ? customSections : JSON.stringify(customSections)); 
+        if (customSections !== undefined) {
+            updates.push('customSections = ?');
+            params.push(typeof customSections === 'string' ? customSections : JSON.stringify(customSections));
         }
 
         if (updates.length > 0) {
@@ -2433,9 +2433,9 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
 
         if (interes !== undefined) { updates.push('interes = ?'); params.push(interes); }
         if (proximaLlamada !== undefined) { updates.push('proximaLlamada = ?'); params.push(proximaLlamada); }
-        if (customSections !== undefined) { 
-            updates.push('customSections = ?'); 
-            params.push(typeof customSections === 'string' ? customSections : JSON.stringify(customSections)); 
+        if (customSections !== undefined) {
+            updates.push('customSections = ?');
+            params.push(typeof customSections === 'string' ? customSections : JSON.stringify(customSections));
         }
         if (fuente !== undefined) { updates.push('fuente = ?'); params.push(fuente); }
 
@@ -3139,14 +3139,14 @@ router.get('/etiquetas', [auth, esVendedor], async (req, res) => {
         const equipoId = req.usuario.equipo_id;
         let sql = 'SELECT * FROM etiquetas_globales';
         let params = [];
-        
+
         if (equipoId) {
             sql += ' WHERE equipo_id = ? OR equipo_id IS NULL';
             params.push(equipoId);
         } else {
             sql += ' WHERE equipo_id IS NULL';
         }
-        
+
         sql += ' ORDER BY nombre ASC';
         const etiquetas = await db.prepare(sql).all(...params);
         res.json(etiquetas);
@@ -3161,10 +3161,10 @@ router.post('/etiquetas', [auth, esVendedor], async (req, res) => {
     try {
         const { nombre, color } = req.body;
         if (!nombre) return res.status(400).json({ msg: 'El nombre es requerido' });
-        
+
         const equipoId = req.usuario.equipo_id;
         const nombreLimpio = nombre.trim();
-        
+
         // Verificar si ya existe
         let existente;
         if (equipoId) {
@@ -3174,15 +3174,15 @@ router.post('/etiquetas', [auth, esVendedor], async (req, res) => {
             existente = await db.prepare('SELECT * FROM etiquetas_globales WHERE nombre = ? AND equipo_id IS NULL')
                 .get(nombreLimpio);
         }
-        
+
         if (existente) {
             return res.json(existente);
         }
-        
+
         // Crear nueva
         const result = await db.prepare('INSERT INTO etiquetas_globales (nombre, color, equipo_id) VALUES (?, ?, ?)')
             .run(nombreLimpio, color || '#10b981', equipoId);
-            
+
         res.json({ id: result.lastInsertRowid, nombre: nombreLimpio, color: color || '#10b981' });
     } catch (error) {
         console.error('Error al crear etiqueta:', error);
