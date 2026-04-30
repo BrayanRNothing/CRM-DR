@@ -890,6 +890,13 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
             ? 'en_contacto'
             : etapaEmbudo;
 
+        // PROTECCIÓN: Si el cliente ya está en una etapa ganada (CLIENT_STAGES),
+        // no permitir retroceder a etapas de prospección (a menos que sea 'perdido').
+        const yaEsClienteGanadoPros = CLIENT_STAGES.includes(cliente.etapaEmbudo || '');
+        if (yaEsClienteGanadoPros && nuevaEtapa && nuevaEtapa !== 'perdido' && !CLIENT_STAGES.includes(nuevaEtapa)) {
+            nuevaEtapa = null; // Bloquear el retroceso
+        }
+
         if (nuevaEtapa && nuevaEtapa !== cliente.etapaEmbudo) {
             updates.push('etapaEmbudo = ?');
             params.push(nuevaEtapa);
@@ -1344,13 +1351,22 @@ router.post('/agendar-reunion', [auth, esVendedor], async (req, res) => {
         }
 
         const now = new Date().toISOString();
+        const currentEtapa = cliente.etapaEmbudo || 'prospecto_nuevo';
+        
+        // No retroceder etapa si el cliente ya está en una etapa ganada (CLIENT_STAGES)
+        const isAlreadyClient = CLIENT_STAGES.includes(currentEtapa);
+        const nuevaEtapa = isAlreadyClient ? currentEtapa : 'reunion_agendada';
+        const huboCambio = nuevaEtapa !== currentEtapa;
+
         const hist = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
-        hist.push({ etapa: 'reunion_agendada', fecha: now, vendedor: prospectorId });
+        if (huboCambio) {
+            hist.push({ etapa: 'reunion_agendada', fecha: now, vendedor: prospectorId });
+        }
 
         await db.prepare(`
             UPDATE clientes SET etapaEmbudo = ?, closerAsignado = ?, fechaTransferencia = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?
             WHERE id = ?
-        `).run('reunion_agendada', closerIdNum, now, now, now, JSON.stringify(hist), cid);
+        `).run(nuevaEtapa, closerIdNum, now, now, now, JSON.stringify(hist), cid);
 
         const fechaReunionISO = new Date(fechaReunion).toISOString();
         const finReunionISO = new Date(new Date(fechaReunion).getTime() + 45 * 60000).toISOString();
@@ -1441,8 +1457,8 @@ router.post('/agendar-reunion', [auth, esVendedor], async (req, res) => {
         const fechaDisplayMX = new Date(fechaReunion).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', dateStyle: 'short', timeStyle: 'short' });
         await db.prepare(`
             INSERT INTO actividades (tipo, vendedor, cliente, fecha, descripcion, resultado, notas, cambioEtapa, etapaAnterior, etapaNueva, "googleMeetLink")
-            VALUES (?, ?, ?, ?, ?, 'pendiente', ?, 1, 'en_contacto', 'reunion_agendada', ?)
-        `).run('cita', prospectorId, cid, fechaReunionISO, `Reunión agendada para el ${fechaDisplayMX} por prospector ${req.usuario.nombre} → Asignada a closer`, notas || '', hangoutLink || '');
+            VALUES (?, ?, ?, ?, ?, 'pendiente', ?, ?, ?, ?, ?)
+        `).run('cita', prospectorId, cid, fechaReunionISO, `Reunión agendada para el ${fechaDisplayMX} por prospector ${req.usuario.nombre} → Asignada a closer`, notas || '', huboCambio ? 1 : 0, currentEtapa, nuevaEtapa, hangoutLink || '');
 
         const clienteActualizado = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(cid);
         const actividadRow = await db.prepare('SELECT * FROM actividades WHERE cliente = ? ORDER BY id DESC LIMIT 1').get(cid);
@@ -2104,28 +2120,41 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
 
         // ============ AUTO-PROMOCIÓN DE ETAPA ============
         const etapaActual = cliente.etapaEmbudo || 'prospecto_nuevo';
-        const ORDEN_ETAPAS = ['prospecto_nuevo', 'en_contacto', 'reunion_agendada', 'reunion_realizada', 'en_negociacion', 'venta_ganada'];
+        // IMPORTANTE: Incluir todas las etapas posibles en orden ascendente para la protección anti-retroceso
+        const ORDEN_ETAPAS = ['prospecto_nuevo', 'en_contacto', 'reunion_agendada', 'reunion_realizada', 'en_negociacion', 'venta_ganada', 'cotizacion_realizada', 'contrato_firmado', 'esperando_pago', 'cliente_activo'];
         const rankActual = ORDEN_ETAPAS.indexOf(etapaActual);
         let nuevaEtapaAuto = null;
 
-        if (tipo === 'llamada' && resultadoFinal === 'exitoso') {
-            if (etapaActual === 'prospecto_nuevo') nuevaEtapaAuto = 'en_contacto';
-        } else if ((tipo === 'whatsapp' || tipo === 'correo' || tipo === 'mensaje') && resultadoFinal === 'exitoso') {
-            if (etapaActual === 'prospecto_nuevo') nuevaEtapaAuto = 'en_contacto';
-        } else if (tipo === 'cita' && resultadoFinal === 'exitoso') {
-            const rankCita = ORDEN_ETAPAS.indexOf('reunion_agendada');
-            if (rankActual < rankCita) nuevaEtapaAuto = 'reunion_agendada';
-        } else if (tipo === 'cita' && resultadoFinal === 'convertido') {
-            const rankReal = ORDEN_ETAPAS.indexOf('reunion_realizada');
-            if (rankActual < rankReal) nuevaEtapaAuto = 'reunion_realizada';
-        } else if (tipo === 'descartado') {
-            nuevaEtapaAuto = 'perdido';
+        // PROTECCIÓN: Si el cliente ya está en una etapa ganada (CLIENT_STAGES), no permitir
+        // ningún cambio automático de etapa que lo regrese al pipeline de ventas.
+        const yaEsClienteGanado = CLIENT_STAGES.includes(etapaActual);
+
+        if (!yaEsClienteGanado) {
+            if (tipo === 'llamada' && resultadoFinal === 'exitoso') {
+                if (etapaActual === 'prospecto_nuevo') nuevaEtapaAuto = 'en_contacto';
+            } else if ((tipo === 'whatsapp' || tipo === 'correo' || tipo === 'mensaje') && resultadoFinal === 'exitoso') {
+                if (etapaActual === 'prospecto_nuevo') nuevaEtapaAuto = 'en_contacto';
+            } else if (tipo === 'cita' && resultadoFinal === 'exitoso') {
+                const rankCita = ORDEN_ETAPAS.indexOf('reunion_agendada');
+                if (rankActual !== -1 && rankActual < rankCita) nuevaEtapaAuto = 'reunion_agendada';
+            } else if (tipo === 'cita' && resultadoFinal === 'convertido') {
+                const rankReal = ORDEN_ETAPAS.indexOf('reunion_realizada');
+                if (rankActual !== -1 && rankActual < rankReal) nuevaEtapaAuto = 'reunion_realizada';
+            } else if (tipo === 'descartado') {
+                nuevaEtapaAuto = 'perdido';
+            }
         }
 
-        let nuevaEtapa = etapaEmbudo || nuevaEtapaAuto;
+        // Si el campo etapaEmbudo viene explícitamente en la petición, solo permitirlo
+        // si no hace retroceder a un cliente ganado (a menos que sea 'perdido').
+        let nuevaEtapa = yaEsClienteGanado && etapaEmbudo && etapaEmbudo !== 'perdido' && !CLIENT_STAGES.includes(etapaEmbudo)
+            ? null  // Bloquear retroceso explícito a etapas de prospección
+            : (etapaEmbudo || nuevaEtapaAuto);
+
         if (nuevaEtapa && nuevaEtapa !== 'perdido') {
             const rankNueva = ORDEN_ETAPAS.indexOf(nuevaEtapa);
-            if (rankNueva !== -1 && rankNueva <= rankActual) nuevaEtapa = null;
+            const rankProteccion = rankActual !== -1 ? rankActual : 999; // Si rankActual es -1 (etapa desconocida), tratar como máxima protección
+            if (rankNueva !== -1 && rankNueva <= rankProteccion) nuevaEtapa = null;
         }
 
         if (nuevaEtapa && nuevaEtapa !== cliente.etapaEmbudo) {
@@ -2354,18 +2383,29 @@ router.post('/registrar-reunion', [auth, esVendedor], async (req, res) => {
             venta: 'Reunión realizada — ¡Venta cerrada!'
         };
 
-        const etapaNueva = etapaMap[resultado];
+        const currentEtapa = c.etapaEmbudo || 'prospecto_nuevo';
+        const isAlreadyClient = CLIENT_STAGES.includes(currentEtapa);
+        
+        let etapaNueva = etapaMap[resultado];
+        // Si ya es un cliente ganado, no retroceder a etapas de prospección
+        if (isAlreadyClient && (etapaNueva === 'reunion_agendada' || etapaNueva === 'en_negociacion')) {
+            etapaNueva = currentEtapa;
+        }
+
+        const huboCambio = etapaNueva !== currentEtapa;
         const descripcion = descMap[resultado];
         const now = new Date().toISOString();
 
         const hist = c.historialEmbudo ? JSON.parse(c.historialEmbudo) : [];
-        hist.push({ etapa: etapaNueva, fecha: now, vendedor: closerId, resultado, descripcion });
+        if (huboCambio) {
+            hist.push({ etapa: etapaNueva, fecha: now, vendedor: closerId, resultado, descripcion });
+        }
 
         const estado = etapaNueva === 'venta_ganada' ? 'ganado'
             : etapaNueva === 'perdido' ? 'perdido'
                 : 'proceso';
 
-        // Limpiar proximaLlamada al registrar resultado de reunión (ya no aplica follow-up anterior)
+        // Limpiar proximaLlamada al registrar resultado de reunión
         await db.prepare('UPDATE clientes SET etapaEmbudo = ?, estado = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, proximaLlamada = NULL WHERE id = ?')
             .run(etapaNueva, estado, now, now, JSON.stringify(hist), cid);
 
