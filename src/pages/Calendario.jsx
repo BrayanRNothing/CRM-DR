@@ -267,6 +267,10 @@ const Calendario = () => {
       toast.error("La fecha es obligatoria");
       return;
     }
+    if (new Date(editMeetingData.fecha).getTime() < Date.now()) {
+      toast.error("No puedes reprogramar una reunión para una fecha u hora en el pasado");
+      return;
+    }
     setGuardandoEdicion(true);
     const t = toast.loading("Actualizando...");
     try {
@@ -626,6 +630,16 @@ const Calendario = () => {
     if (!date) return [];
     if (date.getDay() === 0) return []; // Sunday off
 
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const dateStart = new Date(date);
+    dateStart.setHours(0, 0, 0, 0);
+
+    if (dateStart < todayStart) {
+      return []; // No slots for past days
+    }
+
     const slots = [];
     let current = new Date(date);
     current.setHours(6, 0, 0, 0); // Start 6:00 AM
@@ -633,12 +647,15 @@ const Calendario = () => {
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 0, 0); // End 11:59 PM
 
+    const now = new Date();
+
     while (current < endOfDay) {
       const slotStart = new Date(current);
       const slotEnd = new Date(current.getTime() + 30 * 60000); // 30 mins
 
       if (slotEnd <= endOfDay) {
-        const isBusy = busySlots.some((busy) => {
+        const isPast = slotStart.getTime() < now.getTime();
+        const isBusy = isPast || busySlots.some((busy) => {
           return slotStart < busy.end && slotEnd > busy.start;
         });
 
@@ -827,6 +844,9 @@ const Calendario = () => {
         throw new Error("Selecciona un horario disponible");
 
       const startDateTime = selectedTimeSlot.start;
+      if (startDateTime.getTime() < Date.now()) {
+        throw new Error("No puedes agendar una cita en el pasado");
+      }
 
       const resBackend = await fetch(
         `${API_URL}/api/vendedor/agendar-reunion`,
