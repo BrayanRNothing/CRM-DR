@@ -1308,7 +1308,7 @@ const Calendario = () => {
               {/* Calendar Days */}
               <div className="flex-1 flex flex-col min-h-0">
                 <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2 shrink-0">
-                  {DAYS.map((day) => (
+{DAYS.map((day) => (
                     <div
                       key={day}
                       className="text-center font-bold text-gray-400 text-[10px] sm:text-sm py-1 uppercase tracking-wider"
@@ -1321,6 +1321,14 @@ const Calendario = () => {
                   {calendarDays.map((date, index) => {
                     const isSelected = date && isSameDay(date, selectedDate);
                     const isTodayDate = date && isToday(date);
+                    
+                    // Calcular si es un día del pasado
+                    const todayStart = new Date();
+                    todayStart.setHours(0, 0, 0, 0);
+                    const dateStart = date ? new Date(date) : null;
+                    if (dateStart) dateStart.setHours(0, 0, 0, 0);
+                    const isPastDate = dateStart && dateStart < todayStart;
+
                     return (
                       <button
                         key={index}
@@ -1336,7 +1344,8 @@ const Calendario = () => {
                                                     relative rounded-2xl transition-all border flex items-center justify-center p-1 md:p-2 min-h-[44px] md:min-h-[72px] aspect-square md:aspect-auto
                                                     ${!date ? "bg-transparent border-transparent cursor-default select-none" : ""}
                                                     ${date && !selectedCloser ? "opacity-40 cursor-not-allowed bg-slate-50 border-slate-100" : ""}
-                                                    ${date && selectedCloser && !isSelected ? "bg-white border-slate-200 hover:border-(--theme-500)/50 hover:shadow-sm text-slate-700" : ""}
+                                                    ${date && selectedCloser && !isSelected && isPastDate ? "bg-slate-50/80 border-slate-100 text-slate-400 hover:bg-slate-100/80 hover:text-slate-600 hover:border-slate-200" : ""}
+                                                    ${date && selectedCloser && !isSelected && !isPastDate ? "bg-white border-slate-200 hover:border-(--theme-500)/50 hover:shadow-sm text-slate-700" : ""}
                                                     ${isSelected ? "bg-(--theme-500) text-white shadow-lg shadow-(--theme-500)/30 scale-105 border-(--theme-500) z-20" : ""}
                                                     ${isTodayDate && !isSelected ? "bg-(--theme-50) border-(--theme-200) text-(--theme-700)" : ""}
                                                     ${isTodayDate && !isSelected ? 'after:content-["HOY"] after:absolute after:top-1 lg:after:top-1.5 after:right-1 lg:after:right-1.5 after:text-[6px] lg:after:text-[8px] after:font-black after:text-(--theme-500) after:bg-white after:px-1 after:py-0.5 after:rounded-sm after:shadow-sm' : ""}
