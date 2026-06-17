@@ -907,7 +907,7 @@ const Clientes = () => {
                             disabled={importando}
                             className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
                         >
-                            {importando ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+                            {importando ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />}
                             {importando ? 'Importando...' : 'Importar CSV'}
                         </button>
                         <button
@@ -915,7 +915,7 @@ const Clientes = () => {
                             disabled={loading || !clientesFiltrados.length}
                             className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
                         >
-                            <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                            <Upload className="w-3.5 h-3.5 md:w-4 md:h-4" />
                             Exportar CSV
                         </button>
                         <button
