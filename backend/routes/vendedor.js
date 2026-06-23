@@ -100,9 +100,8 @@ router.get('/dashboard', [auth, esVendedor], async (req, res) => {
         const prospectorId = parseInt(req.usuario.id);
         // UNIFICADO: Ver todos los clientes donde el usuario está asignado o ha tenido actividad
         const clientes = await db.prepare(`
-            SELECT DISTINCT c.* FROM clientes c
-            LEFT JOIN actividades a ON c.id = a.cliente
-            WHERE c.prospectorAsignado = ? OR a.vendedor = ?
+            SELECT c.* FROM clientes c
+            WHERE c.prospectorAsignado = ? OR c.id IN (SELECT cliente FROM actividades WHERE vendedor = ?)
         `).all(prospectorId, prospectorId);
 
         // Filtrar solo prospectos activos (excluir perdidos y ventas ganadas)
@@ -643,9 +642,9 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
             ? await db.prepare(
                 `SELECT a.cliente, a.tipo, COALESCE(NULLIF(a.notas, ''), a.descripcion) as texto
                  FROM actividades a
-                 INNER JOIN (
-                   SELECT cliente, MAX(createdAt) as maxCreatedAt FROM actividades WHERE cliente IN (${ids.map(() => '?').join(',')}) GROUP BY cliente
-                 ) ult ON a.cliente = ult.cliente AND a.createdAt = ult.maxCreatedAt`
+                 WHERE a.id IN (
+                   SELECT MAX(id) FROM actividades WHERE cliente IN (${ids.map(() => '?').join(',')}) GROUP BY cliente
+                 )`
             ).all(...ids)
             : [];
 
@@ -1995,9 +1994,9 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
             ? await db.prepare(
                 `SELECT a.cliente, a.tipo, COALESCE(NULLIF(a.notas, ''), a.descripcion) as texto
                  FROM actividades a
-                 INNER JOIN (
-                   SELECT cliente, MAX(createdAt) as maxCreatedAt FROM actividades WHERE cliente IN (${ids.map(() => '?').join(',')}) GROUP BY cliente
-                 ) ult ON a.cliente = ult.cliente AND a.createdAt = ult.maxCreatedAt`
+                 WHERE a.id IN (
+                   SELECT MAX(id) FROM actividades WHERE cliente IN (${ids.map(() => '?').join(',')}) GROUP BY cliente
+                 )`
             ).all(...ids)
             : [];
 
@@ -2720,7 +2719,10 @@ router.get('/google-events-completados', [auth, esVendedor], async (req, res) =>
 router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
     try {
         const closerId = parseInt(req.usuario.id);
-        const clientes = await db.prepare('SELECT * FROM clientes WHERE closerAsignado = ?').all(closerId);
+        const clientes = await db.prepare(`
+            SELECT c.* FROM clientes c
+            WHERE c.closerAsignado = ? OR c.id IN (SELECT cliente FROM actividades WHERE vendedor = ?)
+        `).all(closerId, closerId);
 
         const embudo = {
             total: clientes.length,
@@ -3037,9 +3039,9 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
             ? await db.prepare(
                 `SELECT a.cliente, a.tipo, COALESCE(NULLIF(a.notas, ''), a.descripcion) as texto
                  FROM actividades a
-                 INNER JOIN (
-                   SELECT cliente, MAX(createdAt) as maxCreatedAt FROM actividades WHERE cliente IN (${ids.map(() => '?').join(',')}) GROUP BY cliente
-                 ) ult ON a.cliente = ult.cliente AND a.createdAt = ult.maxCreatedAt`
+                 WHERE a.id IN (
+                   SELECT MAX(id) FROM actividades WHERE cliente IN (${ids.map(() => '?').join(',')}) GROUP BY cliente
+                 )`
             ).all(...ids)
             : [];
 
