@@ -257,8 +257,10 @@ const LoginMobile = () => {
           transition={{ delay: 0.4 }}
           className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-6"
         >
+          {/* Registro temporalmente oculto
           ¿No tienes cuenta?{' '}
           <Link to="/register" className="font-black" style={{ color: 'var(--theme-600)' }}>Regístrate</Link>
+          */}
           <div className="text-[8px] text-slate-300 uppercase tracking-[0.2em] font-bold mt-2">Versión Beta</div>
         </motion.p>
       </div>

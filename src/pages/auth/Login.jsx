@@ -391,9 +391,11 @@ const Login = () => {
               </div>
 
               <div className="bg-linear-to-b from-slate-50/50 to-slate-100/50 border-t border-slate-100 px-8 py-6 text-center relative z-10">
+                {/* Registro temporalmente oculto
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   ¿No tienes una cuenta? <Link to="/register" className="font-black hover:opacity-70 transition-opacity ml-1" style={{ color: 'var(--theme-600)' }}>Regístrate ahora</Link>
                 </p>
+                */}
                 <p className="text-[8px] text-slate-300 uppercase tracking-[0.2em] font-bold mt-2">Versión Beta</p>
               </div>
             </motion.div>
