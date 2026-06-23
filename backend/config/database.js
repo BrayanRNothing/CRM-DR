@@ -104,10 +104,12 @@ if (!dbUrl) {
 console.log(`🌐 Intentando conectar a la base de datos... ${dbUrl ? '(URL detectada)' : '(⚠️ URL NO DETECTADA)'}`);
 internalDb = new Pool({
   connectionString: dbUrl || 'postgres://placeholder:placeholder@localhost:5432/placeholder',
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: { rejectUnauthorized: false },
+  max: 5,                      // Railway free plan: límite seguro de conexiones
+  idleTimeoutMillis: 30000,    // Cerrar conexiones inactivas tras 30s
+  connectionTimeoutMillis: 8000 // Fallar rápido si no hay conexión libre en 8s
 });
+
 
 // Lista de columnas camelCase que Postgres almacena en minúsculas
 const CAMEL_COLS = [

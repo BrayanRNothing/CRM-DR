@@ -98,49 +98,72 @@ async function calcularPeriodoReuniones(db, prospectorId, filtroFechaEtapa) {
 router.get('/dashboard', [auth, esVendedor], async (req, res) => {
     try {
         const prospectorId = parseInt(req.usuario.id);
-        // UNIFICADO: Ver todos los clientes donde el usuario está asignado o ha tenido actividad
-        const clientes = await db.prepare(`
-            SELECT c.* FROM clientes c
-            WHERE c.prospectorAsignado = ? OR c.id IN (SELECT cliente FROM actividades WHERE vendedor = ?)
-        `).all(prospectorId, prospectorId);
 
-        // Filtrar solo prospectos activos (excluir perdidos y ventas ganadas)
+        const nowLocal = new Date();
+        const startOfDay   = new Date(nowLocal.getFullYear(), nowLocal.getMonth(), nowLocal.getDate()).toISOString().slice(0,10) + 'T00:00:00.000Z';
+        const endOfDay     = new Date(nowLocal.getFullYear(), nowLocal.getMonth(), nowLocal.getDate()).toISOString().slice(0,10) + 'T23:59:59.999Z';
+        const startOfWeek  = (() => { const d = new Date(nowLocal); d.setDate(d.getDate()-6); return new Date(d.getFullYear(),d.getMonth(),d.getDate()).toISOString().slice(0,10)+'T00:00:00.000Z'; })();
+        const startOfMonth = new Date(nowLocal.getFullYear(), nowLocal.getMonth(), 1).toISOString().slice(0,10) + 'T00:00:00.000Z';
+
+        // === QUERY 1: clientes (embudo + fuentes) ===
+        // === QUERY 2: métricas de actividades (todos los períodos en una sola query) ===
+        // === QUERY 3: fuentes ===
+        // Ejecutar las 3 en PARALELO con Promise.all
+        const [clientes, actMetrics, fuentesRaw] = await Promise.all([
+            db.prepare(`
+                SELECT id, "etapaEmbudo", "closerAsignado", "historialEmbudo", "fechaRegistro", "fechaUltimaEtapa"
+                FROM clientes
+                WHERE "prospectorAsignado" = ? OR id IN (SELECT cliente FROM actividades WHERE vendedor = ?)
+            `).all(prospectorId, prospectorId),
+
+            db.prepare(`
+                SELECT
+                    COUNT(*) FILTER (WHERE tipo = 'llamada') AS llamadas_total,
+                    COUNT(*) FILTER (WHERE tipo = 'llamada' AND fecha >= ? AND fecha <= ?) AS llamadas_dia,
+                    COUNT(*) FILTER (WHERE tipo = 'llamada' AND fecha >= ?) AS llamadas_semana,
+                    COUNT(*) FILTER (WHERE tipo = 'llamada' AND fecha >= ?) AS llamadas_mes,
+                    COUNT(*) FILTER (WHERE tipo IN ('whatsapp','correo','mensaje')) AS mensajes_total,
+                    COUNT(*) FILTER (WHERE tipo IN ('whatsapp','correo','mensaje') AND fecha >= ? AND fecha <= ?) AS mensajes_dia,
+                    COUNT(*) FILTER (WHERE tipo IN ('whatsapp','correo','mensaje') AND fecha >= ?) AS mensajes_semana,
+                    COUNT(*) FILTER (WHERE tipo IN ('whatsapp','correo','mensaje') AND fecha >= ?) AS mensajes_mes,
+                    COUNT(DISTINCT cliente) FILTER (WHERE tipo = 'cita') AS reuniones_total,
+                    COUNT(DISTINCT cliente) FILTER (WHERE tipo = 'cita' AND fecha >= ? AND fecha <= ?) AS reuniones_dia,
+                    COUNT(DISTINCT cliente) FILTER (WHERE tipo = 'cita' AND fecha >= ?) AS reuniones_semana,
+                    COUNT(DISTINCT cliente) FILTER (WHERE tipo = 'cita' AND fecha >= ?) AS reuniones_mes
+                FROM actividades WHERE vendedor = ?
+            `).get(
+                startOfDay, endOfDay, startOfWeek, startOfMonth,
+                startOfDay, endOfDay, startOfWeek, startOfMonth,
+                startOfDay, endOfDay, startOfWeek, startOfMonth,
+                prospectorId
+            ),
+
+            db.prepare(`
+                SELECT fuente, COUNT(*) as c FROM clientes
+                WHERE "prospectorAsignado" = ? OR id IN (SELECT cliente FROM actividades WHERE vendedor = ?)
+                GROUP BY fuente
+            `).all(prospectorId, prospectorId)
+        ]);
+
+        // Embudo calculado en JS (sin queries adicionales)
         const clientesActivos = clientes.filter(c => !NON_PROSPECT_STAGES.includes(c.etapaEmbudo));
+        const embudo = { total: clientesActivos.length, prospecto_nuevo: 0, en_contacto: 0, reunion_agendada: 0, transferidos: 0 };
 
-        // Embudo siempre sobre totales (Acumulativo)
-        const embudo = {
-            total: clientesActivos.length,
-            prospecto_nuevo: 0,
-            en_contacto: 0,
-            reunion_agendada: 0,
-            transferidos: 0
-        };
+        const etapasContacto = new Set(['en_contacto','reunion_agendada','venta_ganada','en_negociacion','reunion_realizada','perdido']);
+        const etapasAgendado = new Set(['reunion_agendada','venta_ganada','en_negociacion','reunion_realizada']);
 
         for (const c of clientesActivos) {
-            embudo.prospecto_nuevo++; // Todos empiezan como prospecto
+            embudo.prospecto_nuevo++;
+            let contactado = false, agendado = false;
+            const transferido = !!c.closerAsignado;
 
-            let contactado = false;
-            let agendado = false;
-            let transferido = !!c.closerAsignado;
+            if (c.etapaEmbudo && c.etapaEmbudo !== 'prospecto_nuevo') contactado = true;
+            if (etapasAgendado.has(c.etapaEmbudo) || transferido) { contactado = true; agendado = true; }
 
-            // Etapas que implican contacto
-            const etapasContacto = ['en_contacto', 'reunion_agendada', 'venta_ganada', 'en_negociacion', 'reunion_realizada', 'perdido'];
-            // Etapas que implican reunión agendada
-            const etapasAgendado = ['reunion_agendada', 'venta_ganada', 'en_negociacion', 'reunion_realizada'];
-
-            if (c.etapaEmbudo !== 'prospecto_nuevo' && c.etapaEmbudo) contactado = true;
-            if (etapasAgendado.includes(c.etapaEmbudo) || transferido) {
-                contactado = true;
-                agendado = true;
-            }
-
-            // Historial por si fue regresado a alguna etapa
             const hist = parseHistorialSeguro(c.historialEmbudo);
-            const etapasHist = hist.map(h => h.etapa);
-            if (etapasHist.some(e => etapasContacto.includes(e))) contactado = true;
-            if (etapasHist.some(e => etapasAgendado.includes(e))) {
-                contactado = true;
-                agendado = true;
+            for (const h of hist) {
+                if (etapasContacto.has(h.etapa)) contactado = true;
+                if (etapasAgendado.has(h.etapa)) { contactado = true; agendado = true; }
             }
 
             if (contactado) embudo.en_contacto++;
@@ -148,58 +171,34 @@ router.get('/dashboard', [auth, esVendedor], async (req, res) => {
             if (transferido) embudo.transferidos++;
         }
 
-        const tasasConversion = {
-            contacto: embudo.total > 0
-                ? (embudo.en_contacto / embudo.total * 100).toFixed(1)
-                : 0,
-            agendamiento: embudo.en_contacto > 0
-                ? (embudo.reunion_agendada / embudo.en_contacto * 100).toFixed(1)
-                : 0
+        const m = actMetrics || {};
+        const periodos = {
+            dia:    { llamadas: Number(m.llamadas_dia)||0,    mensajes: Number(m.mensajes_dia)||0,    prospectos: 0, reuniones: Number(m.reuniones_dia)||0 },
+            semana: { llamadas: Number(m.llamadas_semana)||0, mensajes: Number(m.mensajes_semana)||0, prospectos: 0, reuniones: Number(m.reuniones_semana)||0 },
+            mes:    { llamadas: Number(m.llamadas_mes)||0,    mensajes: Number(m.mensajes_mes)||0,    prospectos: 0, reuniones: Number(m.reuniones_mes)||0 },
+            total:  { llamadas: Number(m.llamadas_total)||0,  mensajes: Number(m.mensajes_total)||0,  prospectos: 0, reuniones: Number(m.reuniones_total)||0 }
         };
 
-        // Filtros por período calculados en JS para compatibilidad total (SQLite/Postgres)
-        const nowLocal = new Date();
-        const startOfDay = new Date(nowLocal.getFullYear(), nowLocal.getMonth(), nowLocal.getDate()).toISOString().slice(0, 10);
-        const endOfDay = startOfDay + 'T23:59:59.999Z';
-        const startOfDayISO = startOfDay + 'T00:00:00.000Z';
-
-        const sixDaysAgo = new Date(nowLocal);
-        sixDaysAgo.setDate(nowLocal.getDate() - 6);
-        const startOfWeek = new Date(sixDaysAgo.getFullYear(), sixDaysAgo.getMonth(), sixDaysAgo.getDate()).toISOString().slice(0, 10) + 'T00:00:00.000Z';
-
-        const startOfMonth = new Date(nowLocal.getFullYear(), nowLocal.getMonth(), 1).toISOString().slice(0, 10) + 'T00:00:00.000Z';
-
-        // Actividades: campo 'fecha'
-        const FILTROS_ACT = {
-            dia: `fecha >= '${startOfDayISO}' AND fecha <= '${endOfDay}'`,
-            semana: `fecha >= '${startOfWeek}'`,
-            mes: `fecha >= '${startOfMonth}'`,
-            total: null
-        };
-        // Prospectos nuevos: campo 'fechaRegistro'
-        const FILTROS_CLI = {
-            dia: `(fechaRegistro >= '${startOfDayISO}' AND fechaRegistro <= '${endOfDay}' OR (fechaRegistro IS NULL AND fechaUltimaEtapa >= '${startOfDayISO}' AND fechaUltimaEtapa <= '${endOfDay}'))`,
-            semana: `(fechaRegistro >= '${startOfWeek}' OR (fechaRegistro IS NULL AND fechaUltimaEtapa >= '${startOfWeek}'))`,
-            mes: `(fechaRegistro >= '${startOfMonth}' OR (fechaRegistro IS NULL AND fechaUltimaEtapa >= '${startOfMonth}'))`,
-            total: null
-        };
-        // Reuniones agendadas: campo 'fecha' (en tabla actividades)
-        const FILTROS_REUNION = {
-            dia: `fecha >= '${startOfDayISO}' AND fecha <= '${endOfDay}'`,
-            semana: `fecha >= '${startOfWeek}'`,
-            mes: `fecha >= '${startOfMonth}'`,
-            total: null
-        };
-
-        const periodos = {};
-        for (const key of ['dia', 'semana', 'mes', 'total']) {
-            const { llamadas, mensajes } = await calcularPeriodoActividades(db, prospectorId, FILTROS_ACT[key]);
-            const prospectos = await calcularPeriodoClientes(db, prospectorId, FILTROS_CLI[key]);
-            const reuniones = await calcularPeriodoReuniones(db, prospectorId, FILTROS_REUNION[key]);
-            periodos[key] = { llamadas, mensajes, prospectos, reuniones };
+        // Prospectos por período calculado en JS (ya tenemos los clientes)
+        const nonProspect = new Set(NON_PROSPECT_STAGES);
+        for (const c of clientes) {
+            if (nonProspect.has(c.etapaEmbudo)) continue;
+            const fr = c.fechaRegistro || c.fechaUltimaEtapa;
+            if (!fr) { periodos.total.prospectos++; continue; }
+            periodos.total.prospectos++;
+            if (fr >= startOfMonth) periodos.mes.prospectos++;
+            if (fr >= startOfWeek) periodos.semana.prospectos++;
+            if (fr >= startOfDay && fr <= endOfDay) periodos.dia.prospectos++;
         }
 
-        // Compatibilidad backward con metricas (por si hay otros consumidores)
+        const tasasConversion = {
+            contacto: embudo.total > 0 ? (embudo.en_contacto / embudo.total * 100).toFixed(1) : 0,
+            agendamiento: embudo.en_contacto > 0 ? (embudo.reunion_agendada / embudo.en_contacto * 100).toFixed(1) : 0
+        };
+
+        const analisisFuentes = {};
+        fuentesRaw.forEach(f => { analisisFuentes[f.fuente || 'Desconocido'] = f.c; });
+
         const metricas = {
             llamadas: { hoy: periodos.dia.llamadas, totales: periodos.total.llamadas },
             contactosExitosos: { hoy: 0, totales: 0 },
@@ -208,40 +207,18 @@ router.get('/dashboard', [auth, esVendedor], async (req, res) => {
             correosEnviados: periodos.dia.mensajes
         };
 
-        // Agregación por fuente
-        const fuentesRaw = await db.prepare(`
-            SELECT fuente, COUNT(*) as c FROM clientes 
-            WHERE prospectorAsignado = ? OR id IN (SELECT cliente FROM actividades WHERE vendedor = ?)
-            GROUP BY fuente
-        `).all(prospectorId, prospectorId);
-        const analisisFuentes = {};
-        fuentesRaw.forEach(f => { analisisFuentes[f.fuente || 'Desconocido'] = f.c; });
-
         res.json({ embudo, metricas, tasasConversion, periodos, analisisFuentes });
     } catch (error) {
         console.error('Error en dashboard prospector:', error);
-        // Fallback para no romper la UI del dashboard si hay datos históricos corruptos.
         return res.json({
             embudo: { total: 0, prospecto_nuevo: 0, en_contacto: 0, reunion_agendada: 0, transferidos: 0 },
-            metricas: {
-                llamadas: { hoy: 0, totales: 0 },
-                contactosExitosos: { hoy: 0, totales: 0 },
-                reunionesAgendadas: { hoy: 0, totales: 0, semana: 0 },
-                prospectosHoy: 0,
-                correosEnviados: 0
-            },
+            metricas: { llamadas: { hoy: 0, totales: 0 }, contactosExitosos: { hoy: 0, totales: 0 }, reunionesAgendadas: { hoy: 0, totales: 0, semana: 0 }, prospectosHoy: 0, correosEnviados: 0 },
             tasasConversion: { contacto: 0, agendamiento: 0 },
-            periodos: {
-                dia: { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: 0 },
-                semana: { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: 0 },
-                mes: { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: 0 },
-                total: { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: 0 }
-            },
+            periodos: { dia: { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: 0 }, semana: { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: 0 }, mes: { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: 0 }, total: { llamadas: 0, mensajes: 0, prospectos: 0, reuniones: 0 } },
             degraded: true
         });
     }
 });
-
 
 // GET /api/vendedor/dashboard-closer
 router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
