@@ -3,6 +3,7 @@ const router = express.Router();
 const { db } = require('../config/database');
 const { auth, esSuperUser } = require('../middleware/auth');
 const { toMongoFormat } = require('../lib/helpers');
+const { invalidateUserCache } = require('../lib/cache');
 
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
 const normalizePhone = (value) => String(value || '').replace(/\D/g, '');
@@ -296,6 +297,10 @@ router.post('/', auth, esSuperUser, async (req, res) => {
         );
 
         const row = await db.prepare('SELECT * FROM clientes ORDER BY id DESC LIMIT 1').get();
+
+        // ✅ INVALIDAR CACHÉ: afecta dashboard y listas
+        invalidateUserCache(req.usuario.id);
+
         res.status(201).json({ mensaje: 'Cliente creado', cliente: toMongoFormat(row) || row });
     } catch (error) {
         res.status(500).json({ mensaje: 'Error del servidor' });
@@ -374,6 +379,10 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
         params.push(now);
         await db.prepare(`UPDATE clientes SET ${updates.join(', ')} WHERE id = ?`).run(...params);
         const row = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(parseInt(req.params.id));
+
+        // ✅ INVALIDAR CACHÉ: afecta dashboard y listas
+        invalidateUserCache(req.usuario.id);
+
         res.json({ mensaje: 'Cliente actualizado', cliente: toMongoFormat(row) || row });
     } catch (error) {
         res.status(500).json({ mensaje: 'Error del servidor' });
@@ -396,6 +405,9 @@ router.delete('/:id', auth, esSuperUser, async (req, res) => {
         await db.prepare('DELETE FROM tareas WHERE cliente = ?').run(clienteId);
         await db.prepare('DELETE FROM ventas WHERE cliente = ?').run(clienteId);
         await db.prepare('DELETE FROM clientes WHERE id = ?').run(clienteId);
+
+        // ✅ INVALIDAR CACHÉ: afecta dashboard y listas
+        invalidateUserCache(req.usuario.id);
 
         res.json({ mensaje: 'Cliente eliminado' });
     } catch (error) {
@@ -422,6 +434,10 @@ router.patch('/:id/etapa', auth, esSuperUser, async (req, res) => {
         await db.prepare('UPDATE clientes SET etapaEmbudo = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, estado = ? WHERE id = ?')
             .run(etapaNueva, now, now, JSON.stringify(hist), estado, parseInt(req.params.id));
         const row = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(parseInt(req.params.id));
+
+        // ✅ INVALIDAR CACHÉ: afecta dashboard y listas
+        invalidateUserCache(req.usuario.id);
+
         res.json({ mensaje: 'Etapa actualizada', cliente: toMongoFormat(row) || row });
     } catch (error) {
         res.status(500).json({ mensaje: 'Error del servidor' });

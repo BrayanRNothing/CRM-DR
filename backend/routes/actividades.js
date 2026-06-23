@@ -3,6 +3,7 @@ const router = express.Router();
 const { db } = require('../config/database');
 const { auth, esSuperUser } = require('../middleware/auth');
 const { toMongoFormat } = require('../lib/helpers');
+const { invalidateUserCache } = require('../lib/cache');
 
 // GET /api/actividades/cliente/:clienteId/historial-completo
 // Nuevo: obtener historial COMPLETO de un cliente incluyendo etapas y actividades
@@ -190,6 +191,10 @@ router.post('/', auth, esSuperUser, async (req, res) => {
             .run(tipo, parseInt(req.usuario.id), parseInt(cliente), descripcion || '', resultado || 'pendiente', notas || '');
         await db.prepare('UPDATE clientes SET ultimaInteraccion = ? WHERE id = ?').run(now, parseInt(cliente));
         const row = await db.prepare('SELECT * FROM actividades ORDER BY id DESC LIMIT 1').get();
+
+        // ✅ INVALIDAR CACHÉ: nueva actividad afecta el dashboard
+        invalidateUserCache(req.usuario.id);
+
         res.status(201).json({ mensaje: 'Actividad registrada', actividad: toMongoFormat(row) || row });
     } catch (error) {
         res.status(500).json({ mensaje: 'Error del servidor' });
@@ -229,6 +234,10 @@ router.put('/:id', auth, async (req, res) => {
         }
         
         const row = await db.prepare('SELECT * FROM actividades WHERE id = ?').get(id);
+
+        // ✅ INVALIDAR CACHÉ: edición de actividad afecta el dashboard
+        invalidateUserCache(req.usuario.id);
+
         res.json({ mensaje: 'Actividad actualizada', actividad: toMongoFormat(row) || row });
     } catch (error) {
         console.error('Error al actualizar actividad:', error);
@@ -256,6 +265,10 @@ router.delete('/:id', auth, async (req, res) => {
         }
 
         await db.prepare('DELETE FROM actividades WHERE id = ?').run(id);
+
+        // ✅ INVALIDAR CACHÉ: eliminación de actividad afecta el dashboard
+        invalidateUserCache(req.usuario.id);
+
         res.json({ mensaje: 'Actividad eliminada correctamente' });
     } catch (error) {
         console.error('Error al eliminar actividad:', error);

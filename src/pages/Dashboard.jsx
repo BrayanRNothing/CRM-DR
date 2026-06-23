@@ -117,12 +117,13 @@ const sanitizeVendedorData = (rawData) => {
 import { getToken } from '../utils/authUtils';
 import useWindowSize from '../hooks/useWindowSize';
 import DashboardMobile from './DashboardMobile';
+import useApiCache, { clearCacheByPrefix } from '../hooks/useApiCache';
 
 const getAuthHeaders = () => ({ 'x-auth-token': getToken() || '' });
 
 const Dashboard = () => {
     const { width } = useWindowSize();
-    const [loading, setLoading] = useState(true);
+    // loading y backgroundLoading los provee useApiCache (ver más abajo)
 
     const [vendedorData, setVendedorData] = useState(null);
     const [closerData, setCloserData] = useState(null);
@@ -241,30 +242,54 @@ const Dashboard = () => {
         }
     };
 
+    // ✅ CACHÉ: Dashboard principal con stale-while-revalidate (TTL 60s)
+    const {
+        data: dashboardRaw,
+        loading: loadingDashboard,
+        backgroundLoading: bgLoadingDashboard,
+        refresh: refreshDashboard
+    } = useApiCache(
+        'dashboard-vendedor',
+        async () => {
+            const res = await axios.get(`${API_URL}/api/vendedor/dashboard`, { headers: getAuthHeaders() });
+            return sanitizeVendedorData(res.data);
+        },
+        { ttl: 60, staleWhileRevalidate: true }
+    );
+
+    // ✅ CACHÉ: Dashboard closer con stale-while-revalidate (TTL 60s)
+    const {
+        data: closerRaw,
+        loading: loadingCloser,
+        backgroundLoading: bgLoadingCloser,
+        refresh: refreshCloser
+    } = useApiCache(
+        'dashboard-closer',
+        async () => {
+            const res = await axios.get(`${API_URL}/api/vendedor/dashboard-closer`, { headers: getAuthHeaders() });
+            return sanitizeCloserData(res.data);
+        },
+        { ttl: 60, staleWhileRevalidate: true }
+    );
+
+    // Sincronizar datos del caché con los estados existentes
+    useEffect(() => {
+        if (dashboardRaw) setVendedorData(dashboardRaw);
+    }, [dashboardRaw]);
+
+    useEffect(() => {
+        if (closerRaw) setCloserData(closerRaw);
+    }, [closerRaw]);
+
+    const loading = loadingDashboard || loadingCloser;
+    const backgroundLoading = bgLoadingDashboard || bgLoadingCloser;
+
     const cargarDatos = async (silent = false) => {
-        if (!silent) setLoading(true);
-        try {
-            try {
-                const resP = await axios.get(`${API_URL}/api/vendedor/dashboard`, { headers: getAuthHeaders() });
-                setVendedorData(sanitizeVendedorData(resP.data));
-            } catch (e) {
-                console.error('Error prospector data:', e);
-                setVendedorData(INITIAL_VENDEDOR_DATA);
-            }
-
-            try {
-                const resC = await axios.get(`${API_URL}/api/vendedor/dashboard-closer`, { headers: getAuthHeaders() });
-                setCloserData(sanitizeCloserData(resC.data));
-            } catch (e) {
-                console.error('Error closer data:', e);
-                setCloserData(INITIAL_CLOSER_DATA);
-            }
-
-        } catch (error) {
-            console.error('Error cargando dashboard unificado', error);
-        } finally {
-            if (!silent) setLoading(false);
+        if (!silent) {
+            clearCacheByPrefix('dashboard');
         }
+        refreshDashboard();
+        refreshCloser();
     };
 
     const cargarListas = async (silent = false) => {
@@ -447,7 +472,6 @@ const Dashboard = () => {
     };
 
     useEffect(() => {
-        cargarDatos();
         cargarListas();
         cargarMetasEquipo();
 

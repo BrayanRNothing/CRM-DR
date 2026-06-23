@@ -3,6 +3,7 @@ const router = express.Router();
 const { db } = require('../config/database');
 const { auth } = require('../middleware/auth');
 const { toMongoFormat, toMongoFormatMany, parseGoogleExpiryToMillis } = require('../lib/helpers');
+const { getCache, setCache, invalidateUserCache } = require('../lib/cache');
 
 const esVendedor = (req, res, next) => {
     const rol = String(req.usuario.rol).toLowerCase();
@@ -98,6 +99,13 @@ async function calcularPeriodoReuniones(db, prospectorId, filtroFechaEtapa) {
 router.get('/dashboard', [auth, esVendedor], async (req, res) => {
     try {
         const prospectorId = parseInt(req.usuario.id);
+
+        // ✅ CACHÉ: Servir desde memoria si está fresco (TTL 60s)
+        const cacheKey = `user:${prospectorId}:dashboard`;
+        const cached = getCache(cacheKey);
+        if (cached) {
+            return res.json(cached);
+        }
 
         const nowLocal = new Date();
         const startOfDay   = new Date(nowLocal.getFullYear(), nowLocal.getMonth(), nowLocal.getDate()).toISOString().slice(0,10) + 'T00:00:00.000Z';
@@ -207,7 +215,9 @@ router.get('/dashboard', [auth, esVendedor], async (req, res) => {
             correosEnviados: periodos.dia.mensajes
         };
 
-        res.json({ embudo, metricas, tasasConversion, periodos, analisisFuentes });
+        const response = { embudo, metricas, tasasConversion, periodos, analisisFuentes };
+        setCache(cacheKey, response, 60); // TTL 60 segundos
+        res.json(response);
     } catch (error) {
         console.error('Error en dashboard prospector:', error);
         return res.json({
@@ -225,6 +235,13 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
     try {
         const closerId = parseInt(req.usuario.id);
         const equipoId = req.usuario.equipo_id;
+
+        // ✅ CACHÉ: Servir desde memoria si está fresco (TTL 60s)
+        const cacheKey = `user:${closerId}:dashboard-closer`;
+        const cached = getCache(cacheKey);
+        if (cached) {
+            return res.json(cached);
+        }
 
         // Si hay equipo, ver clientes del equipo, si no, solo los propios
         let sql = 'SELECT * FROM clientes WHERE ';
@@ -419,7 +436,7 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
             global: embudo.reunion_agendada > 0 ? ((embudo.venta_ganada / embudo.reunion_agendada) * 100).toFixed(1) : '0.0'
         };
 
-        res.json({
+        const closerResponse = {
             embudo,
             metricas: {
                 reuniones: { hoy: reunionesHoy.length, pendientes: clientes.filter(c => c.etapaEmbudo === 'reunion_agendada').length, realizadas: embudo.reunion_realizada, realizadasHoy: reunionesRealizadasHoy, propuestasHoy: propuestasHoy },
@@ -431,7 +448,9 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
             analisisPerdidasPremium,
             analisisFuentes: analisisFuentesPremium,
             eficiencia
-        });
+        };
+        setCache(cacheKey, closerResponse, 60); // TTL 60 segundos
+        res.json(closerResponse);
     } catch (error) {
         console.error('Error en dashboard-closer:', error);
         res.status(500).json({ msg: 'Error del servidor' });
@@ -561,24 +580,34 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
         const { etapa, busqueda, scope } = req.query;
         const visibilityScope = parseScope(scope);
 
+        // ✅ CACHÉ: TTL 30s — incluye los query params para no mezclar resultados
+        const cacheKey = `user:${prospectorId}:prospectos:${visibilityScope}:${etapa || 'todos'}:${busqueda || ''}`;
+        const cached = getCache(cacheKey);
+        if (cached) {
+            return res.json(cached);
+        }
+
+        // ✅ QUERY OPTIMIZADA: subqueries correlacionadas → JOINs eficientes
+        // Antes: (SELECT MIN(...) FROM tareas WHERE t.cliente = c.id) ejecutaba 1 subquery POR CADA fila
+        // Ahora: se hace 1 sola query agrupada y se une con JOIN (O(n) en lugar de O(n²))
         let sql = `SELECT c.*, u.nombre as closerNombre, owner.nombre as propietarioNombre,
-            (
-                SELECT MIN(t.fechaLimite)
-                FROM tareas t
-                WHERE t.cliente = c.id
-                  AND t.titulo = 'Recordatorio de llamada'
-                  AND t.estado = 'pendiente'
-            ) as proximoRecordatorio,
-            (
-                SELECT MIN(a.fecha)
-                FROM actividades a
-                WHERE a.cliente = c.id
-                  AND a.tipo = 'cita'
-                  AND (a.resultado = 'pendiente' OR a.resultado IS NULL)
-            ) as proximaCita
+            rem.proximoRecordatorio,
+            citas.proximaCita
             FROM clientes c
-            LEFT JOIN usuarios u ON c.closerAsignado = u.id
-            LEFT JOIN usuarios owner ON owner.id = COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado)
+            LEFT JOIN usuarios u ON c."closerAsignado" = u.id
+            LEFT JOIN usuarios owner ON owner.id = COALESCE(c."propietarioId", c."prospectorAsignado", c."vendedorAsignado")
+            LEFT JOIN (
+                SELECT cliente, MIN("fechaLimite") as proximoRecordatorio
+                FROM tareas
+                WHERE titulo = 'Recordatorio de llamada' AND estado = 'pendiente'
+                GROUP BY cliente
+            ) rem ON rem.cliente = c.id
+            LEFT JOIN (
+                SELECT cliente, MIN(fecha) as proximaCita
+                FROM actividades
+                WHERE tipo = 'cita' AND (resultado = 'pendiente' OR resultado IS NULL)
+                GROUP BY cliente
+            ) citas ON citas.cliente = c.id
             WHERE`;
 
         const params = [];
@@ -657,6 +686,7 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
             return out || c;
         });
 
+        setCache(cacheKey, prospectos, 30); // TTL 30 segundos
         res.json(prospectos);
     } catch (error) {
         console.error('Error al obtener prospectos:', error);
@@ -796,6 +826,9 @@ router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
             });
         }
 
+        // ✅ INVALIDAR CACHÉ: los datos del usuario cambiaron
+        invalidateUserCache(prospectorId);
+
         res.status(201).json({ msg: 'Prospecto creado', cliente: cliente || row });
     } catch (error) {
         console.error('Error al crear prospecto:', error);
@@ -911,6 +944,9 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
         const actRow = await db.prepare('SELECT * FROM actividades WHERE id = ?').get(ins.lastInsertRowid);
         const actividad = toMongoFormat(actRow);
         if (actividad) actividad.cliente = { nombres: cliente.nombres, apellidoPaterno: cliente.apellidoPaterno, empresa: cliente.empresa };
+
+        // ✅ INVALIDAR CACHÉ: registrar actividad cambia el dashboard y la lista de prospectos
+        invalidateUserCache(prospectorId);
 
         res.status(201).json({ msg: 'Actividad registrada', actividad: actividad || actRow });
     } catch (error) {
@@ -1301,6 +1337,9 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
             WHERE id = ?
         `).run(...params);
 
+        // ✅ INVALIDAR CACHÉ: datos del usuario cambiaron
+        invalidateUserCache(prospectorId);
+
         res.json({ msg: 'Prospecto actualizado exitosamente' });
     } catch (error) {
         console.error('Error al editar prospecto:', error);
@@ -1499,6 +1538,9 @@ router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
         await db.prepare('UPDATE clientes SET etapaEmbudo = ?, estado = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, proximaLlamada = NULL, closerAsignado = ?, fuente = ? WHERE id = ?')
             .run('venta_ganada', 'ganado', now, now, JSON.stringify(hist), closerParaAsignar, (fuente || cliente.fuente || '').trim(), clienteId);
 
+        // ✅ INVALIDAR CACHÉ: prospecto cambió de estado, afecta dashboard y listas
+        invalidateUserCache(prospectorId);
+
         res.json({ msg: '✓ Prospecto convertido a cliente' });
     } catch (error) {
         console.error('Error al pasar a cliente:', error);
@@ -1543,6 +1585,9 @@ router.post('/descartar-prospecto/:id', [auth, esVendedor], async (req, res) => 
 
         await db.prepare('UPDATE clientes SET etapaEmbudo = ?, motivoPerdida = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, proximaLlamada = NULL WHERE id = ?')
             .run('perdido', motivoPerdida || 'Otro', now, now, JSON.stringify(hist), clienteId);
+
+        // ✅ INVALIDAR CACHÉ: prospecto descartado, afecta dashboard
+        invalidateUserCache(prospectorId);
 
         res.json({ msg: '✓ Prospecto descartado' });
     } catch (error) {
@@ -1739,6 +1784,8 @@ router.post('/importar-csv', [auth, esVendedor], async (req, res) => {
                 errores++;
             }
         }
+        // ✅ INVALIDAR CACHÉ: se importaron prospectos nuevos
+        invalidateUserCache(prospectorId);
         res.json({ insertados, duplicados, errores, total: prospectos.length });
     } catch (error) {
         console.error('Error en importar-csv:', error);
@@ -1768,6 +1815,9 @@ router.delete('/prospectos/:id', [auth, esVendedor], async (req, res) => {
         await db.prepare('DELETE FROM actividades WHERE cliente = ?').run(prospectoId);
         // Eliminar el prospecto
         await db.prepare('DELETE FROM clientes WHERE id = ?').run(prospectoId);
+
+        // ✅ INVALIDAR CACHÉ: prospecto eliminado, afecta dashboard y lista
+        invalidateUserCache(prospectorId);
 
         res.json({ msg: 'Prospecto eliminado correctamente' });
     } catch (error) {

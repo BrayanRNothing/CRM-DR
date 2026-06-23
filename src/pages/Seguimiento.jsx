@@ -41,6 +41,7 @@ import TimeWheelPicker from '../components/TimeWheelPicker';
 import API_URL from '../config/api';
 import socket from '../config/socket';
 import SourcePicker from '../components/ui/SourcePicker';
+import { clearCacheKey } from '../hooks/useApiCache';
 
 // --- CSV helpers ---
 const CSV_HEADERS = ['nombres', 'apellidoPaterno', 'apellidoMaterno', 'telefono', 'correo', 'empresa', 'sitioWeb', 'ubicacion', 'notas', 'fuente'];
@@ -151,6 +152,7 @@ const Seguimiento = () => {
     const rolePath = 'vendedor';
     const [prospectos, setProspectos] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [backgroundLoading, setBackgroundLoading] = useState(false); // carga silenciosa
     // Filtros
     const [busquedaProspecto, setBusquedaProspecto] = useState('');
     const [filtroEtapa, setFiltroEtapa] = useState('todos'); // 'todos', 'prospecto_nuevo', 'reunion_agendada', etc.
@@ -233,12 +235,11 @@ const Seguimiento = () => {
             });
             toast.success('Prospecto actualizado');
             setModalEditarAbierto(false);
-            // Recargar datos y actualizar el panel de detalle si está abierto
-            const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
-            const normalizados = (res.data || []).map(normalizeProspectoRecordatorio);
-            setProspectos(normalizados);
+            // Recargar datos usando caché y actualizar el panel de detalle si está abierto
+            invalidarCacheLocal();
+            const normalizados = await cargarDatos(false);
             if (prospectoSeleccionado && (prospectoSeleccionado.id === prospectoAEditar.id || prospectoSeleccionado._id === prospectoAEditar.id)) {
-                const updated = normalizados.find(p => p.id === prospectoAEditar.id || p._id === prospectoAEditar.id);
+                const updated = normalizados?.find(p => p.id === prospectoAEditar.id || p._id === prospectoAEditar.id);
                 if (updated) setProspectoSeleccionado(updated);
             }
         } catch (error) {
@@ -276,8 +277,36 @@ const Seguimiento = () => {
         return String(ownerId) === String(currentUserId);
     };
 
-    const cargarDatos = async () => {
-        setLoading(true);
+    const cargarDatos = async (isBackground = false) => {
+        // En background: no blanquear la lista, solo actualizar silenciosamente
+        if (isBackground) {
+            setBackgroundLoading(true);
+        } else {
+            // Primera carga o refresh forzado: verificar caché local primero
+            const cacheKey = `crm_cache:prospectos:${filtroVisibilidad}`;
+            try {
+                const cached = sessionStorage.getItem(cacheKey);
+                if (cached) {
+                    const { data: cachedData, timestamp } = JSON.parse(cached);
+                    const isFresh = (Date.now() - timestamp) < 30 * 1000; // 30s TTL
+                    if (cachedData && cachedData.length > 0) {
+                        // Mostrar datos cacheados inmediatamente
+                        setProspectos(cachedData);
+                        setLoading(false);
+                        if (isFresh) return; // Datos frescos, no refrescar
+                        // Datos vencidos: recargar en background
+                        setBackgroundLoading(true);
+                    } else {
+                        setLoading(true);
+                    }
+                } else {
+                    setLoading(true);
+                }
+            } catch {
+                setLoading(true);
+            }
+        }
+
         try {
             const [resProspectos, resTareas] = await Promise.all([
                 axios.get(`${API_URL}/api/${rolePath}/prospectos`, {
@@ -298,19 +327,37 @@ const Seguimiento = () => {
             });
 
             setProspectos(normalizados);
-            return normalizados; // Retornar datos para el init
+
+            // Guardar en caché local
+            try {
+                const cacheKey = `crm_cache:prospectos:${filtroVisibilidad}`;
+                sessionStorage.setItem(cacheKey, JSON.stringify({
+                    data: normalizados,
+                    timestamp: Date.now()
+                }));
+            } catch { /* ignorar si sessionStorage está lleno */ }
+
+            return normalizados;
         } catch (error) {
             console.error('Error al cargar:', error);
-            setProspectos([]);
+            if (!isBackground) setProspectos([]);
             return null;
         } finally {
             setLoading(false);
+            setBackgroundLoading(false);
         }
+    };
+
+    // Función para invalidar caché local de prospectos (llamar tras mutaciones)
+    const invalidarCacheLocal = () => {
+        clearCacheKey(`prospectos:${filtroVisibilidad}`);
+        // También invalidar todas las variantes de scope
+        ['mine', 'shared', 'all'].forEach(s => clearCacheKey(`prospectos:${s}`));
     };
 
     useEffect(() => {
         const init = async () => {
-            const data = await cargarDatos();
+            const data = await cargarDatos(false);
             // 1. Prioridad: Parámetro 'p' en la URL (para recargas F5 o enlaces directos)
             const urlId = searchParams.get('p');
             // 2. Fallback: location.state.selectedId (para navegación interna desde otra página)
@@ -324,11 +371,11 @@ const Seguimiento = () => {
             }
         };
         init();
-        const interval = setInterval(cargarDatos, 5 * 60 * 1000);
+        const interval = setInterval(() => cargarDatos(true), 5 * 60 * 1000);
 
         const handleSocketUpdate = (obj) => {
             console.log('socket: prospectos actualizados detectado', obj);
-            cargarDatos();
+            cargarDatos(true);
         };
         socket.on('prospectos_actualizados', handleSocketUpdate);
 
@@ -547,7 +594,8 @@ const Seguimiento = () => {
             await axios.delete(`${API_URL}/api/${rolePath}/prospectos/${prospectoAEliminar.id || prospectoAEliminar._id}`, { headers: getAuthHeaders() });
             toast.success('Prospecto eliminado correctamente');
             setProspectoAEliminar(null);
-            cargarDatos();
+            invalidarCacheLocal();
+            cargarDatos(false);
         } catch (error) {
             toast.error(error.response?.data?.msg || 'Error al eliminar el prospecto');
         } finally { setEliminando(false); }
@@ -565,7 +613,8 @@ const Seguimiento = () => {
             toast.success('Prospecto creado');
             setModalCrearAbierto(false);
             setFormCrear({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '', fuente: '' });
-            cargarDatos();
+            invalidarCacheLocal();
+            cargarDatos(false);
         } catch (error) {
             toast.error(error.response?.data?.msg || 'Error al crear');
         } finally {
@@ -597,7 +646,8 @@ const Seguimiento = () => {
             setModalPasarClienteAbierto(false);
             setNotaConversion('');
             setProspectoSeleccionado(null);
-            cargarDatos();
+            invalidarCacheLocal();
+            cargarDatos(false);
         } catch (err) {
             toast.error(err.response?.data?.msg || 'Error al convertir a cliente');
         } finally {
@@ -621,7 +671,8 @@ const Seguimiento = () => {
             setModalDescartarAbierto(false);
             setNotaDescarte('');
             setProspectoSeleccionado(null);
-            cargarDatos();
+            invalidarCacheLocal();
+            cargarDatos(false);
         } catch (err) {
             toast.error(err.response?.data?.msg || 'Error al descartar');
         } finally {
