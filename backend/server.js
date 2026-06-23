@@ -2,6 +2,7 @@ require('dotenv').config();
 // Build trigger: 2026-04-23
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const path = require('path');
 const fs = require('fs');
 
@@ -38,6 +39,9 @@ app.use((req, res, next) => {
 
 // Preflight manually handles OPTIONS if needed, but cors middleware usually does it.
 app.options('*', cors());
+
+// ✅ GZIP Compression - reduces response size up to 90%, fixes ERR_HTTP2_PROTOCOL_ERROR
+app.use(compression());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

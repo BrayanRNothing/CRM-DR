@@ -505,7 +505,7 @@ router.get('/calendario', [auth, esVendedor], async (req, res) => {
                 .run(cita.id);
         }
 
-        // Sincronización Google Calendar
+        // Sincronización Google Calendar (con timeout de 5s para evitar 502)
         try {
             const usuario = await db.prepare('SELECT googleRefreshToken, googleAccessToken, googleTokenExpiry FROM usuarios WHERE id = ?').get(vendedorId);
 
@@ -528,13 +528,19 @@ router.get('/calendario', [auth, esVendedor], async (req, res) => {
                 const timeMax = new Date();
                 timeMax.setDate(timeMax.getDate() + 30);
 
-                const response = await calendar.events.list({
+                // Timeout de 5 segundos para no bloquear Railway
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Google Calendar timeout')), 5000)
+                );
+                const calendarPromise = calendar.events.list({
                     calendarId: 'primary',
                     timeMin: ahora.toISOString(),
                     timeMax: timeMax.toISOString(),
                     singleEvents: true,
                     orderBy: 'startTime'
                 });
+
+                const response = await Promise.race([calendarPromise, timeoutPromise]);
 
                 const eventosGoogle = response.data.items || [];
                 const reunionesActualizadas = [];
@@ -557,7 +563,10 @@ router.get('/calendario', [auth, esVendedor], async (req, res) => {
                 reuniones = reunionesActualizadas;
             }
         } catch (syncError) {
-            console.error('Error al sincronizar con Google Calendar:', syncError.message);
+            // Solo loguear, no fallar - el endpoint responde igual sin sync
+            if (!syncError.message?.includes('timeout')) {
+                console.error('Error al sincronizar con Google Calendar:', syncError.message);
+            }
         }
 
         res.json(reuniones);
@@ -1869,13 +1878,17 @@ router.get('/calendario', [auth, esVendedor], async (req, res) => {
                 const timeMax = new Date();
                 timeMax.setDate(timeMax.getDate() + 30);
 
-                const response = await calendar.events.list({
+                // Timeout de 5 segundos para no bloquear Railway
+                const gcalTimeout1 = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Google Calendar timeout')), 5000)
+                );
+                const response = await Promise.race([calendar.events.list({
                     calendarId: 'primary',
                     timeMin: ahora.toISOString(),
                     timeMax: timeMax.toISOString(),
                     singleEvents: true,
                     orderBy: 'startTime'
-                });
+                }), gcalTimeout1]);
 
                 const eventosGoogle = response.data.items || [];
 
@@ -2914,13 +2927,17 @@ router.get('/calendario', [auth, esVendedor], async (req, res) => {
                 const timeMax = new Date();
                 timeMax.setDate(timeMax.getDate() + 30);
 
-                const response = await calendar.events.list({
+                // Timeout de 5 segundos para no bloquear Railway
+                const gcalTimeout2 = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Google Calendar timeout')), 5000)
+                );
+                const response = await Promise.race([calendar.events.list({
                     calendarId: 'primary',
                     timeMin: ahora.toISOString(),
                     timeMax: timeMax.toISOString(),
                     singleEvents: true,
                     orderBy: 'startTime'
-                });
+                }), gcalTimeout2]);
 
                 const eventosGoogle = response.data.items || [];
 
