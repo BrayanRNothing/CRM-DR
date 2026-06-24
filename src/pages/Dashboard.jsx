@@ -791,60 +791,61 @@ const Dashboard = () => {
 
                             {healthTab === 'kpis' && (
                                 <div className="flex flex-col gap-4 h-full min-h-0">
-                                    {/* Fila 1: KPIs Básicos */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+                                    {/* KPIs Resumen (Compactos) para dar más espacio vertical a las listas */}
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0">
                                         <MetricKPICard
-                                            title="Prospectos Totales"
+                                            title="Totales"
                                             value={totalEntrada}
                                             format="number"
                                             icon={<Users className="w-5 h-5" />}
-                                            detail={`Total histórico de leads recibidos`}
+                                            detail="Recibidos"
                                             color="blue"
+                                            compact={true}
                                         />
                                         <MetricKPICard
                                             title="En Contacto"
                                             value={enContacto}
                                             format="number"
                                             icon={<Phone className="w-5 h-5" />}
-                                            detail="Leads gestionados y contactados"
+                                            detail="Gestionados"
                                             color="indigo"
+                                            compact={true}
                                         />
                                         <MetricKPICard
-                                            title="Clientes (Ganadas)"
+                                            title="Ganadas"
                                             value={ganadas}
                                             format="number"
                                             icon={<CheckCircle2 className="w-5 h-5" />}
-                                            detail={`Total de ventas cerradas con éxito`}
+                                            detail="Éxitos"
                                             color="emerald"
+                                            compact={true}
                                         />
-                                    </div>
-
-                                    {/* Fila 2: Métricas Secundarias */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 shrink-0">
                                         <MetricKPICard
-                                            title="Ventas del Mes"
+                                            title="Ventas Mes"
                                             value={closerData.metricas.ventas.montoMes || 0}
                                             format="money"
                                             compact={true}
                                             icon={<DollarSign className="w-5 h-5" />}
-                                            detail={`${closerData.metricas.ventas.mes || 0} cierres logrados este mes`}
+                                            detail={`${closerData.metricas.ventas.mes || 0} cierres`}
                                             color="emerald"
                                         />
                                         <MetricKPICard
-                                            title="Conversión Global"
+                                            title="Conversión"
                                             value={tasaGlobal}
                                             format="percent"
                                             icon={<Target className="w-5 h-5" />}
-                                            detail="Porcentaje de éxito global"
+                                            detail="Global"
                                             thresholds={{ good: 15, okay: 8 }}
+                                            compact={true}
                                         />
                                         <MetricKPICard
-                                            title="Leads Estancados"
+                                            title="Estancados"
                                             value={closerData?.eficiencia?.leadsEstancados || 0}
                                             format="number"
                                             icon={<AlertTriangle className="w-5 h-5" />}
-                                            detail="Prospectos con >7 días sin actividad"
+                                            detail=">7 días inact."
                                             color="rose"
+                                            compact={true}
                                         />
                                     </div>
 
