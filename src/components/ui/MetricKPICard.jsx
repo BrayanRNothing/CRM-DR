@@ -9,7 +9,8 @@ const MetricKPICard = ({
     detail, 
     trend, 
     color = 'blue',
-    thresholds = { good: 50, okay: 30 }
+    thresholds = { good: 50, okay: 30 },
+    compact = false
 }) => {
     
     const getStatusColor = (val) => {
@@ -24,8 +25,21 @@ const MetricKPICard = ({
 
     const formattedValue = () => {
         if (format === 'percent') return `${value.toFixed(1)}%`;
-        if (format === 'money') return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(value);
-        return new Intl.NumberFormat('es-MX').format(value);
+        
+        const numValue = Number(value) || 0;
+        
+        if (format === 'money') {
+            if (compact && numValue >= 1000) {
+                // En es-MX notation: compact da resultados como "24 mil"
+                return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', notation: 'compact', compactDisplay: 'short', maximumFractionDigits: 1 }).format(numValue);
+            }
+            return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(numValue);
+        }
+        
+        if (compact && numValue >= 1000) {
+            return new Intl.NumberFormat('es-MX', { notation: 'compact', compactDisplay: 'short', maximumFractionDigits: 1 }).format(numValue);
+        }
+        return new Intl.NumberFormat('es-MX').format(numValue);
     };
 
     return (

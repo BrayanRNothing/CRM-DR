@@ -153,29 +153,50 @@ router.get('/dashboard', [auth, esVendedor], async (req, res) => {
             `).all(prospectorId, prospectorId)
         ]);
 
-        // Embudo calculado en JS (sin queries adicionales)
-        const clientesActivos = clientes.filter(c => !NON_PROSPECT_STAGES.includes(c.etapaEmbudo));
-        const embudo = { total: clientesActivos.length, prospecto_nuevo: 0, en_contacto: 0, reunion_agendada: 0, transferidos: 0 };
+        // Embudo histórico unificado
+        const embudo = { 
+            total: clientes.length, 
+            prospecto_nuevo: clientes.length, 
+            en_contacto: 0, 
+            reunion_agendada: 0, 
+            transferidos: 0,
+            reunion_realizada: 0,
+            venta_ganada: 0
+        };
 
-        const etapasContacto = new Set(['en_contacto','reunion_agendada','venta_ganada','en_negociacion','reunion_realizada','perdido']);
-        const etapasAgendado = new Set(['reunion_agendada','venta_ganada','en_negociacion','reunion_realizada']);
+        const etapasContacto = new Set(['en_contacto','reunion_agendada','venta_ganada','en_negociacion','reunion_realizada','perdido','cotizacion_realizada','contrato_firmado','esperando_pago','cliente_activo']);
+        const etapasAgendado = new Set(['reunion_agendada','venta_ganada','en_negociacion','reunion_realizada','cotizacion_realizada','contrato_firmado','esperando_pago','cliente_activo']);
+        const etapasRealizado = new Set(['reunion_realizada','venta_ganada','en_negociacion','cotizacion_realizada','contrato_firmado','esperando_pago','cliente_activo']);
+        const etapasGanada = new Set(['venta_ganada','contrato_firmado','esperando_pago','cliente_activo']);
 
-        for (const c of clientesActivos) {
-            embudo.prospecto_nuevo++;
-            let contactado = false, agendado = false;
+        for (const c of clientes) {
+            let contactado = false, agendado = false, realizado = false, ganado = false;
             const transferido = !!c.closerAsignado;
 
-            if (c.etapaEmbudo && c.etapaEmbudo !== 'prospecto_nuevo') contactado = true;
+            // Revisar etapa actual
+            if (c.etapaEmbudo && c.etapaEmbudo !== 'prospecto_nuevo' && c.etapaEmbudo !== 'perdido') contactado = true;
+            if (etapasContacto.has(c.etapaEmbudo)) contactado = true;
             if (etapasAgendado.has(c.etapaEmbudo) || transferido) { contactado = true; agendado = true; }
+            if (etapasRealizado.has(c.etapaEmbudo)) { contactado = true; agendado = true; realizado = true; }
+            if (etapasGanada.has(c.etapaEmbudo)) { contactado = true; agendado = true; realizado = true; ganado = true; }
 
+            // Revisar el historial
             const hist = parseHistorialSeguro(c.historialEmbudo);
             for (const h of hist) {
                 if (etapasContacto.has(h.etapa)) contactado = true;
                 if (etapasAgendado.has(h.etapa)) { contactado = true; agendado = true; }
+                if (etapasRealizado.has(h.etapa)) { contactado = true; agendado = true; realizado = true; }
+                if (etapasGanada.has(h.etapa)) { contactado = true; agendado = true; realizado = true; ganado = true; }
+                
+                // Análisis por resultados específicos
+                if (h.resultado === 'venta') { contactado = true; agendado = true; realizado = true; ganado = true; }
+                if (['no_venta', 'cotizacion', 'otra_reunion'].includes(h.resultado)) { contactado = true; agendado = true; realizado = true; }
             }
 
             if (contactado) embudo.en_contacto++;
             if (agendado) embudo.reunion_agendada++;
+            if (realizado) embudo.reunion_realizada++;
+            if (ganado) embudo.venta_ganada++;
             if (transferido) embudo.transferidos++;
         }
 
@@ -427,7 +448,7 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
 
         const ventasMes = await db.prepare('SELECT * FROM ventas WHERE vendedor = ? AND fecha >= ?').all(closerId, inicioMes.toISOString());
         const ventasHoy = await db.prepare('SELECT * FROM ventas WHERE vendedor = ? AND fecha >= ? AND fecha <= ?').all(closerId, hoyInicio.toISOString(), hoyFin.toISOString());
-        const montoTotalMes = ventasMes.reduce((sum, v) => sum + (v.monto || 0), 0);
+        const montoTotalMes = ventasMes.reduce((sum, v) => sum + Number(v.monto || 0), 0);
 
         const tasasConversion = {
             asistencia: embudo.reunion_agendada > 0 ? ((embudo.reunion_realizada / embudo.reunion_agendada) * 100).toFixed(1) : '0.0',
@@ -2480,6 +2501,10 @@ router.post('/registrar-reunion', [auth, esVendedor], async (req, res) => {
             .run('cita', closerId, cid, now, descripcion, resStatus, notas || '');
 
         const row = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(cid);
+        
+        // Invalidar caché del dashboard
+        invalidateUserCache(closerId);
+
         res.json({ msg: 'Reunión registrada', cliente: toMongoFormat(row) || row });
     } catch (error) {
         console.error('Error al registrar reunión:', error);
@@ -2557,6 +2582,9 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
             WHERE id = ?
         `).run(...params);
 
+        // Invalidar caché del dashboard
+        invalidateUserCache(parseInt(req.usuario.id));
+
         res.json({ msg: 'Prospecto actualizado exitosamente' });
     } catch (error) {
         console.error('Error al editar prospecto:', error);
@@ -2580,6 +2608,9 @@ router.delete('/prospectos/:id', [auth, esVendedor], async (req, res) => {
         await db.prepare('DELETE FROM actividades WHERE cliente = ?').run(prospectoId);
         // Eliminar el prospecto
         await db.prepare('DELETE FROM clientes WHERE id = ?').run(prospectoId);
+
+        // Invalidar caché
+        invalidateUserCache(parseInt(req.usuario.id));
 
         res.json({ msg: 'Prospecto eliminado correctamente' });
     } catch (error) {
@@ -2622,6 +2653,9 @@ router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
 
         await db.prepare('UPDATE clientes SET etapaEmbudo = ?, estado = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, closerAsignado = ?, fuente = ? WHERE id = ?')
             .run('venta_ganada', 'ganado', now, now, JSON.stringify(hist), closerParaAsignar, (fuente || cliente.fuente || '').trim(), clienteId);
+
+        // Invalidar caché
+        invalidateUserCache(closerId);
 
         res.json({ msg: '✓ Prospecto convertido a cliente' });
     } catch (error) {
@@ -2850,7 +2884,7 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
 
         const ventasMes = await db.prepare('SELECT * FROM ventas WHERE vendedor = ? AND fecha >= ?').all(closerId, inicioMes);
         const ventasHoy = await db.prepare('SELECT * FROM ventas WHERE vendedor = ? AND fecha >= ? AND fecha <= ?').all(closerId, hoyInicio, hoyFin);
-        const montoTotalMes = ventasMes.reduce((sum, v) => sum + (v.monto || 0), 0);
+        const montoTotalMes = ventasMes.reduce((sum, v) => sum + Number(v.monto || 0), 0);
 
         const tasasConversion = {
             asistencia: embudo.reunion_agendada > 0 ? ((embudo.reunion_realizada / embudo.reunion_agendada) * 100).toFixed(1) : '0.0',

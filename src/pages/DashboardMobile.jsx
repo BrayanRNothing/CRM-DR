@@ -29,8 +29,9 @@ const DashboardMobile = ({
     const mP = vendedorData.periodos?.[periodo] || {};
     const totalEntrada = vendedorData.embudo.total || 0;
     const enContacto = vendedorData.embudo.en_contacto || 0;
-    const negociacion = (vendedorData.embudo.reunion_agendada || 0) + (closerData.embudo.reunion_realizada || 0);
-    const ganadas = closerData.embudo.venta_ganada || 0;
+    // Usamos reuniones agendadas (citas) como etapa de negociación
+    const negociacion = vendedorData.embudo.reunion_agendada || 0;
+    const ganadas = vendedorData.embudo.venta_ganada || 0;
     
     const formatMoney = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
 
@@ -229,8 +230,8 @@ const DashboardMobile = ({
                             className="space-y-4"
                         >
                             {[
-                                { label: 'Tasa de Contacto', val: vendedorData.tasasConversion.contacto, color: 'text-blue-500' },
-                                { label: 'Tasa de Cierre', val: closerData.tasasConversion.cierre, color: 'text-emerald-500' },
+                                { label: 'Tasa de Contacto', val: totalEntrada > 0 ? (enContacto / totalEntrada) * 100 : 0, color: 'text-blue-500' },
+                                { label: 'Tasa de Cierre', val: negociacion > 0 ? (ganadas / negociacion) * 100 : 0, color: 'text-emerald-500' },
                             ].map((kpi, i) => (
                                 <div key={i} className="bg-white/80 backdrop-blur-xl border border-white/40 rounded-3xl p-5 shadow-sm">
                                     <div className="flex items-center justify-between">
