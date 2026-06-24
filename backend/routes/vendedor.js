@@ -1423,9 +1423,9 @@ router.post('/agendar-reunion', [auth, esVendedor], async (req, res) => {
 
             const closerDetails = await db.prepare('SELECT email, nombre FROM usuarios WHERE id = ?').get(closerIdNum);
             
-            // Generar enlace dinámico de Jitsi
-            const meetingId = uuidv4().substring(0, 8);
-            hangoutLink = `https://meet.jit.si/Reunion-SoloMyCRM-${meetingId}`;
+            // Generar enlace dinámico de MiroTalk SFU (Sin login, gratis, 100% automático)
+            const meetingId = uuidv4().substring(0, 10);
+            hangoutLink = `https://sfu.mirotalk.com/join/CRM-${meetingId}`;
 
             // Preparar emails de asistentes
             const emailsAsistentes = [];
