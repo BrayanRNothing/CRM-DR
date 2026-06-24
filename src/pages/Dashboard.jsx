@@ -790,68 +790,64 @@ const Dashboard = () => {
                             )}
 
                             {healthTab === 'kpis' && (
-                                <div className="flex flex-col gap-4 h-full min-h-0">
-                                    {/* KPIs Resumen (Compactos) para dar más espacio vertical a las listas */}
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0">
-                                        <MetricKPICard
-                                            title="Totales"
-                                            value={totalEntrada}
-                                            format="number"
-                                            icon={<Users className="w-5 h-5" />}
-                                            detail="Recibidos"
-                                            color="blue"
-                                            compact={true}
-                                        />
-                                        <MetricKPICard
-                                            title="En Contacto"
-                                            value={enContacto}
-                                            format="number"
-                                            icon={<Phone className="w-5 h-5" />}
-                                            detail="Gestionados"
-                                            color="indigo"
-                                            compact={true}
-                                        />
-                                        <MetricKPICard
-                                            title="Ganadas"
-                                            value={ganadas}
-                                            format="number"
-                                            icon={<CheckCircle2 className="w-5 h-5" />}
-                                            detail="Éxitos"
-                                            color="emerald"
-                                            compact={true}
-                                        />
-                                        <MetricKPICard
-                                            title="Ventas Mes"
-                                            value={closerData.metricas.ventas.montoMes || 0}
-                                            format="money"
-                                            compact={true}
-                                            icon={<DollarSign className="w-5 h-5" />}
-                                            detail={`${closerData.metricas.ventas.mes || 0} cierres`}
-                                            color="emerald"
-                                        />
-                                        <MetricKPICard
-                                            title="Conversión"
-                                            value={tasaGlobal}
-                                            format="percent"
-                                            icon={<Target className="w-5 h-5" />}
-                                            detail="Global"
-                                            thresholds={{ good: 15, okay: 8 }}
-                                            compact={true}
-                                        />
-                                        <MetricKPICard
-                                            title="Estancados"
-                                            value={closerData?.eficiencia?.leadsEstancados || 0}
-                                            format="number"
-                                            icon={<AlertTriangle className="w-5 h-5" />}
-                                            detail=">7 días inact."
-                                            color="rose"
-                                            compact={true}
-                                        />
+                                <div className="flex flex-col lg:flex-row gap-4 h-full min-h-0">
+                                    {/* Izquierda: KPIs Básicos (Cards normales) */}
+                                    <div className="w-full lg:w-[45%] xl:w-[40%] flex flex-col gap-3 shrink-0 lg:h-full lg:overflow-y-auto custom-scrollbar pr-1">
+                                        <div className="grid grid-cols-2 gap-3 h-full">
+                                            <MetricKPICard
+                                                title="Prospectos Totales"
+                                                value={totalEntrada}
+                                                format="number"
+                                                icon={<Users className="w-5 h-5" />}
+                                                detail={`Histórico de leads`}
+                                                color="blue"
+                                            />
+                                            <MetricKPICard
+                                                title="En Contacto"
+                                                value={enContacto}
+                                                format="number"
+                                                icon={<Phone className="w-5 h-5" />}
+                                                detail="Leads contactados"
+                                                color="indigo"
+                                            />
+                                            <MetricKPICard
+                                                title="Clientes (Ganadas)"
+                                                value={ganadas}
+                                                format="number"
+                                                icon={<CheckCircle2 className="w-5 h-5" />}
+                                                detail={`Cierres exitosos`}
+                                                color="emerald"
+                                            />
+                                            <MetricKPICard
+                                                title="Ventas del Mes"
+                                                value={closerData.metricas.ventas.montoMes || 0}
+                                                format="money"
+                                                compact={true}
+                                                icon={<DollarSign className="w-5 h-5" />}
+                                                detail={`${closerData.metricas.ventas.mes || 0} cierres este mes`}
+                                                color="emerald"
+                                            />
+                                            <MetricKPICard
+                                                title="Conversión Global"
+                                                value={tasaGlobal}
+                                                format="percent"
+                                                icon={<Target className="w-5 h-5" />}
+                                                detail="Porcentaje de éxito"
+                                                thresholds={{ good: 15, okay: 8 }}
+                                            />
+                                            <MetricKPICard
+                                                title="Leads Estancados"
+                                                value={closerData?.eficiencia?.leadsEstancados || 0}
+                                                format="number"
+                                                icon={<AlertTriangle className="w-5 h-5" />}
+                                                detail=">7 días sin actividad"
+                                                color="rose"
+                                            />
+                                        </div>
                                     </div>
 
-
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 flex-1 min-h-0 mt-auto">
+                                    {/* Derecha: Listas con Altura Máxima */}
+                                    <div className="w-full lg:flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 h-full min-h-0">
                                         {/* Distribución por Fuente */}
                                         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full min-h-0">
                                             <div className="flex items-center gap-2 mb-6 shrink-0">
@@ -940,17 +936,6 @@ const Dashboard = () => {
                                                     }
                                                 </div>
                                             )}
-                                        </div>
-
-                                        {/* Espacio para Métricas en Desarrollo (Simplificada y Centrada) */}
-                                        {/* Espacio para Métricas en Desarrollo */}
-                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full min-h-0 items-center justify-center text-center opacity-70 group transition-all">
-                                            <div className="max-w-[220px]">
-                                                <h3 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em] leading-tight mb-2">Métricas en Desarrollo</h3>
-                                                <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
-                                                    Nuevos análisis y predicciones inteligentes próximamente.
-                                                </p>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
