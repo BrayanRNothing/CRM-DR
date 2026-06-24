@@ -1415,87 +1415,45 @@ router.post('/agendar-reunion', [auth, esVendedor], async (req, res) => {
         const fechaReunionISO = new Date(fechaReunion).toISOString();
         const finReunionISO = new Date(new Date(fechaReunion).getTime() + 45 * 60000).toISOString();
 
-        // ** GOOGLE CALENDAR INTEGRATION **
+        // ** JITSI + ICS UNIVERSAL INTEGRATION **
         let hangoutLink = null;
         try {
-            const closerDetails = await db.prepare('SELECT email, googleRefreshToken, googleAccessToken, googleTokenExpiry FROM usuarios WHERE id = ?').get(closerIdNum);
+            const { v4: uuidv4 } = require('uuid');
+            const { enviarInvitacionCalendario } = require('../services/emailService');
 
-            if (closerDetails && (closerDetails.googleRefreshToken || closerDetails.googleAccessToken)) {
-                const { OAuth2Client } = require('google-auth-library');
-                const { google } = require('googleapis');
+            const closerDetails = await db.prepare('SELECT email, nombre FROM usuarios WHERE id = ?').get(closerIdNum);
+            
+            // Generar enlace dinámico de Jitsi
+            const meetingId = uuidv4().substring(0, 8);
+            hangoutLink = `https://meet.jit.si/Reunion-SoloMyCRM-${meetingId}`;
 
-                const client = new OAuth2Client(
-                    process.env.VITE_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID,
-                    process.env.GOOGLE_CLIENT_SECRET
-                );
+            // Preparar emails de asistentes
+            const emailsAsistentes = [];
+            if (closerDetails && closerDetails.email) {
+                emailsAsistentes.push(closerDetails.email);
+            }
+            if (cliente.correo && cliente.correo.trim() !== '') {
+                emailsAsistentes.push(cliente.correo);
+            }
 
-                client.setCredentials({
-                    refresh_token: closerDetails.googleRefreshToken,
-                    access_token: closerDetails.googleAccessToken,
-                    expiry_date: parseGoogleExpiryToMillis(closerDetails.googleTokenExpiry)
+            if (emailsAsistentes.length > 0) {
+                // Enviar la invitación ICS
+                await enviarInvitacionCalendario({
+                    fechaInicioISO: fechaReunionISO,
+                    duracionMinutos: 45,
+                    titulo: `[CITA] - ${cliente.nombres} ${cliente.apellidoPaterno}`,
+                    descripcion: `Cliente: ${cliente.telefono} - ${cliente.empresa || 'Sin empresa'}\nNotas: ${notas || 'Sin notas'}\nAgendado por: ${req.usuario.nombre}.`,
+                    jitsiLink: hangoutLink,
+                    emailsAsistentes: emailsAsistentes
                 });
-
-                client.on('tokens', async (tokens) => {
-                    let updateStr = [];
-                    let params = [];
-                    if (tokens.refresh_token) { updateStr.push('googleRefreshToken = ?'); params.push(tokens.refresh_token); }
-                    if (tokens.access_token) { updateStr.push('googleAccessToken = ?'); params.push(tokens.access_token); }
-                    if (tokens.expiry_date) { updateStr.push('googleTokenExpiry = ?'); params.push(tokens.expiry_date); }
-
-                    if (updateStr.length > 0) {
-                        params.push(closerIdNum);
-                        await db.prepare(`UPDATE usuarios SET ${updateStr.join(', ')} WHERE id = ?`).run(...params);
-                    }
-                });
-
-                const calendar = google.calendar({ version: 'v3', auth: client });
-
-                const attendeesList = [{ email: closerDetails.email }];
-                if (cliente.correo && cliente.correo.trim() !== '') {
-                    attendeesList.push({ email: cliente.correo });
-                }
-
-                const event = {
-                    summary: `[CITA AGENDADA] - ${cliente.nombres} ${cliente.apellidoPaterno}`,
-                    description: `[SISTEMA-CRM]\nCliente: ${cliente.telefono} - ${cliente.empresa || 'Sin empresa'}\nNotas: ${notas || 'Sin notas'}\nAgendado por Prospecter ${req.usuario.nombre}.`,
-                    start: { dateTime: fechaReunionISO, timeZone: 'America/Mexico_City' },
-                    end: { dateTime: finReunionISO, timeZone: 'America/Mexico_City' },
-                    attendees: attendeesList,
-                    conferenceData: {
-                        createRequest: {
-                            requestId: 'meeting-' + Date.now().toString(),
-                            conferenceSolutionKey: { type: 'hangoutsMeet' }
-                        }
-                    }
-                };
-
-                const createdEvent = await calendar.events.insert({
-                    calendarId: 'primary',
-                    conferenceDataVersion: 1,
-                    requestBody: event
-                });
-
-                // ✅ Robust extraction: check both hangoutLink and entryPoints
-                hangoutLink = createdEvent.data.hangoutLink;
-                if (!hangoutLink && createdEvent.data.conferenceData?.entryPoints) {
-                    const ep = createdEvent.data.conferenceData.entryPoints.find(e => e.entryPointType === 'video');
-                    if (ep) hangoutLink = ep.uri;
-                }
+            } else {
+                console.warn('No se pudo enviar ICS porque ni el cliente ni el closer tienen email válido.');
             }
         } catch (calendarError) {
-            console.error('❌ Error detallado al crear evento en Google Calendar:', calendarError.response?.data || calendarError.message);
-            // Si el error es de permisos/configuración de Google, informarlo
-            if (isGoogleAuthError(calendarError)) {
-                return res.status(400).json({
-                    msg: 'Error con Google Calendar (API deshabilitada o Sin Permisos)',
-                    googleError: calendarError.response?.data?.error || calendarError.message,
-                    details: calendarError.response?.data?.error_description || undefined,
-                    code: 'google_config_error'
-                });
-            }
-            // Para otros errores, seguimos permitiendo la creación local pero avisamos
+            console.error('❌ Error al enviar invitación ICS o generar Jitsi:', calendarError.message);
+            // No detenemos el flujo, seguimos agendando la cita en CRM
         }
-        // ** END GOOGLE CALENDAR INTEGRATION **
+        // ** END JITSI + ICS UNIVERSAL INTEGRATION **
 
 
         const fechaDisplayMX = new Date(fechaReunion).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', dateStyle: 'short', timeStyle: 'short' });

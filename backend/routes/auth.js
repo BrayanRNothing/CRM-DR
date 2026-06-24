@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { db } = require('../config/database');
 const { auth } = require('../middleware/auth');
+const { enviarCorreoBienvenida } = require('../services/emailService');
 
 const ROLES_PERMITIDOS = ['vendedor'];
 
@@ -152,6 +153,15 @@ router.post('/register', async (req, res) => {
                 .run('registro', nuevoUserId, `Nuevo usuario registrado: ${newUser.usuario}`, 'exitoso');
         } catch (actError) {
             console.error('Error al registrar actividad de registro:', actError);
+        }
+
+        // Enviar correo de bienvenida si tiene email
+        if (newUser.email) {
+            try {
+                await enviarCorreoBienvenida(newUser.email);
+            } catch (emailError) {
+                console.error('No se pudo enviar el correo de bienvenida:', emailError);
+            }
         }
 
         res.status(201).json({

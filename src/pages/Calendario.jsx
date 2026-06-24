@@ -448,7 +448,8 @@ const Calendario = () => {
           sessionStorage.removeItem("googleLinkedConfirmed");
           setGoogleLinked(false);
           if (!isQuiet && !sessionStorage.getItem("dismissedSyncPrompt")) {
-            setShowSyncPrompt(true);
+            // Ya no requerimos Google para agendar (usamos ICS/Jitsi)
+            // setShowSyncPrompt(true); 
           }
         } else {
           // Recordar en sesión que el usuario está vinculado para no mostrar modal al volver
@@ -466,7 +467,8 @@ const Calendario = () => {
           // 1. No ha sido omitido esta sesión
           // 2. No es una revisión silenciosa (focus / recarga)
           if (!isQuiet && !sessionStorage.getItem("dismissedSyncPrompt")) {
-            setShowSyncPrompt(true);
+            // Ya no requerimos Google para agendar (usamos ICS/Jitsi)
+            // setShowSyncPrompt(true); 
           }
         }
         // Si es un error 500 u otro error temporal, no cambiamos el estado de vinculación
