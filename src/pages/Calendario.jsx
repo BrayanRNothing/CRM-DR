@@ -76,6 +76,7 @@ const Calendario = () => {
   const [formData, setFormData] = useState({
     notas: "",
     invitados: [],
+    plataformaReunion: "mirotalk",
   });
   const [invitadoInput, setInvitadoInput] = useState("");
   const [activeTab, setActiveTab] = useState(
@@ -863,6 +864,7 @@ const Calendario = () => {
             fechaReunion: startDateTime.toISOString(),
             notas: formData.notas,
             invitados: formData.invitados,
+            plataformaReunion: formData.plataformaReunion,
           }),
         },
       );
@@ -1685,6 +1687,48 @@ const Calendario = () => {
                                 </div>
                               )}
                             </div>
+                          </div>
+
+                          {/* Plataforma de Videollamada */}
+                          <div>
+                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                              Plataforma de Videollamada
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, plataformaReunion: 'mirotalk' })}
+                                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-[10px] font-bold transition-all ${
+                                  formData.plataformaReunion === 'mirotalk'
+                                    ? 'bg-slate-900 border-slate-900 text-white shadow-md'
+                                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                                }`}
+                              >
+                                <VideoIcon className={`w-5 h-5 mb-1 ${formData.plataformaReunion === 'mirotalk' ? 'text-white' : 'text-slate-400'}`} />
+                                MiroTalk (Universal)
+                              </button>
+                              
+                              <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, plataformaReunion: 'google' })}
+                                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-[10px] font-bold transition-all ${
+                                  formData.plataformaReunion === 'google'
+                                    ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+                                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                                }`}
+                              >
+                                <svg className={`w-5 h-5 mb-1 ${formData.plataformaReunion === 'google' ? 'text-white' : 'text-slate-400'}`} viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+                                </svg>
+                                Google Meet
+                              </button>
+                            </div>
+                            {formData.plataformaReunion === 'google' && !closerLinkedToGoogle && (
+                              <p className="text-[9px] text-amber-600 font-bold mt-2 flex items-center gap-1 bg-amber-50 p-1.5 rounded-lg">
+                                <AlertCircle className="w-3 h-3" />
+                                Requiere vincular cuenta de Google en Ajustes.
+                              </p>
+                            )}
                           </div>
 
                           {/* Notas */}
