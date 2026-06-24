@@ -209,9 +209,8 @@ router.get('/dashboard', [auth, esVendedor], async (req, res) => {
         };
 
         // Prospectos por período calculado en JS (ya tenemos los clientes)
-        const nonProspect = new Set(NON_PROSPECT_STAGES);
+        // Contamos TODOS los leads generados en el período, sin importar si ya son clientes (NON_PROSPECT_STAGES).
         for (const c of clientes) {
-            if (nonProspect.has(c.etapaEmbudo)) continue;
             const fr = c.fechaRegistro || c.fechaUltimaEtapa;
             if (!fr) { periodos.total.prospectos++; continue; }
             periodos.total.prospectos++;
@@ -1558,6 +1557,14 @@ router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
 
         await db.prepare('UPDATE clientes SET etapaEmbudo = ?, estado = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, proximaLlamada = NULL, closerAsignado = ?, fuente = ? WHERE id = ?')
             .run('venta_ganada', 'ganado', now, now, JSON.stringify(hist), closerParaAsignar, (fuente || cliente.fuente || '').trim(), clienteId);
+
+        // Auto-registrar venta en $0 para que aparezca en el dashboard inmediatamente
+        try {
+            await db.prepare('INSERT INTO ventas (cliente, vendedor, monto, fecha, estado, notas) VALUES (?, ?, ?, ?, ?, ?)')
+                .run(clienteId, closerParaAsignar, 0, now, 'completada', notas || 'Venta auto-registrada por conversión de prospecto');
+        } catch (e) {
+            console.error('Error auto-registrando venta:', e);
+        }
 
         // ✅ INVALIDAR CACHÉ: prospecto cambió de estado, afecta dashboard y listas
         invalidateUserCache(prospectorId);

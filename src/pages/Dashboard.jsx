@@ -79,7 +79,9 @@ const sanitizeVendedorData = (rawData) => {
             prospecto_nuevo: getNumero(rawData?.embudo?.prospecto_nuevo),
             en_contacto: getNumero(rawData?.embudo?.en_contacto),
             reunion_agendada: getNumero(rawData?.embudo?.reunion_agendada),
-            transferidos: getNumero(rawData?.embudo?.transferidos)
+            transferidos: getNumero(rawData?.embudo?.transferidos),
+            reunion_realizada: getNumero(rawData?.embudo?.reunion_realizada),
+            venta_ganada: getNumero(rawData?.embudo?.venta_ganada)
         },
         tasasConversion: {
             contacto: getNumero(rawData?.tasasConversion?.contacto),
@@ -820,7 +822,7 @@ const Dashboard = () => {
                                     {/* Fila 2: Métricas Secundarias */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 shrink-0">
                                         <MetricKPICard
-                                            title="Ventas del Mes s"
+                                            title="Ventas del Mes"
                                             value={closerData.metricas.ventas.montoMes || 0}
                                             format="money"
                                             compact={true}
