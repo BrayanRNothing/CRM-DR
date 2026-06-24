@@ -118,23 +118,34 @@ export default function ClienteDetalle({
     const [guardandoVenta, setGuardandoVenta] = useState(false);
 
     // SECCIONES PERSONALIZADAS
-    const [customSections, setCustomSections] = useState(() => {
-        const val = initialCliente?.customSections;
-        if (!val) return [];
-        if (Array.isArray(val)) return val;
-        try {
-            return JSON.parse(val);
-        } catch (e) {
-            console.error("Error parsing customSections:", e);
-            return [];
+    const DEFAULT_SECTIONS = [
+        { id: 'default-payments', tipo: 'payments', titulo: 'Estado de Pagos', contenido: [] },
+        { id: 'default-sales', tipo: 'sales', titulo: 'Historial de Ventas', contenido: [] },
+        { id: 'default-subscriptions', tipo: 'subscriptions', titulo: 'Suscripciones', contenido: [] },
+    ];
+
+    const parseOrDefaultSections = (val) => {
+        if (!val) return DEFAULT_SECTIONS;
+        let parsed = [];
+        if (Array.isArray(val)) {
+            parsed = val;
+        } else {
+            try {
+                parsed = JSON.parse(val);
+            } catch (e) {
+                console.error('Error parsing customSections:', e);
+                parsed = [];
+            }
         }
-    });
+        // Si el array está vacío, usar los defaults
+        return parsed.length > 0 ? parsed : DEFAULT_SECTIONS;
+    };
+
+    const [customSections, setCustomSections] = useState(() =>
+        parseOrDefaultSections(initialCliente?.customSections)
+    );
     const [modalNuevaSeccion, setModalNuevaSeccion] = useState(false);
     const [drawerHistorialAbierto, setDrawerHistorialAbierto] = useState(false);
-    const [mostrarNotasDefault, setMostrarNotasDefault] = useState(() => {
-        const saved = localStorage.getItem('crm_mostrar_notas_default');
-        return saved === null ? true : saved === 'true';
-    });
 
     // Solo actualizar estado local al recibir nuevos datos
     useEffect(() => {
@@ -150,19 +161,7 @@ export default function ClienteDetalle({
                 setValorCliente(initialCliente.customMetricValue || '');
                 
                 // Parsear customSections si viene como string
-                let parsedSections = [];
-                if (initialCliente.customSections) {
-                    if (Array.isArray(initialCliente.customSections)) {
-                        parsedSections = initialCliente.customSections;
-                    } else {
-                        try {
-                            parsedSections = JSON.parse(initialCliente.customSections);
-                        } catch (e) {
-                            parsedSections = [];
-                        }
-                    }
-                }
-                setCustomSections(parsedSections);
+                setCustomSections(parseOrDefaultSections(initialCliente.customSections));
             }
         }
     }, [initialCliente]);
@@ -338,11 +337,7 @@ export default function ClienteDetalle({
         handleGuardarSeccionesPersonalizadas(updated);
     };
 
-    const toggleNotasDefault = () => {
-        const newValue = !mostrarNotasDefault;
-        setMostrarNotasDefault(newValue);
-        localStorage.setItem('crm_mostrar_notas_default', newValue.toString());
-    };
+
 
     const setClientes = () => {
         if (onActualizado) onActualizado();
@@ -930,35 +925,25 @@ export default function ClienteDetalle({
 
                         {/* ==================== ÁRBOL DE LLAMADA ==================== */}
                         <div className="space-y-3">
-                            <div className="grid grid-cols-3 gap-3">
-                                {/* Botón principal intercambiable: Registrar Venta / Registrar Llamada */}
-                                <div className="relative group/main">
-                                    <button
-                                        onClick={modoBotonPrincipal === 'venta' ? manejarRegistrarVenta : () => setLlamadaFlow({ paso: 'contesto' })}
-                                        className={`flex flex-col items-center justify-center gap-2 border-2 rounded-xl p-4 transition-all shadow-sm font-bold text-sm text-center leading-tight w-full ${
-                                            modoBotonPrincipal === 'venta'
-                                                ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:border-emerald-500'
-                                                : 'bg-white border-slate-200 hover:border-(--theme-500) text-gray-700 hover:text-(--theme-600)'
-                                        }`}
-                                    >
-                                        {modoBotonPrincipal === 'venta'
-                                            ? <><TrendingUp className="w-6 h-6 text-emerald-600" /> Registrar Venta</>
-                                            : <><Phone className="w-6 h-6 text-(--theme-500)" /> Registrar Llamada</>
-                                        }
-                                    </button>
-                                    {/* Botón pequeño para cambiar modo */}
-                                    <button
-                                        onClick={() => {
-                                            const nuevo = modoBotonPrincipal === 'venta' ? 'llamada' : 'venta';
-                                            setModoBotonPrincipal(nuevo);
-                                            localStorage.setItem('crm_modo_boton_principal', nuevo);
-                                        }}
-                                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-slate-200 hover:bg-(--theme-500) hover:text-white text-slate-500 rounded-full text-[9px] flex items-center justify-center transition-all shadow-sm opacity-0 group-hover/main:opacity-100"
-                                        title={`Cambiar a ${modoBotonPrincipal === 'venta' ? 'Registrar Llamada' : 'Registrar Venta'}`}
-                                    >
-                                        ⇄
-                                    </button>
-                                </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {/* Registrar Llamada */}
+                                <button
+                                    onClick={() => setLlamadaFlow({ paso: 'contesto' })}
+                                    className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm text-center leading-tight"
+                                >
+                                    <Phone className="w-6 h-6 text-(--theme-500)" />
+                                    Registrar Llamada
+                                </button>
+                                
+                                {/* Registrar Venta */}
+                                <button
+                                    onClick={manejarRegistrarVenta}
+                                    className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-emerald-500 rounded-xl p-4 text-gray-700 hover:text-emerald-600 transition-all shadow-sm font-bold text-sm text-center leading-tight"
+                                >
+                                    <TrendingUp className="w-6 h-6 text-emerald-500" />
+                                    Registrar Venta
+                                </button>
+
                                 {/* Recordatorio de llamada */}
                                 <button
                                     onClick={abrirNuevoRecordatorio}
@@ -989,156 +974,136 @@ export default function ClienteDetalle({
                                 containerClassName="mt-0"
                                 fixedCardHeightClass="h-[240px]"
                             >
-                                {/* Slot 1: Recordatorios / Notas Toggle */}
-                                {mostrarNotasDefault ? (
-                                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col h-[240px] animate-in fade-in slide-in-from-right-4 duration-300">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <FileText className="w-3.5 h-3.5 text-(--theme-500)" />
-                                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Notas del Cliente</p>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <button
-                                                    onClick={handleGuardarNotasRapidas}
-                                                    disabled={loadingNotas}
-                                                    className={`p-1.5 rounded-lg transition-colors ${notasRapidas !== (ClienteSeleccionado?.notas || '') ? 'bg-(--theme-500) text-white hover:bg-(--theme-600) shadow-sm' : 'text-slate-300 hover:bg-slate-50'}`}
-                                                    title="Guardar notas"
-                                                >
-                                                    <Save className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button
-                                                    onClick={toggleNotasDefault}
-                                                    className="text-[9px] font-bold text-(--theme-600) hover:text-(--theme-700) flex items-center gap-1 bg-(--theme-50) px-2 py-1 rounded-lg transition-colors"
-                                                    title="Ver Recordatorios"
-                                                >
-                                                    <Bell className="w-3 h-3" /> Ver Recordatorios
-                                                </button>
-                                            </div>
+                                {/* Slot 1: Notas del Cliente */}
+                                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col h-[240px]">
+                                    <div className="flex items-center justify-between shrink-0">
+                                        <div className="flex items-center gap-2">
+                                            <FileText className="w-3.5 h-3.5 text-(--theme-500)" />
+                                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Notas del Cliente</p>
                                         </div>
-                                        <textarea
-                                            value={notasRapidas}
-                                            onChange={(e) => setNotasRapidas(e.target.value)}
-                                            placeholder="Escribe notas importantes aquí..."
-                                            className="w-full flex-1 bg-slate-50/50 border border-slate-100 rounded-lg p-3 text-sm focus:ring-2 focus:ring-(--theme-400)/20 focus:border-(--theme-400) outline-none resize-none scrollbar-hide mt-3"
-                                        />
+                                        <button
+                                            onClick={handleGuardarNotasRapidas}
+                                            disabled={loadingNotas}
+                                            className={`p-1.5 rounded-lg transition-colors ${notasRapidas !== (ClienteSeleccionado?.notas || '') ? 'bg-(--theme-500) text-white hover:bg-(--theme-600) shadow-sm' : 'text-slate-300 hover:bg-slate-50'}`}
+                                            title="Guardar notas"
+                                        >
+                                            <Save className="w-3.5 h-3.5" />
+                                        </button>
                                     </div>
-                                ) : (
-                                    <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-2 shadow-sm relative h-[240px] animate-in fade-in slide-in-from-left-4 duration-300">
-                                        <div className="flex items-center justify-between gap-2 shrink-0">
-                                            <div className="flex items-center gap-2">
-                                                <Bell className="w-3.5 h-3.5 text-(--theme-500)" />
-                                                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Recordatorios</p>
-                                            </div>
-                                            <button 
-                                                onClick={toggleNotasDefault}
-                                                className="text-[9px] font-bold text-(--theme-600) hover:text-(--theme-700) flex items-center gap-1 bg-(--theme-50) px-2 py-1 rounded-lg transition-colors"
-                                            >
-                                                <FileText className="w-3 h-3" /> Mostrar Notas
-                                            </button>
+                                    <textarea
+                                        value={notasRapidas}
+                                        onChange={(e) => setNotasRapidas(e.target.value)}
+                                        placeholder="Escribe notas importantes aquí..."
+                                        className="w-full flex-1 bg-slate-50/50 border border-slate-100 rounded-lg p-3 text-sm focus:ring-2 focus:ring-(--theme-400)/20 focus:border-(--theme-400) outline-none resize-none scrollbar-hide mt-3"
+                                    />
+                                </div>
+
+                                {/* Slot 2: Recordatorios */}
+                                <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-2 shadow-sm relative h-[240px]">
+                                    <div className="flex items-center justify-between gap-2 shrink-0">
+                                        <div className="flex items-center gap-2">
+                                            <Bell className="w-3.5 h-3.5 text-(--theme-500)" />
+                                            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Recordatorios</p>
                                         </div>
+                                        <button
+                                            onClick={abrirNuevoRecordatorio}
+                                            className="text-[9px] font-bold text-(--theme-600) hover:text-(--theme-700) flex items-center gap-1 bg-(--theme-50) px-2 py-1 rounded-lg transition-colors"
+                                            title="Nuevo recordatorio"
+                                        >
+                                            <Plus className="w-3 h-3" /> Nuevo
+                                        </button>
+                                    </div>
 
-                                        {/* Contenido con altura fija y scroll */}
-                                        <div className="overflow-y-auto hide-scrollbar flex flex-col gap-2 shrink-0 h-[160px]">
-
-                                            {alertasOrdenadas.map((alerta) => {
-                                                if (alerta.tipo === 'cita') {
-                                                    const cita = alerta.data;
-                                                    const fechaCita = cita.fechaCita || cita.fecha;
-                                                    return (
-                                                        <div key={`cita-${alerta.id}`} className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
-                                                            <div className="flex items-center justify-between gap-2">
-                                                                <div className="flex items-center gap-2">
-                                                                     <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                                                                     <p className="text-xs font-semibold text-blue-900">Reunión agendada</p>
-                                                                </div>
-                                                                <p className="text-[10px] text-gray-400 shrink-0">
-                                                                    {new Date(fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
-                                                                </p>
-                                                            </div>
-
-                                                            <div className="flex gap-1.5">
-                                                                <button
-                                                                    onClick={() => handleMarcarCitaRealizada(cita)}
-                                                                    disabled={loadingCitaId === cita.id}
-                                                                    title="Marcar como realizada"
-                                                                    className="flex-1 flex items-center justify-center gap-1.5 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded py-1.5 text-[10px] font-bold transition-colors disabled:opacity-50"
-                                                                >
-                                                                    <CheckCircle2 className="w-3 h-3" />
-                                                                    {loadingCitaId === cita.id ? '...' : 'Realizada'}
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setModalCita({ abierto: true, cita, editando: false })}
-                                                                    className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
-                                                                    title="Ver"
-                                                                >
-                                                                    <Eye className="w-3.5 h-3.5" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setEditDataCita({ fecha: fechaCita, notas: cita.notas || '' });
-                                                                        setModalCita({ abierto: true, cita, editando: true });
-                                                                    }}
-                                                                    className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
-                                                                    title="Editar"
-                                                                >
-                                                                    <Edit2 className="w-3.5 h-3.5" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleDescartarCita(cita)}
-                                                                    className="flex items-center justify-center bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded px-2 py-1.5 transition-colors shadow-sm"
-                                                                    title="Descartar"
-                                                                >
-                                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                const rec = alerta.data;
+                                    {/* Contenido con altura fija y scroll */}
+                                    <div className="overflow-y-auto hide-scrollbar flex flex-col gap-2 flex-1 min-h-0">
+                                        {alertasOrdenadas.map((alerta) => {
+                                            if (alerta.tipo === 'cita') {
+                                                const cita = alerta.data;
+                                                const fechaCita = cita.fechaCita || cita.fecha;
                                                 return (
-                                                    <div key={`rec-${alerta.id}`} className="bg-(--theme-50) border border-(--theme-100) rounded-lg px-3 py-2 space-y-1.5 shadow-sm">
-                                                        <div className="flex justify-between items-start gap-2">
-                                                            <p className="text-[10px] font-bold text-(--theme-700) bg-white/50 px-1.5 py-0.5 rounded border border-(--theme-100)">
-                                                                📌 {new Date(rec.fechaLimite).toLocaleDateString()} - {new Date(rec.fechaLimite).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    <div key={`cita-${alerta.id}`} className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm shrink-0">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <div className="flex items-center gap-2">
+                                                                 <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                                                                 <p className="text-xs font-semibold text-blue-900">Reunión agendada</p>
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-400 shrink-0">
+                                                                {new Date(fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
                                                             </p>
                                                         </div>
-                                                        {rec.descripcion && (
-                                                            <p className="text-[10px] text-slate-500 italic">{rec.descripcion}</p>
-                                                        )}
                                                         <div className="flex gap-1.5">
                                                             <button
-                                                                onClick={() => handleEditarRecordatorio(rec)}
-                                                                className="flex-1 flex items-center justify-center gap-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded py-1.5 text-[10px] font-bold transition-colors"
+                                                                onClick={() => handleMarcarCitaRealizada(cita)}
+                                                                disabled={loadingCitaId === cita.id}
+                                                                title="Marcar como realizada"
+                                                                className="flex-1 flex items-center justify-center gap-1.5 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded py-1.5 text-[10px] font-bold transition-colors disabled:opacity-50"
                                                             >
-                                                                <Edit2 className="w-3 h-3" /> Editar
+                                                                <CheckCircle2 className="w-3 h-3" />
+                                                                {loadingCitaId === cita.id ? '...' : 'Realizada'}
                                                             </button>
                                                             <button
-                                                                onClick={() => descartarRecordatorio(rec.id)}
-                                                                className="flex-1 flex items-center justify-center gap-1 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded py-1.5 text-[10px] font-bold transition-colors"
+                                                                onClick={() => setModalCita({ abierto: true, cita, editando: false })}
+                                                                className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                                title="Ver"
                                                             >
-                                                                <Trash2 className="w-3 h-3" /> Quitar
+                                                                <Eye className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setEditDataCita({ fecha: fechaCita, notas: cita.notas || '' });
+                                                                    setModalCita({ abierto: true, cita, editando: true });
+                                                                }}
+                                                                className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                                title="Editar"
+                                                            >
+                                                                <Edit2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDescartarCita(cita)}
+                                                                className="flex items-center justify-center bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded px-2 py-1.5 transition-colors shadow-sm"
+                                                                title="Descartar"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
                                                             </button>
                                                         </div>
                                                     </div>
                                                 );
-                                            })}
+                                            }
 
-                                            {citasPendientes.length === 0 && recordatoriosLlamada.length === 0 && (
-                                                <p className="text-[11px] text-slate-500 px-1 italic">Sin alertas por ahora.</p>
-                                            )}
-                                        </div>
+                                            const rec = alerta.data;
+                                            return (
+                                                <div key={`rec-${alerta.id}`} className="bg-(--theme-50) border border-(--theme-100) rounded-lg px-3 py-2 space-y-1.5 shadow-sm shrink-0">
+                                                    <div className="flex justify-between items-start gap-2">
+                                                        <p className="text-[10px] font-bold text-(--theme-700) bg-white/50 px-1.5 py-0.5 rounded border border-(--theme-100)">
+                                                            📌 {new Date(rec.fechaLimite).toLocaleDateString()} - {new Date(rec.fechaLimite).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </p>
+                                                    </div>
+                                                    {rec.descripcion && (
+                                                        <p className="text-[10px] text-slate-500 italic">{rec.descripcion}</p>
+                                                    )}
+                                                    <div className="flex gap-1.5">
+                                                        <button
+                                                            onClick={() => handleEditarRecordatorio(rec)}
+                                                            className="flex-1 flex items-center justify-center gap-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded py-1.5 text-[10px] font-bold transition-colors"
+                                                        >
+                                                            <Edit2 className="w-3 h-3" /> Editar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => descartarRecordatorio(rec.id)}
+                                                            className="flex-1 flex items-center justify-center gap-1 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded py-1.5 text-[10px] font-bold transition-colors"
+                                                        >
+                                                            <Trash2 className="w-3 h-3" /> Quitar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
 
-                                        {/* Indicador de scroll discreto */}
-                                        {(citasPendientes.length + recordatoriosLlamada.length > 2) && (
-                                            <div className="absolute left-0 right-0 flex justify-center pointer-events-none bottom-1">
-                                                <svg className="w-5 h-5 text-slate-400 animate-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                                                    <path d="M7 10l5 5 5-5z" />
-                                                </svg>
-                                            </div>
+                                        {citasPendientes.length === 0 && recordatoriosLlamada.length === 0 && (
+                                            <p className="text-[11px] text-slate-500 px-1 italic">Sin alertas por ahora.</p>
                                         )}
                                     </div>
-                                )}
+                                </div>
                             </ModulosCliente>
                         </div>
                     </div>

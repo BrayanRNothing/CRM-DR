@@ -43,7 +43,7 @@ const MetricKPICard = ({
     };
 
     return (
-        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all group relative overflow-hidden h-full flex flex-col justify-center">
+        <div className="bg-white border border-gray-100 rounded-xl p-3.5 shadow-sm hover:shadow-md transition-all group relative overflow-hidden flex flex-col justify-between min-h-[80px]">
             {/* Trend Badge - Absolute top-right */}
             {trend !== undefined && (
                 <div className={`absolute top-3 right-3 flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black ${trend > 0 ? 'bg-green-50 text-green-600' : 'bg-rose-50 text-rose-600'}`}>

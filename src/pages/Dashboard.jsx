@@ -755,11 +755,11 @@ const Dashboard = () => {
                                             <div className="flex-1 flex flex-col justify-center space-y-4">
                                                 <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 flex items-center justify-between">
                                                     <div>
-                                                        <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest">Ventas Exitosas</p>
-                                                        <h4 className="text-2xl font-black text-emerald-700">{ganadas}</h4>
+                                                        <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest">Ingresos del Mes</p>
+                                                        <h4 className="text-2xl font-black text-emerald-700">{formatMoney.format(closerData.metricas.ventas.montoMes || 0)}</h4>
                                                     </div>
                                                     <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
-                                                        <TrendingUp className="w-5 h-5" />
+                                                        <DollarSign className="w-5 h-5" />
                                                     </div>
                                                 </div>
 
@@ -793,7 +793,7 @@ const Dashboard = () => {
                                 <div className="flex flex-col lg:flex-row gap-4 h-full min-h-0">
                                     {/* Izquierda: KPIs Básicos (Cards normales) */}
                                     <div className="w-full lg:w-[45%] xl:w-[40%] flex flex-col gap-3 shrink-0 lg:h-full lg:overflow-y-auto custom-scrollbar pr-1">
-                                        <div className="grid grid-cols-2 gap-3 h-full">
+                                        <div className="grid grid-cols-2 gap-3 auto-rows-fr">
                                             <MetricKPICard
                                                 title="Prospectos Totales"
                                                 value={totalEntrada}
@@ -849,95 +849,89 @@ const Dashboard = () => {
                                     {/* Derecha: Listas con Altura Máxima */}
                                     <div className="w-full lg:flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 h-full min-h-0">
                                         {/* Distribución por Fuente */}
-                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full min-h-0">
-                                            <div className="flex items-center gap-2 mb-6 shrink-0">
-                                                <div className="w-10 h-10 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 shadow-xs">
-                                                    <Globe className="w-5 h-5" />
-                                                </div>
+                                        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col h-full min-h-0">
+                                            <div className="flex items-center justify-between mb-4 shrink-0">
                                                 <div>
-                                                    <h3 className="text-xs font-black uppercase tracking-widest text-gray-800">Distribución por Fuente</h3>
-                                                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Análisis de Origen</p>
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Origen de leads</p>
+                                                    <h3 className="text-sm font-black text-gray-800 leading-tight">Por Fuente</h3>
+                                                </div>
+                                                <div className="w-7 h-7 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-500">
+                                                    <Globe className="w-3.5 h-3.5" />
                                                 </div>
                                             </div>
 
                                             {Object.keys(analisisFuentesCombinado).length === 0 ? (
-                                                <div className="flex-1 flex flex-col items-center justify-center py-8 opacity-40">
-                                                    <p className="text-[9px] uppercase font-black tracking-widest">Sin datos de origen</p>
+                                                <div className="flex-1 flex flex-col items-center justify-center opacity-30">
+                                                    <Globe className="w-6 h-6 text-gray-300 mb-1" />
+                                                    <p className="text-[9px] uppercase font-black tracking-widest text-gray-400">Sin datos</p>
                                                 </div>
-                                            ) : (
-                                                <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-hide">
-                                                    {Object.entries(analisisFuentesCombinado)
-                                                        .sort((a, b) => b[1].revenue - a[1].revenue)
-                                                        .map(([fuente, data]) => {
+                                            ) : (() => {
+                                                const entries = Object.entries(analisisFuentesCombinado).sort((a, b) => b[1].count - a[1].count);
+                                                const maxCount = entries[0]?.[1]?.count || 1;
+                                                return (
+                                                    <div className="flex-1 overflow-y-auto space-y-2.5 scrollbar-hide">
+                                                        {entries.map(([fuente, data]) => {
                                                             const count = data.count;
-                                                            const revenue = data.revenue;
+                                                            const pct = Math.round((count / maxCount) * 100);
                                                             return (
-                                                                <div key={fuente} className="space-y-1.5">
-                                                                    <div className="flex justify-between text-[11px] items-end">
-                                                                        <div>
-                                                                            <span className="font-black text-gray-700 block">{fuente}</span>
-                                                                            <span className="text-[9px] text-gray-400 font-bold">{count} leads</span>
-                                                                        </div>
-                                                                        <div className="text-right">
-                                                                            <span className="text-indigo-600 font-black block">{formatMoney.format(revenue)}</span>
-                                                                        </div>
+                                                                <div key={fuente}>
+                                                                    <div className="flex items-center justify-between mb-0.5">
+                                                                        <span className="text-[11px] font-bold text-gray-700 truncate pr-2">{fuente}</span>
+                                                                        <span className="text-[11px] font-black text-indigo-600 shrink-0">{count}</span>
                                                                     </div>
-                                                                    <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
-                                                                        <div
-                                                                            className="h-full bg-indigo-500 rounded-full"
-                                                                            style={{ width: `${Math.min((count / (closerData.embudo.total || 1) * 100), 100).toFixed(0)}%` }}
-                                                                        />
+                                                                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                                                        <div className="h-full bg-indigo-400 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                                                                     </div>
                                                                 </div>
                                                             );
-                                                        })
-                                                    }
-                                                </div>
-                                            )}
+                                                        })}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
 
                                         {/* Análisis de Pérdidas (Motivos) */}
-                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full min-h-0">
-                                            <div className="flex items-center gap-2 mb-6 shrink-0">
-                                                <div className="w-10 h-10 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 shadow-xs">
-                                                    <XCircle className="w-5 h-5" />
-                                                </div>
+                                        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col h-full min-h-0">
+                                            <div className="flex items-center justify-between mb-4 shrink-0">
                                                 <div>
-                                                    <h3 className="text-xs font-black uppercase tracking-widest text-gray-800">Motivos de Pérdida</h3>
-                                                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Motivos de Descarte</p>
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Por qué se pierden</p>
+                                                    <h3 className="text-sm font-black text-gray-800 leading-tight">Descarte</h3>
+                                                </div>
+                                                <div className="w-7 h-7 bg-rose-50 rounded-lg flex items-center justify-center text-rose-500">
+                                                    <XCircle className="w-3.5 h-3.5" />
                                                 </div>
                                             </div>
 
                                             {Object.keys(closerData.analisisPerdidasPremium).length === 0 ? (
-                                                <div className="flex-1 flex flex-col items-center justify-center py-8 opacity-40">
-                                                    <p className="text-[9px] uppercase font-black tracking-widest">Sin datos de descarte</p>
+                                                <div className="flex-1 flex flex-col items-center justify-center opacity-30">
+                                                    <XCircle className="w-6 h-6 text-gray-300 mb-1" />
+                                                    <p className="text-[9px] uppercase font-black tracking-widest text-gray-400">Sin datos</p>
                                                 </div>
-                                            ) : (
-                                                <div className="flex-1 overflow-y-auto space-y-5 pr-2 scrollbar-hide">
-                                                    {Object.entries(closerData.analisisPerdidasPremium)
-                                                        .sort((a, b) => b[1] - a[1])
-                                                        .map(([motivo, count]) => {
-                                                            const percent = (count / (closerData.embudo.perdido || 1)) * 100;
+                                            ) : (() => {
+                                                const entries = Object.entries(closerData.analisisPerdidasPremium).sort((a, b) => b[1] - a[1]);
+                                                const maxCount = entries[0]?.[1] || 1;
+                                                return (
+                                                    <div className="flex-1 overflow-y-auto space-y-2.5 scrollbar-hide">
+                                                        {entries.map(([motivo, count]) => {
+                                                            const pct = Math.round((count / maxCount) * 100);
                                                             return (
-                                                                <div key={motivo} className="flex items-center gap-4">
-                                                                    <span className="text-xs font-black text-rose-600 bg-rose-50 w-8 h-8 flex items-center justify-center rounded-xl border border-rose-100 shrink-0">{count}</span>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <div className="flex justify-between items-center mb-1.5">
-                                                                            <p className="text-[11px] font-black text-gray-700 truncate">{motivo}</p>
-                                                                            <p className="text-[10px] font-black text-gray-400">{percent.toFixed(0)}%</p>
-                                                                        </div>
-                                                                        <div className="h-1.5 bg-gray-50 rounded-full overflow-hidden">
-                                                                            <div className="h-full bg-rose-400" style={{ width: `${percent}%` }} />
-                                                                        </div>
+                                                                <div key={motivo}>
+                                                                    <div className="flex items-center justify-between mb-0.5">
+                                                                        <span className="text-[11px] font-bold text-gray-700 truncate pr-2">{motivo}</span>
+                                                                        <span className="text-[11px] font-black text-rose-500 shrink-0">{count}</span>
+                                                                    </div>
+                                                                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                                                        <div className="h-full bg-rose-400 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                                                                     </div>
                                                                 </div>
                                                             );
-                                                        })
-                                                    }
-                                                </div>
-                                            )}
+                                                        })}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
+
                                 </div>
                             )}
 
@@ -989,24 +983,24 @@ const Dashboard = () => {
                                                                 </button>
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-start justify-between gap-2 mb-1">
-                                                                        <h4 className={`text-[11px] font-bold leading-tight ${t.estado === 'completada' ? 'line-through text-gray-400' : 'text-gray-800'}`}>{t.titulo}</h4>
-                                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase border shrink-0 ${t.prioridad === 'alta' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                                                        <h4 className={`text-sm font-bold leading-tight ${t.estado === 'completada' ? 'line-through text-gray-400' : 'text-gray-800'}`}>{t.titulo}</h4>
+                                                                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md uppercase border shrink-0 ${t.prioridad === 'alta' ? 'bg-rose-50 text-rose-600 border-rose-100' :
                                                                             t.prioridad === 'media' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                                                                                 'bg-blue-50 text-blue-600 border-blue-100'
                                                                             }`}>
                                                                             {t.prioridad}
                                                                         </span>
                                                                     </div>
-                                                                    {t.descripcion && <p className="text-[10px] text-gray-500 line-clamp-2 leading-relaxed">{t.descripcion}</p>}
+                                                                    {t.descripcion && <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{t.descripcion}</p>}
 
                                                                     <div className="flex items-center gap-3 mt-2">
-                                                                        <span className="text-[9px] font-bold text-gray-400 flex items-center gap-1">
-                                                                            <Users className="w-3 h-3 text-gray-300" />
+                                                                        <span className="text-[11px] font-bold text-gray-400 flex items-center gap-1">
+                                                                            <Users className="w-3.5 h-3.5 text-gray-300" />
                                                                             {t.vendedorNombre?.split(' ')[0] || 'Usuario'}
                                                                         </span>
                                                                         {t.fechaLimite && (
-                                                                            <span className={`text-[9px] font-bold flex items-center gap-1 ${new Date(t.fechaLimite) < new Date() && t.estado !== 'completada' ? 'text-rose-500' : 'text-gray-400'}`}>
-                                                                                <Calendar className="w-3 h-3 opacity-70" />
+                                                                            <span className={`text-[11px] font-bold flex items-center gap-1 ${new Date(t.fechaLimite) < new Date() && t.estado !== 'completada' ? 'text-rose-500' : 'text-gray-400'}`}>
+                                                                                <Calendar className="w-3.5 h-3.5 opacity-70" />
                                                                                 {new Date(t.fechaLimite).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}
                                                                             </span>
                                                                         )}

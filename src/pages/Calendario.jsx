@@ -67,8 +67,7 @@ const Calendario = () => {
   const [selectedProspect, setSelectedProspect] = useState("");
   const [busySlots, setBusySlots] = useState([]);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
-  const [createdEventLink, setCreatedEventLink] = useState(null);
-  const [bookingCheck, setBookingCheck] = useState(null);
+  const [successModalData, setSuccessModalData] = useState(null);
   const [closerLinkedToGoogle, setCloserLinkedToGoogle] = useState(true);
   const [googleLinked, setGoogleLinked] = useState(null);
   const [showSyncPrompt, setShowSyncPrompt] = useState(false);
@@ -102,6 +101,7 @@ const Calendario = () => {
     invitados: [],
   });
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const [showTimeModal, setShowTimeModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -814,8 +814,7 @@ const Calendario = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setBookingCheck(null);
-    setCreatedEventLink(null);
+    setSuccessModalData(null);
 
     const closer = closers.find(
       (c) => String(c.id || c._id) === String(selectedCloser),
@@ -891,9 +890,7 @@ const Calendario = () => {
       toast.success("Cita agendada con éxito");
 
       const finalLink = dataBackend.hangoutLink || dataBackend.meetLink;
-      if (finalLink) {
-        setCreatedEventLink(finalLink);
-      } else {
+      if (!finalLink) {
         toast("Cita guardada en CRM. No se generó enlace de Google Meet.");
       }
 
@@ -936,15 +933,18 @@ const Calendario = () => {
         : false;
 
       if (encontroEnAgenda) {
-        setBookingCheck({
-          type: "success",
-          message: "Reunion confirmada y visible en tu agenda.",
+        setSuccessModalData({
+          link: finalLink,
+          message: "Reunión confirmada y visible en tu agenda",
+          date: selectedTimeSlot.start,
+          prospect: prospect,
         });
       } else {
-        setBookingCheck({
-          type: "warning",
-          message:
-            "Reunion guardada, pero aun no aparece en lista. Recarga la agenda en unos segundos.",
+        setSuccessModalData({
+          link: finalLink,
+          message: "Reunión guardada, recarga la agenda en unos segundos",
+          date: selectedTimeSlot.start,
+          prospect: prospect,
         });
       }
 
@@ -957,10 +957,6 @@ const Calendario = () => {
     } catch (error) {
       console.error(error);
       toast.dismiss(loadingToast);
-      setBookingCheck({
-        type: "error",
-        message: error.message || "No se pudo agendar la cita",
-      });
       toast.error(error.message || "Error al agendar la cita");
     }
   };
@@ -1273,8 +1269,80 @@ const Calendario = () => {
     );
   };
 
+  const SuccessMeetingModal = () => {
+    if (!successModalData) return null;
+    return (
+      <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 backdrop-blur-md bg-slate-900/40 animate-in fade-in">
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden transform animate-in zoom-in-95 duration-200 border border-slate-100">
+          <div className="p-8 text-center flex flex-col items-center">
+            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+              <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-20"></div>
+              <div className="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center rotate-12 shadow-lg shadow-emerald-500/30">
+                <CalendarIcon className="w-8 h-8 text-white -rotate-12" />
+              </div>
+            </div>
+            
+            <h3 className="text-2xl font-black text-slate-900 mb-2">
+              ¡Cita Agendada!
+            </h3>
+            
+            <p className="text-sm font-medium text-slate-500 mb-1 leading-relaxed">
+              Con <span className="font-bold text-slate-800">{successModalData.prospect?.nombres} {successModalData.prospect?.apellidoPaterno}</span> el 
+            </p>
+            <p className="text-sm font-bold text-slate-800 mb-2">
+              {successModalData.date?.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })} a las {successModalData.date?.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+            </p>
+            
+            <p className="text-[10px] font-black text-emerald-600 mb-6 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+              {successModalData.message}
+            </p>
+            
+            {successModalData.link ? (
+              <div className="w-full mb-6 relative group">
+                 <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex flex-col items-center transition-all group-hover:border-blue-200">
+                    <div className="flex items-center gap-2 text-blue-700 mb-3">
+                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm">
+                        <VideoIcon className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <p className="font-black text-[11px] uppercase tracking-wider text-blue-800">
+                        Sala de Meet Generada
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(successModalData.link);
+                        toast.success("Enlace de Meet copiado");
+                      }}
+                      className="w-full py-3 bg-white border border-blue-200 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 font-black text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                    >
+                      <Copy className="w-4 h-4" />
+                      COPIAR ENLACE
+                    </button>
+                 </div>
+              </div>
+            ) : (
+               <div className="w-full mb-6 p-4 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col items-center justify-center text-[11px] font-bold text-slate-400 gap-2">
+                  <VideoOff className="w-5 h-5 text-slate-300" />
+                  Sin enlace virtual generado
+               </div>
+            )}
+
+            <button
+              onClick={() => setSuccessModalData(null)}
+              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs hover:bg-slate-800 transition-all shadow-lg"
+            >
+              CERRAR
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="h-full flex flex-col md:p-5 overflow-hidden -mx-4 -mt-4 md:m-0">
+      <SuccessMeetingModal />
       <ResultModal />
       <EditMeetingModal />
       <SyncPromptModal />
@@ -1336,7 +1404,6 @@ const Calendario = () => {
                           if (date) {
                             setSelectedDate(date);
                             setSelectedTimeSlot(null);
-                            setCreatedEventLink(null);
                           }
                         }}
                         disabled={!date || !selectedCloser}
@@ -1344,7 +1411,7 @@ const Calendario = () => {
                                                     relative rounded-2xl transition-all border flex items-center justify-center p-1 md:p-2 min-h-[44px] md:min-h-[72px] aspect-square md:aspect-auto
                                                     ${!date ? "bg-transparent border-transparent cursor-default select-none" : ""}
                                                     ${date && !selectedCloser ? "opacity-40 cursor-not-allowed bg-slate-50 border-slate-100" : ""}
-                                                    ${date && selectedCloser && !isSelected && isPastDate ? "bg-slate-50/80 border-slate-100 text-slate-400 hover:bg-slate-100/80 hover:text-slate-600 hover:border-slate-200" : ""}
+                                                    ${date && selectedCloser && !isSelected && isPastDate ? "bg-slate-50/50 border-slate-100 text-slate-400 hover:bg-slate-100/50 hover:text-slate-500 hover:border-slate-200" : ""}
                                                     ${date && selectedCloser && !isSelected && !isPastDate ? "bg-white border-slate-200 hover:border-(--theme-500)/50 hover:shadow-sm text-slate-700" : ""}
                                                     ${isSelected ? "bg-(--theme-500) text-white shadow-lg shadow-(--theme-500)/30 scale-105 border-(--theme-500) z-20" : ""}
                                                     ${isTodayDate && !isSelected ? "bg-(--theme-50) border-(--theme-200) text-(--theme-700)" : ""}
@@ -1352,7 +1419,7 @@ const Calendario = () => {
                                                 `}
                       >
                         <span
-                          className={`text-sm md:text-2xl font-black leading-none select-none ${isSelected ? "text-white" : ""}`}
+                          className={`text-sm md:text-2xl font-black leading-none select-none ${isSelected ? "text-white" : ""} ${isPastDate && !isSelected ? "line-through decoration-slate-300" : ""}`}
                         >
                           {date ? date.getDate() : ""}
                         </span>
@@ -1431,107 +1498,133 @@ const Calendario = () => {
                 style={{ scrollbarWidth: "thin" }}
               >
                 {activeTab === "agendar" ? (
-                  <div className="animate-in fade-in slide-in-from-right-2 duration-200 flex-1 flex flex-col min-h-0">
-                    <div className="flex flex-col flex-1 min-h-0 space-y-4 px-1">
+                  <div className="animate-in fade-in slide-in-from-right-2 duration-200 flex-1 flex flex-col min-h-0 bg-white">
+                    <div className="flex flex-col flex-1 min-h-0 px-2 py-1">
                       {/* ── HEADER ───────────────────────── */}
-                      <div className="shrink-0 flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="p-1.5 bg-(--theme-50) text-(--theme-600) rounded-lg border border-(--theme-100)">
-                              <CalendarIcon className="w-4 h-4" />
-                            </span>
-                            <h3 className="text-sm font-black text-slate-800 tracking-tight">Agendar Cita</h3>
+                      <div className="shrink-0 flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-(--theme-50) text-(--theme-600) rounded-xl border border-(--theme-100) flex items-center justify-center shadow-xs">
+                            <CalendarIcon className="w-5 h-5" />
                           </div>
-                          <p className="text-[10px] font-bold text-(--theme-500) uppercase tracking-wider mt-1 ml-0.5">
-                            {selectedDate.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "short" }).toUpperCase()}
-                          </p>
+                          <div>
+                            <h3 className="text-sm font-black text-slate-800 tracking-tight">Nueva Cita</h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                              {selectedDate.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "short" })}
+                            </p>
+                          </div>
                         </div>
                         {selectedCloser && !closerLinkedToGoogle && (
-                          <div className="px-2 py-1 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3 text-amber-500" />
-                            <span className="text-[8px] font-black text-amber-600 uppercase tracking-tighter">SIN SYNC</span>
+                          <div className="px-2.5 py-1.5 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-1.5 shadow-sm">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                            <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">SIN SYNC</span>
                           </div>
                         )}
                       </div>
 
-                      {/* Toggle Prospecto / Cliente — simple */}
-                      <div className="shrink-0 flex gap-1 border-b border-slate-100 pb-0">
-                        <button
-                          type="button"
-                          onClick={() => { setContactType("prospecto"); setSelectedProspect(""); }}
-                          className={`px-3 py-2 text-xs font-bold transition-all border-b-2 -mb-px ${
-                            contactType === "prospecto"
-                              ? "border-(--theme-500) text-(--theme-600)"
-                              : "border-transparent text-slate-400 hover:text-slate-600"
-                          }`}
-                        >
-                          Prospecto
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setContactType("cliente"); setSelectedProspect(""); }}
-                          className={`px-3 py-2 text-xs font-bold transition-all border-b-2 -mb-px ${
-                            contactType === "cliente"
-                              ? "border-(--theme-500) text-(--theme-600)"
-                              : "border-transparent text-slate-400 hover:text-slate-600"
-                          }`}
-                        >
-                          Cliente
-                        </button>
-                      </div>
-
                       <form
                         onSubmit={handleSubmit}
-                        className="flex-1 flex flex-col min-h-0 space-y-3 pb-2 pr-1 custom-scrollbar overflow-y-auto"
+                        className="flex-1 flex flex-col min-h-0 space-y-5 pb-4 pr-2 custom-scrollbar overflow-y-auto"
                       >
-                        {/* 1. Selección de contacto + closer */}
-                        <div className="space-y-2.5 shrink-0">
-                          {/* Contacto */}
-                          <div>
-                            <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-0.5">
-                              {contactType === "cliente" ? <Briefcase className="w-3 h-3 text-(--theme-500)" /> : <User className="w-3 h-3 text-(--theme-500)" />}
-                              {contactType === "cliente" ? "Cliente" : "Prospecto"}
+                        {/* 1. SELECCIÓN DE CONTACTO */}
+                        <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                              {contactType === "cliente" ? <Briefcase className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                              1. ¿Con quién?
                             </label>
-                            <div className="relative">
-                              <select
-                                value={selectedProspect}
-                                onChange={(e) => setSelectedProspect(e.target.value)}
-                                className="w-full h-10 pl-3 pr-8 text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all cursor-pointer appearance-none"
-                                required
+                            
+                            <div className="flex bg-slate-100/50 p-1 rounded-lg border border-slate-200/60">
+                              <button
+                                type="button"
+                                onClick={() => { setContactType("prospecto"); setSelectedProspect(""); }}
+                                className={`px-3 py-1 text-[9px] font-black uppercase tracking-wider rounded-md transition-all ${
+                                  contactType === "prospecto" ? "bg-white text-(--theme-600) shadow-xs border border-slate-200" : "text-slate-400 hover:text-slate-600"
+                                }`}
                               >
-                                <option value="" disabled>
-                                  {contactType === "cliente" ? "Seleccionar cliente..." : "Seleccionar prospecto..."}
-                                </option>
-                                {(contactType === "cliente" ? clientes : prospectos).map((p) => (
-                                  <option key={p.id || p._id} value={p.id || p._id}>
-                                    {p.nombres} {p.apellidoPaterno ? p.apellidoPaterno.charAt(0) + "." : ""}
-                                    {p.empresa ? ` — ${p.empresa}` : ""}
-                                  </option>
-                                ))}
-                              </select>
-                              <ChevronRight className="w-3 h-3 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+                                Prospecto
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setContactType("cliente"); setSelectedProspect(""); }}
+                                className={`px-3 py-1 text-[9px] font-black uppercase tracking-wider rounded-md transition-all ${
+                                  contactType === "cliente" ? "bg-white text-(--theme-600) shadow-xs border border-slate-200" : "text-slate-400 hover:text-slate-600"
+                                }`}
+                              >
+                                Cliente
+                              </button>
                             </div>
-                            {contactType === "cliente" && clientes.length === 0 && (
-                              <p className="text-[9px] text-amber-500 font-bold mt-1 ml-1">No hay clientes ganados registrados aún.</p>
-                            )}
-                            {contactType === "prospecto" && prospectos.length === 0 && (
-                              <p className="text-[9px] text-amber-500 font-bold mt-1 ml-1">No hay prospectos disponibles.</p>
-                            )}
                           </div>
 
-                          {/* Closer / Responsable + Invitados — misma fila */}
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="relative">
+                            <select
+                              value={selectedProspect}
+                              onChange={(e) => setSelectedProspect(e.target.value)}
+                              className="w-full h-11 pl-4 pr-10 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all cursor-pointer appearance-none shadow-sm hover:border-slate-300"
+                              required
+                            >
+                              <option value="" disabled>
+                                {contactType === "cliente" ? "Selecciona un cliente de la lista..." : "Selecciona un prospecto de la lista..."}
+                              </option>
+                              {(contactType === "cliente" ? clientes : prospectos).map((p) => (
+                                <option key={p.id || p._id} value={p.id || p._id}>
+                                  {p.nombres} {p.apellidoPaterno ? p.apellidoPaterno.charAt(0) + "." : ""}
+                                  {p.empresa ? ` — ${p.empresa}` : ""}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronRight className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+                          </div>
+                        </div>
+
+                        {/* 2. HORARIOS */}
+                        <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                          <div className="flex items-center justify-between mb-3">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                              <Clock className="w-3 h-3" />
+                              2. ¿A qué hora?
+                            </label>
+                            {selectedDate && (
+                               <span className="text-[9px] font-bold text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200">
+                                 {selectedDate.toLocaleDateString("es-MX", { day: "numeric", month: "long" })}
+                               </span>
+                            )}
+                          </div>
+                          
+                          <button
+                            type="button"
+                            onClick={() => setShowTimeModal(true)}
+                            className={`w-full flex items-center justify-between px-4 py-3.5 bg-white border rounded-xl transition-all shadow-sm ${selectedTimeSlot ? "border-(--theme-500) ring-1 ring-(--theme-500)/20" : "border-slate-200 hover:border-slate-300"}`}
+                          >
+                            <span className={`text-xs font-black tracking-wider flex items-center gap-2 ${selectedTimeSlot ? "text-(--theme-600)" : "text-slate-400 uppercase"}`}>
+                              {selectedTimeSlot ? (
+                                <>
+                                  <Clock className="w-4 h-4 text-(--theme-500)" />
+                                  {selectedTimeSlot.start.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })} Hrs
+                                </>
+                              ) : "Seleccionar Horario"}
+                            </span>
+                            <ChevronRight className="w-4 h-4 text-slate-400" />
+                          </button>
+                        </div>
+
+                        {/* 3. DETALLES ADICIONALES */}
+                        <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-4">
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                            <FileText className="w-3 h-3" />
+                            3. Detalles (Opcional)
+                          </label>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* Closer */}
                             <div>
-                              <label className="flex items-center gap-1 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-0.5">
-                                <Users className="w-3 h-3 text-(--theme-500)" />
+                              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                                 {currentUser?.rol === "vendedor" ? "Responsable" : "Closer"}
                               </label>
                               <div className="relative">
                                 <select
                                   value={selectedCloser}
                                   onChange={(e) => setSelectedCloser(e.target.value)}
-                                  className="w-full h-9 pl-2.5 pr-7 text-[10px] font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all cursor-pointer appearance-none"
+                                  className="w-full h-10 pl-3 pr-8 text-[11px] font-bold text-slate-600 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 outline-none transition-all cursor-pointer appearance-none hover:border-slate-300"
                                   required
                                 >
                                   <option value="" disabled>Seleccionar...</option>
@@ -1541,15 +1634,14 @@ const Calendario = () => {
                                     </option>
                                   ))}
                                 </select>
-                                <ChevronRight className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+                                <ChevronRight className="w-3 h-3 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
                               </div>
                             </div>
 
                             {/* Invitados */}
                             <div>
-                              <label className="flex items-center gap-1 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-0.5">
-                                <UserPlus className="w-3 h-3 text-(--theme-500)" />
-                                Invitados
+                              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                                Agregar Invitados
                               </label>
                               <div className="flex gap-1.5">
                                 <input
@@ -1557,28 +1649,28 @@ const Calendario = () => {
                                   value={invitadoInput}
                                   onChange={(e) => setInvitadoInput(e.target.value)}
                                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addInvitadoLocal())}
-                                  placeholder="correo@..."
-                                  className="flex-1 h-9 px-2.5 text-[10px] font-medium border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-(--theme-500)/30 outline-none transition-all min-w-0"
+                                  placeholder="correo@ejemplo.com"
+                                  className="flex-1 h-10 px-3 text-[11px] font-medium border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 outline-none transition-all min-w-0"
                                 />
                                 <button
                                   type="button"
                                   onClick={addInvitadoLocal}
-                                  className="w-9 h-9 shrink-0 flex items-center justify-center bg-(--theme-500) text-white rounded-xl hover:bg-(--theme-600) transition-all"
+                                  className="w-10 h-10 shrink-0 flex items-center justify-center bg-slate-800 text-white rounded-xl hover:bg-slate-700 transition-all shadow-sm"
                                 >
-                                  <UserPlus className="w-3.5 h-3.5" />
+                                  <UserPlus className="w-4 h-4" />
                                 </button>
                               </div>
-                              {/* Pills de invitados agregados */}
+                              {/* Pills de invitados */}
                               {formData.invitados.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                <div className="flex flex-wrap gap-1.5 mt-2">
                                   {formData.invitados.map((inv, idx) => (
                                     <span
                                       key={idx}
-                                      className="flex items-center gap-1 px-1.5 py-0.5 bg-white text-slate-600 rounded text-[8px] font-bold border border-slate-200"
+                                      className="flex items-center gap-1.5 px-2 py-1 bg-white text-slate-600 rounded-lg text-[9px] font-bold border border-slate-200 shadow-xs"
                                     >
                                       {inv.split("@")[0]}
                                       <X
-                                        className="w-2 h-2 cursor-pointer hover:text-red-500"
+                                        className="w-3 h-3 cursor-pointer hover:text-red-500 bg-slate-100 rounded-sm p-0.5"
                                         onClick={() =>
                                           setFormData({
                                             ...formData,
@@ -1592,132 +1684,44 @@ const Calendario = () => {
                               )}
                             </div>
                           </div>
-                        </div>
 
-                        {/* 3. Horarios Grid (Compacto) */}
-                        <div className="shrink-0">
-                          <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                            <Clock className="w-3 h-3" /> Horarios Disponibles
-                          </label>
-                          <div className="grid grid-cols-3 gap-1.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
-                            {selectedDate && selectedDate.getDay() !== 0 ? (
-                              generateSlotsForDay(selectedDate).length > 0 ? (
-                                generateSlotsForDay(selectedDate).map(
-                                  (slot, idx) => {
-                                    const timeStr =
-                                      slot.start.toLocaleTimeString("es-ES", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      });
-                                    const isSelected =
-                                      selectedTimeSlot?.start.getTime() ===
-                                      slot.start.getTime();
-                                    return (
-                                      <button
-                                        key={idx}
-                                        type="button"
-                                        disabled={slot.isBusy}
-                                        onClick={() =>
-                                          !slot.isBusy &&
-                                          setSelectedTimeSlot(slot)
-                                        }
-                                        className={`w-full py-1.5 border rounded-lg text-[10px] font-bold text-center transition-all duration-150
-                                          ${slot.isBusy
-                                            ? "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed line-through"
-                                            : isSelected
-                                              ? "bg-(--theme-600) border-(--theme-600) text-white shadow-md ring-1 ring-white ring-offset-1"
-                                              : "bg-white border-slate-200 text-slate-600 hover:border-(--theme-500) hover:text-(--theme-600) hover:bg-(--theme-50)"
-                                          }`}
-                                      >
-                                        {timeStr}
-                                      </button>
-                                    );
-                                  },
-                                )
-                              ) : (
-                                <div className="col-span-3 text-[10px] text-slate-400 text-center py-6 bg-slate-50/50 rounded-2xl italic border border-dashed border-slate-200 flex flex-col items-center justify-center gap-2">
-                                  <VideoOff className="w-4 h-4 opacity-30" />
-                                  Sin horarios disponibles
-                                </div>
-                              )
-                            ) : (
-                              <div className="col-span-3 text-[10px] text-slate-400 text-center py-6 bg-slate-50/50 rounded-2xl italic border border-dashed border-slate-200">
-                                Día festivo / descanso
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* 4. Notas y Pie (Compacto) */}
-                        <div className="shrink-0 space-y-3">
+                          {/* Notas */}
                           <div>
-                            <label className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-                              <FileText className="w-3 h-3 text-slate-300" />{" "}
-                              Notas
-                            </label>
-                            <textarea
-                              value={formData.notas}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  notas: e.target.value,
-                                })
-                              }
-                              rows="2"
-                              className="w-full p-2.5 text-[10px] font-medium border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all resize-none placeholder:text-slate-300"
-                              placeholder="Agrega contexto, agenda o instrucciones para la reunión..."
-                            />
+                             <textarea
+                                value={formData.notas}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    notas: e.target.value,
+                                  })
+                                }
+                                rows="2"
+                                className="w-full p-3 text-xs font-medium border border-slate-200 bg-white rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all resize-none placeholder:text-slate-300 shadow-sm"
+                                placeholder="Notas internas para la reunión..."
+                              />
                           </div>
+                        </div>
 
+                        {/* SUBMIT BUTTON */}
+                        <div className="pt-2">
                           <button
                             type="submit"
                             disabled={!selectedTimeSlot || !selectedProspect}
-                            className="w-full py-3.5 px-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-all disabled:opacity-40 disabled:grayscale disabled:shadow-none disabled:cursor-not-allowed"
+                            className="w-full py-4 px-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             style={{
                               background: (!selectedTimeSlot || !selectedProspect)
-                                ? undefined
+                                ? "var(--color-slate-200)"
                                 : "linear-gradient(135deg, var(--theme-600) 0%, var(--theme-500) 100%)",
-                              color: "white",
-                              boxShadow: (!selectedTimeSlot || !selectedProspect) ? "none" : "0 8px 24px -4px color-mix(in srgb, var(--theme-500) 35%, transparent)",
+                              color: (!selectedTimeSlot || !selectedProspect) ? "var(--color-slate-500)" : "white",
+                              boxShadow: (!selectedTimeSlot || !selectedProspect) ? "none" : "0 8px 24px -4px color-mix(in srgb, var(--theme-500) 40%, transparent)",
                             }}
                           >
                             {selectedTimeSlot
-                              ? `✓ Confirmar · ${selectedTimeSlot.start.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`
-                              : "Selecciona un horario primero"}
+                              ? <><CalendarIcon className="w-4 h-4" /> Confirmar Cita a las {selectedTimeSlot.start.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</>
+                              : "Selecciona prospecto y horario"}
                           </button>
-
-                          {createdEventLink && (
-                            <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-2xl flex flex-col items-center animate-in zoom-in-95">
-                              <div className="flex items-center gap-2 text-blue-700 mb-2">
-                                <LinkIcon className="w-4 h-4" />
-                                <p className="font-black text-[9px] uppercase tracking-wider text-blue-800">
-                                  Meet Generado
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(
-                                    createdEventLink,
-                                  );
-                                  toast.success("Enlace de Meet copiado");
-                                }}
-                                className="w-full py-2 bg-white border border-blue-200 text-blue-600 rounded-xl hover:bg-blue-50 font-black text-[10px] flex items-center justify-center gap-2 shadow-sm transition-all"
-                              >
-                                <Copy className="w-3.5 h-3.5" />
-                                COPIAR ENLACE
-                              </button>
-                            </div>
-                          )}
-
-                          {bookingCheck && (
-                            <div
-                              className={`p-3 rounded-2xl border text-[11px] font-bold ${bookingCheck.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : bookingCheck.type === "warning" ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-rose-50 border-rose-200 text-rose-700"}`}
-                            >
-                              {bookingCheck.message}
-                            </div>
-                          )}
                         </div>
+
                       </form>
                     </div>
                   </div>
@@ -1774,11 +1778,20 @@ const Calendario = () => {
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-(--theme-500)"></div>
                       </div>
                     ) : combinedDayEvents.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12 text-center opacity-70">
-                        <CalendarIcon className="w-12 h-12 text-gray-200 mb-3" />
-                        <p className="text-sm font-bold text-gray-400">
-                          Día sin eventos
-                        </p>
+                      <div className="flex flex-col items-center justify-center py-16 text-center">
+                        <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-[2rem] flex items-center justify-center mb-5 shadow-xs rotate-3">
+                          <CalendarIcon className="w-10 h-10 text-slate-300 -rotate-3" />
+                        </div>
+                        <h4 className="text-lg font-black text-slate-700 mb-1">Día sin eventos</h4>
+                        <p className="text-xs font-bold text-slate-400 mb-6">Tu agenda está libre para este día.</p>
+                        {selectedDate >= new Date(new Date().setHours(0,0,0,0)) && (
+                          <button 
+                            onClick={() => setActiveTab('agendar')} 
+                            className="px-6 py-3 bg-(--theme-50) text-(--theme-600) hover:bg-(--theme-100) font-black text-xs rounded-xl transition-all border border-(--theme-100) hover:border-(--theme-200) flex items-center gap-2 uppercase tracking-widest shadow-sm hover:scale-105 active:scale-95"
+                          >
+                            <CalendarIcon className="w-4 h-4" /> Agendar cita
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-4 pb-6 px-1">
@@ -1788,6 +1801,8 @@ const Calendario = () => {
                           if (evt.type === "crm") {
                             const r = evt.raw;
                             const hasMeet = !!r.googleMeetLink;
+                            const CLIENT_ETAPAS = ["venta_ganada", "cotizacion_realizada", "contrato_firmado", "esperando_pago", "cliente_activo"];
+                            const isCliente = CLIENT_ETAPAS.includes(r.cliente?.etapaEmbudo);
                             return (
                               <div
                                 key={`crm-${r.id}-${eventIdx}`}
@@ -1811,7 +1826,7 @@ const Calendario = () => {
                                       <div className="flex-1 min-w-0">
                                         {/* 1. Title Top */}
                                         <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1">
-                                          Reunión con prospecto
+                                          {isCliente ? "Reunión con cliente" : "Reunión con prospecto"}
                                         </span>
 
                                         {/* 2. Name + Shortcut */}
@@ -1821,13 +1836,19 @@ const Calendario = () => {
                                             {r?.cliente?.apellidoPaterno}
                                           </h4>
                                           <button
-                                            onClick={() =>
-                                              navigate("/vendedor/prospectos", {
-                                                state: { prospecto: r.cliente },
-                                              })
-                                            }
+                                            onClick={() => {
+                                              if (isCliente) {
+                                                navigate("/vendedor/clientes", {
+                                                  state: { cliente: r.cliente },
+                                                });
+                                              } else {
+                                                navigate("/vendedor/prospectos", {
+                                                  state: { prospecto: r.cliente },
+                                                });
+                                              }
+                                            }}
                                             className="p-1 text-(--theme-500) hover:bg-(--theme-50) rounded transition-colors"
-                                            title="Ver panel del prospecto"
+                                            title={isCliente ? "Ver panel del cliente" : "Ver panel del prospecto"}
                                           >
                                             <ExternalLink className="w-3 h-3.5" />
                                           </button>
@@ -2122,6 +2143,90 @@ const Calendario = () => {
           </div>
         </div>
       </div>
+      {/* Modal para Selección de Horas */}
+      {showTimeModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div>
+                <h3 className="text-sm font-black text-slate-800 tracking-tight">Seleccionar Horario</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                  {selectedDate?.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowTimeModal(false)}
+                className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar bg-slate-50/30">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {selectedDate && selectedDate.getDay() !== 0 ? (
+                  generateSlotsForDay(selectedDate).length > 0 ? (
+                    generateSlotsForDay(selectedDate).map(
+                      (slot, idx) => {
+                        const timeStr =
+                          slot.start.toLocaleTimeString("es-ES", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          });
+                        const isSelected =
+                          selectedTimeSlot?.start.getTime() ===
+                          slot.start.getTime();
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            disabled={slot.isBusy}
+                            onClick={() => {
+                              if (!slot.isBusy) {
+                                setSelectedTimeSlot(slot);
+                                setTimeout(() => setShowTimeModal(false), 200); // Close automatically after selection with a tiny delay
+                              }
+                            }}
+                            className={`w-full py-3 border rounded-2xl text-sm font-black text-center transition-all duration-200
+                              ${slot.isBusy
+                                ? "bg-slate-100/50 border-slate-200/50 text-slate-300 cursor-not-allowed line-through"
+                                : isSelected
+                                  ? "bg-(--theme-600) border-(--theme-600) text-white shadow-lg shadow-(--theme-500)/30 scale-105"
+                                  : "bg-white border-slate-200 text-slate-600 hover:border-(--theme-400) hover:text-(--theme-600) shadow-sm"
+                              }`}
+                          >
+                            {timeStr}
+                          </button>
+                        );
+                      },
+                    )
+                  ) : (
+                    <div className="col-span-3 sm:col-span-4 text-xs font-bold text-slate-400 text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 flex flex-col items-center gap-3">
+                      <VideoOff className="w-8 h-8 text-slate-300" />
+                      No hay horarios disponibles en este día
+                    </div>
+                  )
+                ) : (
+                  <div className="col-span-3 sm:col-span-4 text-xs font-bold text-slate-400 text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 flex flex-col items-center gap-3">
+                    <CalendarIcon className="w-8 h-8 text-slate-300" />
+                    Día festivo o de descanso
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="p-4 border-t border-slate-100 bg-white">
+              <button
+                onClick={() => setShowTimeModal(false)}
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest rounded-xl transition-all"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`@keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }`}</style>
     </div>
   );
