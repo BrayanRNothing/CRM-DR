@@ -865,7 +865,7 @@ const Dashboard = () => {
                                                     <p className="text-[9px] uppercase font-black tracking-widest">Sin datos de origen</p>
                                                 </div>
                                             ) : (
-                                                <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                                                <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-hide">
                                                     {Object.entries(analisisFuentesCombinado)
                                                         .sort((a, b) => b[1].revenue - a[1].revenue)
                                                         .map(([fuente, data]) => {
@@ -913,7 +913,7 @@ const Dashboard = () => {
                                                     <p className="text-[9px] uppercase font-black tracking-widest">Sin datos de descarte</p>
                                                 </div>
                                             ) : (
-                                                <div className="flex-1 overflow-y-auto space-y-5 pr-2 custom-scrollbar">
+                                                <div className="flex-1 overflow-y-auto space-y-5 pr-2 scrollbar-hide">
                                                     {Object.entries(closerData.analisisPerdidasPremium)
                                                         .sort((a, b) => b[1] - a[1])
                                                         .map(([motivo, count]) => {
