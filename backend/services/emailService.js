@@ -7,8 +7,9 @@ const ics = require('ics');
  */
 const enviarCorreoBienvenida = async (emailUsuario) => {
   try {
+    const senderEmail = process.env.RESEND_FROM_EMAIL || 'notificaciones@solomycrm.com';
     const data = await resend.emails.send({
-      from: 'SoloMyCRM <notificaciones@solomycrm.com>',
+      from: `SoloMyCRM <${senderEmail}>`,
       to: [emailUsuario],
       subject: 'Bienvenido a SoloMyCRM',
       html: '<p>¡Gracias por unirte a SoloMyCRM!</p>', // Aquí pondrás tu plantilla de React Email o HTML después
@@ -75,8 +76,9 @@ const enviarInvitacionCalendario = async ({
     const base64Ics = Buffer.from(icsContent).toString('base64');
 
     // 3. Enviar el correo con Resend incluyendo el adjunto
+    const senderEmail = process.env.RESEND_FROM_EMAIL || 'notificaciones@solomycrm.com';
     const data = await resend.emails.send({
-      from: 'SoloMyCRM Calendario <notificaciones@solomycrm.com>',
+      from: `SoloMyCRM Calendario <${senderEmail}>`,
       to: emailsAsistentes,
       subject: `Invitación: ${titulo}`,
       html: `
