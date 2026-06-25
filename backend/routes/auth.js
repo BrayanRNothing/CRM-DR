@@ -201,10 +201,10 @@ router.post('/demo-login', async (req, res) => {
         // Crear 5 prospectos/clientes de ejemplo
         const prospects = [
             { n: 'Carlos', aP: 'Gómez', aM: 'Pérez', t: '5551112222', c: 'carlos@ejemplo.com', emp: 'Tech Solutions', est: 'proceso', eta: 'prospecto_nuevo' },
-            { n: 'María', aP: 'López', aM: 'Díaz', t: '5553334444', c: 'maria@ejemplo.com', emp: 'Innovación SA', est: 'proceso', eta: 'contacto_establecido' },
-            { n: 'Ana', aP: 'Martínez', aM: 'Ruiz', t: '5555556666', c: 'ana@ejemplo.com', emp: 'Consultoría Plus', est: 'proceso', eta: 'propuesta_enviada' },
-            { n: 'Roberto', aP: 'Sánchez', aM: '', t: '5557778888', c: 'roberto@ejemplo.com', emp: 'Servicios XYZ', est: 'ganado', eta: 'cierre_ganado' },
-            { n: 'Laura', aP: 'Torres', aM: 'Vega', t: '5559990000', c: 'laura@ejemplo.com', emp: 'Comercializadora Global', est: 'proceso', eta: 'negociacion' }
+            { n: 'María', aP: 'López', aM: 'Díaz', t: '5553334444', c: 'maria@ejemplo.com', emp: 'Innovación SA', est: 'proceso', eta: 'en_contacto' },
+            { n: 'Ana', aP: 'Martínez', aM: 'Ruiz', t: '5555556666', c: 'ana@ejemplo.com', emp: 'Consultoría Plus', est: 'proceso', eta: 'reunion_agendada' },
+            { n: 'Roberto', aP: 'Sánchez', aM: '', t: '5557778888', c: 'roberto@ejemplo.com', emp: 'Servicios XYZ', est: 'ganado', eta: 'venta_ganada' },
+            { n: 'Laura', aP: 'Torres', aM: 'Vega', t: '5559990000', c: 'laura@ejemplo.com', emp: 'Comercializadora Global', est: 'proceso', eta: 'en_negociacion' }
         ];
 
         const insertClient = await db.prepare(`
@@ -221,9 +221,10 @@ router.post('/demo-login', async (req, res) => {
 
         // Crear una reunión de prueba hoy para el calendario
         if (primerClienteId) {
-            // Reunión programada para la hora actual o +1 hora
+            // Reunión programada para la próxima hora (en el futuro garantizado)
             const d = new Date();
-            d.setMinutes(0, 0, 0); // Inicio de hora
+            d.setHours(d.getHours() + 1);
+            d.setMinutes(0, 0, 0);
 
             await db.prepare(`
                 INSERT INTO actividades (tipo, vendedor, cliente, fecha, descripcion, resultado, notas, "googleMeetLink")
