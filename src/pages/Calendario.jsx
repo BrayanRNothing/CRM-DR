@@ -77,7 +77,9 @@ const Calendario = () => {
     notas: "",
     invitados: [],
     plataformaReunion: "mirotalk",
+    customLink: "",
   });
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [invitadoInput, setInvitadoInput] = useState("");
   const [activeTab, setActiveTab] = useState(
     location.state?.activeTab || "agenda",
@@ -818,6 +820,19 @@ const Calendario = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!selectedTimeSlot) {
+      toast.error("Selecciona un horario disponible");
+      return;
+    }
+    if (formData.plataformaReunion === 'custom' && !formData.customLink) {
+      toast.error("Ingresa el enlace para la videollamada");
+      return;
+    }
+    setShowConfirmModal(true);
+  };
+
+  const executeSubmit = async () => {
+    setShowConfirmModal(false);
     setSuccessModalData(null);
 
     const closer = closers.find(
@@ -864,8 +879,9 @@ const Calendario = () => {
             closerId: selectedCloser,
             fechaReunion: startDateTime.toISOString(),
             notas: formData.notas,
-            invitados: formData.invitados,
+            invitadosExtra: formData.invitados,
             plataformaReunion: formData.plataformaReunion,
+            customLink: formData.customLink,
           }),
         },
       );
@@ -1345,6 +1361,81 @@ const Calendario = () => {
     );
   };
 
+  const ConfirmMeetingModal = () => {
+    if (!showConfirmModal) return null;
+    
+    const prospect = prospectos.find(p => String(p.id || p._id) === String(selectedProspect));
+    if (!prospect) return null;
+
+    return (
+      <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 backdrop-blur-md bg-slate-900/40 animate-in fade-in">
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden transform animate-in zoom-in-95 duration-200 border border-slate-100">
+          <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4 text-blue-500" />
+              Confirmar Reunión
+            </h3>
+            <button onClick={() => setShowConfirmModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="p-6 space-y-5">
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Correos de Invitación</p>
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                <p className="text-xs font-bold text-slate-700 flex items-center gap-2 mb-1.5">
+                  <Mail className="w-3.5 h-3.5 text-slate-400" />
+                  {prospect.correo || <span className="text-slate-400 italic font-medium">Sin correo registrado</span>}
+                </p>
+                {formData.invitados.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-slate-200/60">
+                    <p className="text-[10px] font-bold text-slate-500 mb-1">Extras:</p>
+                    <div className="flex flex-col gap-1">
+                      {formData.invitados.map(inv => (
+                        <p key={inv} className="text-[11px] text-slate-600 font-medium ml-2">- {inv}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Plataforma</p>
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                  {formData.plataformaReunion === 'google' ? (
+                    <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+                  ) : formData.plataformaReunion === 'mirotalk' ? (
+                    <VideoIcon className="w-4 h-4 text-slate-700" />
+                  ) : (
+                    <LinkIcon className="w-4 h-4 text-(--theme-600)" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-black text-slate-800">
+                    {formData.plataformaReunion === 'google' ? 'Google Meet' : formData.plataformaReunion === 'mirotalk' ? 'MiroTalk (Automático)' : 'Enlace Propio'}
+                  </p>
+                  {formData.plataformaReunion === 'custom' && (
+                    <p className="text-[10px] font-medium text-slate-500 truncate max-w-[200px] mt-0.5">{formData.customLink}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={executeSubmit}
+              className="w-full py-3.5 bg-slate-900 text-white rounded-xl font-black text-xs hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20"
+            >
+              CONFIRMAR Y AGENDAR
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const SuccessMeetingModal = () => {
     if (!successModalData) return null;
     return (
@@ -1418,11 +1509,12 @@ const Calendario = () => {
 
   return (
     <div className="h-full flex flex-col md:p-5 overflow-hidden -mx-4 -mt-4 md:m-0">
-      <SuccessMeetingModal />
-      <ResultModal />
-      <EditMeetingModal />
+      {showEditModal && <EditMeetingModal />}
       <SyncPromptModal />
       <GoogleInfoModal />
+      <ConfirmMeetingModal />
+      <SuccessMeetingModal />
+      <ResultModal />
       <div className="flex-1 flex flex-col space-y-4 overflow-hidden min-h-0 bg-white md:bg-transparent">
         {/* Main Grid */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-0 md:gap-6 min-h-0">
@@ -1778,10 +1870,10 @@ const Calendario = () => {
                             <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
                               Plataforma de Videollamada
                             </label>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-3 gap-2">
                               <button
                                 type="button"
-                                onClick={() => setFormData({ ...formData, plataformaReunion: 'mirotalk' })}
+                                onClick={() => setFormData({ ...formData, plataformaReunion: 'mirotalk', customLink: '' })}
                                 className={`flex flex-col items-center justify-center p-3 rounded-xl border text-[10px] font-bold transition-all ${
                                   formData.plataformaReunion === 'mirotalk'
                                     ? 'bg-slate-900 border-slate-900 text-white shadow-md'
@@ -1789,7 +1881,7 @@ const Calendario = () => {
                                 }`}
                               >
                                 <VideoIcon className={`w-5 h-5 mb-1 ${formData.plataformaReunion === 'mirotalk' ? 'text-white' : 'text-slate-400'}`} />
-                                MiroTalk (Universal)
+                                MiroTalk
                               </button>
                               
                               <button
@@ -1798,7 +1890,7 @@ const Calendario = () => {
                                   if (!closerLinkedToGoogle) {
                                     setShowGoogleInfoModal(true);
                                   } else {
-                                    setFormData({ ...formData, plataformaReunion: 'google' });
+                                    setFormData({ ...formData, plataformaReunion: 'google', customLink: '' });
                                   }
                                 }}
                                 className={`flex flex-col items-center justify-center p-3 rounded-xl border text-[10px] font-bold transition-all relative ${
@@ -1819,7 +1911,33 @@ const Calendario = () => {
                                 </svg>
                                 Google Meet
                               </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setFormData({ ...formData, plataformaReunion: 'custom' })}
+                                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-[10px] font-bold transition-all ${
+                                  formData.plataformaReunion === 'custom'
+                                    ? 'bg-(--theme-500) border-(--theme-500) text-white shadow-md'
+                                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                                }`}
+                              >
+                                <LinkIcon className={`w-5 h-5 mb-1 ${formData.plataformaReunion === 'custom' ? 'text-white' : 'text-slate-400'}`} />
+                                Enlace Propio
+                              </button>
                             </div>
+                            
+                            {formData.plataformaReunion === 'custom' && (
+                               <div className="mt-2">
+                                 <input
+                                   type="url"
+                                   required
+                                   value={formData.customLink}
+                                   onChange={(e) => setFormData({ ...formData, customLink: e.target.value })}
+                                   placeholder="https://zoom.us/j/123..."
+                                   className="w-full h-10 px-3 text-[11px] font-medium border border-(--theme-200) bg-(--theme-50)/30 rounded-xl focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) outline-none transition-all placeholder:text-slate-400"
+                                 />
+                               </div>
+                            )}
                           </div>
 
                           {/* Notas */}
