@@ -82,13 +82,69 @@ const enviarInvitacionCalendario = async ({
       to: emailsAsistentes,
       subject: `Invitación: ${titulo}`,
       html: `
-        <div style="font-family: Arial, sans-serif; color: #333;">
-          <h2 style="color: #2563eb;">Invitación a Reunión</h2>
-          <p>Has sido invitado a la siguiente reunión: <strong>${titulo}</strong></p>
-          <p><strong>Detalles:</strong><br/>${descripcion.replace(/\n/g, '<br/>')}</p>
-          <p><strong>Enlace de la videollamada:</strong> <a href="${jitsiLink}">${jitsiLink}</a></p>
-          <p><em>Encuentras adjunto un archivo de calendario (.ics). Ábrelo para agregarlo a tu agenda.</em></p>
-        </div>
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 40px 0;">
+          <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc;">
+            <tr>
+              <td align="center">
+                <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); margin: 0 auto;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td align="center" style="background-color: #0f172a; padding: 35px 20px;">
+                      <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">SoloMyCRM</h1>
+                    </td>
+                  </tr>
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding: 40px 35px; color: #334155;">
+                      <h2 style="font-size: 22px; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 20px;">Invitación a Videollamada</h2>
+                      <p style="font-size: 15px; line-height: 1.6; margin: 0 0 15px 0;">Hola,</p>
+                      <p style="font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">Has sido invitado a una nueva reunión. A continuación encontrarás todos los detalles para conectarte:</p>
+                      
+                      <!-- Info Box -->
+                      <div style="background-color: #f1f5f9; border-radius: 12px; padding: 25px; margin-bottom: 35px; border: 1px solid #e2e8f0;">
+                        <p style="margin: 0 0 12px 0; font-size: 14px; line-height: 1.6;"><strong>📝 Asunto:</strong> ${titulo.replace('[CITA] - ', '')}</p>
+                        <p style="margin: 0 0 12px 0; font-size: 14px; line-height: 1.6;"><strong>📅 Fecha y Hora:</strong> ${new Date(fechaInicioISO).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', dateStyle: 'long', timeStyle: 'short' })} Hrs</p>
+                        <p style="margin: 0; font-size: 14px; line-height: 1.6;"><strong>📋 Detalles adicionales:</strong><br/>${descripcion.replace(/\n/g, '<br/>')}</p>
+                      </div>
+
+                      <!-- Action Button -->
+                      <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td align="center">
+                            <a href="${jitsiLink}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">Unirse a la Videollamada</a>
+                            <p style="font-size: 12px; color: #94a3b8; margin-top: 15px;">O copia y pega este enlace en tu navegador:<br/><a href="${jitsiLink}" style="color: #2563eb; text-decoration: underline;">${jitsiLink}</a></p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Attachment Notice -->
+                      <p style="font-size: 13px; color: #64748b; margin-top: 35px; margin-bottom: 0; border-top: 1px solid #e2e8f0; padding-top: 25px; line-height: 1.5;">
+                        📎 <strong>Importante:</strong> Hemos adjuntado un archivo <code>invite.ics</code> a este correo. Ábrelo o descárgalo para guardar esta reunión directamente en tu calendario de preferencia (Google Calendar, Outlook, Apple Calendar).
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td align="center" style="background-color: #f8fafc; padding: 20px; border-top: 1px solid #e2e8f0;">
+                      <p style="margin: 0; font-size: 12px; color: #94a3b8;">Este es un mensaje automático generado por <strong>SoloMyCRM</strong>.<br/>Por favor, no respondas a este correo.</p>
+                    </td>
+                  </tr>
+
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
       `,
       attachments: [
         {
