@@ -158,6 +158,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [rememberMe, setRememberMe] = useState(false);
+  const [showDemoModal, setShowDemoModal] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -193,6 +194,33 @@ const Login = () => {
       }
     } catch {
       setError('No hay conexión con el servidor ⚠️');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/api/auth/demo-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        const userData = data.usuario || data.user;
+        saveUser(userData, rememberMe);
+        if (data.token) saveToken(data.token, rememberMe);
+        setShowDemoModal(false);
+        navigate('/vendedor');
+      } else {
+        setError(data.mensaje || data.message || 'Error al crear cuenta demo');
+        setShowDemoModal(false);
+      }
+    } catch {
+      setError('No hay conexión con el servidor ⚠️');
+      setShowDemoModal(false);
     } finally {
       setLoading(false);
     }
@@ -261,6 +289,12 @@ const Login = () => {
                   </Link>
                 )
               ))}
+              <button
+                onClick={() => setShowDemoModal(true)}
+                className="text-[10px] font-black uppercase tracking-widest text-white bg-(--theme-500) hover:bg-(--theme-600) px-4 py-2 rounded-lg transition-colors shadow-sm ml-4"
+              >
+                Demo
+              </button>
             </div>
           </div>
         </div>
@@ -431,6 +465,54 @@ const Login = () => {
         </div>
 
       </div>
+
+      {/* MODAL DE DEMO */}
+      <AnimatePresence>
+        {showDemoModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setShowDemoModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="p-8">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-6">
+                  <Eye size={24} strokeWidth={2.5} />
+                </div>
+                <h3 className="text-2xl font-black tracking-tight text-slate-900 mb-4">
+                  Modo de Prueba
+                </h3>
+                <p className="text-sm font-medium text-slate-500 leading-relaxed mb-8">
+                  Estás a punto de entrar al modo de prueba de software. Todos los datos insertados, modificados o cualquier acción que realices <strong>no se guardará permanentemente</strong> y la cuenta se perderá al salir.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowDemoModal(false)}
+                    className="flex-1 px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-widest text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleDemoLogin}
+                    disabled={loading}
+                    className="flex-1 px-4 py-3 rounded-xl font-bold text-xs uppercase tracking-widest text-white bg-amber-500 hover:bg-amber-600 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {loading ? 'Entrando...' : 'Entrar a Demo'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </AnimatedGridBackground>
   );
 };

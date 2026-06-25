@@ -22,6 +22,7 @@ import {
   RefreshCw,
   ExternalLink,
   FileText,
+  CheckCircle,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -556,7 +557,7 @@ const Calendario = () => {
     const closer = closers.find(
       (c) => String(c.id || c._id) === String(selectedCloser),
     );
-    if (closer && !closer.googleRefreshToken && !closer.googleAccessToken) {
+    if (closer && !closer.googleLinked) {
       setCloserLinkedToGoogle(false);
       setBusySlots([]);
       return;
@@ -2064,7 +2065,8 @@ const Calendario = () => {
 
                           if (evt.type === "crm") {
                             const r = evt.raw;
-                            const hasMeet = !!r.googleMeetLink;
+                            const hasMeet = !!(r.googleMeetLink || r.customLink);
+                            const plataformaLabel = r.plataformaReunion === 'mirotalk' ? 'MiroTalk' : r.plataformaReunion === 'google' ? 'Meet' : r.plataformaReunion === 'custom' ? 'Enlace' : 'Entrar';
                             const CLIENT_ETAPAS = ["venta_ganada", "cotizacion_realizada", "contrato_firmado", "esperando_pago", "cliente_activo"];
                             const isCliente = CLIENT_ETAPAS.includes(r.cliente?.etapaEmbudo);
                             return (
@@ -2073,8 +2075,8 @@ const Calendario = () => {
                                 className="relative group"
                               >
                                 <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group-hover:border-(--theme-200)">
-                                  <div className="p-4 relative">
-                                    <div className="absolute top-4 right-4 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-lg">
+                                  <div className="p-3 relative">
+                                    <div className="absolute top-3 right-3 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded-lg">
                                       <span className="text-[9px] font-black text-slate-500 flex items-center gap-1">
                                         <Clock className="w-3 h-3" />{" "}
                                         {fecha.toLocaleTimeString("en-US", {
@@ -2086,16 +2088,16 @@ const Calendario = () => {
                                     </div>
 
                                     {/* Card Header */}
-                                    <div className="flex items-start gap-4 mb-4">
-                                      <div className="flex-1 min-w-0">
+                                    <div className="flex items-start gap-3 mb-3">
+                                      <div className="flex-1 min-w-0 pr-16">
                                         {/* 1. Title Top */}
-                                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1">
+                                        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block mb-0.5">
                                           {isCliente ? "Reunión con cliente" : "Reunión con prospecto"}
                                         </span>
 
                                         {/* 2. Name + Shortcut */}
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <h4 className="text-sm font-black text-slate-900 truncate">
+                                        <div className="flex items-center gap-1.5 mb-1">
+                                          <h4 className="text-xs font-black text-slate-900 truncate">
                                             {r?.cliente?.nombres}{" "}
                                             {r?.cliente?.apellidoPaterno}
                                           </h4>
@@ -2218,25 +2220,25 @@ const Calendario = () => {
                                     )}
 
                                     {/* Footer Actions */}
-                                    <div className="flex gap-2 pt-3 border-t border-slate-50">
+                                    <div className="flex gap-2 pt-2.5 border-t border-slate-50">
                                       {/* 50% - Join Meet */}
                                       {hasMeet ? (
                                         <a
-                                          href={r.googleMeetLink}
+                                          href={r.googleMeetLink || r.customLink}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="flex-2 flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+                                          className="flex-2 flex items-center justify-center gap-1.5 py-2 bg-blue-600 text-white text-[9.5px] font-black uppercase tracking-wider rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-200/50"
                                         >
                                           <VideoIcon className="w-3.5 h-3.5" />{" "}
-                                          Meet
+                                          {plataformaLabel}
                                         </a>
                                       ) : (
                                         <button
                                           disabled
-                                          className="flex-2 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-300 text-[10px] font-black uppercase tracking-wider rounded-lg border border-slate-200 cursor-not-allowed"
+                                          className="flex-2 flex items-center justify-center gap-1.5 py-2 bg-slate-50 text-slate-400 text-[9.5px] font-black uppercase tracking-wider rounded-lg border border-slate-100 cursor-not-allowed"
                                         >
                                           <VideoOff className="w-3.5 h-3.5" />{" "}
-                                          No Link
+                                          Sin Link
                                         </button>
                                       )}
 
@@ -2246,15 +2248,15 @@ const Calendario = () => {
                                         onClick={() => {
                                           if (hasMeet) {
                                             navigator.clipboard.writeText(
-                                              r.googleMeetLink,
+                                              r.googleMeetLink || r.customLink,
                                             );
                                             toast.success(
-                                              "Enlace de Meet copiado",
+                                              "Enlace de reunión copiado",
                                             );
                                           }
                                         }}
                                         disabled={!hasMeet}
-                                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 ${hasMeet ? "bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200" : "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"} text-[10px] font-black uppercase tracking-wider rounded-lg transition-all border`}
+                                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 ${hasMeet ? "bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200" : "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"} rounded-lg transition-all border`}
                                         title="Copiar Enlace"
                                       >
                                         <Copy className="w-3.5 h-3.5" />
@@ -2268,10 +2270,10 @@ const Calendario = () => {
                                           setResultNotes(r.notas || "");
                                           setShowResultModal(true);
                                         }}
-                                        className="flex-1 flex items-center justify-center py-2.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-slate-800 transition-all shadow-md"
+                                        className="flex-1 flex items-center justify-center py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-all shadow-md group"
                                         title="Registrar Resultado"
                                       >
-                                        Res.
+                                        <CheckCircle className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
                                       </button>
                                     </div>
                                   </div>
@@ -2288,9 +2290,9 @@ const Calendario = () => {
                                 className="relative group"
                               >
                                 <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
-                                  <div className="relative p-4">
-                                    <div className="absolute top-4 right-4 bg-blue-50 border border-blue-100 px-2 py-1 rounded-lg">
-                                      <span className="text-[10px] font-black text-blue-600 flex items-center gap-1">
+                                  <div className="relative p-3">
+                                    <div className="absolute top-3 right-3 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded-lg">
+                                      <span className="text-[9px] font-black text-blue-600 flex items-center gap-1">
                                         <Clock className="w-3 h-3" />{" "}
                                         {fecha.toLocaleTimeString("en-US", {
                                           hour: "numeric",
@@ -2300,13 +2302,13 @@ const Calendario = () => {
                                       </span>
                                     </div>
                                     <div className="flex items-start justify-between mb-2">
-                                      <div className="flex flex-col">
-                                        <div className="flex items-center gap-2 mb-1.5">
-                                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                                      <div className="flex flex-col pr-16">
+                                        <div className="flex items-center gap-1.5 mb-1">
+                                          <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
                                             Personal de Google
                                           </span>
                                         </div>
-                                        <h4 className="text-sm font-bold text-slate-700 wrap-break-word pr-20">
+                                        <h4 className="text-xs font-bold text-slate-700 wrap-break-word">
                                           {evt.title}
                                         </h4>
                                         {evt.description && (
@@ -2340,25 +2342,25 @@ const Calendario = () => {
                                       </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-50">
+                                    <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-slate-50">
                                       {/* 50% - Join */}
                                       {isVideo ? (
                                         <a
                                           href={evt.meet}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="flex-2 flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-blue-700 transition-all shadow-md"
+                                          className="flex-2 flex items-center justify-center gap-1.5 py-2 bg-blue-600 text-white text-[9.5px] font-black uppercase tracking-widest rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-200/50"
                                         >
                                           <VideoIcon className="w-3.5 h-3.5" />{" "}
-                                          Meet
+                                          Google Meet
                                         </a>
                                       ) : (
                                         <button
                                           disabled
-                                          className="flex-2 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-300 text-[9px] font-black uppercase tracking-widest rounded-lg border border-slate-200 cursor-not-allowed"
+                                          className="flex-2 flex items-center justify-center gap-1.5 py-2 bg-slate-50 text-slate-400 text-[9.5px] font-black uppercase tracking-widest rounded-lg border border-slate-100 cursor-not-allowed"
                                         >
                                           <VideoOff className="w-3.5 h-3.5" />{" "}
-                                          No Link
+                                          Sin Link
                                         </button>
                                       )}
 
@@ -2375,7 +2377,7 @@ const Calendario = () => {
                                           }
                                         }}
                                         disabled={!isVideo}
-                                        className={`flex-1 flex items-center justify-center py-2.5 rounded-lg border transition-all ${isVideo ? "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100" : "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"}`}
+                                        className={`flex-1 flex items-center justify-center py-2 rounded-lg border transition-all ${isVideo ? "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100" : "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"}`}
                                         title="Copiar Link"
                                       >
                                         <Copy className="w-3.5 h-3.5" />
@@ -2386,10 +2388,10 @@ const Calendario = () => {
                                         href={evt.htmlLink}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex-1 flex items-center justify-center py-2.5 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-sm"
+                                        className="flex-1 flex items-center justify-center py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-sm group"
                                         title="Ver en Calendar"
                                       >
-                                        <ExternalLink className="w-3.5 h-3.5" />
+                                        <ExternalLink className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                                       </a>
                                     </div>
                                   </div>

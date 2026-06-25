@@ -174,6 +174,77 @@ router.post('/register', async (req, res) => {
     }
 });
 
+// @route   POST api/auth/demo-login
+// @desc    Crear usuario demo temporal y auto-login
+// @access  Public
+router.post('/demo-login', async (req, res) => {
+    try {
+        const demoId = `demo_${Date.now().toString().slice(-6)}_${Math.floor(Math.random() * 1000)}`;
+        const usuario = demoId;
+        const nombre = 'Usuario Demo';
+        const rol = 'vendedor';
+        const passwordHash = await bcrypt.hash('demo123', 10);
+
+        // Crear usuario
+        const stmt = await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, activo) VALUES (?, ?, ?, ?, 1)');
+        const result = await stmt.run(usuario, passwordHash, rol, nombre);
+        const userId = result.lastInsertRowid;
+
+        // Crear equipo
+        const equipoStmt = await db.prepare('INSERT INTO equipos (nombre, owner_id) VALUES (?, ?)');
+        const equipoResult = await equipoStmt.run(`Equipo Demo`, userId);
+        const equipoId = equipoResult.lastInsertRowid;
+
+        // Asignar equipo al usuario
+        await db.prepare('UPDATE usuarios SET "equipo_id" = ? WHERE id = ?').run(equipoId, userId);
+
+        // Crear 5 prospectos/clientes de ejemplo
+        const prospects = [
+            { n: 'Carlos', aP: 'Gómez', aM: 'Pérez', t: '5551112222', c: 'carlos@ejemplo.com', emp: 'Tech Solutions', est: 'proceso', eta: 'prospecto_nuevo' },
+            { n: 'María', aP: 'López', aM: 'Díaz', t: '5553334444', c: 'maria@ejemplo.com', emp: 'Innovación SA', est: 'proceso', eta: 'contacto_establecido' },
+            { n: 'Ana', aP: 'Martínez', aM: 'Ruiz', t: '5555556666', c: 'ana@ejemplo.com', emp: 'Consultoría Plus', est: 'proceso', eta: 'propuesta_enviada' },
+            { n: 'Roberto', aP: 'Sánchez', aM: '', t: '5557778888', c: 'roberto@ejemplo.com', emp: 'Servicios XYZ', est: 'ganado', eta: 'cierre_ganado' },
+            { n: 'Laura', aP: 'Torres', aM: 'Vega', t: '5559990000', c: 'laura@ejemplo.com', emp: 'Comercializadora Global', est: 'proceso', eta: 'negociacion' }
+        ];
+
+        const insertClient = await db.prepare(`
+            INSERT INTO clientes 
+            (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaEmbudo, vendedorAsignado, prospectorAsignado, "equipo_id", "propietarioId") 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        for (const p of prospects) {
+            await insertClient.run(p.n, p.aP, p.aM, p.t, p.c, p.emp, p.est, p.eta, userId, userId, equipoId, userId);
+        }
+
+        console.log(`✅ Cuenta Demo creada y login exitoso: ${usuario}`);
+
+        // Crear Token
+        const payload = {
+            id: userId,
+            rol: rol,
+            equipo_id: equipoId
+        };
+
+        const token = jwt.sign(payload, process.env.JWT_SECRET || 'secret', { expiresIn: '1d' });
+
+        res.json({
+            token,
+            usuario: {
+                id: userId,
+                usuario: usuario,
+                nombre: nombre,
+                rol: rol,
+                equipo_id: equipoId
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error en demo-login:', error);
+        res.status(500).json({ mensaje: 'Error al crear la cuenta demo' });
+    }
+});
+
 // @route   GET api/auth/me
 // @desc    Obtener usuario autenticado
 // @access  Private

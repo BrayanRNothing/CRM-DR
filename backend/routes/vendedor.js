@@ -1376,7 +1376,7 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
 // POST /api/vendedor/agendar-reunion
 router.post('/agendar-reunion', [auth, esVendedor], async (req, res) => {
     try {
-        const { clienteId, closerId, fechaReunion, notas, plataformaReunion = 'mirotalk' } = req.body;
+        const { clienteId, closerId, fechaReunion, notas, plataformaReunion = 'mirotalk', customLink, invitadosExtra = [] } = req.body;
         if (!clienteId || !closerId || !fechaReunion) {
             return res.status(400).json({ msg: 'Faltan datos requeridos' });
         }
@@ -1422,12 +1422,28 @@ router.post('/agendar-reunion', [auth, esVendedor], async (req, res) => {
         const finReunionISO = new Date(new Date(fechaReunion).getTime() + 45 * 60000).toISOString();
 
         let hangoutLink = null;
+        const emailsAsistentes = [];
+
+        // 1. Obtener detalles del closer y recolectar correos
+        const closerDetails = await db.prepare('SELECT email, nombre, googleRefreshToken, googleAccessToken, googleTokenExpiry FROM usuarios WHERE id = ?').get(closerIdNum);
+        
+        if (closerDetails && closerDetails.email) {
+            emailsAsistentes.push(closerDetails.email);
+        }
+        if (cliente.correo && cliente.correo.trim() !== '') {
+            emailsAsistentes.push(cliente.correo);
+        }
+        if (Array.isArray(invitadosExtra) && invitadosExtra.length > 0) {
+            invitadosExtra.forEach(inv => {
+                if (inv && !emailsAsistentes.includes(inv)) {
+                    emailsAsistentes.push(inv);
+                }
+            });
+        }
 
         if (plataformaReunion === 'google') {
             // ** GOOGLE CALENDAR INTEGRATION **
             try {
-                const closerDetails = await db.prepare('SELECT email, googleRefreshToken, googleAccessToken, googleTokenExpiry FROM usuarios WHERE id = ?').get(closerIdNum);
-
                 if (closerDetails && (closerDetails.googleRefreshToken || closerDetails.googleAccessToken)) {
                     const { OAuth2Client } = require('google-auth-library');
                     const { google } = require('googleapis');
@@ -1480,6 +1496,7 @@ router.post('/agendar-reunion', [auth, esVendedor], async (req, res) => {
                     const createdEvent = await calendar.events.insert({
                         calendarId: 'primary',
                         conferenceDataVersion: 1,
+                        sendUpdates: 'none', // Evitar que Google envíe su propio correo genérico
                         requestBody: event
                     });
 
@@ -1505,44 +1522,44 @@ router.post('/agendar-reunion', [auth, esVendedor], async (req, res) => {
             }
             // ** END GOOGLE CALENDAR INTEGRATION **
         } else {
-            // ** MIROTALK + ICS UNIVERSAL INTEGRATION **
+            // ** MIROTALK / CUSTOM INTEGRATION **
             try {
                 const { v4: uuidv4 } = require('uuid');
-                const { enviarInvitacionCalendario } = require('../services/emailService');
-
-                const closerDetails = await db.prepare('SELECT email, nombre FROM usuarios WHERE id = ?').get(closerIdNum);
                 
-                // Generar enlace dinámico de MiroTalk SFU (Sin login, gratis, 100% automático)
-                const meetingId = uuidv4().substring(0, 10);
-                hangoutLink = `https://sfu.mirotalk.com/join/CRM-${meetingId}`;
-
-                // Preparar emails de asistentes
-                const emailsAsistentes = [];
-                if (closerDetails && closerDetails.email) {
-                    emailsAsistentes.push(closerDetails.email);
-                }
-                if (cliente.correo && cliente.correo.trim() !== '') {
-                    emailsAsistentes.push(cliente.correo);
-                }
-
-                if (emailsAsistentes.length > 0) {
-                    // Enviar la invitación ICS
-                    await enviarInvitacionCalendario({
-                        fechaInicioISO: fechaReunionISO,
-                        duracionMinutos: 45,
-                        titulo: `[CITA] - ${cliente.nombres} ${cliente.apellidoPaterno}`,
-                        descripcion: `Cliente: ${cliente.telefono} - ${cliente.empresa || 'Sin empresa'}\nNotas: ${notas || 'Sin notas'}\nAgendado por: ${req.usuario.nombre}.`,
-                        jitsiLink: hangoutLink,
-                        emailsAsistentes: emailsAsistentes
-                    });
+                if (plataformaReunion === 'custom' && customLink) {
+                    hangoutLink = customLink;
                 } else {
-                    console.warn('No se pudo enviar ICS porque ni el cliente ni el closer tienen email válido.');
+                    // Generar enlace dinámico de MiroTalk SFU (Sin login, gratis, 100% automático)
+                    const meetingId = uuidv4().substring(0, 10);
+                    hangoutLink = `https://sfu.mirotalk.com/join/CRM-${meetingId}`;
                 }
+            } catch (error) {
+                console.error('❌ Error al generar Custom/Mirotalk link:', error.message);
+            }
+            // ** END MIROTALK / CUSTOM INTEGRATION **
+        }
+
+        // ** UNIVERSAL ICS EMAIL INVITATION **
+        if (emailsAsistentes.length > 0 && hangoutLink) {
+            try {
+                const { enviarInvitacionCalendario } = require('../services/emailService');
+                // Enviar la invitación ICS con nuestro diseño HTML personalizado
+                await enviarInvitacionCalendario({
+                    fechaInicioISO: fechaReunionISO,
+                    duracionMinutos: 45,
+                    titulo: `[CITA] - ${cliente.nombres} ${cliente.apellidoPaterno}`,
+                    descripcion: `Cliente: ${cliente.telefono} - ${cliente.empresa || 'Sin empresa'}\nNotas: ${notas || 'Sin notas'}\nAgendado por: ${req.usuario.nombre}.`,
+                    jitsiLink: hangoutLink,
+                    emailsAsistentes: emailsAsistentes
+                });
             } catch (calendarError) {
-                console.error('❌ Error al enviar invitación ICS o generar MiroTalk:', calendarError.message);
+                console.error('❌ Error al enviar invitación ICS universal:', calendarError.message);
                 // No detenemos el flujo, seguimos agendando la cita en CRM
             }
-            // ** END MIROTALK + ICS UNIVERSAL INTEGRATION **
+        } else if (!hangoutLink) {
+            console.warn('No se pudo enviar ICS universal porque no se pudo obtener un hangoutLink.');
+        } else {
+            console.warn('No se pudo enviar ICS universal porque ni el cliente ni el closer tienen email válido.');
         }
 
 

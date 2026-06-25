@@ -80,7 +80,7 @@ const enviarInvitacionCalendario = async ({
     const data = await resend.emails.send({
       from: `SoloMyCRM Calendario <${senderEmail}>`,
       to: emailsAsistentes,
-      subject: `Invitación: ${titulo}`,
+      subject: `Invitación a Videollamada: ${titulo.replace('[CITA] - ', '')}`,
       html: `
         <!DOCTYPE html>
         <html>
