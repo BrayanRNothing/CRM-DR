@@ -1987,7 +1987,7 @@ const Calendario = () => {
                           <button
                             type="submit"
                             disabled={!selectedTimeSlot || !selectedProspect}
-                            className="w-full py-4 px-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full py-4 px-4 rounded-2xl font-black uppercase tracking-widest text-[11px] transition-all duration-200 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.98] cursor-pointer"
                             style={{
                               background: (!selectedTimeSlot || !selectedProspect)
                                 ? "var(--color-slate-200)"
