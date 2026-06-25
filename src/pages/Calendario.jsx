@@ -1364,7 +1364,8 @@ const Calendario = () => {
   const ConfirmMeetingModal = () => {
     if (!showConfirmModal) return null;
     
-    const prospect = prospectos.find(p => String(p.id || p._id) === String(selectedProspect));
+    const sourceList = contactType === "cliente" ? clientes : prospectos;
+    const prospect = sourceList.find(p => String(p.id || p._id) === String(selectedProspect));
     if (!prospect) return null;
 
     return (
@@ -1425,6 +1426,7 @@ const Calendario = () => {
             </div>
 
             <button
+              type="button"
               onClick={executeSubmit}
               className="w-full py-3.5 bg-slate-900 text-white rounded-xl font-black text-xs hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20"
             >
@@ -1930,7 +1932,6 @@ const Calendario = () => {
                                <div className="mt-2">
                                  <input
                                    type="url"
-                                   required
                                    value={formData.customLink}
                                    onChange={(e) => setFormData({ ...formData, customLink: e.target.value })}
                                    placeholder="https://zoom.us/j/123..."
