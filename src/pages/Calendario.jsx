@@ -1383,6 +1383,30 @@ const Calendario = () => {
           
           <div className="p-6 space-y-5">
             <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Detalles de la Cita</p>
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-xs font-bold text-slate-700">
+                    {selectedTimeSlot ? selectedTimeSlot.start.toLocaleDateString("es-ES", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'No seleccionada'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-xs font-bold text-slate-700">
+                    {selectedTimeSlot ? selectedTimeSlot.start.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : 'No seleccionada'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <User className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-xs font-bold text-slate-700">
+                    Organizador: {closers.find(c => String(c.id || c._id) === String(selectedCloser))?.nombre || 'Vendedor'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Correos de Invitación</p>
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
                 <p className="text-xs font-bold text-slate-700 flex items-center gap-2 mb-1.5">
@@ -1428,7 +1452,7 @@ const Calendario = () => {
             <button
               type="button"
               onClick={executeSubmit}
-              className="w-full py-3.5 bg-slate-900 text-white rounded-xl font-black text-xs hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20"
+              className="w-full py-3.5 bg-slate-900 text-white rounded-xl font-black text-xs hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 cursor-pointer"
             >
               CONFIRMAR Y AGENDAR
             </button>
