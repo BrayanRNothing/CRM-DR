@@ -213,8 +213,31 @@ router.post('/demo-login', async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
+        let primerClienteId = null;
         for (const p of prospects) {
-            await insertClient.run(p.n, p.aP, p.aM, p.t, p.c, p.emp, p.est, p.eta, userId, userId, equipoId, userId);
+            const clientRes = await insertClient.run(p.n, p.aP, p.aM, p.t, p.c, p.emp, p.est, p.eta, userId, userId, equipoId, userId);
+            if (!primerClienteId) primerClienteId = clientRes.lastInsertRowid;
+        }
+
+        // Crear una reunión de prueba hoy para el calendario
+        if (primerClienteId) {
+            // Reunión programada para la hora actual o +1 hora
+            const d = new Date();
+            d.setMinutes(0, 0, 0); // Inicio de hora
+
+            await db.prepare(`
+                INSERT INTO actividades (tipo, vendedor, cliente, fecha, descripcion, resultado, notas, "googleMeetLink")
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
+                'cita', 
+                userId, 
+                primerClienteId, 
+                d.toISOString(), 
+                'Reunión de Demostración CRM', 
+                'pendiente', 
+                '¡Pruébame! Haz clic en "Unirse" para ver cómo funcionan las videollamadas con 1 clic.', 
+                'https://meet.google.com/ebw-jddj-tuh'
+            );
         }
 
         console.log(`✅ Cuenta Demo creada y login exitoso: ${usuario}`);
