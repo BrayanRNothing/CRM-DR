@@ -268,7 +268,7 @@ export default function Equipo() {
       {/* Team Info Card - NOW AT THE TOP */}
       <div className="max-w-full mx-auto space-y-6">
         {!loading && !error && equipo && (
-          <div className="bg-white md:rounded-2xl p-5 border border-slate-200 shadow-sm md:shadow-md transition-all">
+          <div className="bg-white rounded-2xl p-4 md:p-5 border border-slate-200 shadow-sm transition-all">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-(--theme-500) to-(--theme-600) flex items-center justify-center shadow-lg shadow-(--theme-500)/20">
@@ -350,47 +350,49 @@ export default function Equipo() {
         {/* Member List Section */}
         {!loading && equipo && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="bg-white md:rounded-2xl p-5 border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl p-4 md:p-5 border border-slate-200 shadow-sm overflow-hidden">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                   <h2 className="text-lg md:text-xl font-bold text-gray-900 leading-tight">Miembros del Equipo</h2>
                   <p className="text-[10px] md:text-xs text-gray-400 font-semibold uppercase tracking-widest mt-1">Gestión de acceso y roles</p>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <div className="relative group">
+                <div className="flex flex-col md:flex-row flex-wrap gap-3 w-full md:w-auto">
+                  <div className="relative group w-full md:w-auto">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-(--theme-500) transition-colors" size={16} />
                     <input
-                      className="pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium w-full md:w-64 outline-none focus:bg-white focus:border-(--theme-500) focus:ring-4 focus:ring-(--theme-500)/10 transition-all"
+                      className="pl-10 pr-4 py-2 md:py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium w-full md:w-64 outline-none focus:bg-white focus:border-(--theme-500) focus:ring-4 focus:ring-(--theme-500)/10 transition-all"
                       value={draftFilters.busqueda}
                       onChange={e => setDraftFilters(prev => ({ ...prev, busqueda: e.target.value }))}
                       placeholder="Buscar por nombre, usuario..."
                     />
                   </div>
-                  <select
-                    className="flex-1 sm:flex-none px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs md:text-sm font-semibold text-gray-700 outline-none focus:bg-white focus:border-(--theme-500) transition-all cursor-pointer w-full sm:w-auto"
-                    value={draftFilters.estado}
-                    onChange={e => setDraftFilters(prev => ({ ...prev, estado: e.target.value }))}
-                  >
-                    <option value="todos">Todos los estados</option>
-                    <option value="activo">Activos</option>
-                    <option value="inactivo">Inactivos</option>
-                  </select>
-                  <button
-                    className="flex-1 sm:flex-none px-4 py-2 md:px-6 md:py-2.5 bg-gray-900 text-white rounded-xl text-[11px] md:text-xs font-bold shadow-sm hover:bg-black transition-all whitespace-nowrap"
-                    onClick={applyFilters}
-                  >
-                    FILTRAR
-                  </button>
-                  {esOwner && (
-                    <button
-                      className="p-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all"
-                      onClick={handleExportCSV}
-                      title="Exportar a CSV"
+                  <div className="flex gap-2 w-full md:w-auto">
+                    <select
+                      className="flex-1 md:flex-none px-3 py-2 md:py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs md:text-sm font-semibold text-gray-700 outline-none focus:bg-white focus:border-(--theme-500) transition-all cursor-pointer"
+                      value={draftFilters.estado}
+                      onChange={e => setDraftFilters(prev => ({ ...prev, estado: e.target.value }))}
                     >
-                      <Download size={18} />
+                      <option value="todos">Todos los estados</option>
+                      <option value="activo">Activos</option>
+                      <option value="inactivo">Inactivos</option>
+                    </select>
+                    <button
+                      className="px-4 py-2 md:px-6 md:py-2.5 bg-gray-900 text-white rounded-xl text-[11px] md:text-xs font-bold shadow-sm hover:bg-black transition-all whitespace-nowrap"
+                      onClick={applyFilters}
+                    >
+                      FILTRAR
                     </button>
-                  )}
+                    {esOwner && (
+                      <button
+                        className="px-3 py-2 md:p-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center shrink-0"
+                        onClick={handleExportCSV}
+                        title="Exportar a CSV"
+                      >
+                        <Download size={18} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -455,7 +457,7 @@ export default function Equipo() {
                           </button>
                           {m.activo ? (
                             <button
-                              className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                              className="p-2.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
                               onClick={() => handleToggleMember(m)}
                               title="Desactivar"
                             >
@@ -463,7 +465,7 @@ export default function Equipo() {
                             </button>
                           ) : (
                             <button
-                              className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all"
+                              className="p-2.5 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all"
                               onClick={() => handleReactivateMember(m)}
                               title="Reactivar"
                             >
@@ -471,7 +473,7 @@ export default function Equipo() {
                             </button>
                           )}
                           <button
-                            className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                            className="p-2.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all md:opacity-0 md:group-hover:opacity-100"
                             onClick={() => handleDeleteMember(m)}
                             title="Eliminar"
                           >

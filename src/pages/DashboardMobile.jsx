@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+
 import { 
     TrendingUp, Users, Phone, Target, 
     Calendar, Bell, AlertTriangle, 
     ChevronRight, ArrowRight, BarChart3, 
-    DollarSign, CheckCircle2 
+    DollarSign, CheckCircle2, Zap, Activity, Clock
 } from 'lucide-react';
-import StatCard from '../components/ui/StatCard';
 
 const PERIODOS = [
     { key: 'dia', label: 'Hoy' },
@@ -19,43 +18,56 @@ const DashboardMobile = ({
     closerData, 
     recordatorios, 
     reuniones, 
-    teamTasks,
     periodo, 
     setPeriodo 
 }) => {
-    const [activeTab, setActiveTab] = useState('resumen');
-
-    // Cálculos rápidos (reutilizados del dashboard original pero simplificados)
-    const mP = vendedorData.periodos?.[periodo] || {};
-    const totalEntrada = vendedorData.embudo.total || 0;
-    const enContacto = vendedorData.embudo.en_contacto || 0;
-    // Usamos reuniones agendadas (citas) como etapa de negociación
-    const negociacion = vendedorData.embudo.reunion_agendada || 0;
-    const ganadas = vendedorData.embudo.venta_ganada || 0;
+    const mP = vendedorData?.periodos?.[periodo] || {};
     
     const formatMoney = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
+    const formatNumber = new Intl.NumberFormat('es-MX');
 
-    const tabs = [
-        { key: 'resumen', label: 'Resumen', icon: TrendingUp },
-        { key: 'pendientes', label: 'Tareas', icon: Bell },
-        { key: 'metricas', label: 'KPIs', icon: BarChart3 },
-    ];
+    let montoFacturado = 0;
+    if (periodo === 'dia') {
+        montoFacturado = closerData?.metricas?.ventas?.ventasHoy || 0;
+    } else if (periodo === 'mes') {
+        montoFacturado = closerData?.metricas?.ventas?.montoMes || 0;
+    } else {
+        // Fallback para semana si el backend no lo envía explícitamente, o total
+        montoFacturado = closerData?.metricas?.ventas?.montoMes || 0; 
+    }
+
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
+    
+    const finDeHoy = new Date();
+    finDeHoy.setHours(23,59,59,999);
+
+    // Próximas reuniones (Hoy o futuro)
+    const reunionesProximas = (reuniones || [])
+        .filter(r => new Date(r.fecha) >= hoy)
+        .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+        .slice(0, 4);
+
+    // Recordatorios pendientes (Vencidos o para hoy)
+    const recordatoriosPendientes = (recordatorios || [])
+        .filter(r => new Date(r.proximaLlamada) <= finDeHoy)
+        .sort((a, b) => new Date(a.proximaLlamada) - new Date(b.proximaLlamada))
+        .slice(0, 4);
 
     return (
-        <div className="flex flex-col gap-6 pb-12">
+        <div className="bg-slate-50/60 min-h-screen pb-24 font-sans">
             
-            {/* ── Period Selector (Pills) ── */}
-            <div className="flex items-center justify-between">
-                <h2 className="text-xl font-black text-slate-800 tracking-tight">Mi Actividad</h2>
-                <div className="flex bg-white/50 backdrop-blur-md p-1 rounded-xl border border-white/40 shadow-sm">
+            {/* Topbar Sticky Minimalista */}
+            <div className="bg-white px-5 pt-4 pb-4 border-b border-slate-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] sticky top-0 z-20">
+                <div className="flex bg-slate-100/80 p-1 rounded-xl">
                     {PERIODOS.map((p) => (
                         <button
                             key={p.key}
                             onClick={() => setPeriodo(p.key)}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                            className={`flex-1 px-4 py-2 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all ${
                                 periodo === p.key 
-                                ? 'bg-(--theme-500) text-white shadow-md' 
-                                : 'text-slate-400 hover:text-slate-600'
+                                ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50' 
+                                : 'text-slate-500 hover:text-slate-700'
                             }`}
                         >
                             {p.label}
@@ -64,198 +76,143 @@ const DashboardMobile = ({
                 </div>
             </div>
 
-            {/* ── Top Metrics Grid ── */}
-            <div className="grid grid-cols-2 gap-3">
-                <StatCard title="Entrada" value={totalEntrada} icon="📥" color="blue" />
-                <StatCard title="Ganadas" value={ganadas} icon="🏆" color="yellow" />
-                <StatCard title="Llamadas" value={mP.llamadas || 0} icon="📞" color="green" />
-                <StatCard title="Cierres $" value={formatMoney.format(closerData.metricas.ventas.montoMes || 0)} icon="💰" color="purple" />
-            </div>
-
-            {/* ── Simplified Pipeline (Vertical) ── */}
-            <div className="bg-white/80 backdrop-blur-xl border border-white/40 rounded-3xl p-5 shadow-sm overflow-hidden relative premium-reflejo">
-                <div className="flex items-center gap-2 mb-6">
-                    <Target className="w-4 h-4 text-(--theme-500)" />
-                    <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Pipeline Comercial</span>
-                </div>
+            <div className="px-5 pt-5 flex flex-col gap-6">
                 
-                <div className="space-y-6 relative">
-                    {/* Línea conectora */}
-                    <div className="absolute left-[19px] top-2 bottom-2 w-0.5 bg-slate-100" />
-                    
-                    {[
-                        { label: 'Prospectos Nuevos', val: totalEntrada, color: 'bg-blue-500', icon: Users },
-                        { label: 'En Contacto', val: enContacto, color: 'bg-(--theme-500)', icon: Phone },
-                        { label: 'Negociación', val: negociacion, color: 'bg-indigo-500', icon: Calendar },
-                        { label: 'Ventas Cerradas', val: ganadas, color: 'bg-emerald-500', icon: CheckCircle2 },
-                    ].map((step, i) => (
-                        <div key={i} className="flex items-center gap-4 relative z-10">
-                            <div className={`w-10 h-10 rounded-full ${step.color} border-4 border-white shadow-sm flex items-center justify-center text-white`}>
-                                <step.icon size={16} />
+                {/* KPIs Grid 2x2 */}
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-linear-to-br from-blue-400 to-blue-600 rounded-[20px] p-4 shadow-md relative overflow-hidden text-white flex-1 min-h-[100px]">
+                        <div className="absolute right-0 top-0 h-full w-1/3 bg-white/10 skew-x-12 transform origin-top-right"></div>
+                        <div className="relative z-10 flex flex-col h-full justify-between">
+                            <div className="flex items-center gap-2 mb-2 opacity-90">
+                                <Users size={14} className="drop-shadow-sm" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest drop-shadow-sm">Nuevos</span>
                             </div>
-                            <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{step.label}</span>
-                                    <span className="text-sm font-black text-slate-800">{step.val}</span>
-                                </div>
-                                <div className="h-1.5 w-full bg-slate-100 rounded-full mt-2 overflow-hidden">
-                                    <motion.div 
-                                        initial={{ width: 0 }}
-                                        animate={{ width: totalEntrada > 0 ? `${(step.val / totalEntrada) * 100}%` : '0%' }}
-                                        className={`h-full ${step.color}`}
-                                    />
-                                </div>
-                            </div>
+                            <h3 className="text-3xl font-black drop-shadow-md">{formatNumber.format(mP.prospectos || 0)}</h3>
                         </div>
-                    ))}
+                    </div>
+
+                    <div className="bg-linear-to-br from-(--theme-400) to-(--theme-600) rounded-[20px] p-4 shadow-md relative overflow-hidden text-white flex-1 min-h-[100px]">
+                        <div className="absolute right-0 top-0 h-full w-1/3 bg-white/10 skew-x-12 transform origin-top-right"></div>
+                        <div className="relative z-10 flex flex-col h-full justify-between">
+                            <div className="flex items-center gap-2 mb-2 opacity-90">
+                                <Phone size={14} className="drop-shadow-sm" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest drop-shadow-sm">Llamadas</span>
+                            </div>
+                            <h3 className="text-3xl font-black drop-shadow-md">{formatNumber.format(mP.llamadas || 0)}</h3>
+                        </div>
+                    </div>
+
+                    <div className="bg-linear-to-br from-purple-400 to-purple-600 rounded-[20px] p-4 shadow-md relative overflow-hidden text-white flex-1 min-h-[100px]">
+                        <div className="absolute right-0 top-0 h-full w-1/3 bg-white/10 skew-x-12 transform origin-top-right"></div>
+                        <div className="relative z-10 flex flex-col h-full justify-between">
+                            <div className="flex items-center gap-2 mb-2 opacity-90">
+                                <Calendar size={14} className="drop-shadow-sm" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest drop-shadow-sm">Citas</span>
+                            </div>
+                            <h3 className="text-3xl font-black drop-shadow-md">{formatNumber.format(mP.reuniones || 0)}</h3>
+                        </div>
+                    </div>
+
+                    <div className="bg-linear-to-br from-emerald-400 to-emerald-600 rounded-[20px] p-4 shadow-md relative overflow-hidden text-white flex-1 min-h-[100px]">
+                        <div className="absolute right-0 top-0 h-full w-1/3 bg-white/10 skew-x-12 transform origin-top-right"></div>
+                        <div className="relative z-10 flex flex-col h-full justify-between">
+                            <div className="flex items-center gap-2 mb-2 opacity-90">
+                                <CheckCircle2 size={14} className="drop-shadow-sm" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest drop-shadow-sm">Facturado</span>
+                            </div>
+                            <h3 className="text-xl font-black tracking-tight leading-tight mt-1 drop-shadow-md">
+                                {formatMoney.format(montoFacturado)}
+                            </h3>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            {/* ── Navigation Tabs ── */}
-            <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-2 bg-slate-100/50 p-1.5 rounded-2xl">
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab.key}
-                            onClick={() => setActiveTab(tab.key)}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                                activeTab === tab.key 
-                                ? 'bg-white text-(--theme-600) shadow-sm' 
-                                : 'text-slate-400'
-                            }`}
-                        >
-                            <tab.icon size={14} />
-                            {tab.label}
-                        </button>
-                    ))}
+                {/* Próximas Reuniones */}
+                <div className="flex flex-col gap-3 mt-2">
+                    <div className="flex items-center justify-between px-1">
+                        <h3 className="text-[12px] font-black uppercase tracking-widest text-slate-800 flex items-center gap-1.5">
+                            <Calendar size={14} className="text-purple-500" /> Próximas Reuniones
+                        </h3>
+                        <span className="text-[10px] font-bold text-slate-400">{reunionesProximas.length} en agenda</span>
+                    </div>
+
+                    {reunionesProximas.length > 0 ? (
+                        <div className="flex flex-col gap-2.5">
+                            {reunionesProximas.map((cita, i) => (
+                                <div key={i} className="bg-white rounded-2xl p-3.5 border-l-4 border-l-purple-500 border border-slate-100 shadow-xs flex justify-between items-center">
+                                    <div className="flex flex-col min-w-0">
+                                        <p className="text-[13px] font-bold text-slate-900 truncate">
+                                            {cita.cliente?.nombres || cita.nombres || cita.nombre}
+                                        </p>
+                                        <p className="text-[11px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
+                                            <Clock size={12} />
+                                            {new Date(cita.fecha).toLocaleString('es-MX', { 
+                                                weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' 
+                                            })}
+                                        </p>
+                                    </div>
+                                    <button className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center shrink-0">
+                                        <ChevronRight size={16} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-2xl p-6 border border-slate-100 text-center flex flex-col items-center justify-center shadow-xs">
+                            <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-2">
+                                <Calendar size={18} />
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-medium">No tienes reuniones próximas agendadas.</p>
+                        </div>
+                    )}
                 </div>
 
-                <AnimatePresence mode="wait">
-                    {activeTab === 'resumen' && (
-                        <motion.div 
-                            key="resumen"
-                            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
-                            className="bg-white/60 backdrop-blur-md border border-white/40 rounded-3xl p-5"
-                        >
-                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Próximas Citas</h3>
-                            <div className="space-y-3">
-                                {reuniones.slice(0, 3).map((r, i) => (
-                                    <div key={i} className="flex items-center justify-between p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-(--theme-50) flex items-center justify-center text-(--theme-600)">
-                                                <Calendar size={18} />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-xs font-black text-slate-800 uppercase tracking-tight">{r.cliente?.nombres || 'Cliente'}</span>
-                                                <span className="text-[10px] font-bold text-slate-400">{new Date(r.fecha).toLocaleDateString('es-MX', { hour: '2-digit', minute: '2-digit' })}</span>
-                                            </div>
-                                        </div>
-                                        <ChevronRight size={16} className="text-slate-300" />
-                                    </div>
-                                ))}
-                                {reuniones.length === 0 && <p className="text-[10px] text-center text-slate-400 py-4 font-bold uppercase">No hay citas pendientes</p>}
-                            </div>
-                        </motion.div>
-                    )}
+                {/* Recordatorios Pendientes */}
+                <div className="flex flex-col gap-3 mt-2">
+                    <div className="flex items-center justify-between px-1">
+                        <h3 className="text-[12px] font-black uppercase tracking-widest text-slate-800 flex items-center gap-1.5">
+                            <Bell size={14} className="text-rose-500" /> Recordatorios Pendientes
+                        </h3>
+                        {recordatoriosPendientes.length > 0 && (
+                            <span className="text-[9px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">{recordatoriosPendientes.length} pendientes</span>
+                        )}
+                    </div>
 
-                    {activeTab === 'pendientes' && (
-                        <motion.div 
-                            key="pendientes"
-                            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
-                            className="bg-white/60 backdrop-blur-md border border-white/40 rounded-3xl p-5"
-                        >
-                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Recordatorios Urgentes</h3>
-                            <div className="space-y-3">
-                                {recordatorios.slice(0, 5).map((rec, i) => (
-                                    <div key={i} className={`flex items-center justify-between p-3 rounded-2xl border shadow-sm ${
-                                        new Date(rec.proximaLlamada) < new Date() ? 'bg-rose-50 border-rose-100' : 'bg-white border-slate-100'
-                                    }`}>
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                                                new Date(rec.proximaLlamada) < new Date() ? 'bg-rose-100 text-rose-500' : 'bg-orange-50 text-orange-500'
-                                            }`}>
-                                                <Bell size={18} />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-xs font-black text-slate-800 uppercase tracking-tight">{rec.nombres || rec.nombre}</span>
-                                                <span className="text-[10px] font-bold text-slate-400">{rec.telefono || 'Sin número'}</span>
-                                            </div>
-                                        </div>
-                                        <ArrowRight size={16} className="text-slate-300" />
+                    {recordatoriosPendientes.length > 0 ? (
+                        <div className="flex flex-col gap-2.5">
+                            {recordatoriosPendientes.map((rec, i) => (
+                                <div key={i} className="bg-white rounded-2xl p-3.5 border-l-4 border-l-rose-500 border border-slate-100 shadow-xs flex justify-between items-center">
+                                    <div className="flex flex-col min-w-0">
+                                        <p className="text-[13px] font-bold text-slate-900 truncate">
+                                            {rec.nombres || rec.nombre || 'Sin nombre'}
+                                        </p>
+                                        <p className="text-[11px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
+                                            <Phone size={12} />
+                                            {rec.telefono || 'Sin número'}
+                                        </p>
                                     </div>
-                                ))}
-                                {recordatorios.length === 0 && <p className="text-[10px] text-center text-slate-400 py-4 font-bold uppercase">Todo al día</p>}
-                            </div>
-
-                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mt-8 mb-4">Tareas de Equipo</h3>
-                            <div className="space-y-3">
-                                {teamTasks.map((t, i) => (
-                                    <div key={i} className={`p-4 rounded-2xl border shadow-sm ${t.estado === 'completada' ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-white border-slate-100'}`}>
-                                        <div className="flex items-start gap-3">
-                                            <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-                                                t.prioridad === 'alta' ? 'bg-rose-500' :
-                                                t.prioridad === 'media' ? 'bg-amber-500' :
-                                                'bg-blue-500'
-                                            }`} />
-                                            <div className="flex-1 min-w-0">
-                                                <span className={`text-xs font-black uppercase tracking-tight block ${t.estado === 'completada' ? 'line-through text-slate-400' : 'text-slate-800'}`}>
-                                                    {t.titulo}
-                                                </span>
-                                                {t.descripcion && <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{t.descripcion}</p>}
-                                                <div className="flex items-center gap-3 mt-2">
-                                                    <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
-                                                        <Users size={10} />
-                                                        {t.vendedorNombre}
-                                                    </span>
-                                                    {t.fechaLimite && (
-                                                        <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
-                                                            <Calendar size={10} />
-                                                            {new Date(t.fechaLimite).toLocaleDateString()}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                                {teamTasks.length === 0 && <p className="text-[10px] text-center text-slate-400 py-4 font-bold uppercase">Sin tareas de equipo</p>}
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {activeTab === 'metricas' && (
-                        <motion.div 
-                            key="metricas"
-                            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
-                            className="space-y-4"
-                        >
-                            {[
-                                { label: 'Tasa de Contacto', val: totalEntrada > 0 ? (enContacto / totalEntrada) * 100 : 0, color: 'text-blue-500' },
-                                { label: 'Tasa de Cierre', val: negociacion > 0 ? (ganadas / negociacion) * 100 : 0, color: 'text-emerald-500' },
-                            ].map((kpi, i) => (
-                                <div key={i} className="bg-white/80 backdrop-blur-xl border border-white/40 rounded-3xl p-5 shadow-sm">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{kpi.label}</p>
-                                            <p className={`text-2xl font-black mt-1 ${kpi.color}`}>{kpi.val.toFixed(1)}%</p>
-                                        </div>
-                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-slate-50`}>
-                                            <BarChart3 size={24} className="text-slate-300" />
-                                        </div>
+                                    <div className="flex flex-col items-end shrink-0">
+                                        <span className="text-[10px] font-bold text-rose-500 mb-1">
+                                            {new Date(rec.proximaLlamada).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                                        </span>
+                                        <button className="w-7 h-7 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center">
+                                            <ChevronRight size={14} />
+                                        </button>
                                     </div>
                                 </div>
                             ))}
-                            {(vendedorData.tasasConversion.contacto < 30 || closerData.tasasConversion.cierre < 30) && (
-                                <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-center gap-3">
-                                    <AlertTriangle className="text-amber-500 shrink-0" size={20} />
-                                    <p className="text-xs font-bold text-amber-700 leading-tight uppercase tracking-tight">Detectamos etapas débiles en tu embudo. Revisa tus seguimientos.</p>
-                                </div>
-                            )}
-                        </motion.div>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-2xl p-6 border border-slate-100 text-center flex flex-col items-center justify-center shadow-xs">
+                            <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-2">
+                                <CheckCircle2 size={18} />
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-medium">Todos tus recordatorios están al día.</p>
+                        </div>
                     )}
-                </AnimatePresence>
-            </div>
+                </div>
 
+            </div>
         </div>
     );
 };

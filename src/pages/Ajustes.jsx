@@ -267,14 +267,14 @@ export default function VendedorAjustes() {
 
                         {/* ═══ TABS SIDEBAR (Hybrid) ═══ */}
                         <div className="z-10 px-3 md:px-0 lg:flex lg:flex-col">
-                            <div className="flex lg:flex-col gap-2 bg-white/80 backdrop-blur-md p-1.5 lg:p-2 md:rounded-2xl lg:shadow-sm md:border border-(--theme-200) border-b overflow-x-auto no-scrollbar lg:overflow-visible lg:min-h-[250px]">
+                            <div className="flex lg:flex-col gap-2 bg-white/80 backdrop-blur-md p-1.5 lg:p-2 md:rounded-2xl lg:shadow-sm md:border border-(--theme-200) border-b overflow-x-auto no-scrollbar lg:overflow-visible lg:min-h-[250px] snap-x snap-mandatory">
                                 {tabs.map(({ id, label, icon: Icon }) => {
                                     const isActive = activeTab === id;
                                     return (
                                         <button
                                             key={id}
                                             onClick={() => setActiveTab(id)}
-                                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold whitespace-nowrap transition-all flex-1 lg:flex-none
+                                            className={`snap-start flex items-center justify-center lg:justify-start gap-3 px-4 py-3 rounded-xl text-sm font-bold whitespace-nowrap transition-all shrink-0 lg:w-full
                                                 ${isActive
                                                     ? `bg-linear-to-r ${roleBg} text-white shadow-lg shadow-(--theme-500)/20`
                                                     : 'text-(--theme-500) hover:text-(--theme-700) hover:bg-(--theme-50)'}`}

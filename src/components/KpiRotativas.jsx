@@ -12,10 +12,8 @@ export default function KpiRotativas({
     setMonedaSeleccionada,
     guardandoMetrica,
     handleGuardarMetricaPersonalizada,
-    // customSections no se usa más aquí pero se mantiene en props por compatibilidad
+    customSections
 }) {
-    const [isEditing, setIsEditing] = useState(false);
-
     // ── Cálculos ─────────────────────────────────────────────────────────
     const diasAntiguedad = useMemo(() => {
         const f = ClienteSeleccionado?.fechaRegistro || ClienteSeleccionado?.createdAt;
@@ -24,6 +22,22 @@ export default function KpiRotativas({
     }, [ClienteSeleccionado]);
 
     const reunionesRealizadas = actividadesContext?.filter(a => a.tipo === 'cita' && a.resultado === 'exitoso').length || 0;
+
+    const totalFacturado = useMemo(() => {
+        if (!customSections) return 0;
+        let total = 0;
+        customSections.forEach(sec => {
+            if (sec.tipo === 'sales' || sec.tipo === 'subscriptions') {
+                if (Array.isArray(sec.contenido)) {
+                    sec.contenido.forEach(item => {
+                        const m = parseFloat(item.monto);
+                        if (!isNaN(m)) total += m;
+                    });
+                }
+            }
+        });
+        return total;
+    }, [customSections]);
 
     const formatNumber = (val) => {
         if (!val) return '0';
@@ -82,52 +96,13 @@ export default function KpiRotativas({
         );
         if (kpi.id === 'facturado_edit') return (
             <div 
-                className="flex items-center justify-center gap-0.5 mt-1 relative group cursor-pointer" 
-                onClick={() => !isEditing && setIsEditing(true)}
-                title="Clic para editar"
+                className="flex items-center justify-center gap-0.5 mt-1 relative group" 
+                title="Monto total de ventas y suscripciones registradas"
             >
                 <span className="text-base font-black text-emerald-600 opacity-40">$</span>
-                
-                {isEditing ? (
-                    <input
-                        type="text"
-                        autoFocus
-                        value={valorCliente}
-                        onChange={(e) => setValorCliente(e.target.value.replace(/[^0-9.,]/g, ''))}
-                        onBlur={(e) => {
-                            setIsEditing(false);
-                            handleGuardarMetricaPersonalizada(e);
-                        }}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                setIsEditing(false);
-                                handleGuardarMetricaPersonalizada(e);
-                            }
-                        }}
-                        placeholder="0"
-                        className="text-xl font-black text-emerald-600 bg-transparent border-b border-emerald-300 text-center outline-none focus:ring-0 p-0 px-1"
-                        style={{ width: `${Math.max((valorCliente || '').length, 3)}ch`, minWidth: '3ch', maxWidth: '8ch' }}
-                    />
-                ) : (
-                    <span className="text-xl font-black text-emerald-600 border-b border-dashed border-emerald-300/0 group-hover:border-emerald-300/50 transition-colors">
-                        {formatNumber(valorCliente)}
-                    </span>
-                )}
-
-                <select
-                    value={monedaSeleccionada}
-                    onChange={(e) => setMonedaSeleccionada(e.target.value)}
-                    onBlur={handleGuardarMetricaPersonalizada}
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-[9px] font-black text-slate-400 bg-transparent border-none appearance-none cursor-pointer outline-none ml-0.5 hover:text-slate-600"
-                >
-                    <option value="MXN">MXN</option>
-                    <option value="USD">USD</option>
-                </select>
-
-                {!isEditing && (
-                    <Pencil className="w-3 h-3 text-emerald-400 opacity-0 group-hover:opacity-100 absolute -right-4 transition-opacity" />
-                )}
+                <span className="text-xl font-black text-emerald-600 truncate max-w-[80px]">
+                    {formatNumber(totalFacturado)}
+                </span>
             </div>
         );
         return <p className={`text-2xl font-black leading-none mt-1 ${kpi.valColor}`}>{kpi.value}</p>;

@@ -14,25 +14,19 @@ const MainLayoutMobile = ({ menuItems, userInfo }) => {
                 
                 {/* ── Top Header ── */}
                 <header className="px-5 pt-safe bg-white/70 backdrop-blur-xl border-b border-white/40 sticky top-0 z-50">
-                    <div className="flex items-center justify-between h-16">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 p-2 flex items-center justify-center">
+                    <div className="flex items-center justify-between h-12">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-white shadow-sm border border-slate-100 p-1 flex items-center justify-center">
                                 <img src={logosolomycrm} alt="SoloMyCRM" className="w-full h-full object-contain" />
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[11px] font-black tracking-[0.15em] uppercase text-slate-800 leading-none">SoloMyCRM</span>
-                                <span className="text-[9px] font-bold text-(--theme-500) uppercase tracking-widest mt-0.5">{userInfo?.rol || 'Workspace'}</span>
+                                <span className="text-[10px] font-black tracking-[0.15em] uppercase text-slate-800 leading-none">SoloMyCRM</span>
+                                <span className="text-[8px] font-bold text-(--theme-500) uppercase tracking-widest mt-0.5">{userInfo?.rol || 'Workspace'}</span>
                             </div>
                         </div>
                         
-                        <div className="flex items-center gap-2">
-                            <div className="flex flex-col items-end">
-                                <span className="text-[10px] font-black text-slate-700 leading-none">{userInfo?.nombre || 'User'}</span>
-                                <div className="flex items-center gap-1 mt-0.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Online</span>
-                                </div>
-                            </div>
+                        <div className="flex items-center">
+                            <span className="text-[10px] font-black text-slate-700 leading-none">{userInfo?.nombre || 'User'}</span>
                         </div>
                     </div>
                 </header>
@@ -69,9 +63,9 @@ const MainLayoutMobile = ({ menuItems, userInfo }) => {
                                 >
                                     <motion.div
                                         animate={isActive ? { scale: 1.1, y: -2 } : { scale: 1, y: 0 }}
-                                        className={`p-1.5 rounded-2xl transition-all duration-300 shrink-0 ${
+                                        className={`p-1.5 transition-all duration-300 shrink-0 ${
                                             isActive 
-                                            ? 'bg-(--theme-500) text-white shadow-lg shadow-(--theme-500)/30' 
+                                            ? 'text-(--theme-500)' 
                                             : 'text-slate-400 hover:text-slate-600'
                                         }`}
                                     >
@@ -83,12 +77,7 @@ const MainLayoutMobile = ({ menuItems, userInfo }) => {
                                         {item.name}
                                     </span>
                                     
-                                    {isActive && (
-                                        <motion.div 
-                                            layoutId="activeTab"
-                                            className="absolute -top-1 w-1 h-1 rounded-full bg-(--theme-500)"
-                                        />
-                                    )}
+
                                 </Link>
                             );
                         })}

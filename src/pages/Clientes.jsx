@@ -920,7 +920,7 @@ const Clientes = () => {
                         </button>
                         <button
                             onClick={() => setMostrarModalCrear(true)}
-                            className="w-full sm:w-auto justify-center flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs md:text-sm font-medium"
+                            className="hidden sm:flex w-full sm:w-auto justify-center items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs md:text-sm font-medium"
                         >
                             <Plus className="w-4 h-4 md:w-5 md:h-5" />
                             Crear Cliente
@@ -928,18 +928,28 @@ const Clientes = () => {
                     </div>
                 </div>
 
-                <div className="bg-white border-b border-slate-100 md:border md:border-slate-200 md:rounded-2xl p-4 md:shadow-sm mb-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-4 items-center">
-                        <div className="relative w-full">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
+                <div className="bg-white border border-slate-200 rounded-2xl p-3 md:p-4 shadow-sm mb-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-3 md:gap-4 items-center">
+                        {/* 30% Búsqueda + Crear (Móvil) */}
+                        <div className="flex items-stretch gap-2 w-full">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
                                 <input
                                     type="text"
                                     placeholder="Buscar clientes..."
                                     value={busqueda}
                                     onChange={(event) => setBusqueda(event.target.value)}
-                                    className="w-full pl-8 md:pl-10 pr-3 md:pr-4 py-1.5 md:py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs md:text-sm"
+                                    className="w-full h-full pl-8 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs md:text-sm"
                                     title="Buscar por nombre, empresa, correo o teléfono"
                                 />
+                            </div>
+                            <button
+                                onClick={() => setMostrarModalCrear(true)}
+                                className="sm:hidden flex items-center justify-center gap-1.5 px-3 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs font-medium shrink-0"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Crear
+                            </button>
                         </div>
                         <div className="hidden md:flex flex-wrap md:flex-wrap pb-2 -mx-2 px-2 md:mx-0 md:px-0 gap-2 items-center w-full">
                             <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden md:block" />

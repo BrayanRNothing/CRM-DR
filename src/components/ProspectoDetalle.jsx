@@ -297,7 +297,7 @@ export default function ProspectoDetalle({
             await axios.put(endpoint, {
                 customSections: nuevasSecciones
             }, { headers: getAuthHeaders() });
-            
+
             setProspectoSeleccionado(prev => ({ ...prev, customSections: nuevasSecciones }));
             if (onActualizado) onActualizado();
         } catch (error) {
@@ -457,7 +457,7 @@ export default function ProspectoDetalle({
             // Recargar historial
             handleSeleccionarProspecto(updated || prospectoSeleccionado);
             return true;
-        } catch { 
+        } catch {
             toast.error('Error al registrar');
             return false;
         } finally {
@@ -602,10 +602,10 @@ export default function ProspectoDetalle({
             }
 
             // Actualizar contexto local
-            setActividadesContext(prev => prev.map(a => 
-                (a.id || a._id) === id 
-                ? { ...a, fecha: editDataCita.fecha, notas: editDataCita.notas } 
-                : a
+            setActividadesContext(prev => prev.map(a =>
+                (a.id || a._id) === id
+                    ? { ...a, fecha: editDataCita.fecha, notas: editDataCita.notas }
+                    : a
             ));
 
             toast.success('Reunión actualizada');
@@ -797,124 +797,239 @@ export default function ProspectoDetalle({
                                     </div>
                                 </div>
 
-                                {/* Grid de Información de Contacto y acciones rápidas */}
-                                <div className="pt-3 border-t border-slate-100">
-                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                        {/* Teléfonos */}
-                                        {telefonosContacto.length > 0 && (
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
-                                                    <Phone className="w-3.5 h-3.5" />
-                                                </div>
-                                                <div className="flex flex-col overflow-hidden">
-                                                    <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Teléfono</span>
-                                                    <div className="flex flex-wrap text-xs font-bold text-slate-700 truncate">
-                                                        {telefonosContacto.slice(0, 1).map((tel, idx) => (
-                                                            <span key={idx}>{tel}</span>
-                                                        ))}
-                                                        {telefonosContacto.length > 1 && (
-                                                            <span className="ml-1 text-slate-400 text-[10px]">...</span>
-                                                        )}
+                                {/* Grid de Información de Contacto (Responsive) */}
+                                {(telefonosContacto.length > 0 || tieneCorreo || prospectoSeleccionado.ubicacion || prospectoSeleccionado.sitioWeb || prospectoSeleccionado.fuente || prospectoSeleccionado.origen) && (
+                                    <div className="pt-2">
+                                        {/* =========== VERSIÓN ESCRITORIO (Original sin cambios) =========== */}
+                                        <div className="hidden lg:flex flex-wrap items-center gap-x-4 gap-y-2 pt-3 border-t border-slate-100">
+                                            {/* Teléfonos */}
+                                            {telefonosContacto.length > 0 && (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
+                                                        <Phone className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <div className="flex flex-col overflow-hidden">
+                                                        <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Teléfono</span>
+                                                        <div className="flex flex-wrap text-xs font-bold text-slate-700 truncate">
+                                                            {telefonosContacto.slice(0, 1).map((tel, idx) => (
+                                                                <span key={idx} className="truncate">{tel}</span>
+                                                            ))}
+                                                            {telefonosContacto.length > 1 && (
+                                                                <span className="ml-1 text-slate-400 text-[10px]">...</span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
+                                            )}
+
+                                            {/* Correo */}
+                                            {tieneCorreo && (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
+                                                        <Mail className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <div className="flex flex-col overflow-hidden">
+                                                        <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Correo</span>
+                                                        <span className="text-xs font-bold text-slate-700 truncate" title={correoContacto}>
+                                                            {correoContacto}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Ubicación */}
+                                            {prospectoSeleccionado.ubicacion && (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
+                                                        <MapPin className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <div className="flex flex-col overflow-hidden">
+                                                        <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Ubicación</span>
+                                                        <span className="text-xs font-bold text-slate-700 truncate">
+                                                            {prospectoSeleccionado.ubicacion}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Sitio Web */}
+                                            {prospectoSeleccionado.sitioWeb && (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
+                                                        <Globe className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <div className="min-w-0 flex flex-col overflow-hidden">
+                                                        <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Web</span>
+                                                        <a
+                                                            href={prospectoSeleccionado.sitioWeb.startsWith('http') ? prospectoSeleccionado.sitioWeb : `https://${prospectoSeleccionado.sitioWeb}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-xs font-bold text-(--theme-600) hover:underline truncate"
+                                                        >
+                                                            {prospectoSeleccionado.sitioWeb.replace(/^https?:\/\//, '')}
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Origen / Fuente */}
+                                            {(prospectoSeleccionado.fuente || prospectoSeleccionado.origen) && (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-6 h-7 flex items-center justify-center text-slate-400 shrink-0">
+                                                        <Target className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <div className="flex flex-col overflow-hidden">
+                                                        <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Origen</span>
+                                                        <span className="text-xs font-bold text-slate-700 truncate">
+                                                            {prospectoSeleccionado.fuente || prospectoSeleccionado.origen}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Botones de acción — siempre al final derecho */}
+                                            <div className="ml-auto flex items-center gap-2 shrink-0">
+                                                <PlantillasMensajesModal contacto={prospectoSeleccionado} scope="prospecto" />
+
+                                                <a
+                                                    href={tieneWhatsApp ? `https://wa.me/${telefonoWhatsApp.replace(/\D/g, '')}` : undefined}
+                                                    target={tieneWhatsApp ? '_blank' : undefined}
+                                                    rel={tieneWhatsApp ? 'noopener noreferrer' : undefined}
+                                                    aria-disabled={!tieneWhatsApp}
+                                                    onClick={!tieneWhatsApp ? (e) => e.preventDefault() : undefined}
+                                                    className={`h-8 w-8 inline-flex items-center justify-center rounded-lg transition-all ${tieneWhatsApp ? 'bg-green-50 text-green-600 hover:bg-green-100 hover:scale-105' : 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60'}`}
+                                                    title={tieneWhatsApp ? 'Mensaje por WhatsApp' : 'No hay teléfono para WhatsApp'}
+                                                >
+                                                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+                                                </a>
+                                                <a
+                                                    href={tieneCorreo ? `mailto:${correoContacto}` : undefined}
+                                                    aria-disabled={!tieneCorreo}
+                                                    onClick={!tieneCorreo ? (e) => e.preventDefault() : undefined}
+                                                    className={`h-8 w-8 inline-flex items-center justify-center rounded-lg transition-all ${tieneCorreo ? 'bg-slate-50 hover:bg-slate-100 hover:scale-105' : 'bg-slate-100 cursor-not-allowed opacity-60'}`}
+                                                    title={tieneCorreo ? 'Enviar correo por Gmail' : 'No hay correo para Gmail'}
+                                                >
+                                                    <img src={GmailIcon} alt="Gmail" className={`w-4 h-4 object-contain ${tieneCorreo ? '' : 'grayscale opacity-60'}`} />
+                                                </a>
                                             </div>
-                                        )}
+                                        </div>
 
-                                        {/* Correo */}
-                                        {tieneCorreo && (
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
-                                                    <Mail className="w-3.5 h-3.5" />
-                                                </div>
-                                                <div className="flex flex-col overflow-hidden">
-                                                    <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Correo</span>
-                                                    <span className="text-xs font-bold text-slate-700 truncate" title={correoContacto}>
-                                                        {correoContacto}
-                                                    </span>
-                                                </div>
+                                        {/* =========== VERSIÓN CELULAR (Con diseño especial) =========== */}
+                                        <div className="lg:hidden mt-3">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {/* Teléfonos */}
+                                                {telefonosContacto.length > 0 && (
+                                                    <div className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                                                        <div className="w-8 h-8 flex items-center justify-center bg-white shadow-sm border border-slate-100 rounded-md text-(--theme-600) shrink-0">
+                                                            <Phone className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 leading-none mb-1">Teléfono</span>
+                                                            <span className="text-xs font-bold text-slate-700 truncate">
+                                                                {telefonosContacto.slice(0, 1).map((tel, idx) => (
+                                                                    <span key={idx} className="truncate">{tel}</span>
+                                                                ))}
+                                                                {telefonosContacto.length > 1 && (
+                                                                    <span className="ml-1 text-slate-400 text-[10px]">...</span>
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Correo */}
+                                                {tieneCorreo && (
+                                                    <div className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                                                        <div className="w-8 h-8 flex items-center justify-center bg-white shadow-sm border border-slate-100 rounded-md text-(--theme-600) shrink-0">
+                                                            <Mail className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 leading-none mb-1">Correo</span>
+                                                            <span className="text-xs font-bold text-slate-700 truncate" title={correoContacto}>
+                                                                {correoContacto}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Ubicación */}
+                                                {prospectoSeleccionado.ubicacion && (
+                                                    <div className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                                                        <div className="w-8 h-8 flex items-center justify-center bg-white shadow-sm border border-slate-100 rounded-md text-(--theme-600) shrink-0">
+                                                            <MapPin className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 leading-none mb-1">Ubicación</span>
+                                                            <span className="text-xs font-bold text-slate-700 truncate" title={prospectoSeleccionado.ubicacion}>
+                                                                {prospectoSeleccionado.ubicacion}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Sitio Web */}
+                                                {prospectoSeleccionado.sitioWeb && (
+                                                    <div className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                                                        <div className="w-8 h-8 flex items-center justify-center bg-white shadow-sm border border-slate-100 rounded-md text-(--theme-600) shrink-0">
+                                                            <Globe className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 leading-none mb-1">Sitio Web</span>
+                                                            <a
+                                                                href={prospectoSeleccionado.sitioWeb.startsWith('http') ? prospectoSeleccionado.sitioWeb : `https://${prospectoSeleccionado.sitioWeb}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-xs font-bold text-(--theme-600) hover:underline truncate"
+                                                            >
+                                                                {prospectoSeleccionado.sitioWeb.replace(/^https?:\/\//, '')}
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Origen / Fuente */}
+                                                {(prospectoSeleccionado.fuente || prospectoSeleccionado.origen) && (
+                                                    <div className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                                                        <div className="w-8 h-8 flex items-center justify-center bg-white shadow-sm border border-slate-100 rounded-md text-slate-500 shrink-0">
+                                                            <Target className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 leading-none mb-1">Origen</span>
+                                                            <span className="text-xs font-bold text-slate-700 truncate">
+                                                                {prospectoSeleccionado.fuente || prospectoSeleccionado.origen}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
 
-                                        {/* Ubicación */}
-                                        {prospectoSeleccionado.ubicacion && (
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
-                                                    <MapPin className="w-3.5 h-3.5" />
-                                                </div>
-                                                <div className="flex flex-col overflow-hidden">
-                                                    <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Ubicación</span>
-                                                    <span className="text-xs font-bold text-slate-700 truncate">
-                                                        {prospectoSeleccionado.ubicacion}
-                                                    </span>
-                                                </div>
+                                            {/* Botones de acción rápida - Móvil */}
+                                            <div className="flex items-center justify-end gap-2.5 mt-2 pt-2 border-t border-slate-100">
+                                                <PlantillasMensajesModal contacto={prospectoSeleccionado} scope="prospecto" />
+                                                <a
+                                                    href={tieneWhatsApp ? `https://wa.me/${telefonoWhatsApp.replace(/\D/g, '')}` : undefined}
+                                                    target={tieneWhatsApp ? '_blank' : undefined}
+                                                    rel={tieneWhatsApp ? 'noopener noreferrer' : undefined}
+                                                    aria-disabled={!tieneWhatsApp}
+                                                    onClick={!tieneWhatsApp ? (e) => e.preventDefault() : undefined}
+                                                    className={`h-10 w-10 inline-flex items-center justify-center rounded-lg transition-all shadow-sm border ${tieneWhatsApp ? 'bg-green-50 hover:bg-green-100 border-green-200 hover:scale-105' : 'bg-slate-100 border-slate-200 cursor-not-allowed opacity-60'}`}
+                                                    title={tieneWhatsApp ? 'Mensaje por WhatsApp' : 'No hay teléfono para WhatsApp'}
+                                                >
+                                                    <svg viewBox="0 0 24 24" className={`w-5 h-5 ${tieneWhatsApp ? 'fill-green-600' : 'fill-slate-400'}`}><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+                                                </a>
+                                                <a
+                                                    href={tieneCorreo ? `mailto:${correoContacto}` : undefined}
+                                                    aria-disabled={!tieneCorreo}
+                                                    onClick={!tieneCorreo ? (e) => e.preventDefault() : undefined}
+                                                    className={`h-10 w-10 inline-flex items-center justify-center rounded-lg transition-all shadow-sm border ${tieneCorreo ? 'bg-slate-50 hover:bg-slate-100 border-slate-200 hover:scale-105' : 'bg-slate-100 border-slate-200 cursor-not-allowed opacity-60'}`}
+                                                    title={tieneCorreo ? 'Enviar correo por Gmail' : 'No hay correo para Gmail'}
+                                                >
+                                                    <img src={GmailIcon} alt="Gmail" className={`w-5 h-5 object-contain ${tieneCorreo ? '' : 'grayscale opacity-60'}`} />
+                                                </a>
                                             </div>
-                                        )}
-
-                                        {/* Sitio Web */}
-                                        {prospectoSeleccionado.sitioWeb && (
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
-                                                    <Globe className="w-3.5 h-3.5" />
-                                                </div>
-                                                <div className="min-w-0 flex flex-col overflow-hidden">
-                                                    <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Web</span>
-                                                    <a
-                                                        href={prospectoSeleccionado.sitioWeb.startsWith('http') ? prospectoSeleccionado.sitioWeb : `https://${prospectoSeleccionado.sitioWeb}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-xs font-bold text-(--theme-600) hover:underline truncate"
-                                                    >
-                                                        {prospectoSeleccionado.sitioWeb.replace(/^https?:\/\//, '')}
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Origen / Fuente */}
-                                        {(prospectoSeleccionado.fuente || prospectoSeleccionado.origen) && (
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-6 h-7 flex items-center justify-center text-slate-400 shrink-0">
-                                                    <Target className="w-3.5 h-3.5" />
-                                                </div>
-                                                <div className="flex flex-col overflow-hidden">
-                                                    <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Origen</span>
-                                                    <span className="text-xs font-bold text-slate-700 truncate">
-                                                        {prospectoSeleccionado.fuente || prospectoSeleccionado.origen}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Botones de acción — siempre al final derecho */}
-                                        <div className="ml-auto flex items-center gap-2 shrink-0">
-                                            <PlantillasMensajesModal contacto={prospectoSeleccionado} scope="prospecto" />
-
-                                            <a
-                                                href={tieneWhatsApp ? `https://wa.me/${telefonoWhatsApp.replace(/\D/g, '')}` : undefined}
-                                                target={tieneWhatsApp ? '_blank' : undefined}
-                                                rel={tieneWhatsApp ? 'noopener noreferrer' : undefined}
-                                                aria-disabled={!tieneWhatsApp}
-                                                onClick={!tieneWhatsApp ? (e) => e.preventDefault() : undefined}
-                                                className={`h-8 w-8 inline-flex items-center justify-center rounded-md transition-colors shadow-xs border ${tieneWhatsApp ? 'bg-green-50 hover:bg-green-100 border-green-100' : 'bg-slate-100 border-slate-200 cursor-not-allowed opacity-60'}`}
-                                                title={tieneWhatsApp ? 'Mensaje por WhatsApp' : 'No hay teléfono para WhatsApp'}
-                                            >
-                                                <svg viewBox="0 0 24 24" className={`w-4.5 h-4.5 ${tieneWhatsApp ? 'fill-green-600' : 'fill-slate-400'}`}>
-                                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                                                </svg>
-                                            </a>
-
-                                            <a
-                                                href={tieneCorreo ? `mailto:${correoContacto}` : undefined}
-                                                aria-disabled={!tieneCorreo}
-                                                onClick={!tieneCorreo ? (e) => e.preventDefault() : undefined}
-                                                className={`h-8 w-8 inline-flex items-center justify-center rounded-md transition-colors shadow-xs ring-1 ${tieneCorreo ? 'bg-slate-50 hover:bg-slate-100 ring-slate-200' : 'bg-slate-100 ring-slate-200 cursor-not-allowed opacity-60'}`}
-                                                title={tieneCorreo ? 'Enviar correo por Gmail' : 'No hay correo para Gmail'}
-                                            >
-                                                <img src={GmailIcon} alt="Gmail" className={`w-4.5 h-4.5 object-contain ${tieneCorreo ? '' : 'grayscale opacity-60'}`} />
-                                            </a>
                                         </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
 
@@ -924,7 +1039,7 @@ export default function ProspectoDetalle({
                             <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center">
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Antigüedad</p>
                                 <p className="text-2xl font-black text-(--theme-600)">
-                                    {prospectoSeleccionado.fechaRegistro || prospectoSeleccionado.createdAt 
+                                    {prospectoSeleccionado.fechaRegistro || prospectoSeleccionado.createdAt
                                         ? `${Math.max(1, Math.ceil(Math.abs(new Date() - new Date(prospectoSeleccionado.fechaRegistro || prospectoSeleccionado.createdAt)) / (1000 * 60 * 60 * 24)))} días`
                                         : 'N/A'}
                                 </p>
@@ -958,7 +1073,7 @@ export default function ProspectoDetalle({
                             {/* Cuadro 4: Valor del Prospecto (Editable) */}
                             <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center relative min-h-[100px] overflow-hidden group">
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Valor del Prospecto</p>
-                                
+
                                 <div className="flex items-center justify-center gap-1 w-full">
                                     <div className="flex items-center gap-0.5 px-2 py-1 rounded-xl bg-white focus-within:bg-slate-50 transition-colors border border-transparent focus-within:border-slate-200">
                                         <span className="text-xl font-black text-(--theme-600) opacity-50">$</span>
@@ -974,7 +1089,7 @@ export default function ProspectoDetalle({
                                             className="text-2xl font-black text-(--theme-600) bg-transparent border-none text-center outline-none focus:ring-0 p-0"
                                             style={{ width: `${Math.max((valorProspecto || '').length, 4)}ch`, minWidth: '4ch', maxWidth: '14ch' }}
                                         />
-                                        
+
                                         <div className="relative flex items-center bg-slate-50 border border-slate-100 rounded-md px-1 py-0.5 group/moneda hover:bg-white transition-all cursor-pointer ml-1">
                                             <select
                                                 value={monedaSeleccionada}
@@ -1017,12 +1132,12 @@ export default function ProspectoDetalle({
                                 </button>
                                 {/* Agendar reunión */}
                                 <button
-                                    onClick={() => navigate(`/${calendarRolePath}/calendario`, { 
-                                        state: { 
+                                    onClick={() => navigate(`/${calendarRolePath}/calendario`, {
+                                        state: {
                                             prospecto: prospectoSeleccionado,
                                             activeTab: 'agendar',
-                                            fromCall: true 
-                                        } 
+                                            fromCall: true
+                                        }
                                     })}
                                     className="flex flex-col items-center justify-center gap-2 bg-white border-2 border-slate-200 hover:border-(--theme-500) rounded-xl p-4 text-gray-700 hover:text-(--theme-600) transition-all shadow-sm font-bold text-sm text-center leading-tight"
                                 >
@@ -1277,16 +1392,16 @@ export default function ProspectoDetalle({
 
                     {/* ===================== COLUMNA DERECHA: HISTORIAL (Drawer en Mobile) ===================== */}
                     {/* Overlay Backdrop (solo visible en mobile) */}
-                    <div 
-                        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${drawerHistorialAbierto ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
-                        onClick={() => setDrawerHistorialAbierto(false)} 
+                    <div
+                        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${drawerHistorialAbierto ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                        onClick={() => setDrawerHistorialAbierto(false)}
                     />
 
                     <div className={`fixed inset-x-0 bottom-0 z-50 lg:static lg:z-auto transition-transform duration-300 ease-out transform ${drawerHistorialAbierto ? 'translate-y-0' : 'translate-y-full lg:translate-y-0'} lg:transform-none bg-white lg:bg-white border-t lg:border-t-0 lg:border lg:border-slate-200 rounded-t-2xl lg:rounded-xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] lg:shadow-sm flex flex-col overflow-hidden h-[88vh] lg:h-full min-h-0`}>
                         {/* Pequeña barra tirador en móvil */}
                         <div className="w-full flex justify-center py-2 lg:hidden" onTouchMove={(e) => {
-                                // Touch prevent o close on swipe (opcional, por ahora solo visual)
-                            }}
+                            // Touch prevent o close on swipe (opcional, por ahora solo visual)
+                        }}
                             onClick={() => setDrawerHistorialAbierto(false)}>
                             <div className="w-12 h-1.5 bg-slate-300 rounded-full"></div>
                         </div>
@@ -1415,676 +1530,676 @@ export default function ProspectoDetalle({
                             </div>
                         </div>
                     </div>
-            </div>
-
-            {/* FAB Botón de Historial (Mobile Only) */}
-            <button
-                onClick={() => setDrawerHistorialAbierto(true)}
-                className={`lg:hidden fixed bottom-6 right-6 p-4 rounded-full shadow-2xl z-30 transition-transform duration-300 flex items-center justify-center bg-(--theme-600) text-white hover:scale-105 active:scale-95 ${drawerHistorialAbierto ? 'translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}
-                title="Ver Historial"
-            >
-                <div className="relative">
-                    <History className="w-6 h-6" />
-                    {actividadesContext.length > 0 && (
-                        <div className="absolute -top-3 -right-3 min-w-[20px] h-5 bg-rose-500 rounded-full flex items-center justify-center px-1 border-2 border-white text-white text-[9px] font-black shadow-sm">
-                            {actividadesContext.length}
-                        </div>
-                    )}
                 </div>
-            </button>
 
-            {/* MODAL RECORDATORIO DE LLAMADA */}
-            {llamadaFlow !== null && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-100 bg-linear-to-r from-(--theme-50) to-white flex items-center justify-between gap-3">
-                            <span className="font-bold text-(--theme-700) flex items-center gap-2"><Phone className="w-4 h-4" /> Registrando llamada...</span>
-                            <button onClick={() => setLlamadaFlow(null)} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-white/60">✕ Cancelar</button>
-                        </div>
+                {/* FAB Botón de Historial (Mobile Only) */}
+                <button
+                    onClick={() => setDrawerHistorialAbierto(true)}
+                    className={`lg:hidden fixed bottom-28 right-6 p-4 rounded-full shadow-2xl z-30 transition-transform duration-300 flex items-center justify-center bg-(--theme-600) text-white hover:scale-105 active:scale-95 ${drawerHistorialAbierto ? 'translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}
+                    title="Ver Historial"
+                >
+                    <div className="relative">
+                        <History className="w-6 h-6" />
+                        {actividadesContext.length > 0 && (
+                            <div className="absolute -top-3 -right-3 min-w-[20px] h-5 bg-rose-500 rounded-full flex items-center justify-center px-1 border-2 border-white text-white text-[9px] font-black shadow-sm">
+                                {actividadesContext.length}
+                            </div>
+                        )}
+                    </div>
+                </button>
 
-                        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                            {/* Paso 1: ¿Contestó? */}
-                            {llamadaFlow.paso === 'contesto' && (
-                                <div className="space-y-3">
-                                    <p className="font-semibold text-gray-800">¿Contestó la llamada?</p>
-                                    <div className="flex gap-3">
-                                        <button
-                                            onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'opciones_contesto', contesto: true }))}
-                                            className="flex-1 py-2.5 bg-(--theme-500) text-white rounded-lg font-bold hover:bg-(--theme-600) transition-colors"
-                                        >✓ Sí, contestó</button>
-                                        <button
-                                            onClick={async () => {
-                                                // Registrar llamada fallida
-                                                const ok = await registrarActividadConDelay({ tipo: 'llamada', resultado: 'fallido', notas: 'No contestó' });
-                                                if (ok) setLlamadaFlow(null);
-                                            }}
-                                            disabled={estaBloqueadoRegistro}
-                                            className="flex-1 py-2.5 bg-rose-500 text-white rounded-lg font-bold hover:bg-rose-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                                        >{estaBloqueadoRegistro ? '⏳ Validando...' : '✗ No contestó'}</button>
-                                    </div>
-                                </div>
-                            )}
+                {/* MODAL RECORDATORIO DE LLAMADA */}
+                {llamadaFlow !== null && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden">
+                            <div className="px-6 py-4 border-b border-slate-100 bg-linear-to-r from-(--theme-50) to-white flex items-center justify-between gap-3">
+                                <span className="font-bold text-(--theme-700) flex items-center gap-2"><Phone className="w-4 h-4" /> Registrando llamada...</span>
+                                <button onClick={() => setLlamadaFlow(null)} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-white/60">✕ Cancelar</button>
+                            </div>
 
-                            {/* Paso 2: Opciones al contestar */}
-                            {llamadaFlow.paso === 'opciones_contesto' && (
-                                <div className="space-y-3">
-                                    <p className="font-semibold text-gray-800">¿Cuál fue el resultado de la llamada?</p>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <button
-                                            onClick={() => {
-                                                setLlamadaFlow(null);
-                                                navigate(`/${calendarRolePath}/calendario`, { 
-                                                    state: { 
-                                                        prospecto: prospectoSeleccionado,
-                                                        activeTab: 'agendar',
-                                                        fromCall: true
-                                                    } 
-                                                });
-                                            }}
-                                            className="py-2.5 bg-(--theme-500) text-white rounded-lg font-bold hover:bg-(--theme-600) transition-colors text-sm"
-                                        >📅 Agendó reunión</button>
-
-                                        <button
-                                            onClick={() => {
-                                                const hoy = new Date();
-                                                hoy.setDate(hoy.getDate() + 3);
-                                                const defaultDate = toLocalDateTimeInput(hoy);
-                                                setLlamadaFlow(f => ({ ...f, paso: 'llamarDespues', interesado: true, fechaProxima: defaultDate }));
-                                            }}
-                                            className="py-2.5 bg-(--theme-500) text-white rounded-lg font-bold hover:bg-(--theme-600) transition-colors text-sm"
-                                        >📞 Llamar después</button>
-
-                                        <button
-                                            onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'whatsapp' }))}
-                                            className="py-2.5 bg-green-500 text-white rounded-lg font-bold hover:bg-green-600 transition-colors text-sm"
-                                        >💬 WhatsApp o Correo</button>
-
-                                        <button
-                                            onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'sin_interes' }))}
-                                            className="py-2.5 bg-gray-400 text-white rounded-lg font-bold hover:bg-gray-500 transition-colors text-sm"
-                                        >✗ Sin interés</button>
-
-                                        <button
-                                            onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'otro' }))}
-                                            className="py-2.5 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition-colors text-sm"
-                                        >📝 Otro</button>
-
-                                        <button
-                                            onClick={() => setLlamadaFlow(null)}
-                                            className="py-2.5 bg-slate-400 text-white rounded-lg font-bold hover:bg-slate-500 transition-colors text-sm"
-                                        >⏭️ Omitir</button>
-                                    </div>
-                                </div>
-                            )}
-                            {/* 2b: No contestó — programar reintento */}
-                            {llamadaFlow.paso === 'reintento' && (
-                                <div className="space-y-3">
-                                    <p className="font-semibold text-rose-700">📵 No contestó — ¿Cuándo reintentas?</p>
-                                    <div className="grid grid-cols-1 gap-3">
-                                        <div className="flex flex-row gap-3">
-                                            <div className="w-1/2">
-                                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">Fecha</label>
-                                                <input
-                                                    type="date"
-                                                    value={llamadaFlow.fechaProxima ? llamadaFlow.fechaProxima.slice(0, 10) : ''}
-                                                    onChange={(e) => syncLlamadaFlowFechaHora('fecha', e.target.value)}
-                                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-300) focus:border-transparent outline-none"
-                                                />
-                                            </div>
-                                            <div className="w-1/2">
-                                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">Hora</label>
-                                                <input
-                                                    type="time"
-                                                    step="300"
-                                                    value={llamadaFlow.fechaProxima ? llamadaFlow.fechaProxima.slice(11, 16) : ''}
-                                                    onChange={(e) => syncLlamadaFlowFechaHora('hora', e.target.value)}
-                                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-300) focus:border-transparent outline-none"
-                                                />
-                                            </div>
+                            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                                {/* Paso 1: ¿Contestó? */}
+                                {llamadaFlow.paso === 'contesto' && (
+                                    <div className="space-y-3">
+                                        <p className="font-semibold text-gray-800">¿Contestó la llamada?</p>
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'opciones_contesto', contesto: true }))}
+                                                className="flex-1 py-2.5 bg-(--theme-500) text-white rounded-lg font-bold hover:bg-(--theme-600) transition-colors"
+                                            >✓ Sí, contestó</button>
+                                            <button
+                                                onClick={async () => {
+                                                    // Registrar llamada fallida
+                                                    const ok = await registrarActividadConDelay({ tipo: 'llamada', resultado: 'fallido', notas: 'No contestó' });
+                                                    if (ok) setLlamadaFlow(null);
+                                                }}
+                                                disabled={estaBloqueadoRegistro}
+                                                className="flex-1 py-2.5 bg-rose-500 text-white rounded-lg font-bold hover:bg-rose-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                            >{estaBloqueadoRegistro ? '⏳ Validando...' : '✗ No contestó'}</button>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2">
+                                )}
+
+                                {/* Paso 2: Opciones al contestar */}
+                                {llamadaFlow.paso === 'opciones_contesto' && (
+                                    <div className="space-y-3">
+                                        <p className="font-semibold text-gray-800">¿Cuál fue el resultado de la llamada?</p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                onClick={() => {
+                                                    setLlamadaFlow(null);
+                                                    navigate(`/${calendarRolePath}/calendario`, {
+                                                        state: {
+                                                            prospecto: prospectoSeleccionado,
+                                                            activeTab: 'agendar',
+                                                            fromCall: true
+                                                        }
+                                                    });
+                                                }}
+                                                className="py-2.5 bg-(--theme-500) text-white rounded-lg font-bold hover:bg-(--theme-600) transition-colors text-sm"
+                                            >📅 Agendó reunión</button>
+
+                                            <button
+                                                onClick={() => {
+                                                    const hoy = new Date();
+                                                    hoy.setDate(hoy.getDate() + 3);
+                                                    const defaultDate = toLocalDateTimeInput(hoy);
+                                                    setLlamadaFlow(f => ({ ...f, paso: 'llamarDespues', interesado: true, fechaProxima: defaultDate }));
+                                                }}
+                                                className="py-2.5 bg-(--theme-500) text-white rounded-lg font-bold hover:bg-(--theme-600) transition-colors text-sm"
+                                            >📞 Llamar después</button>
+
+                                            <button
+                                                onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'whatsapp' }))}
+                                                className="py-2.5 bg-green-500 text-white rounded-lg font-bold hover:bg-green-600 transition-colors text-sm"
+                                            >💬 WhatsApp o Correo</button>
+
+                                            <button
+                                                onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'sin_interes' }))}
+                                                className="py-2.5 bg-gray-400 text-white rounded-lg font-bold hover:bg-gray-500 transition-colors text-sm"
+                                            >✗ Sin interés</button>
+
+                                            <button
+                                                onClick={() => setLlamadaFlow(f => ({ ...f, paso: 'otro' }))}
+                                                className="py-2.5 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 transition-colors text-sm"
+                                            >📝 Otro</button>
+
+                                            <button
+                                                onClick={() => setLlamadaFlow(null)}
+                                                className="py-2.5 bg-slate-400 text-white rounded-lg font-bold hover:bg-slate-500 transition-colors text-sm"
+                                            >⏭️ Omitir</button>
+                                        </div>
+                                    </div>
+                                )}
+                                {/* 2b: No contestó — programar reintento */}
+                                {llamadaFlow.paso === 'reintento' && (
+                                    <div className="space-y-3">
+                                        <p className="font-semibold text-rose-700">📵 No contestó — ¿Cuándo reintentas?</p>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <div className="flex flex-row gap-3">
+                                                <div className="w-1/2">
+                                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">Fecha</label>
+                                                    <input
+                                                        type="date"
+                                                        value={llamadaFlow.fechaProxima ? llamadaFlow.fechaProxima.slice(0, 10) : ''}
+                                                        onChange={(e) => syncLlamadaFlowFechaHora('fecha', e.target.value)}
+                                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-300) focus:border-transparent outline-none"
+                                                    />
+                                                </div>
+                                                <div className="w-1/2">
+                                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">Hora</label>
+                                                    <input
+                                                        type="time"
+                                                        step="300"
+                                                        value={llamadaFlow.fechaProxima ? llamadaFlow.fechaProxima.slice(11, 16) : ''}
+                                                        onChange={(e) => syncLlamadaFlowFechaHora('hora', e.target.value)}
+                                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-300) focus:border-transparent outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        setRegistrandoActividadBlockedUntil(Date.now() + 3000);
+                                                        setRegistrandoActividad(true);
+                                                        const pidLocal = prospectoSeleccionado.id || prospectoSeleccionado._id;
+                                                        if (llamadaFlow.fechaProxima) {
+                                                            const resRec = await axios.post(`${API_URL}/api/${rolePath}/prospectos/${pidLocal}/recordatorios`, {
+                                                                fechaLimite: toUtcIsoFromLocalInput(llamadaFlow.fechaProxima),
+                                                                descripcion: 'Reintento de llamada - No contestó'
+                                                            }, { headers: getAuthHeaders() });
+                                                            setRecordatoriosLlamada(prev => [...prev, resRec.data.recordatorio]);
+
+                                                            await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLocal}`, {
+                                                                proximaLlamada: toUtcIsoFromLocalInput(llamadaFlow.fechaProxima)
+                                                            }, { headers: getAuthHeaders() });
+                                                        }
+                                                        toast.success('Reintento programado');
+                                                        setLlamadaFlow(null);
+                                                        const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
+                                                        const updated = res.data.find(p => p.id === pidLocal || p._id === pidLocal);
+                                                        if (updated) { setProspectoSeleccionado(updated); setProspectos(res.data); }
+                                                    } catch { toast.error('Error al programar reintento'); }
+                                                    finally { setRegistrandoActividad(false); }
+                                                }}
+                                                disabled={estaBloqueadoRegistro}
+                                                className="flex-1 py-2 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                                            >{estaBloqueadoRegistro ? '⏳ Validando...' : '📅 Programar reintento'}</button>
+                                            <button
+                                                onClick={() => setLlamadaFlow(null)}
+                                                className="px-4 py-2 border border-slate-200 text-gray-600 rounded-lg hover:bg-slate-50 text-sm"
+                                            >Sin fecha</button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 3b: WhatsApp o Correo */}
+                                {llamadaFlow.paso === 'whatsapp' && (
+                                    <div className="space-y-3">
+                                        <p className="font-semibold text-green-700">💬 Añadir nota para WhatsApp/Correo</p>
+                                        <textarea
+                                            rows={2}
+                                            value={llamadaFlow.notas || ''}
+                                            onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))}
+                                            placeholder="Ej: Enviar brochure PDF..."
+                                            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400"
+                                        />
+                                        <button
+                                            onClick={async () => {
+                                                const notaFinal = llamadaFlow.notas ? `Prefiere atención por WhatsApp o correo - ${llamadaFlow.notas}` : 'Prefiere atención por WhatsApp o correo';
+                                                const ok = await registrarActividadConDelay({ tipo: 'llamada', resultado: 'exitoso', notas: notaFinal });
+                                                if (!ok) return;
+                                                setLlamadaFlow(null);
+                                                toast('Registrado: Prefiere WhatsApp/Correo', { icon: '💬' });
+                                            }}
+                                            disabled={estaBloqueadoRegistro}
+                                            className="w-full py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                                        >{estaBloqueadoRegistro ? '⏳ Validando...' : '✓ Guardar interacción'}</button>
+                                    </div>
+                                )}
+
+                                {/* 3c: Sin Interés */}
+                                {llamadaFlow.paso === 'sin_interes' && (
+                                    <div className="space-y-3">
+                                        <p className="font-semibold text-gray-700">✗ Motivo de falta de interés</p>
+                                        <textarea
+                                            rows={2}
+                                            value={llamadaFlow.notas || ''}
+                                            onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))}
+                                            placeholder="Ej: Dice que es muy caro, ya tiene proveedor..."
+                                            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gray-400"
+                                        />
+                                        <button
+                                            onClick={async () => {
+                                                const notaFinal = llamadaFlow.notas ? `Sin interés - ${llamadaFlow.notas}` : 'Contestó, sin interés';
+                                                const ok = await registrarActividadConDelay({ tipo: 'llamada', resultado: 'exitoso', notas: notaFinal });
+                                                if (!ok) return;
+                                                setLlamadaFlow(null);
+                                                toast('Sin interés — considera descartarlo', { icon: '💡' });
+                                            }}
+                                            disabled={estaBloqueadoRegistro}
+                                            className="w-full py-2 bg-gray-500 text-white rounded-lg font-bold hover:bg-gray-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                                        >{estaBloqueadoRegistro ? '⏳ Validando...' : '✓ Guardar y cerrar'}</button>
+                                    </div>
+                                )}
+
+                                {/* 3e: Otro */}
+                                {llamadaFlow.paso === 'otro' && (
+                                    <div className="space-y-3">
+                                        <p className="font-semibold text-blue-700">📝 Describe qué pasó en la llamada</p>
+                                        <textarea
+                                            rows={2}
+                                            value={llamadaFlow.notas || ''}
+                                            onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))}
+                                            placeholder="Ej: Cliente preguntará de presupuesto luego, prometió repasar propuesta..."
+                                            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
+                                        />
+                                        <button
+                                            onClick={async () => {
+                                                const notaFinal = llamadaFlow.notas ? `Otro resultado - ${llamadaFlow.notas}` : 'Otro resultado de llamada';
+                                                const ok = await registrarActividadConDelay({ tipo: 'llamada', resultado: 'exitoso', notas: notaFinal });
+                                                if (!ok) return;
+                                                setLlamadaFlow(null);
+                                                toast('Resultado guardado', { icon: '✓' });
+                                            }}
+                                            disabled={estaBloqueadoRegistro}
+                                            className="w-full py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                                        >{estaBloqueadoRegistro ? '⏳ Validando...' : '✓ Guardar resultado'}</button>
+                                    </div>
+                                )}
+
+                                {/* 3d: Llamar después — marcar fecha */}
+                                {llamadaFlow.paso === 'llamarDespues' && (
+                                    <div className="space-y-3">
+                                        <p className="font-semibold text-(--theme-700)">📅 ¿Cuándo le llamamos?</p>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <div className="flex flex-row gap-3">
+                                                <div className="w-1/2">
+                                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">Fecha</label>
+                                                    <input
+                                                        type="date"
+                                                        value={llamadaFlow.fechaProxima ? llamadaFlow.fechaProxima.slice(0, 10) : ''}
+                                                        onChange={(e) => syncLlamadaFlowFechaHora('fecha', e.target.value)}
+                                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-300) focus:border-transparent outline-none"
+                                                    />
+                                                </div>
+                                                <div className="w-1/2">
+                                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">Hora</label>
+                                                    <input
+                                                        type="time"
+                                                        step="300"
+                                                        value={llamadaFlow.fechaProxima ? llamadaFlow.fechaProxima.slice(11, 16) : ''}
+                                                        onChange={(e) => syncLlamadaFlowFechaHora('hora', e.target.value)}
+                                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-300) focus:border-transparent outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <textarea
+                                            rows={2}
+                                            value={llamadaFlow.notas || ''}
+                                            onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))}
+                                            placeholder="Notas de la llamada..."
+                                            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-400)"
+                                        />
                                         <button
                                             onClick={async () => {
                                                 try {
-                                                    setRegistrandoActividadBlockedUntil(Date.now() + 3000);
-                                                    setRegistrandoActividad(true);
+                                                    const notasFin = llamadaFlow.notas || 'Interesado, llamar después';
                                                     const pidLocal = prospectoSeleccionado.id || prospectoSeleccionado._id;
+
+                                                    // 1. Registrar Actividad (usa el helper que auto-promueve la etapa)
+                                                    const ok = await registrarActividadConDelay({
+                                                        tipo: 'llamada',
+                                                        resultado: 'exitoso',
+                                                        notas: notasFin
+                                                    });
+                                                    if (!ok) return;
+
                                                     if (llamadaFlow.fechaProxima) {
+                                                        // 2. Crear Recordatorio para la sección de recordatorios
                                                         const resRec = await axios.post(`${API_URL}/api/${rolePath}/prospectos/${pidLocal}/recordatorios`, {
                                                             fechaLimite: toUtcIsoFromLocalInput(llamadaFlow.fechaProxima),
-                                                            descripcion: 'Reintento de llamada - No contestó'
+                                                            descripcion: notasFin
                                                         }, { headers: getAuthHeaders() });
                                                         setRecordatoriosLlamada(prev => [...prev, resRec.data.recordatorio]);
 
+                                                        // 3. Actualizar proximaLlamada (ruta simple)
                                                         await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLocal}`, {
                                                             proximaLlamada: toUtcIsoFromLocalInput(llamadaFlow.fechaProxima)
                                                         }, { headers: getAuthHeaders() });
                                                     }
-                                                    toast.success('Reintento programado');
+
+                                                    toast.success('Seguimiento guardado correctamente');
                                                     setLlamadaFlow(null);
-                                                    const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
-                                                    const updated = res.data.find(p => p.id === pidLocal || p._id === pidLocal);
-                                                    if (updated) { setProspectoSeleccionado(updated); setProspectos(res.data); }
-                                                } catch { toast.error('Error al programar reintento'); }
-                                                finally { setRegistrandoActividad(false); }
+                                                } catch (err) {
+                                                    console.error(err);
+                                                    toast.error('Error al guardar el seguimiento completo');
+                                                }
                                             }}
                                             disabled={estaBloqueadoRegistro}
-                                            className="flex-1 py-2 bg-rose-600 text-white rounded-lg font-bold hover:bg-rose-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                                        >{estaBloqueadoRegistro ? '⏳ Validando...' : '📅 Programar reintento'}</button>
-                                        <button
-                                            onClick={() => setLlamadaFlow(null)}
-                                            className="px-4 py-2 border border-slate-200 text-gray-600 rounded-lg hover:bg-slate-50 text-sm"
-                                        >Sin fecha</button>
+                                            className="w-full py-2 bg-(--theme-600) text-white rounded-lg font-bold hover:bg-(--theme-700) disabled:opacity-60 disabled:cursor-not-allowed"
+                                        >{estaBloqueadoRegistro ? '⏳ Validando...' : '✓ Guardar seguimiento'}</button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* MODAL RECORDATORIO DE LLAMADA */}
+                {modalRecordatorioAbierto && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden">
+                            <div className="px-6 py-5 border-b border-slate-100 bg-linear-to-r from-(--theme-50) to-white">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Clock className="w-5 h-5 text-(--theme-600)" />
+                                            <h2 className="text-lg font-bold text-gray-900">{recordatorio.editandoId ? 'Editar recordatorio' : 'Crear recordatorio'}</h2>
+                                        </div>
+                                        <p className="text-sm text-slate-600">Configura una fecha rápida para volver a llamar a {prospectoSeleccionado.nombres}.</p>
+                                    </div>
+                                    <button
+                                        onClick={() => { setModalRecordatorioAbierto(false); setRecordatorio({ fechaProxima: '', notas: '', editandoId: null }); }}
+                                        className="p-2 text-slate-400 hover:text-slate-700 hover:bg-white rounded-lg transition-colors"
+                                        aria-label="Cerrar modal"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="px-6 py-5 space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Fecha</label>
+                                        <input
+                                            type="date"
+                                            value={recordatorio.fechaProxima ? recordatorio.fechaProxima.slice(0, 10) : ''}
+                                            onChange={(e) => syncRecordatorioFechaHora('fecha', e.target.value)}
+                                            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-300) focus:border-transparent outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Hora</label>
+                                        <input
+                                            type="time"
+                                            step="300"
+                                            value={recordatorio.fechaProxima ? recordatorio.fechaProxima.slice(11, 16) : ''}
+                                            onChange={(e) => syncRecordatorioFechaHora('hora', e.target.value)}
+                                            className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-300) focus:border-transparent outline-none"
+                                        />
                                     </div>
                                 </div>
-                            )}
 
-                            {/* 3b: WhatsApp o Correo */}
-                            {llamadaFlow.paso === 'whatsapp' && (
-                                <div className="space-y-3">
-                                    <p className="font-semibold text-green-700">💬 Añadir nota para WhatsApp/Correo</p>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Notas (opcional)</label>
                                     <textarea
-                                        rows={2}
-                                        value={llamadaFlow.notas || ''}
-                                        onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))}
-                                        placeholder="Ej: Enviar brochure PDF..."
-                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400"
+                                        rows={4}
+                                        value={recordatorio.notas}
+                                        onChange={(e) => setRecordatorio(r => ({ ...r, notas: e.target.value }))}
+                                        placeholder="Ej: Confirmar presupuesto y validar disponibilidad"
+                                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-300) focus:border-transparent outline-none resize-none"
                                     />
-                                    <button
-                                        onClick={async () => {
-                                            const notaFinal = llamadaFlow.notas ? `Prefiere atención por WhatsApp o correo - ${llamadaFlow.notas}` : 'Prefiere atención por WhatsApp o correo';
-                                            const ok = await registrarActividadConDelay({ tipo: 'llamada', resultado: 'exitoso', notas: notaFinal });
-                                            if (!ok) return;
-                                            setLlamadaFlow(null);
-                                            toast('Registrado: Prefiere WhatsApp/Correo', { icon: '💬' });
-                                        }}
-                                        disabled={estaBloqueadoRegistro}
-                                        className="w-full py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >{estaBloqueadoRegistro ? '⏳ Validando...' : '✓ Guardar interacción'}</button>
                                 </div>
-                            )}
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-3 px-6 py-5 border-t border-slate-100 bg-slate-50/70">
+                                <button
+                                    onClick={() => { setModalRecordatorioAbierto(false); setRecordatorio({ fechaProxima: '', notas: '', editandoId: null }); }}
+                                    className="sm:flex-1 px-4 py-2.5 border border-slate-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-white transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        const now = Date.now();
+                                        if (now < recordatorioBlockedUntil) {
+                                            return;
+                                        }
+                                        setGuardandoRecordatorio(true);
+                                        setRecordatorioBlockedUntil(now + 3000);
 
-                            {/* 3c: Sin Interés */}
-                            {llamadaFlow.paso === 'sin_interes' && (
-                                <div className="space-y-3">
-                                    <p className="font-semibold text-gray-700">✗ Motivo de falta de interés</p>
-                                    <textarea
-                                        rows={2}
-                                        value={llamadaFlow.notas || ''}
-                                        onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))}
-                                        placeholder="Ej: Dice que es muy caro, ya tiene proveedor..."
-                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gray-400"
-                                    />
-                                    <button
-                                        onClick={async () => {
-                                            const notaFinal = llamadaFlow.notas ? `Sin interés - ${llamadaFlow.notas}` : 'Contestó, sin interés';
-                                            const ok = await registrarActividadConDelay({ tipo: 'llamada', resultado: 'exitoso', notas: notaFinal });
-                                            if (!ok) return;
-                                            setLlamadaFlow(null);
-                                            toast('Sin interés — considera descartarlo', { icon: '💡' });
-                                        }}
-                                        disabled={estaBloqueadoRegistro}
-                                        className="w-full py-2 bg-gray-500 text-white rounded-lg font-bold hover:bg-gray-600 disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >{estaBloqueadoRegistro ? '⏳ Validando...' : '✓ Guardar y cerrar'}</button>
+                                        try {
+                                            if (!recordatorio.fechaProxima) {
+                                                toast.error('Selecciona una fecha');
+                                                return;
+                                            }
+                                            const pid = prospectoSeleccionado.id || prospectoSeleccionado._id;
+
+                                            if (recordatorio.editandoId) {
+                                                // Editar recordatorio existente
+                                                const fechaLimiteIso = toUtcIsoFromLocalInput(recordatorio.fechaProxima);
+                                                const res = await axios.put(`${API_URL}/api/${rolePath}/recordatorios/${recordatorio.editandoId}`, {
+                                                    fechaLimite: fechaLimiteIso,
+                                                    descripcion: recordatorio.notas || ''
+                                                }, { headers: getAuthHeaders() });
+                                                const updated = res.data.recordatorio;
+                                                setRecordatoriosLlamada(prev => prev.map(r => r.id === recordatorio.editandoId ? updated : r));
+                                                toast.success('📞 Recordatorio actualizado');
+                                            } else {
+                                                // Crear nuevo recordatorio
+                                                const fechaLimiteIso = toUtcIsoFromLocalInput(recordatorio.fechaProxima);
+                                                const res = await axios.post(`${API_URL}/api/${rolePath}/prospectos/${pid}/recordatorios`, {
+                                                    fechaLimite: fechaLimiteIso,
+                                                    descripcion: recordatorio.notas || ''
+                                                }, { headers: getAuthHeaders() });
+                                                setRecordatoriosLlamada(prev => [...prev, res.data.recordatorio]);
+                                                toast.success('📞 Recordatorio programado');
+                                            }
+
+                                            if (onActualizado) await onActualizado();
+
+                                            setModalRecordatorioAbierto(false);
+                                            setRecordatorio({ fechaProxima: '', notas: '', editandoId: null });
+                                        } catch (err) {
+                                            console.error(err);
+                                            toast.error('Error al guardar el recordatorio');
+                                        } finally {
+                                            setGuardandoRecordatorio(false);
+                                        }
+                                    }}
+                                    disabled={guardandoRecordatorio || Date.now() < recordatorioBlockedUntil}
+                                    className="sm:flex-1 px-4 py-2.5 bg-(--theme-600) text-white rounded-lg text-sm font-semibold hover:bg-(--theme-700) transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    {guardandoRecordatorio || Date.now() < recordatorioBlockedUntil ? '⏳ Validando...' : '✓ Guardar recordatorio'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {/* MODAL DETALLE / EDICIÓN DE CITA */}
+                {modalCita.abierto && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+                            <div className="px-6 py-5 border-b border-slate-100 bg-linear-to-r from-(--theme-50) to-white flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-(--theme-600)" />
+                                    <h2 className="text-lg font-bold text-gray-900">
+                                        {modalCita.editando ? 'Editar reunión agendada' : 'Detalles de la reunión'}
+                                    </h2>
                                 </div>
-                            )}
+                                <button
+                                    onClick={() => setModalCita({ abierto: false, cita: null, editando: false })}
+                                    className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                                >
+                                    <X className="w-5 h-5 text-slate-400" />
+                                </button>
+                            </div>
 
-                            {/* 3e: Otro */}
-                            {llamadaFlow.paso === 'otro' && (
-                                <div className="space-y-3">
-                                    <p className="font-semibold text-blue-700">📝 Describe qué pasó en la llamada</p>
-                                    <textarea
-                                        rows={2}
-                                        value={llamadaFlow.notas || ''}
-                                        onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))}
-                                        placeholder="Ej: Cliente preguntará de presupuesto luego, prometió repasar propuesta..."
-                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
-                                    />
-                                    <button
-                                        onClick={async () => {
-                                            const notaFinal = llamadaFlow.notas ? `Otro resultado - ${llamadaFlow.notas}` : 'Otro resultado de llamada';
-                                            const ok = await registrarActividadConDelay({ tipo: 'llamada', resultado: 'exitoso', notas: notaFinal });
-                                            if (!ok) return;
-                                            setLlamadaFlow(null);
-                                            toast('Resultado guardado', { icon: '✓' });
-                                        }}
-                                        disabled={estaBloqueadoRegistro}
-                                        className="w-full py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >{estaBloqueadoRegistro ? '⏳ Validando...' : '✓ Guardar resultado'}</button>
-                                </div>
-                            )}
-
-                            {/* 3d: Llamar después — marcar fecha */}
-                            {llamadaFlow.paso === 'llamarDespues' && (
-                                <div className="space-y-3">
-                                    <p className="font-semibold text-(--theme-700)">📅 ¿Cuándo le llamamos?</p>
-                                    <div className="grid grid-cols-1 gap-3">
-                                        <div className="flex flex-row gap-3">
-                                            <div className="w-1/2">
-                                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">Fecha</label>
-                                                <input
-                                                    type="date"
-                                                    value={llamadaFlow.fechaProxima ? llamadaFlow.fechaProxima.slice(0, 10) : ''}
-                                                    onChange={(e) => syncLlamadaFlowFechaHora('fecha', e.target.value)}
-                                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-300) focus:border-transparent outline-none"
-                                                />
+                            <div className="p-6 space-y-4">
+                                {modalCita.editando ? (
+                                    <>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha y Hora</label>
+                                            <input
+                                                type="datetime-local"
+                                                value={editDataCita.fecha ? toLocalDateTimeInput(editDataCita.fecha) : ''}
+                                                onChange={(e) => setEditDataCita({ ...editDataCita, fecha: e.target.value })}
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-400) outline-none transition-all"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Notas de la reunión</label>
+                                            <textarea
+                                                value={editDataCita.notas}
+                                                onChange={(e) => setEditDataCita({ ...editDataCita, notas: e.target.value })}
+                                                placeholder="Detalles o preparativos para la reunión..."
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-400) outline-none transition-all min-h-[120px] resize-none"
+                                            />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="bg-slate-50 p-4 rounded-xl space-y-3">
+                                            <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                                                <span className="text-xs font-bold text-slate-400 uppercase">Fecha</span>
+                                                <span className="text-sm font-semibold text-slate-700">
+                                                    {new Date(modalCita.cita.fechaCita || modalCita.cita.fecha).toLocaleDateString('es-MX', { dateStyle: 'long' })}
+                                                </span>
                                             </div>
-                                            <div className="w-1/2">
-                                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">Hora</label>
-                                                <input
-                                                    type="time"
-                                                    step="300"
-                                                    value={llamadaFlow.fechaProxima ? llamadaFlow.fechaProxima.slice(11, 16) : ''}
-                                                    onChange={(e) => syncLlamadaFlowFechaHora('hora', e.target.value)}
-                                                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-300) focus:border-transparent outline-none"
-                                                />
+                                            <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                                                <span className="text-xs font-bold text-slate-400 uppercase">Hora</span>
+                                                <span className="text-sm font-semibold text-slate-700">
+                                                    {new Date(modalCita.cita.fechaCita || modalCita.cita.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <span className="text-xs font-bold text-slate-400 uppercase">Notas</span>
+                                                <p className="text-sm text-slate-600 leading-relaxed italic">
+                                                    {modalCita.cita.notas || 'Sin notas registradas.'}
+                                                </p>
+                                            </div>
+
+                                            {modalCita.cita.googleMeetLink && (
+                                                <div className="pt-2 border-t border-slate-200">
+                                                    <span className="text-xs font-bold text-(--theme-600) uppercase block mb-1.5">Enlace de Google Meet</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-600 truncate font-mono">
+                                                            {modalCita.cita.googleMeetLink}
+                                                        </div>
+                                                        <button
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(modalCita.cita.googleMeetLink);
+                                                                toast.success('Enlace copiado');
+                                                            }}
+                                                            className="p-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg shadow-sm transition-all"
+                                                            title="Copiar enlace"
+                                                        >
+                                                            <Copy className="w-4 h-4" />
+                                                        </button>
+                                                        <a
+                                                            href={modalCita.cita.googleMeetLink}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="p-2 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded-lg shadow-sm transition-all"
+                                                            title="Unirse a la reunión"
+                                                        >
+                                                            <ExternalLink className="w-4 h-4" />
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center gap-3 p-3 bg-(--theme-50) border border-(--theme-100) rounded-xl">
+                                            <div className="p-2 bg-white rounded-lg shadow-sm">
+                                                <Star className="w-4 h-4 text-(--theme-500)" />
+                                            </div>
+                                            <div className="text-xs">
+                                                <p className="font-bold text-(--theme-700)">Reunión con {prospectoSeleccionado.nombres}</p>
+                                                <p className="text-(--theme-600)">Empresa: {prospectoSeleccionado.empresa || 'No especificada'}</p>
                                             </div>
                                         </div>
                                     </div>
-                                    <textarea
-                                        rows={2}
-                                        value={llamadaFlow.notas || ''}
-                                        onChange={e => setLlamadaFlow(f => ({ ...f, notas: e.target.value }))}
-                                        placeholder="Notas de la llamada..."
-                                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-(--theme-400)"
-                                    />
+                                )}
+                            </div>
+
+                            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                                <button
+                                    onClick={() => setModalCita({ abierto: false, cita: null, editando: false })}
+                                    className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-lg transition-colors"
+                                >
+                                    Cerrar
+                                </button>
+                                {modalCita.editando && (
                                     <button
-                                        onClick={async () => {
-                                            try {
-                                                const notasFin = llamadaFlow.notas || 'Interesado, llamar después';
-                                                const pidLocal = prospectoSeleccionado.id || prospectoSeleccionado._id;
-
-                                                // 1. Registrar Actividad (usa el helper que auto-promueve la etapa)
-                                                const ok = await registrarActividadConDelay({
-                                                    tipo: 'llamada',
-                                                    resultado: 'exitoso',
-                                                    notas: notasFin
-                                                });
-                                                if (!ok) return;
-
-                                                if (llamadaFlow.fechaProxima) {
-                                                    // 2. Crear Recordatorio para la sección de recordatorios
-                                                    const resRec = await axios.post(`${API_URL}/api/${rolePath}/prospectos/${pidLocal}/recordatorios`, {
-                                                        fechaLimite: toUtcIsoFromLocalInput(llamadaFlow.fechaProxima),
-                                                        descripcion: notasFin
-                                                    }, { headers: getAuthHeaders() });
-                                                    setRecordatoriosLlamada(prev => [...prev, resRec.data.recordatorio]);
-
-                                                    // 3. Actualizar proximaLlamada (ruta simple)
-                                                    await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLocal}`, {
-                                                        proximaLlamada: toUtcIsoFromLocalInput(llamadaFlow.fechaProxima)
-                                                    }, { headers: getAuthHeaders() });
-                                                }
-
-                                                toast.success('Seguimiento guardado correctamente');
-                                                setLlamadaFlow(null);
-                                            } catch (err) {
-                                                console.error(err);
-                                                toast.error('Error al guardar el seguimiento completo');
-                                            }
-                                        }}
-                                        disabled={estaBloqueadoRegistro}
-                                        className="w-full py-2 bg-(--theme-600) text-white rounded-lg font-bold hover:bg-(--theme-700) disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >{estaBloqueadoRegistro ? '⏳ Validando...' : '✓ Guardar seguimiento'}</button>
-                                </div>
-                            )}
+                                        onClick={handleActualizarCita}
+                                        className="px-6 py-2 bg-(--theme-600) text-white rounded-lg text-sm font-bold hover:bg-(--theme-700) shadow-sm transition-colors"
+                                    >
+                                        Guardar cambios
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* MODAL RECORDATORIO DE LLAMADA */}
-            {modalRecordatorioAbierto && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden">
-                        <div className="px-6 py-5 border-b border-slate-100 bg-linear-to-r from-(--theme-50) to-white">
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Clock className="w-5 h-5 text-(--theme-600)" />
-                                        <h2 className="text-lg font-bold text-gray-900">{recordatorio.editandoId ? 'Editar recordatorio' : 'Crear recordatorio'}</h2>
+                {/* MODAL ACCIONES DE CIERRE */}
+                {modalAccionesCierreAbierto && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+                            <div className="px-6 py-5 border-b border-slate-100 bg-linear-to-r from-(--theme-50) to-white flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-1.5 bg-(--theme-100) text-(--theme-600) rounded-lg">
+                                        <CheckCircle2 className="w-5 h-5" />
                                     </div>
-                                    <p className="text-sm text-slate-600">Configura una fecha rápida para volver a llamar a {prospectoSeleccionado.nombres}.</p>
+                                    <div>
+                                        <h2 className="text-lg font-black text-gray-900 leading-tight">Gestión de Cierre</h2>
+                                        <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mt-0.5">Define el fin del proceso</p>
+                                    </div>
                                 </div>
                                 <button
-                                    onClick={() => { setModalRecordatorioAbierto(false); setRecordatorio({ fechaProxima: '', notas: '', editandoId: null }); }}
-                                    className="p-2 text-slate-400 hover:text-slate-700 hover:bg-white rounded-lg transition-colors"
-                                    aria-label="Cerrar modal"
+                                    onClick={() => setModalAccionesCierreAbierto(false)}
+                                    className="p-2 hover:bg-slate-100 rounded-full transition-colors"
                                 >
+                                    <X className="w-5 h-5 text-slate-400" />
+                                </button>
+                            </div>
+                            <div className="p-6 space-y-3">
+                                <button
+                                    onClick={() => { setModalPasarClienteAbierto(true); setModalAccionesCierreAbierto(false); }}
+                                    className="w-full flex items-center justify-between p-4 border-2 border-(--theme-100) hover:border-(--theme-500) bg-white hover:bg-(--theme-50) rounded-xl transition-all group"
+                                >
+                                    <div className="flex items-center gap-3 text-left">
+                                        <div className="bg-(--theme-100) group-hover:bg-(--theme-500) text-(--theme-600) group-hover:text-white p-2 rounded-lg transition-colors">
+                                            <Star className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-gray-900">Pasar a Cliente</p>
+                                            <p className="text-xs text-slate-500">Convierte y envía a producción</p>
+                                        </div>
+                                    </div>
+                                    <ArrowLeft className="w-5 h-5 text-(--theme-400) transform rotate-180 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </button>
+
+                                <button
+                                    onClick={() => { setModalDescartarAbierto(true); setModalAccionesCierreAbierto(false); }}
+                                    className="w-full flex items-center justify-between p-4 border-2 border-rose-100 hover:border-rose-300 bg-white hover:bg-rose-50 rounded-xl transition-all group"
+                                >
+                                    <div className="flex items-center gap-3 text-left">
+                                        <div className="bg-rose-100 group-hover:bg-rose-500 text-rose-600 group-hover:text-white p-2 rounded-lg transition-colors">
+                                            <XCircle className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-gray-900">Descartar Prospecto</p>
+                                            <p className="text-xs text-slate-500">Marca como perdido o sin éxito</p>
+                                        </div>
+                                    </div>
+                                    <ArrowLeft className="w-5 h-5 text-rose-400 transform rotate-180 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </button>
+                            </div>
+                            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
+                                <button
+                                    onClick={() => setModalAccionesCierreAbierto(false)}
+                                    className="w-full py-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors"
+                                >
+                                    Volver atrás
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* MODAL NUEVA SECCIÓN */}
+                {modalNuevaSeccion && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+                            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                                <h2 className="text-base font-bold text-gray-900">Añadir Nuevo Módulo</h2>
+                                <button onClick={() => setModalNuevaSeccion(false)} className="p-1.5 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
-                        </div>
-                        <div className="px-6 py-5 space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Fecha</label>
-                                    <input
-                                        type="date"
-                                        value={recordatorio.fechaProxima ? recordatorio.fechaProxima.slice(0, 10) : ''}
-                                        onChange={(e) => syncRecordatorioFechaHora('fecha', e.target.value)}
-                                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-300) focus:border-transparent outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Hora</label>
-                                    <input
-                                        type="time"
-                                        step="300"
-                                        value={recordatorio.fechaProxima ? recordatorio.fechaProxima.slice(11, 16) : ''}
-                                        onChange={(e) => syncRecordatorioFechaHora('hora', e.target.value)}
-                                        className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-300) focus:border-transparent outline-none"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Notas (opcional)</label>
-                                <textarea
-                                    rows={4}
-                                    value={recordatorio.notas}
-                                    onChange={(e) => setRecordatorio(r => ({ ...r, notas: e.target.value }))}
-                                    placeholder="Ej: Confirmar presupuesto y validar disponibilidad"
-                                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-300) focus:border-transparent outline-none resize-none"
-                                />
-                            </div>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-3 px-6 py-5 border-t border-slate-100 bg-slate-50/70">
-                            <button
-                                onClick={() => { setModalRecordatorioAbierto(false); setRecordatorio({ fechaProxima: '', notas: '', editandoId: null }); }}
-                                className="sm:flex-1 px-4 py-2.5 border border-slate-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-white transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={async () => {
-                                    const now = Date.now();
-                                    if (now < recordatorioBlockedUntil) {
-                                        return;
-                                    }
-                                    setGuardandoRecordatorio(true);
-                                    setRecordatorioBlockedUntil(now + 3000);
-
-                                    try {
-                                        if (!recordatorio.fechaProxima) {
-                                            toast.error('Selecciona una fecha');
-                                            return;
-                                        }
-                                        const pid = prospectoSeleccionado.id || prospectoSeleccionado._id;
-
-                                        if (recordatorio.editandoId) {
-                                            // Editar recordatorio existente
-                                            const fechaLimiteIso = toUtcIsoFromLocalInput(recordatorio.fechaProxima);
-                                            const res = await axios.put(`${API_URL}/api/${rolePath}/recordatorios/${recordatorio.editandoId}`, {
-                                                fechaLimite: fechaLimiteIso,
-                                                descripcion: recordatorio.notas || ''
-                                            }, { headers: getAuthHeaders() });
-                                            const updated = res.data.recordatorio;
-                                            setRecordatoriosLlamada(prev => prev.map(r => r.id === recordatorio.editandoId ? updated : r));
-                                            toast.success('📞 Recordatorio actualizado');
-                                        } else {
-                                            // Crear nuevo recordatorio
-                                            const fechaLimiteIso = toUtcIsoFromLocalInput(recordatorio.fechaProxima);
-                                            const res = await axios.post(`${API_URL}/api/${rolePath}/prospectos/${pid}/recordatorios`, {
-                                                fechaLimite: fechaLimiteIso,
-                                                descripcion: recordatorio.notas || ''
-                                            }, { headers: getAuthHeaders() });
-                                            setRecordatoriosLlamada(prev => [...prev, res.data.recordatorio]);
-                                            toast.success('📞 Recordatorio programado');
-                                        }
-
-                                        if (onActualizado) await onActualizado();
-
-                                        setModalRecordatorioAbierto(false);
-                                        setRecordatorio({ fechaProxima: '', notas: '', editandoId: null });
-                                    } catch (err) {
-                                        console.error(err);
-                                        toast.error('Error al guardar el recordatorio');
-                                    } finally {
-                                        setGuardandoRecordatorio(false);
-                                    }
-                                }}
-                                disabled={guardandoRecordatorio || Date.now() < recordatorioBlockedUntil}
-                                className="sm:flex-1 px-4 py-2.5 bg-(--theme-600) text-white rounded-lg text-sm font-semibold hover:bg-(--theme-700) transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                                {guardandoRecordatorio || Date.now() < recordatorioBlockedUntil ? '⏳ Validando...' : '✓ Guardar recordatorio'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {/* MODAL DETALLE / EDICIÓN DE CITA */}
-            {modalCita.abierto && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="px-6 py-5 border-b border-slate-100 bg-linear-to-r from-(--theme-50) to-white flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Calendar className="w-5 h-5 text-(--theme-600)" />
-                                <h2 className="text-lg font-bold text-gray-900">
-                                    {modalCita.editando ? 'Editar reunión agendada' : 'Detalles de la reunión'}
-                                </h2>
-                            </div>
-                            <button
-                                onClick={() => setModalCita({ abierto: false, cita: null, editando: false })}
-                                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                            >
-                                <X className="w-5 h-5 text-slate-400" />
-                            </button>
-                        </div>
-
-                        <div className="p-6 space-y-4">
-                            {modalCita.editando ? (
-                                <>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha y Hora</label>
-                                        <input
-                                            type="datetime-local"
-                                            value={editDataCita.fecha ? toLocalDateTimeInput(editDataCita.fecha) : ''}
-                                            onChange={(e) => setEditDataCita({ ...editDataCita, fecha: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-400) outline-none transition-all"
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Notas de la reunión</label>
-                                        <textarea
-                                            value={editDataCita.notas}
-                                            onChange={(e) => setEditDataCita({ ...editDataCita, notas: e.target.value })}
-                                            placeholder="Detalles o preparativos para la reunión..."
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-(--theme-400) outline-none transition-all min-h-[120px] resize-none"
-                                        />
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="space-y-4">
-                                    <div className="bg-slate-50 p-4 rounded-xl space-y-3">
-                                        <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                                            <span className="text-xs font-bold text-slate-400 uppercase">Fecha</span>
-                                            <span className="text-sm font-semibold text-slate-700">
-                                                {new Date(modalCita.cita.fechaCita || modalCita.cita.fecha).toLocaleDateString('es-MX', { dateStyle: 'long' })}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                                            <span className="text-xs font-bold text-slate-400 uppercase">Hora</span>
-                                            <span className="text-sm font-semibold text-slate-700">
-                                                {new Date(modalCita.cita.fechaCita || modalCita.cita.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <span className="text-xs font-bold text-slate-400 uppercase">Notas</span>
-                                            <p className="text-sm text-slate-600 leading-relaxed italic">
-                                                {modalCita.cita.notas || 'Sin notas registradas.'}
-                                            </p>
-                                        </div>
-
-                                        {modalCita.cita.googleMeetLink && (
-                                            <div className="pt-2 border-t border-slate-200">
-                                                <span className="text-xs font-bold text-(--theme-600) uppercase block mb-1.5">Enlace de Google Meet</span>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-600 truncate font-mono">
-                                                        {modalCita.cita.googleMeetLink}
-                                                    </div>
-                                                    <button
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText(modalCita.cita.googleMeetLink);
-                                                            toast.success('Enlace copiado');
-                                                        }}
-                                                        className="p-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg shadow-sm transition-all"
-                                                        title="Copiar enlace"
-                                                    >
-                                                        <Copy className="w-4 h-4" />
-                                                    </button>
-                                                    <a
-                                                        href={modalCita.cita.googleMeetLink}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="p-2 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded-lg shadow-sm transition-all"
-                                                        title="Unirse a la reunión"
-                                                    >
-                                                        <ExternalLink className="w-4 h-4" />
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-3 p-3 bg-(--theme-50) border border-(--theme-100) rounded-xl">
-                                        <div className="p-2 bg-white rounded-lg shadow-sm">
-                                            <Star className="w-4 h-4 text-(--theme-500)" />
-                                        </div>
-                                        <div className="text-xs">
-                                            <p className="font-bold text-(--theme-700)">Reunión con {prospectoSeleccionado.nombres}</p>
-                                            <p className="text-(--theme-600)">Empresa: {prospectoSeleccionado.empresa || 'No especificada'}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-                            <button
-                                onClick={() => setModalCita({ abierto: false, cita: null, editando: false })}
-                                className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-lg transition-colors"
-                            >
-                                Cerrar
-                            </button>
-                            {modalCita.editando && (
+                            <div className="p-5 grid grid-cols-2 gap-3">
                                 <button
-                                    onClick={handleActualizarCita}
-                                    className="px-6 py-2 bg-(--theme-600) text-white rounded-lg text-sm font-bold hover:bg-(--theme-700) shadow-sm transition-colors"
+                                    onClick={() => addSeccion('note')}
+                                    className="flex flex-col items-center gap-2 p-4 border border-slate-200 hover:border-(--theme-400) hover:bg-(--theme-50) rounded-xl transition-all group"
                                 >
-                                    Guardar cambios
+                                    <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg text-slate-500 group-hover:text-(--theme-600) transition-colors">
+                                        <FileText className="w-6 h-6" />
+                                    </div>
+                                    <span className="text-sm font-semibold text-gray-700">Notas</span>
                                 </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-            
-            {/* MODAL ACCIONES DE CIERRE */}
-            {modalAccionesCierreAbierto && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="px-6 py-5 border-b border-slate-100 bg-linear-to-r from-(--theme-50) to-white flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
-                                <div className="p-1.5 bg-(--theme-100) text-(--theme-600) rounded-lg">
-                                    <CheckCircle2 className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h2 className="text-lg font-black text-gray-900 leading-tight">Gestión de Cierre</h2>
-                                    <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mt-0.5">Define el fin del proceso</p>
-                                </div>
+                                <button
+                                    onClick={() => addSeccion('list')}
+                                    className="flex flex-col items-center gap-2 p-4 border border-slate-200 hover:border-(--theme-400) hover:bg-(--theme-50) rounded-xl transition-all group"
+                                >
+                                    <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg text-slate-500 group-hover:text-(--theme-600) transition-colors">
+                                        <CheckCircle2 className="w-6 h-6" />
+                                    </div>
+                                    <span className="text-sm font-semibold text-gray-700">Lista</span>
+                                </button>
                             </div>
-                            <button
-                                onClick={() => setModalAccionesCierreAbierto(false)}
-                                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                            >
-                                <X className="w-5 h-5 text-slate-400" />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-3">
-                            <button
-                                onClick={() => { setModalPasarClienteAbierto(true); setModalAccionesCierreAbierto(false); }}
-                                className="w-full flex items-center justify-between p-4 border-2 border-(--theme-100) hover:border-(--theme-500) bg-white hover:bg-(--theme-50) rounded-xl transition-all group"
-                            >
-                                <div className="flex items-center gap-3 text-left">
-                                    <div className="bg-(--theme-100) group-hover:bg-(--theme-500) text-(--theme-600) group-hover:text-white p-2 rounded-lg transition-colors">
-                                        <Star className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-gray-900">Pasar a Cliente</p>
-                                        <p className="text-xs text-slate-500">Convierte y envía a producción</p>
-                                    </div>
-                                </div>
-                                <ArrowLeft className="w-5 h-5 text-(--theme-400) transform rotate-180 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </button>
-
-                            <button
-                                onClick={() => { setModalDescartarAbierto(true); setModalAccionesCierreAbierto(false); }}
-                                className="w-full flex items-center justify-between p-4 border-2 border-rose-100 hover:border-rose-300 bg-white hover:bg-rose-50 rounded-xl transition-all group"
-                            >
-                                <div className="flex items-center gap-3 text-left">
-                                    <div className="bg-rose-100 group-hover:bg-rose-500 text-rose-600 group-hover:text-white p-2 rounded-lg transition-colors">
-                                        <XCircle className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-gray-900">Descartar Prospecto</p>
-                                        <p className="text-xs text-slate-500">Marca como perdido o sin éxito</p>
-                                    </div>
-                                </div>
-                                <ArrowLeft className="w-5 h-5 text-rose-400 transform rotate-180 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </button>
-                        </div>
-                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
-                            <button
-                                onClick={() => setModalAccionesCierreAbierto(false)}
-                                className="w-full py-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors"
-                            >
-                                Volver atrás
-                            </button>
+                            <div className="px-5 pb-5 pt-2 text-center">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">Más módulos próximamente</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-            
-            {/* MODAL NUEVA SECCIÓN */}
-            {modalNuevaSeccion && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                            <h2 className="text-base font-bold text-gray-900">Añadir Nuevo Módulo</h2>
-                            <button onClick={() => setModalNuevaSeccion(false)} className="p-1.5 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                        <div className="p-5 grid grid-cols-2 gap-3">
-                            <button
-                                onClick={() => addSeccion('note')}
-                                className="flex flex-col items-center gap-2 p-4 border border-slate-200 hover:border-(--theme-400) hover:bg-(--theme-50) rounded-xl transition-all group"
-                            >
-                                <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg text-slate-500 group-hover:text-(--theme-600) transition-colors">
-                                    <FileText className="w-6 h-6" />
-                                </div>
-                                <span className="text-sm font-semibold text-gray-700">Notas</span>
-                            </button>
-                            <button
-                                onClick={() => addSeccion('list')}
-                                className="flex flex-col items-center gap-2 p-4 border border-slate-200 hover:border-(--theme-400) hover:bg-(--theme-50) rounded-xl transition-all group"
-                            >
-                                <div className="p-2 bg-slate-50 group-hover:bg-white rounded-lg text-slate-500 group-hover:text-(--theme-600) transition-colors">
-                                    <CheckCircle2 className="w-6 h-6" />
-                                </div>
-                                <span className="text-sm font-semibold text-gray-700">Lista</span>
-                            </button>
-                        </div>
-                        <div className="px-5 pb-5 pt-2 text-center">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">Más módulos próximamente</p>
-                        </div>
-                    </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
-    </div>
     );
 
 

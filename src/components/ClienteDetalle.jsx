@@ -154,13 +154,13 @@ export default function ClienteDetalle({
             // Solo sobreescribir si no estamos en medio de una edición o si el ID cambió realmente
             const currentId = ClienteSeleccionado?.id || ClienteSeleccionado?._id;
             const newId = initialCliente.id || initialCliente._id;
-            
+
             if (currentId !== newId) {
                 setClienteSeleccionado(initialCliente);
                 setNotasRapidas(initialCliente.notas || '');
                 setMonedaSeleccionada(initialCliente.customMetricLabel || 'MXN');
                 setValorCliente(initialCliente.customMetricValue || '');
-                
+
                 // Parsear customSections si viene como string
                 setCustomSections(parseOrDefaultSections(initialCliente.customSections));
             }
@@ -304,7 +304,7 @@ export default function ClienteDetalle({
             await axios.put(endpoint, {
                 customSections: nuevasSecciones
             }, { headers: getAuthHeaders() });
-            
+
             // Actualizar localmente para evitar parpadeos
             setClienteSeleccionado(prev => ({ ...prev, customSections: nuevasSecciones }));
             if (onActualizado) onActualizado();
@@ -568,10 +568,10 @@ export default function ClienteDetalle({
                 descripcion: desc,
                 notas: ventaForm.notas
             });
-            
+
             const sectionType = ventaForm.tipo === 'suscripcion' ? 'subscriptions' : 'sales';
             const targetSection = customSections.find(s => s.tipo === sectionType);
-            
+
             const newRecord = {
                 id: Date.now().toString(),
                 descripcion: ventaForm.descripcion,
@@ -613,11 +613,11 @@ export default function ClienteDetalle({
                 resultado: estado === 'ganada' ? 'exitoso' : 'fallido',
                 descripcion: `Oportunidad ${estado} (${tipoCierre}): ${opp.nombre || 'Sin nombre'}`
             });
-            
+
             if (estado === 'ganada') {
                 const sectionType = tipoCierre === 'suscripcion' ? 'subscriptions' : 'sales';
                 const targetSection = customSections.find(s => s.tipo === sectionType);
-                
+
                 const newRecord = {
                     id: Date.now().toString(),
                     descripcion: opp.nombre || 'Venta',
@@ -727,10 +727,10 @@ export default function ClienteDetalle({
             }
 
             // Actualizar contexto local
-            setActividadesContext(prev => prev.map(a => 
-                (a.id || a._id) === id 
-                ? { ...a, fecha: editDataCita.fecha, notas: editDataCita.notas } 
-                : a
+            setActividadesContext(prev => prev.map(a =>
+                (a.id || a._id) === id
+                    ? { ...a, fecha: editDataCita.fecha, notas: editDataCita.notas }
+                    : a
             ));
 
             toast.success('Reunión actualizada');
@@ -898,11 +898,11 @@ export default function ClienteDetalle({
                                         </div>
                                     </div>
                                 </div>
-
-                                {/* Grid de Información de Contacto (Solo si hay datos) - Ahora más compacto */}
+                                {/* Grid de Información de Contacto (Responsive) */}
                                 {(ClienteSeleccionado.telefono || ClienteSeleccionado.correo || ClienteSeleccionado.ubicacion || ClienteSeleccionado.sitioWeb) && (
-                                    <div className="pt-3 border-t border-slate-100">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2 items-stretch">
+                                    <div className="pt-2">
+                                        {/* =========== VERSIÓN ESCRITORIO (Original sin cambios) =========== */}
+                                        <div className="hidden lg:flex flex-wrap items-center gap-x-4 gap-y-2 pt-3 border-t border-slate-100">
                                             {/* Teléfonos */}
                                             {(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) && (
                                                 <div className="flex items-center gap-2">
@@ -912,12 +912,8 @@ export default function ClienteDetalle({
                                                     <div className="flex flex-col overflow-hidden">
                                                         <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Teléfono</span>
                                                         <div className="flex flex-wrap text-xs font-bold text-slate-700 truncate">
-                                                            {[ClienteSeleccionado.telefono, ClienteSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).slice(0, 1).map((tel, idx) => (
-                                                                <span key={idx}>{tel}</span>
-                                                            ))}
-                                                            {[ClienteSeleccionado.telefono, ClienteSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).length > 1 && (
-                                                                <span className="ml-1 text-slate-400 text-[10px]">...</span>
-                                                            )}
+                                                            {[ClienteSeleccionado.telefono, ClienteSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).slice(0, 1).map((tel, idx) => (<span key={idx} className="truncate">{tel}</span>))}
+                                                            {[ClienteSeleccionado.telefono, ClienteSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).length > 1 && (<span className="ml-1 text-slate-400 text-[10px]">...</span>)}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -959,9 +955,103 @@ export default function ClienteDetalle({
                                                     <div className="w-7 h-7 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 shrink-0">
                                                         <Globe className="w-3.5 h-3.5" />
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex flex-col overflow-hidden">
-                                                            <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Web</span>
+                                                    <div className="min-w-0 flex flex-col overflow-hidden">
+                                                        <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-400 leading-none mb-0.5">Web</span>
+                                                        <a
+                                                            href={ClienteSeleccionado.sitioWeb.startsWith('http') ? ClienteSeleccionado.sitioWeb : `https://${ClienteSeleccionado.sitioWeb}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-xs font-bold text-(--theme-600) hover:underline truncate"
+                                                        >
+                                                            {ClienteSeleccionado.sitioWeb.replace(/^https?:\/\//, '')}
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            
+                                            {/* Botones de acción — siempre al final derecho */}
+                                            <div className="ml-auto flex items-center gap-2 shrink-0">
+                                                <PlantillasMensajesModal contacto={ClienteSeleccionado} scope="cliente" />
+                                                <a
+                                                    href={(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? `https://wa.me/${[ClienteSeleccionado.telefono, ClienteSeleccionado.telefono2].filter(Boolean).join(',').replace(/\D/g, '')}` : undefined}
+                                                    target={(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? '_blank' : undefined}
+                                                    rel={(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? 'noopener noreferrer' : undefined}
+                                                    aria-disabled={!(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2)}
+                                                    onClick={!(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? (e) => e.preventDefault() : undefined}
+                                                    className={`h-8 w-8 inline-flex items-center justify-center rounded-lg transition-all ${(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? 'bg-green-50 text-green-600 hover:bg-green-100 hover:scale-105' : 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60'}`}
+                                                    title={(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? 'Mensaje por WhatsApp' : 'No hay teléfono para WhatsApp'}
+                                                >
+                                                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
+                                                </a>
+                                                <a
+                                                    href={ClienteSeleccionado.correo ? `mailto:${ClienteSeleccionado.correo}` : undefined}
+                                                    aria-disabled={!ClienteSeleccionado.correo}
+                                                    onClick={!ClienteSeleccionado.correo ? (e) => e.preventDefault() : undefined}
+                                                    className={`h-8 w-8 inline-flex items-center justify-center rounded-lg transition-all ${ClienteSeleccionado.correo ? 'bg-slate-50 hover:bg-slate-100 hover:scale-105' : 'bg-slate-100 cursor-not-allowed opacity-60'}`}
+                                                    title={ClienteSeleccionado.correo ? 'Enviar correo por Gmail' : 'No hay correo para Gmail'}
+                                                >
+                                                    <img src={GmailIcon} alt="Gmail" className={`w-4 h-4 object-contain ${ClienteSeleccionado.correo ? '' : 'grayscale opacity-60'}`} />
+                                                </a>
+                                            </div>
+                                        </div>
+
+                                        {/* =========== VERSIÓN CELULAR (Con diseño especial) =========== */}
+                                        <div className="lg:hidden mt-3">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {/* Teléfonos */}
+                                                {(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) && (
+                                                    <div className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                                                        <div className="w-8 h-8 flex items-center justify-center bg-white shadow-sm border border-slate-100 rounded-md text-(--theme-600) shrink-0">
+                                                            <Phone className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 leading-none mb-1">Teléfono</span>
+                                                            <span className="text-xs font-bold text-slate-700 truncate">
+                                                                {[ClienteSeleccionado.telefono, ClienteSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).slice(0, 1).map((tel, idx) => (<span key={idx} className="truncate">{tel}</span>))}
+                                                                {[ClienteSeleccionado.telefono, ClienteSeleccionado.telefono2].filter(Boolean).flatMap(t => t.split(',').map(s => s.trim())).filter(Boolean).length > 1 && (<span className="ml-1 text-slate-400 text-[10px]">...</span>)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Correo */}
+                                                {ClienteSeleccionado.correo && (
+                                                    <div className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                                                        <div className="w-8 h-8 flex items-center justify-center bg-white shadow-sm border border-slate-100 rounded-md text-(--theme-600) shrink-0">
+                                                            <Mail className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 leading-none mb-1">Correo</span>
+                                                            <span className="text-xs font-bold text-slate-700 truncate" title={ClienteSeleccionado.correo}>
+                                                                {ClienteSeleccionado.correo}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Ubicación */}
+                                                {ClienteSeleccionado.ubicacion && (
+                                                    <div className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                                                        <div className="w-8 h-8 flex items-center justify-center bg-white shadow-sm border border-slate-100 rounded-md text-(--theme-600) shrink-0">
+                                                            <MapPin className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 leading-none mb-1">Ubicación</span>
+                                                            <span className="text-xs font-bold text-slate-700 truncate" title={ClienteSeleccionado.ubicacion}>
+                                                                {ClienteSeleccionado.ubicacion}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Sitio Web */}
+                                                {ClienteSeleccionado.sitioWeb && (
+                                                    <div className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100">
+                                                        <div className="w-8 h-8 flex items-center justify-center bg-white shadow-sm border border-slate-100 rounded-md text-(--theme-600) shrink-0">
+                                                            <Globe className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 leading-none mb-1">Sitio Web</span>
                                                             <a
                                                                 href={ClienteSeleccionado.sitioWeb.startsWith('http') ? ClienteSeleccionado.sitioWeb : `https://${ClienteSeleccionado.sitioWeb}`}
                                                                 target="_blank"
@@ -972,34 +1062,32 @@ export default function ClienteDetalle({
                                                             </a>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                )}
+                                                
+                                            </div>
 
-                                            <div className="col-start-1 sm:col-start-2 md:col-start-5 md:h-full flex items-center justify-end gap-2 ml-auto justify-self-end">
+                                            {/* Botones de acción rápida - Móvil */}
+                                            <div className="flex items-center justify-end gap-2.5 mt-2 pt-2 border-t border-slate-100">
                                                 <PlantillasMensajesModal contacto={ClienteSeleccionado} scope="cliente" />
-
                                                 <a
                                                     href={(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? `https://wa.me/${[ClienteSeleccionado.telefono, ClienteSeleccionado.telefono2].filter(Boolean).join(',').replace(/\D/g, '')}` : undefined}
                                                     target={(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? '_blank' : undefined}
                                                     rel={(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? 'noopener noreferrer' : undefined}
                                                     aria-disabled={!(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2)}
                                                     onClick={!(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? (e) => e.preventDefault() : undefined}
-                                                    className={`h-8 w-8 inline-flex items-center justify-center rounded-md transition-colors shadow-xs border ${(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? 'bg-green-50 hover:bg-green-100 border-green-100' : 'bg-slate-100 border-slate-200 cursor-not-allowed opacity-60'}`}
+                                                    className={`h-10 w-10 inline-flex items-center justify-center rounded-lg transition-all shadow-sm border ${(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? 'bg-green-50 hover:bg-green-100 border-green-200 hover:scale-105' : 'bg-slate-100 border-slate-200 cursor-not-allowed opacity-60'}`}
                                                     title={(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? 'Mensaje por WhatsApp' : 'No hay teléfono para WhatsApp'}
                                                 >
-                                                    <svg viewBox="0 0 24 24" className={`w-4.5 h-4.5 ${(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? 'fill-green-600' : 'fill-slate-400'}`}>
-                                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                                                    </svg>
+                                                    <svg viewBox="0 0 24 24" className={`w-5 h-5 ${(ClienteSeleccionado.telefono || ClienteSeleccionado.telefono2) ? 'fill-green-600' : 'fill-slate-400'}`}><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>
                                                 </a>
-
                                                 <a
                                                     href={ClienteSeleccionado.correo ? `mailto:${ClienteSeleccionado.correo}` : undefined}
                                                     aria-disabled={!ClienteSeleccionado.correo}
                                                     onClick={!ClienteSeleccionado.correo ? (e) => e.preventDefault() : undefined}
-                                                    className={`h-8 w-8 inline-flex items-center justify-center rounded-md transition-colors shadow-xs ring-1 ${ClienteSeleccionado.correo ? 'bg-slate-50 hover:bg-slate-100 ring-slate-200' : 'bg-slate-100 ring-slate-200 cursor-not-allowed opacity-60'}`}
+                                                    className={`h-10 w-10 inline-flex items-center justify-center rounded-lg transition-all shadow-sm border ${ClienteSeleccionado.correo ? 'bg-slate-50 hover:bg-slate-100 border-slate-200 hover:scale-105' : 'bg-slate-100 border-slate-200 cursor-not-allowed opacity-60'}`}
                                                     title={ClienteSeleccionado.correo ? 'Enviar correo por Gmail' : 'No hay correo para Gmail'}
                                                 >
-                                                    <img src={GmailIcon} alt="Gmail" className={`w-4.5 h-4.5 object-contain ${ClienteSeleccionado.correo ? '' : 'grayscale opacity-60'}`} />
+                                                    <img src={GmailIcon} alt="Gmail" className={`w-5 h-5 object-contain ${ClienteSeleccionado.correo ? '' : 'grayscale opacity-60'}`} />
                                                 </a>
                                             </div>
                                         </div>
@@ -1035,7 +1123,7 @@ export default function ClienteDetalle({
                                     <Phone className="w-6 h-6 text-(--theme-500)" />
                                     Registrar Llamada
                                 </button>
-                                
+
                                 {/* Registrar Venta */}
                                 <button
                                     onClick={manejarRegistrarVenta}
@@ -1126,8 +1214,8 @@ export default function ClienteDetalle({
                                                     <div key={`cita-${alerta.id}`} className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 space-y-1.5 shadow-sm shrink-0">
                                                         <div className="flex items-center justify-between gap-2">
                                                             <div className="flex items-center gap-2">
-                                                                 <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                                                                 <p className="text-xs font-semibold text-blue-900">Reunión agendada</p>
+                                                                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                                                                <p className="text-xs font-semibold text-blue-900">Reunión agendada</p>
                                                             </div>
                                                             <p className="text-[10px] text-gray-400 shrink-0">
                                                                 {new Date(fechaCita).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
@@ -1212,16 +1300,16 @@ export default function ClienteDetalle({
 
                     {/* ===================== COLUMNA DERECHA: HISTORIAL (Drawer en Mobile) ===================== */}
                     {/* Overlay Backdrop (solo visible en mobile) */}
-                    <div 
-                        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${drawerHistorialAbierto ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
-                        onClick={() => setDrawerHistorialAbierto(false)} 
+                    <div
+                        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${drawerHistorialAbierto ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                        onClick={() => setDrawerHistorialAbierto(false)}
                     />
 
                     <div className={`fixed inset-x-0 bottom-0 z-50 lg:static lg:z-auto transition-transform duration-300 ease-out transform ${drawerHistorialAbierto ? 'translate-y-0' : 'translate-y-full lg:translate-y-0'} lg:transform-none bg-white lg:bg-white border-t lg:border-t-0 lg:border lg:border-slate-200 rounded-t-2xl lg:rounded-xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] lg:shadow-sm flex flex-col overflow-hidden h-[88vh] lg:h-full min-h-0`}>
                         {/* Pequeña barra tirador en móvil */}
                         <div className="w-full flex justify-center py-2 lg:hidden" onTouchMove={(e) => {
-                                // Touch prevent o close on swipe (opcional, por ahora solo visual)
-                            }}
+                            // Touch prevent o close on swipe (opcional, por ahora solo visual)
+                        }}
                             onClick={() => setDrawerHistorialAbierto(false)}>
                             <div className="w-12 h-1.5 bg-slate-300 rounded-full"></div>
                         </div>
@@ -1356,7 +1444,7 @@ export default function ClienteDetalle({
             {/* FAB Botón de Historial (Mobile Only) */}
             <button
                 onClick={() => setDrawerHistorialAbierto(true)}
-                className={`lg:hidden fixed bottom-6 right-6 p-4 rounded-full shadow-2xl z-30 transition-transform duration-300 flex items-center justify-center bg-(--theme-600) text-white hover:scale-105 active:scale-95 ${drawerHistorialAbierto ? 'translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}
+                className={`lg:hidden fixed bottom-28 right-6 p-4 rounded-full shadow-2xl z-30 transition-transform duration-300 flex items-center justify-center bg-(--theme-600) text-white hover:scale-105 active:scale-95 ${drawerHistorialAbierto ? 'translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}
                 title="Ver Historial"
             >
                 <div className="relative">
@@ -1829,7 +1917,7 @@ export default function ClienteDetalle({
                                             </div>
                                         )}
                                     </div>
-                                    
+
                                     <div className="flex items-center gap-3 p-3 bg-(--theme-50) border border-(--theme-100) rounded-xl">
                                         <div className="p-2 bg-white rounded-lg shadow-sm">
                                             <Star className="w-4 h-4 text-(--theme-500)" />
@@ -1862,7 +1950,7 @@ export default function ClienteDetalle({
                     </div>
                 </div>
             )}
-            
+
             {/* MODAL NUEVA SECCIÓN */}
             {modalNuevaSeccion && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -1997,15 +2085,13 @@ export default function ClienteDetalle({
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setVentaForm(f => ({ ...f, tipo: 'venta' }))}
-                                    className={`flex-1 py-2 rounded-lg text-sm font-bold border-2 transition-all ${
-                                        ventaForm.tipo === 'venta' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-500'
-                                    }`}
+                                    className={`flex-1 py-2 rounded-lg text-sm font-bold border-2 transition-all ${ventaForm.tipo === 'venta' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-500'
+                                        }`}
                                 >🛒 Venta</button>
                                 <button
                                     onClick={() => setVentaForm(f => ({ ...f, tipo: 'suscripcion' }))}
-                                    className={`flex-1 py-2 rounded-lg text-sm font-bold border-2 transition-all ${
-                                        ventaForm.tipo === 'suscripcion' ? 'bg-violet-500 border-violet-500 text-white' : 'bg-white border-slate-200 text-slate-500'
-                                    }`}
+                                    className={`flex-1 py-2 rounded-lg text-sm font-bold border-2 transition-all ${ventaForm.tipo === 'suscripcion' ? 'bg-violet-500 border-violet-500 text-white' : 'bg-white border-slate-200 text-slate-500'
+                                        }`}
                                 >🔁 Suscripción</button>
                             </div>
                             {/* Descripción */}
@@ -2053,13 +2139,13 @@ export default function ClienteDetalle({
                                         <a href={API_URL + ventaForm.url} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors border border-blue-200 overflow-hidden">
                                             <FileText className="w-4 h-4 shrink-0" /> <span className="truncate">{ventaForm.nombreArchivo || 'Documento adjunto'}</span>
                                         </a>
-                                        <button 
+                                        <button
                                             onClick={() => setVentaForm(f => ({ ...f, url: null, nombreArchivo: null }))}
                                             className="p-2 text-slate-400 hover:text-red-500 rounded bg-white border border-slate-200"
                                         ><Trash2 className="w-4 h-4" /></button>
                                     </div>
                                 ) : (
-                                    <button 
+                                    <button
                                         onClick={() => ventaFileInputRef.current?.click()}
                                         disabled={subiendoVentaArchivo}
                                         className="w-full flex justify-center items-center gap-2 px-3 py-2 border border-dashed border-slate-300 rounded-lg text-xs font-bold text-slate-500 hover:text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 transition-colors"
@@ -2068,12 +2154,12 @@ export default function ClienteDetalle({
                                         {subiendoVentaArchivo ? 'Subiendo...' : 'Adjuntar Documento'}
                                     </button>
                                 )}
-                                <input 
-                                    type="file" 
+                                <input
+                                    type="file"
                                     accept=".pdf,application/pdf"
-                                    className="hidden" 
-                                    ref={ventaFileInputRef} 
-                                    onChange={handleVentaFileUpload} 
+                                    className="hidden"
+                                    ref={ventaFileInputRef}
+                                    onChange={handleVentaFileUpload}
                                 />
                             </div>
                             <button
