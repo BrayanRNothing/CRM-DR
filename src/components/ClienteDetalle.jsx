@@ -121,7 +121,6 @@ export default function ClienteDetalle({
 
     // SECCIONES PERSONALIZADAS
     const DEFAULT_SECTIONS = [
-        { id: 'default-payments', tipo: 'payments', titulo: 'Estado de Pagos', contenido: [] },
         { id: 'default-sales', tipo: 'sales', titulo: 'Historial de Ventas', contenido: [] },
         { id: 'default-subscriptions', tipo: 'subscriptions', titulo: 'Suscripciones', contenido: [] },
     ];
