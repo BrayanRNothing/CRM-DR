@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import {
     Phone, MessageSquare, Mail, Calendar, CheckCircle2,
     XCircle, Clock, Star, ArrowLeft, RefreshCw, X, Building2, MapPin, Globe, Edit2, Bell, Send, Trash2, Eye, Copy, ExternalLink, DollarSign, Plus, FileText, ChevronDown, Save, History, TrendingUp,
-    CreditCard, Package, FolderOpen, Upload, ArrowRightLeft, BadgeDollarSign, AlertTriangle, RotateCcw, FilePlus
+    CreditCard, Package, FolderOpen, Upload, ArrowRightLeft, BadgeDollarSign, AlertTriangle, RotateCcw, FilePlus, Target
 } from 'lucide-react';
 
 import { getToken, getUser } from '../utils/authUtils';
@@ -114,8 +114,10 @@ export default function ClienteDetalle({
     });
     // Modal de registro de venta
     const [modalVenta, setModalVenta] = useState(false);
-    const [ventaForm, setVentaForm] = useState({ descripcion: '', monto: '', tipo: 'venta', notas: '' });
+    const [ventaForm, setVentaForm] = useState({ descripcion: '', monto: '', tipo: 'venta', notas: '', url: null, nombreArchivo: null });
     const [guardandoVenta, setGuardandoVenta] = useState(false);
+    const [subiendoVentaArchivo, setSubiendoVentaArchivo] = useState(false);
+    const ventaFileInputRef = useRef(null);
 
     // SECCIONES PERSONALIZADAS
     const DEFAULT_SECTIONS = [
@@ -313,9 +315,9 @@ export default function ClienteDetalle({
         }
     };
 
-    const addSeccion = (tipo, tituloSugerido) => {
+    const addSeccion = (tipo, tituloSugerido, initialContenido) => {
         const titulo = tituloSugerido || (tipo === 'list' ? 'Nueva Lista' : 'Nuevas Notas');
-        const nueva = { id: Date.now().toString(), tipo, titulo, contenido: tipo === 'list' ? [] : '' };
+        const nueva = { id: Date.now().toString(), tipo, titulo, contenido: initialContenido !== undefined ? initialContenido : (tipo === 'list' ? [] : '') };
         const updated = [...customSections, nueva];
         setCustomSections(updated);
         handleGuardarSeccionesPersonalizadas(updated);
@@ -524,8 +526,36 @@ export default function ClienteDetalle({
     };
 
     const manejarRegistrarVenta = () => {
-        setVentaForm({ descripcion: '', monto: '', tipo: 'venta', notas: '' });
+        setVentaForm({ descripcion: '', monto: '', tipo: 'venta', notas: '', url: null, nombreArchivo: null });
         setModalVenta(true);
+    };
+
+    const handleVentaFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 15 * 1024 * 1024) {
+            toast.error('El archivo excede el límite de 15MB');
+            return;
+        }
+
+        setSubiendoVentaArchivo(true);
+        const formData = new FormData();
+        formData.append('archivo', file);
+
+        try {
+            const res = await axios.post(`${API_URL}/api/documentos/upload`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data', 'x-auth-token': getToken() }
+            });
+            setVentaForm(f => ({ ...f, url: res.data.url, nombreArchivo: res.data.nombreArchivo }));
+            toast.success('Documento adjuntado correctamente');
+        } catch (error) {
+            console.error('Error subiendo archivo:', error);
+            toast.error('Error al subir el documento');
+        } finally {
+            setSubiendoVentaArchivo(false);
+            if (ventaFileInputRef.current) ventaFileInputRef.current.value = '';
+        }
     };
 
     const handleGuardarVenta = async () => {
@@ -539,12 +569,84 @@ export default function ClienteDetalle({
                 descripcion: desc,
                 notas: ventaForm.notas
             });
+            
+            const sectionType = ventaForm.tipo === 'suscripcion' ? 'subscriptions' : 'sales';
+            const targetSection = customSections.find(s => s.tipo === sectionType);
+            
+            const newRecord = {
+                id: Date.now().toString(),
+                descripcion: ventaForm.descripcion,
+                monto: ventaForm.monto || '',
+                estado: 'completada',
+                fecha: new Date().toISOString().slice(0, 10),
+                url: ventaForm.url || null,
+                nombreArchivo: ventaForm.nombreArchivo || null
+            };
+
+            if (sectionType === 'subscriptions') {
+                newRecord.nombre = newRecord.descripcion;
+                newRecord.frecuencia = 'mensual';
+                newRecord.fechaInicio = newRecord.fecha;
+                newRecord.fechaFin = '';
+                newRecord.estado = 'activa';
+            }
+
+            if (targetSection) {
+                const newContent = [...(Array.isArray(targetSection.contenido) ? targetSection.contenido : []), newRecord];
+                updateSeccion(targetSection.id, 'contenido', newContent);
+            } else {
+                addSeccion(sectionType, sectionType === 'sales' ? 'Historial de Ventas' : 'Suscripciones', [newRecord]);
+            }
+
             setModalVenta(false);
             toast.success('Venta registrada en el historial');
         } catch {
             toast.error('Error al registrar la venta');
         } finally {
             setGuardandoVenta(false);
+        }
+    };
+
+    const handleOportunidadCerrada = async (opp, estado, tipoCierre = 'venta') => {
+        try {
+            await registrarActividad({
+                tipo: 'venta',
+                resultado: estado === 'ganada' ? 'exitoso' : 'fallido',
+                descripcion: `Oportunidad ${estado} (${tipoCierre}): ${opp.nombre || 'Sin nombre'}`
+            });
+            
+            if (estado === 'ganada') {
+                const sectionType = tipoCierre === 'suscripcion' ? 'subscriptions' : 'sales';
+                const targetSection = customSections.find(s => s.tipo === sectionType);
+                
+                const newRecord = {
+                    id: Date.now().toString(),
+                    descripcion: opp.nombre || 'Venta',
+                    monto: opp.valor || '',
+                    estado: 'completada',
+                    fecha: new Date().toISOString().slice(0, 10),
+                    url: opp.url || null,
+                    nombreArchivo: opp.nombreArchivo || null
+                };
+
+                if (sectionType === 'subscriptions') {
+                    newRecord.nombre = newRecord.descripcion;
+                    newRecord.frecuencia = 'mensual';
+                    newRecord.fechaInicio = newRecord.fecha;
+                    newRecord.fechaFin = '';
+                    newRecord.estado = 'activa';
+                }
+
+                if (targetSection) {
+                    const newContent = [...(Array.isArray(targetSection.contenido) ? targetSection.contenido : []), newRecord];
+                    updateSeccion(targetSection.id, 'contenido', newContent);
+                } else {
+                    addSeccion(sectionType, sectionType === 'sales' ? 'Historial de Ventas' : 'Suscripciones', [newRecord]);
+                }
+            }
+            toast.success(`Oportunidad marcada como ${estado}`);
+        } catch (error) {
+            toast.error('Error al registrar la oportunidad');
         }
     };
 
@@ -967,10 +1069,11 @@ export default function ClienteDetalle({
                                 updateSeccion={updateSeccion}
                                 commitSecciones={commitSecciones}
                                 deleteSeccion={deleteSeccion}
-                                onAgregar={() => setModalNuevaSeccion(true)}
+                                onAgregar={() => addSeccion('opportunities', 'Oportunidad')}
                                 clienteId={pid}
                                 rolePath={rolePath}
                                 handleGuardarSeccionesPersonalizadas={handleGuardarSeccionesPersonalizadas}
+                                onOportunidadCerrada={handleOportunidadCerrada}
                                 containerClassName="mt-0"
                                 fixedCardHeightClass="h-[240px]"
                             >
@@ -1836,6 +1939,18 @@ export default function ClienteDetalle({
                                     <p className="text-[10px] text-slate-400 mt-0.5">Servicios recurrentes</p>
                                 </div>
                             </button>
+                            <button
+                                onClick={() => { addSeccion('opportunities', 'Oportunidades de Venta'); setModalNuevaSeccion(false); }}
+                                className="col-span-2 flex items-center justify-center gap-3 p-4 border-2 border-blue-100 hover:border-blue-400 hover:bg-blue-50 rounded-xl transition-all group"
+                            >
+                                <div className="p-2.5 bg-blue-50 group-hover:bg-white rounded-xl text-blue-600 transition-colors">
+                                    <Target className="w-6 h-6" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-sm font-bold text-gray-800">Oportunidades de Venta</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">Seguimiento de prospectos y cotizaciones</p>
+                                </div>
+                            </button>
                             {/* Módulos genéricos */}
                             <button
                                 onClick={() => { addSeccion('note'); setModalNuevaSeccion(false); }}
@@ -1929,6 +2044,37 @@ export default function ClienteDetalle({
                                     onChange={(e) => setVentaForm(f => ({ ...f, notas: e.target.value }))}
                                     placeholder="Ej: Pagó con tarjeta, incluye instalación..."
                                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400/20 focus:border-emerald-400 outline-none resize-none"
+                                />
+                            </div>
+                            {/* Archivo Adjunto */}
+                            <div>
+                                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 block">Documento (Opcional)</label>
+                                {ventaForm.url ? (
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <a href={API_URL + ventaForm.url} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors border border-blue-200 overflow-hidden">
+                                            <FileText className="w-4 h-4 shrink-0" /> <span className="truncate">{ventaForm.nombreArchivo || 'Documento adjunto'}</span>
+                                        </a>
+                                        <button 
+                                            onClick={() => setVentaForm(f => ({ ...f, url: null, nombreArchivo: null }))}
+                                            className="p-2 text-slate-400 hover:text-red-500 rounded bg-white border border-slate-200"
+                                        ><Trash2 className="w-4 h-4" /></button>
+                                    </div>
+                                ) : (
+                                    <button 
+                                        onClick={() => ventaFileInputRef.current?.click()}
+                                        disabled={subiendoVentaArchivo}
+                                        className="w-full flex justify-center items-center gap-2 px-3 py-2 border border-dashed border-slate-300 rounded-lg text-xs font-bold text-slate-500 hover:text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 transition-colors"
+                                    >
+                                        {subiendoVentaArchivo ? <Upload className="w-4 h-4 animate-bounce shrink-0" /> : <Upload className="w-4 h-4 shrink-0" />}
+                                        {subiendoVentaArchivo ? 'Subiendo...' : 'Adjuntar Documento'}
+                                    </button>
+                                )}
+                                <input 
+                                    type="file" 
+                                    accept=".pdf,application/pdf"
+                                    className="hidden" 
+                                    ref={ventaFileInputRef} 
+                                    onChange={handleVentaFileUpload} 
                                 />
                             </div>
                             <button

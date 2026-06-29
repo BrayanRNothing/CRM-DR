@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import {
     Edit2, Trash2, X, Plus, CreditCard, FolderOpen, Package,
     FileText, CheckCircle2, Upload, FilePlus, ChevronDown, Eye, Download,
-    ShoppingBag, Repeat, TrendingUp, Star
+    ShoppingBag, Repeat, TrendingUp, Star, Target, CheckCircle, Calendar, DollarSign
 } from 'lucide-react';
 import { getToken } from '../utils/authUtils';
 import API_URL from '../config/api';
@@ -26,7 +26,7 @@ export default function ModulosCliente({
     children
 }) {
     const fileInputRef = useRef(null);
-    const [uploadingToSeccion, setUploadingToSeccion] = useState(null);
+    const [uploadingState, setUploadingState] = useState(null); // { type: 'contracts' | 'opportunities', seccionId, oppId? }
 
     // Asegurar que customSections sea un array (por si viene como string JSON del backend)
     const sections = useMemo(() => {
@@ -49,9 +49,9 @@ export default function ModulosCliente({
         return sections.filter(seccion => allowed.has(String(seccion.id)));
     }, [sections, visibleSectionIds]);
 
-    const handleFileUpload = async (e, seccionId) => {
+    const handleFileUpload = async (e) => {
         const file = e.target.files[0];
-        if (!file) return;
+        if (!file || !uploadingState) return;
 
         if (file.type !== 'application/pdf') {
             toast.error('Solo se permiten archivos PDF');
@@ -63,7 +63,7 @@ export default function ModulosCliente({
             return;
         }
 
-        setUploadingToSeccion(seccionId);
+        const currentUpload = { ...uploadingState };
         const formData = new FormData();
         formData.append('archivo', file);
 
@@ -78,17 +78,39 @@ export default function ModulosCliente({
             const nuevaUrl = res.data.url;
             const nuevoNombre = res.data.nombreArchivo;
 
-            const seccion = sections.find(s => s.id === seccionId);
-            const nuevoContenido = [...(seccion.contenido || [])];
-            nuevoContenido.push({
-                id: Date.now().toString(),
-                nombre: nuevoNombre,
-                url: nuevaUrl,
-                fechaInicio: new Date().toISOString().slice(0, 10),
-                fechaVencimiento: ''
-            });
+            const seccion = sections.find(s => s.id === currentUpload.seccionId);
+            
+            if (currentUpload.type === 'contracts') {
+                const nuevoContenido = [...(seccion.contenido || [])];
+                nuevoContenido.push({
+                    id: Date.now().toString(),
+                    nombre: nuevoNombre,
+                    url: nuevaUrl,
+                    fechaInicio: new Date().toISOString().slice(0, 10),
+                    fechaVencimiento: ''
+                });
+                updateSeccion(currentUpload.seccionId, 'contenido', nuevoContenido);
+            } else if (currentUpload.type === 'opportunities') {
+                let nuevoContenido = [...(Array.isArray(seccion.contenido) ? seccion.contenido : [])];
+                const oppIndex = nuevoContenido.findIndex(o => o.id === currentUpload.oppId || currentUpload.oppId === seccion.id);
+                if (oppIndex >= 0) {
+                    nuevoContenido[oppIndex] = { ...nuevoContenido[oppIndex], url: nuevaUrl, nombreArchivo: nuevoNombre };
+                } else {
+                    nuevoContenido.push({
+                        id: currentUpload.seccionId,
+                        nombre: seccion.titulo !== 'Oportunidades de Venta' ? seccion.titulo : '',
+                        url: nuevaUrl,
+                        nombreArchivo: nuevoNombre,
+                        fechaInicio: new Date().toISOString().slice(0, 10),
+                        etapaActual: 0,
+                        etapas: ['Inicio', 'Envío de Coti', 'Reunión', 'Esperando respuesta', 'Venta'],
+                        cerrada: false,
+                        estado: null
+                    });
+                }
+                updateSeccion(currentUpload.seccionId, 'contenido', nuevoContenido);
+            }
 
-            updateSeccion(seccionId, 'contenido', nuevoContenido);
             toast.success('Documento subido correctamente');
             
             // Forzamos guardar en BD después de subir
@@ -100,7 +122,7 @@ export default function ModulosCliente({
             console.error('Error subiendo archivo:', error);
             toast.error('Error al subir el documento');
         } finally {
-            setUploadingToSeccion(null);
+            setUploadingState(null);
             e.target.value = '';
         }
     };
@@ -198,14 +220,6 @@ export default function ModulosCliente({
         const contratos = Array.isArray(seccion.contenido) ? seccion.contenido : [];
         return (
             <div className="flex flex-col flex-1 min-h-0 space-y-3">
-                <input 
-                    type="file" 
-                    accept=".pdf,application/pdf"
-                    className="hidden" 
-                    ref={fileInputRef} 
-                    onChange={(e) => handleFileUpload(e, uploadingToSeccion)} 
-                />
-                
                 <div className="flex-1 overflow-y-auto space-y-3 pr-1 hide-scrollbar min-h-0">
                     {contratos.map((contrato, idx) => (
                         <div key={contrato.id || idx} className="flex flex-col bg-slate-50 p-3 rounded-lg border border-slate-100 gap-3 group/contract relative">
@@ -281,13 +295,13 @@ export default function ModulosCliente({
                 
                 <button
                     onClick={() => {
-                        setUploadingToSeccion(seccion.id);
+                        setUploadingState({ type: 'contracts', seccionId: seccion.id });
                         fileInputRef.current?.click();
                     }}
-                    disabled={uploadingToSeccion === seccion.id}
+                    disabled={uploadingState?.seccionId === seccion.id}
                     className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-purple-200 bg-purple-50/50 rounded-xl text-xs font-bold text-purple-600 hover:bg-purple-50 hover:border-purple-300 transition-all mt-auto disabled:opacity-50"
                 >
-                    {uploadingToSeccion === seccion.id ? (
+                    {uploadingState?.seccionId === seccion.id ? (
                         <span className="animate-pulse flex items-center gap-2">
                             <Upload className="w-4 h-4 animate-bounce" /> Subiendo archivo...
                         </span>
@@ -526,11 +540,249 @@ export default function ModulosCliente({
         );
     };
 
+    const defaultEtapas = ['Inicio', 'Envío de Coti', 'Reunión', 'Esperando respuesta', 'Venta'];
+
+    const renderModuloOpportunities = (seccion) => {
+        const opp = (Array.isArray(seccion.contenido) && seccion.contenido.length > 0) 
+            ? seccion.contenido[0] 
+            : { id: seccion.id, nombre: seccion.titulo !== 'Oportunidades de Venta' ? seccion.titulo : '', fechaInicio: new Date().toISOString().slice(0,10), etapaActual: 0, etapas: [...defaultEtapas], url: null, nombreArchivo: null, cerrada: false, estado: null };
+
+        const updateOpp = (updates, commit = false) => {
+            const newOpp = { ...opp, ...updates };
+            updateSeccion(seccion.id, 'contenido', [newOpp]);
+            if (commit) commitSecciones();
+        };
+
+        return (
+            <div className="flex flex-col flex-1 min-h-0 relative">
+                <div className={`bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm relative transition-opacity ${opp.cerrada ? 'opacity-70' : ''}`}>
+                    {/* Header: Name, Date */}
+                    <div className="flex flex-wrap xl:flex-nowrap items-center justify-between gap-4 mb-6">
+                        <div className="flex-1 min-w-[200px]">
+                            <input 
+                                type="text"
+                                value={opp.nombre || ''}
+                                onChange={(e) => updateOpp({ nombre: e.target.value })}
+                                onBlur={commitSecciones}
+                                placeholder="Nombre de la Oportunidad (ej. Proyecto Alpha)"
+                                className="w-full text-lg font-black text-slate-800 bg-transparent border-b border-transparent focus:border-blue-300 outline-none pb-1 placeholder:font-normal placeholder:text-slate-400 transition-colors"
+                                disabled={opp.cerrada}
+                            />
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center gap-3 shrink-0">
+                            {/* Fecha Inicio */}
+                            <div className="flex items-center gap-2.5 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm w-fit">
+                                <div className="p-1.5 bg-blue-50 rounded-md">
+                                    <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider leading-none mb-1">Fecha Inicio</span>
+                                    <input 
+                                        type="date"
+                                        value={opp.fechaInicio || ''}
+                                        onChange={(e) => updateOpp({ fechaInicio: e.target.value }, true)}
+                                        className="text-xs font-bold text-slate-700 outline-none bg-transparent cursor-pointer"
+                                        disabled={opp.cerrada}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Monto Estimado */}
+                            <div className="flex items-center gap-2.5 bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm w-fit">
+                                <div className="p-1.5 bg-emerald-50 rounded-md">
+                                    <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider leading-none mb-1">Monto Estimado</span>
+                                    <div className="flex items-center">
+                                        <span className="text-xs font-bold text-slate-700 mr-1">$</span>
+                                        <input 
+                                            type="number"
+                                            value={opp.valor || ''}
+                                            onChange={(e) => updateOpp({ valor: e.target.value })}
+                                            onBlur={commitSecciones}
+                                            placeholder="0.00"
+                                            className="text-xs font-bold text-slate-700 outline-none bg-transparent w-20"
+                                            disabled={opp.cerrada}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {opp.cerrada && (
+                                <div className={`px-2 py-1.5 rounded-md text-xs font-bold shadow-sm border ${opp.estado === 'ganada' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                                    {opp.estado === 'ganada' ? 'GANADA' : 'PERDIDA'}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Timeline */}
+                    <div className="relative pt-6 pb-4 overflow-x-auto hide-scrollbar flex">
+                        <div className="flex items-start min-w-max px-2 mx-auto">
+                            {(opp.etapas || defaultEtapas).map((etapa, stepIdx) => {
+                                const isCompleted = stepIdx < opp.etapaActual;
+                                const isCurrent = stepIdx === opp.etapaActual;
+                                const isLast = stepIdx === (opp.etapas || defaultEtapas).length - 1;
+                                
+                                return (
+                                    <div key={stepIdx} className="flex flex-col items-center relative group/step" style={{ minWidth: '120px' }}>
+                                        {/* Connecting Line */}
+                                        {!isLast && (
+                                            <div 
+                                                className={`absolute top-4 left-1/2 w-full h-[3px] z-0 ${isCompleted ? 'bg-blue-500' : 'bg-slate-200'}`}
+                                            ></div>
+                                        )}
+                                        
+                                        {/* Step Node */}
+                                        <div 
+                                            className={`w-8 h-8 rounded-full flex items-center justify-center border-[3px] transition-colors z-10 bg-white ${!opp.cerrada ? 'cursor-pointer' : ''} ${
+                                                isCompleted ? 'border-blue-500 text-blue-500' : 
+                                                isCurrent ? 'border-blue-500 text-blue-500 ring-4 ring-blue-100' : 
+                                                'border-slate-300 text-slate-300'
+                                            }`}
+                                            onClick={() => { if (!opp.cerrada) updateOpp({ etapaActual: stepIdx }, true); }}
+                                        >
+                                            {isCompleted ? <CheckCircle2 className="w-4 h-4 fill-blue-500 text-white" /> : (isCurrent ? <div className="w-2.5 h-2.5 rounded-full bg-blue-500" /> : null)}
+                                        </div>
+
+                                        {/* Editable Label */}
+                                        <input 
+                                            type="text"
+                                            value={etapa}
+                                            onChange={(e) => {
+                                                const newEtapas = [...(opp.etapas || defaultEtapas)];
+                                                newEtapas[stepIdx] = e.target.value;
+                                                updateOpp({ etapas: newEtapas });
+                                            }}
+                                            onBlur={commitSecciones}
+                                            className={`mt-2 text-[11px] font-bold text-center bg-transparent border-b border-transparent focus:border-blue-300 outline-none w-[100px] truncate ${isCompleted || isCurrent ? 'text-slate-800' : 'text-slate-400'}`}
+                                            disabled={opp.cerrada}
+                                        />
+
+                                        {/* Delete step button */}
+                                        {!opp.cerrada && (
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const newEtapas = [...(opp.etapas || defaultEtapas)];
+                                                    newEtapas.splice(stepIdx, 1);
+                                                    updateOpp({ 
+                                                        etapas: newEtapas,
+                                                        etapaActual: opp.etapaActual >= newEtapas.length ? Math.max(0, newEtapas.length - 1) : opp.etapaActual
+                                                    }, true);
+                                                }}
+                                                className="absolute -top-1 right-1/2 translate-x-6 p-0.5 bg-red-100 text-red-500 rounded-full opacity-0 group-hover/step:opacity-100 transition-opacity z-20"
+                                                title="Eliminar etapa"
+                                            ><X className="w-3 h-3" /></button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                            
+                            {/* Add Step Button */}
+                            {!opp.cerrada && (
+                                <div className="flex flex-col items-center justify-start ml-2 pt-1" style={{ width: '40px' }}>
+                                    <button 
+                                        onClick={() => {
+                                            const newEtapas = [...(opp.etapas || defaultEtapas)];
+                                            newEtapas.push('Nueva Etapa');
+                                            updateOpp({ etapas: newEtapas }, true);
+                                        }}
+                                        className="flex items-center justify-center w-6 h-6 rounded-full border-2 border-dashed border-slate-300 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                                        title="Añadir etapa"
+                                    >
+                                        <Plus className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Footer: Attachment & Close buttons */}
+                    <div className="mt-2 pt-3 border-t border-slate-200/60 flex items-center justify-between gap-3 flex-wrap">
+                        <div className="flex items-center gap-2">
+                            {opp.url ? (
+                                <div className="flex items-center gap-2">
+                                    <a href={API_URL + opp.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-bold hover:bg-blue-100 transition-colors border border-blue-200">
+                                        <FileText className="w-3.5 h-3.5" /> {opp.nombreArchivo || 'Cotización.pdf'}
+                                    </a>
+                                    {!opp.cerrada && (
+                                        <button 
+                                            onClick={() => updateOpp({ url: null, nombreArchivo: null }, true)}
+                                            className="p-1.5 text-slate-400 hover:text-red-500 rounded bg-white border border-slate-200"
+                                        ><Trash2 className="w-3.5 h-3.5" /></button>
+                                    )}
+                                </div>
+                            ) : (
+                                !opp.cerrada && (
+                                    <button 
+                                        onClick={() => {
+                                            setUploadingState({ type: 'opportunities', seccionId: seccion.id, oppId: opp.id || seccion.id });
+                                            fileInputRef.current?.click();
+                                        }}
+                                        disabled={uploadingState?.seccionId === seccion.id}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-slate-300 rounded-lg text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                                    >
+                                        {uploadingState?.seccionId === seccion.id ? <Upload className="w-3.5 h-3.5 animate-bounce" /> : <Upload className="w-3.5 h-3.5" />}
+                                        Adjuntar Cotización
+                                    </button>
+                                )
+                            )}
+                        </div>
+
+                        {!opp.cerrada && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={async () => {
+                                        updateOpp({ cerrada: true, estado: 'perdida' }, true);
+                                        if (onOportunidadCerrada) await onOportunidadCerrada(opp, 'perdida');
+                                    }}
+                                    className="px-3 py-1.5 rounded bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 text-[10px] font-bold transition-colors border border-red-200"
+                                >
+                                    Cerrar Perdida
+                                </button>
+                                <div className="flex flex-col sm:flex-row items-center gap-1.5">
+                                    <button
+                                        onClick={async () => {
+                                            updateOpp({ cerrada: true, estado: 'ganada' }, true);
+                                            if (onOportunidadCerrada) await onOportunidadCerrada(opp, 'ganada', 'venta');
+                                        }}
+                                        className="w-full sm:w-auto px-3 py-1.5 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 text-[10px] font-bold transition-colors border border-emerald-200"
+                                    >
+                                        Ganada (Venta)
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            updateOpp({ cerrada: true, estado: 'ganada' }, true);
+                                            if (onOportunidadCerrada) await onOportunidadCerrada(opp, 'ganada', 'suscripcion');
+                                        }}
+                                        className="w-full sm:w-auto px-3 py-1.5 rounded bg-violet-50 text-violet-600 hover:bg-violet-100 hover:text-violet-700 text-[10px] font-bold transition-colors border border-violet-200"
+                                    >
+                                        Ganada (Suscripción)
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className={`grid grid-cols-1 xl:grid-cols-2 gap-4 ${containerClassName}`}>
+            <input 
+                type="file" 
+                accept=".pdf,application/pdf"
+                className="hidden" 
+                ref={fileInputRef} 
+                onChange={handleFileUpload} 
+            />
             {children}
             {visibleSections.map(seccion => (
-                <div key={seccion.id} className={`bg-white border border-slate-200 rounded-xl p-4 shadow-sm group flex flex-col overflow-hidden ${fixedCardHeightClass || 'min-h-[220px] h-full'}`}>
+                <div key={seccion.id} className={`bg-white border border-slate-200 rounded-xl p-4 shadow-sm group flex flex-col overflow-hidden ${seccion.tipo === 'opportunities' ? 'xl:col-span-2 h-auto min-h-[300px]' : fixedCardHeightClass || 'min-h-[220px] h-full'}`}>
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-2 flex-1 group/title relative">
                             {seccion.tipo === 'payments' && <CreditCard className="w-5 h-5 text-green-500 shrink-0" />}
@@ -538,6 +790,7 @@ export default function ModulosCliente({
                             {seccion.tipo === 'products' && <Package className="w-5 h-5 text-blue-500 shrink-0" />}
                             {seccion.tipo === 'sales' && <ShoppingBag className="w-5 h-5 text-emerald-500 shrink-0" />}
                             {seccion.tipo === 'subscriptions' && <Repeat className="w-5 h-5 text-violet-500 shrink-0" />}
+                            {seccion.tipo === 'opportunities' && <Target className="w-5 h-5 text-blue-500 shrink-0" />}
                             
                             <input
                                 type="text"
@@ -564,6 +817,7 @@ export default function ModulosCliente({
                         {seccion.tipo === 'products' && renderModuloProducts(seccion)}
                         {seccion.tipo === 'sales' && renderModuloSales(seccion)}
                         {seccion.tipo === 'subscriptions' && renderModuloSubscriptions(seccion)}
+                        {seccion.tipo === 'opportunities' && renderModuloOpportunities(seccion)}
                         
                         {/* Notas genéricas (mantener compatibilidad) */}
                         {seccion.tipo === 'note' && (
@@ -632,17 +886,17 @@ export default function ModulosCliente({
             ))}
 
             {showAddCard && (
-                <div className={`${(visibleSections.length + React.Children.count(children)) % 2 === 0 ? 'xl:col-span-2' : ''}`}>
+                <div className="xl:col-span-2">
                     <button
                         onClick={onAgregar}
-                        className="w-full group flex flex-col items-center justify-center gap-4 p-8 bg-slate-50 hover:bg-(--theme-50)/30 border-[3px] border-dashed border-slate-300 hover:border-(--theme-400) rounded-2xl transition-all duration-300 min-h-[220px] h-full"
+                        className="w-full group flex flex-col items-center justify-center gap-4 p-8 bg-slate-50 hover:bg-emerald-50/30 border-[3px] border-dashed border-slate-300 hover:border-emerald-400 rounded-2xl transition-all duration-300 min-h-[160px] h-full"
                     >
-                        <div className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-sm text-slate-400 group-hover:text-(--theme-500) group-hover:scale-110 transition-all border border-slate-100">
+                        <div className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-sm text-slate-400 group-hover:text-emerald-500 group-hover:scale-110 transition-all border border-slate-100">
                             <Plus className="w-7 h-7" />
                         </div>
                         <div className="text-center">
-                            <p className="text-xs font-black text-slate-500 uppercase tracking-widest group-hover:text-(--theme-600) transition-colors">Añadir Módulo</p>
-                            <p className="text-[10px] text-slate-400 mt-1">Pagos, contratos, productos, etc.</p>
+                            <p className="text-xs font-black text-slate-500 uppercase tracking-widest group-hover:text-emerald-600 transition-colors">Añadir Oportunidad de Venta</p>
+                            <p className="text-[10px] text-slate-400 mt-1">Crea una nueva línea de tiempo para dar seguimiento a una venta</p>
                         </div>
                     </button>
                 </div>
