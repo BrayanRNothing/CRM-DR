@@ -19,6 +19,7 @@ export default function ModulosCliente({
     rolePath,
     handleGuardarSeccionesPersonalizadas,
     onOportunidadCerrada,
+    onAbrirModalVenta,
     visibleSectionIds = null,
     showAddCard = true,
     containerClassName = 'mt-6',
@@ -450,8 +451,12 @@ export default function ModulosCliente({
                 </div>
                 <button
                     onClick={() => {
-                        const n = [...ventas, { id: Date.now().toString(), descripcion: '', monto: '', estado: 'completada', fecha: new Date().toISOString().slice(0,10) }];
-                        updateSeccion(seccion.id, 'contenido', n);
+                        if (onAbrirModalVenta) {
+                            onAbrirModalVenta('venta');
+                        } else {
+                            const n = [...ventas, { id: Date.now().toString(), descripcion: '', monto: '', estado: 'completada', fecha: new Date().toISOString().slice(0,10) }];
+                            updateSeccion(seccion.id, 'contenido', n);
+                        }
                     }}
                     className="flex items-center justify-center gap-1.5 w-full py-2 border border-dashed border-emerald-300 rounded-lg text-xs font-bold text-emerald-600 hover:bg-emerald-50 hover:border-emerald-400 transition-all mt-auto shrink-0"
                 >

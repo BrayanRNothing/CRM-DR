@@ -865,8 +865,8 @@ router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
 // POST /api/vendedor/registrar-actividad
 router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
     try {
-        const { clienteId, tipo, resultado, descripcion, notas, fechaCita, etapaEmbudo, proximaLlamada, interes, customMetricLabel, customMetricValue } = req.body;
-        const tiposValidos = ['llamada', 'mensaje', 'correo', 'whatsapp', 'cita', 'prospecto'];
+        const { clienteId, tipo, resultado, descripcion, notas, fechaCita, etapaEmbudo, proximaLlamada, interes, customMetricLabel, customMetricValue, monto } = req.body;
+        const tiposValidos = ['llamada', 'mensaje', 'correo', 'whatsapp', 'cita', 'prospecto', 'venta', 'suscripcion'];
         const resultadosValidos = ['exitoso', 'pendiente', 'fallido'];
 
         if (!clienteId || !tipo) {
@@ -970,6 +970,17 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
         const actRow = await db.prepare('SELECT * FROM actividades WHERE id = ?').get(ins.lastInsertRowid);
         const actividad = toMongoFormat(actRow);
         if (actividad) actividad.cliente = { nombres: cliente.nombres, apellidoPaterno: cliente.apellidoPaterno, empresa: cliente.empresa };
+
+        // Si es venta o suscripcion y tiene monto, insertar en tabla ventas para el dashboard
+        if ((tipo === 'venta' || tipo === 'suscripcion') && monto !== undefined && monto !== null && monto !== '') {
+            const montoNum = parseFloat(monto);
+            if (!isNaN(montoNum) && montoNum > 0) {
+                await db.prepare(`
+                    INSERT INTO ventas (vendedor, cliente, monto, descripcion, fecha)
+                    VALUES (?, ?, ?, ?, ?)
+                `).run(prospectorId, cid, montoNum, descripcion || 'Venta registrada', new Date().toISOString());
+            }
+        }
 
         // ✅ INVALIDAR CACHÉ: registrar actividad cambia el dashboard y la lista de prospectos
         invalidateUserCache(prospectorId);
@@ -2201,8 +2212,8 @@ router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
 // POST /api/closer/registrar-actividad
 router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
     try {
-        const { clienteId, tipo, resultado, descripcion, notas, fechaCita, etapaEmbudo, proximaLlamada, interes } = req.body;
-        const tiposValidos = ['llamada', 'mensaje', 'correo', 'whatsapp', 'cita', 'cliente', 'descartado'];
+        const { clienteId, tipo, resultado, descripcion, notas, fechaCita, etapaEmbudo, proximaLlamada, interes, monto } = req.body;
+        const tiposValidos = ['llamada', 'mensaje', 'correo', 'whatsapp', 'cita', 'cliente', 'descartado', 'venta', 'suscripcion'];
         const resultadosValidos = ['exitoso', 'pendiente', 'fallido', 'convertido', 'descartado', 'enviado'];
 
         if (!clienteId || !tipo) {
@@ -2312,6 +2323,17 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
         const actRow = await db.prepare('SELECT * FROM actividades WHERE id = ?').get(ins.lastInsertRowid);
         const actividad = toMongoFormat(actRow);
         if (actividad) actividad.cliente = { nombres: cliente.nombres, apellidoPaterno: cliente.apellidoPaterno, empresa: cliente.empresa };
+
+        // Si es venta o suscripcion y tiene monto, insertar en tabla ventas para el dashboard
+        if ((tipo === 'venta' || tipo === 'suscripcion') && monto !== undefined && monto !== null && monto !== '') {
+            const montoNum = parseFloat(monto);
+            if (!isNaN(montoNum) && montoNum > 0) {
+                await db.prepare(`
+                    INSERT INTO ventas (vendedor, cliente, monto, descripcion, fecha)
+                    VALUES (?, ?, ?, ?, ?)
+                `).run(closerId, cid, montoNum, descripcion || 'Venta registrada', new Date().toISOString());
+            }
+        }
 
         res.status(201).json({ msg: 'Actividad registrada', actividad: actividad || actRow });
     } catch (error) {

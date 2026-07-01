@@ -616,10 +616,11 @@ export default function ClienteDetalle({
             // 2. Después registrar la actividad (el reload del servidor ya encontrará los datos guardados)
             const desc = `${ventaForm.tipo === 'venta' ? '🛒 Venta' : '🔁 Suscripción'}: ${ventaForm.descripcion}${ventaForm.monto ? ` — $${ventaForm.monto}` : ''}${ventaForm.notas ? ` · ${ventaForm.notas}` : ''}`;
             await registrarActividad({
-                tipo: 'venta',
+                tipo: ventaForm.tipo === 'suscripcion' ? 'suscripcion' : 'venta',
                 resultado: 'exitoso',
                 descripcion: desc,
-                notas: ventaForm.notas
+                notas: ventaForm.notas,
+                monto: ventaForm.monto || ''
             });
 
             setModalVenta(false);
@@ -677,9 +678,10 @@ export default function ClienteDetalle({
 
             // 2. Después registrar la actividad (así el servidor ya tiene los datos actualizados)
             await registrarActividad({
-                tipo: 'venta',
+                tipo: tipoCierre === 'suscripcion' ? 'suscripcion' : 'venta',
                 resultado: estado === 'ganada' ? 'exitoso' : 'fallido',
-                descripcion: `Oportunidad ${estado} (${tipoCierre}): ${opp.nombre || 'Sin nombre'}`
+                descripcion: `Oportunidad ${estado} (${tipoCierre}): ${opp.nombre || 'Sin nombre'}`,
+                monto: estado === 'ganada' ? (opp.valor || '') : ''
             });
 
             toast.success(`Oportunidad marcada como ${estado}`);
@@ -1201,6 +1203,7 @@ export default function ClienteDetalle({
                                 rolePath={rolePath}
                                 handleGuardarSeccionesPersonalizadas={handleGuardarSeccionesPersonalizadas}
                                 onOportunidadCerrada={handleOportunidadCerrada}
+                                onAbrirModalVenta={manejarRegistrarVenta}
                                 containerClassName="mt-0"
                                 fixedCardHeightClass="h-[240px]"
                             >
