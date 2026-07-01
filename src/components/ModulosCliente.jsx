@@ -98,7 +98,7 @@ export default function ModulosCliente({
                 } else {
                     nuevoContenido.push({
                         id: currentUpload.seccionId,
-                        nombre: seccion.titulo !== 'Oportunidades de Venta' ? seccion.titulo : '',
+                        nombre: '',
                         url: nuevaUrl,
                         nombreArchivo: nuevoNombre,
                         fechaInicio: new Date().toISOString().slice(0, 10),
@@ -545,12 +545,11 @@ export default function ModulosCliente({
     const renderModuloOpportunities = (seccion) => {
         const opp = (Array.isArray(seccion.contenido) && seccion.contenido.length > 0) 
             ? seccion.contenido[0] 
-            : { id: seccion.id, nombre: seccion.titulo !== 'Oportunidades de Venta' ? seccion.titulo : '', fechaInicio: new Date().toISOString().slice(0,10), etapaActual: 0, etapas: [...defaultEtapas], url: null, nombreArchivo: null, cerrada: false, estado: null };
+            : { id: seccion.id, nombre: '', fechaInicio: new Date().toISOString().slice(0,10), etapaActual: 0, etapas: [...defaultEtapas], url: null, nombreArchivo: null, cerrada: false, estado: null };
 
         const updateOpp = (updates, commit = false) => {
             const newOpp = { ...opp, ...updates };
-            updateSeccion(seccion.id, 'contenido', [newOpp]);
-            if (commit) commitSecciones();
+            updateSeccion(seccion.id, 'contenido', [newOpp], commit);
         };
 
         return (
@@ -558,17 +557,17 @@ export default function ModulosCliente({
                 <div className={`bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm relative transition-opacity ${opp.cerrada ? 'opacity-70' : ''}`}>
                     {/* Header: Name, Date */}
                     <div className="flex flex-wrap xl:flex-nowrap items-center justify-between gap-4 mb-6">
-                        <div className="flex-1 min-w-[200px]">
-                            <input 
-                                type="text"
-                                value={opp.nombre || ''}
-                                onChange={(e) => updateOpp({ nombre: e.target.value })}
-                                onBlur={commitSecciones}
-                                placeholder="Nombre de la Oportunidad (ej. Proyecto Alpha)"
-                                className="w-full text-lg font-black text-slate-800 bg-transparent border-b border-transparent focus:border-blue-300 outline-none pb-1 placeholder:font-normal placeholder:text-slate-400 transition-colors"
-                                disabled={opp.cerrada}
-                            />
-                        </div>
+                                <div className="flex-1 min-w-[200px]">
+                                    <input 
+                                        type="text"
+                                        value={opp.nombre || ''}
+                                        onChange={(e) => updateOpp({ nombre: e.target.value })}
+                                        onBlur={commitSecciones}
+                                        placeholder="Nombre de la Oportunidad (ej. Proyecto Alpha)"
+                                        className="w-full text-base font-bold text-slate-800 bg-transparent border-b border-transparent focus:border-blue-300 outline-none pb-1 placeholder:font-normal placeholder:text-slate-400 transition-colors"
+                                        disabled={opp.cerrada}
+                                    />
+                                </div>
                         
                         <div className="flex flex-wrap items-center gap-3 shrink-0">
                             {/* Fecha Inicio */}
@@ -619,25 +618,28 @@ export default function ModulosCliente({
                     </div>
 
                     {/* Timeline */}
-                    <div className="relative pt-6 pb-4 overflow-x-auto hide-scrollbar flex">
-                        <div className="flex items-start min-w-max px-2 mx-auto">
+                    <div className="relative pt-6 pb-4 overflow-x-auto hide-scrollbar flex justify-center sm:justify-start">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center sm:min-w-max mx-auto px-2 gap-4 sm:gap-0 w-full sm:w-auto">
                             {(opp.etapas || defaultEtapas).map((etapa, stepIdx) => {
                                 const isCompleted = stepIdx < opp.etapaActual;
                                 const isCurrent = stepIdx === opp.etapaActual;
                                 const isLast = stepIdx === (opp.etapas || defaultEtapas).length - 1;
                                 
                                 return (
-                                    <div key={stepIdx} className="flex flex-col items-center relative group/step" style={{ minWidth: '120px' }}>
+                                    <div key={stepIdx} className="flex flex-row sm:flex-col items-center relative group/step w-full sm:w-auto sm:min-w-[120px]">
                                         {/* Connecting Line */}
                                         {!isLast && (
-                                            <div 
-                                                className={`absolute top-4 left-1/2 w-full h-[3px] z-0 ${isCompleted ? 'bg-blue-500' : 'bg-slate-200'}`}
-                                            ></div>
+                                            <>
+                                                {/* Desktop Line */}
+                                                <div className={`hidden sm:block absolute top-4 left-1/2 w-full h-[3px] z-0 ${isCompleted ? 'bg-blue-500' : 'bg-slate-200'}`}></div>
+                                                {/* Mobile Line */}
+                                                <div className={`sm:hidden absolute top-8 left-4 w-[3px] h-full z-0 ${isCompleted ? 'bg-blue-500' : 'bg-slate-200'}`}></div>
+                                            </>
                                         )}
                                         
                                         {/* Step Node */}
                                         <div 
-                                            className={`w-8 h-8 rounded-full flex items-center justify-center border-[3px] transition-colors z-10 bg-white ${!opp.cerrada ? 'cursor-pointer' : ''} ${
+                                            className={`w-8 h-8 rounded-full flex items-center justify-center border-[3px] transition-colors z-10 bg-white shrink-0 ${!opp.cerrada ? 'cursor-pointer' : ''} ${
                                                 isCompleted ? 'border-blue-500 text-blue-500' : 
                                                 isCurrent ? 'border-blue-500 text-blue-500 ring-4 ring-blue-100' : 
                                                 'border-slate-300 text-slate-300'
@@ -657,7 +659,7 @@ export default function ModulosCliente({
                                                 updateOpp({ etapas: newEtapas });
                                             }}
                                             onBlur={commitSecciones}
-                                            className={`mt-2 text-[11px] font-bold text-center bg-transparent border-b border-transparent focus:border-blue-300 outline-none w-[100px] truncate ${isCompleted || isCurrent ? 'text-slate-800' : 'text-slate-400'}`}
+                                            className={`ml-3 sm:ml-0 sm:mt-2 text-[11px] font-bold sm:text-center text-left bg-transparent border-b border-transparent focus:border-blue-300 outline-none flex-1 sm:flex-none sm:w-[100px] truncate ${isCompleted || isCurrent ? 'text-slate-800' : 'text-slate-400'}`}
                                             disabled={opp.cerrada}
                                         />
 
@@ -673,7 +675,7 @@ export default function ModulosCliente({
                                                         etapaActual: opp.etapaActual >= newEtapas.length ? Math.max(0, newEtapas.length - 1) : opp.etapaActual
                                                     }, true);
                                                 }}
-                                                className="absolute -top-1 right-1/2 translate-x-6 p-0.5 bg-red-100 text-red-500 rounded-full opacity-0 group-hover/step:opacity-100 transition-opacity z-20"
+                                                className="absolute sm:-top-1 sm:right-1/2 sm:translate-x-6 right-0 p-0.5 bg-red-100 text-red-500 rounded-full opacity-0 group-hover/step:opacity-100 transition-opacity z-20"
                                                 title="Eliminar etapa"
                                             ><X className="w-3 h-3" /></button>
                                         )}
@@ -683,18 +685,21 @@ export default function ModulosCliente({
                             
                             {/* Add Step Button */}
                             {!opp.cerrada && (
-                                <div className="flex flex-col items-center justify-start ml-2 pt-1" style={{ width: '40px' }}>
-                                    <button 
-                                        onClick={() => {
-                                            const newEtapas = [...(opp.etapas || defaultEtapas)];
-                                            newEtapas.push('Nueva Etapa');
-                                            updateOpp({ etapas: newEtapas }, true);
-                                        }}
-                                        className="flex items-center justify-center w-6 h-6 rounded-full border-2 border-dashed border-slate-300 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
-                                        title="Añadir etapa"
-                                    >
-                                        <Plus className="w-3 h-3" />
-                                    </button>
+                                <div className="flex flex-row sm:flex-col items-center justify-start sm:ml-2 sm:pt-1 mt-2 sm:mt-0 w-full sm:w-auto">
+                                    <div className="w-8 flex justify-center shrink-0">
+                                        <button 
+                                            onClick={() => {
+                                                const newEtapas = [...(opp.etapas || defaultEtapas)];
+                                                newEtapas.push('Nueva Etapa');
+                                                updateOpp({ etapas: newEtapas }, true);
+                                            }}
+                                            className="flex items-center justify-center w-6 h-6 rounded-full border-2 border-dashed border-slate-300 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                                            title="Añadir etapa"
+                                        >
+                                            <Plus className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                    <span className="sm:hidden ml-3 text-[11px] font-bold text-slate-400">Añadir etapa</span>
                                 </div>
                             )}
                         </div>
@@ -733,32 +738,52 @@ export default function ModulosCliente({
                         </div>
 
                         {!opp.cerrada && (
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2 mt-3 sm:mt-0 w-full sm:w-auto justify-end">
                                 <button
                                     onClick={async () => {
-                                        updateOpp({ cerrada: true, estado: 'perdida' }, true);
+                                        if (!opp.nombre || opp.nombre.trim() === '') {
+                                            toast.error('Por favor asigna un nombre a la oportunidad');
+                                            return;
+                                        }
+                                        updateOpp({ cerrada: true, estado: 'perdida' });
                                         if (onOportunidadCerrada) await onOportunidadCerrada(opp, 'perdida');
                                     }}
-                                    className="px-3 py-1.5 rounded bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 text-[10px] font-bold transition-colors border border-red-200"
+                                    className="px-3 py-1.5 rounded bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 text-[10px] font-bold transition-colors border border-red-200 w-full sm:w-auto flex-1 sm:flex-none min-w-[120px] text-center"
                                 >
                                     Cerrar Perdida
                                 </button>
-                                <div className="flex flex-col sm:flex-row items-center gap-1.5">
+                                <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
                                     <button
                                         onClick={async () => {
-                                            updateOpp({ cerrada: true, estado: 'ganada' }, true);
+                                            if (!opp.nombre || opp.nombre.trim() === '') {
+                                                toast.error('Por favor asigna un nombre a la oportunidad');
+                                                return;
+                                            }
+                                            if (!opp.valor || isNaN(parseFloat(opp.valor)) || parseFloat(opp.valor) <= 0) {
+                                                toast.error('Por favor ingresa un monto estimado mayor a $0 para registrar la venta');
+                                                return;
+                                            }
+                                            updateOpp({ cerrada: true, estado: 'ganada' });
                                             if (onOportunidadCerrada) await onOportunidadCerrada(opp, 'ganada', 'venta');
                                         }}
-                                        className="w-full sm:w-auto px-3 py-1.5 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 text-[10px] font-bold transition-colors border border-emerald-200"
+                                        className="w-full sm:w-auto px-3 py-1.5 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 text-[10px] font-bold transition-colors border border-emerald-200 flex-1 min-w-[120px]"
                                     >
                                         Ganada (Venta)
                                     </button>
                                     <button
                                         onClick={async () => {
-                                            updateOpp({ cerrada: true, estado: 'ganada' }, true);
+                                            if (!opp.nombre || opp.nombre.trim() === '') {
+                                                toast.error('Por favor asigna un nombre a la oportunidad');
+                                                return;
+                                            }
+                                            if (!opp.valor || isNaN(parseFloat(opp.valor)) || parseFloat(opp.valor) <= 0) {
+                                                toast.error('Por favor ingresa un monto estimado mayor a $0 para registrar la suscripción');
+                                                return;
+                                            }
+                                            updateOpp({ cerrada: true, estado: 'ganada' });
                                             if (onOportunidadCerrada) await onOportunidadCerrada(opp, 'ganada', 'suscripcion');
                                         }}
-                                        className="w-full sm:w-auto px-3 py-1.5 rounded bg-violet-50 text-violet-600 hover:bg-violet-100 hover:text-violet-700 text-[10px] font-bold transition-colors border border-violet-200"
+                                        className="w-full sm:w-auto px-3 py-1.5 rounded bg-violet-50 text-violet-600 hover:bg-violet-100 hover:text-violet-700 text-[10px] font-bold transition-colors border border-violet-200 flex-1 min-w-[120px]"
                                     >
                                         Ganada (Suscripción)
                                     </button>

@@ -145,6 +145,11 @@ export default function ClienteDetalle({
     const [customSections, setCustomSections] = useState(() =>
         parseOrDefaultSections(initialCliente?.customSections)
     );
+    const customSectionsRef = useRef(customSections);
+    useEffect(() => {
+        customSectionsRef.current = customSections;
+    }, [customSections]);
+
     const [modalNuevaSeccion, setModalNuevaSeccion] = useState(false);
     const [drawerHistorialAbierto, setDrawerHistorialAbierto] = useState(false);
 
@@ -317,25 +322,32 @@ export default function ClienteDetalle({
     const addSeccion = (tipo, tituloSugerido, initialContenido) => {
         const titulo = tituloSugerido || (tipo === 'list' ? 'Nueva Lista' : 'Nuevas Notas');
         const nueva = { id: Date.now().toString(), tipo, titulo, contenido: initialContenido !== undefined ? initialContenido : (tipo === 'list' ? [] : '') };
-        const updated = [...customSections, nueva];
-        setCustomSections(updated);
-        handleGuardarSeccionesPersonalizadas(updated);
+        setCustomSections(prev => {
+            const updated = [...prev, nueva];
+            handleGuardarSeccionesPersonalizadas(updated);
+            return updated;
+        });
         setModalNuevaSeccion(false);
     };
 
-    const updateSeccion = (id, campo, valor) => {
-        const updated = customSections.map(s => s.id === id ? { ...s, [campo]: valor } : s);
-        setCustomSections(updated);
+    const updateSeccion = (id, campo, valor, commit = false) => {
+        setCustomSections(prev => {
+            const updated = prev.map(s => s.id === id ? { ...s, [campo]: valor } : s);
+            if (commit) handleGuardarSeccionesPersonalizadas(updated);
+            return updated;
+        });
     };
 
     const commitSecciones = () => {
-        handleGuardarSeccionesPersonalizadas(customSections);
+        handleGuardarSeccionesPersonalizadas(customSectionsRef.current);
     };
 
     const deleteSeccion = (id) => {
-        const updated = customSections.filter(s => s.id !== id);
-        setCustomSections(updated);
-        handleGuardarSeccionesPersonalizadas(updated);
+        setCustomSections(prev => {
+            const updated = prev.filter(s => s.id !== id);
+            handleGuardarSeccionesPersonalizadas(updated);
+            return updated;
+        });
     };
 
 
@@ -592,14 +604,15 @@ export default function ClienteDetalle({
 
             if (targetSection) {
                 const newContent = [...(Array.isArray(targetSection.contenido) ? targetSection.contenido : []), newRecord];
-                updateSeccion(targetSection.id, 'contenido', newContent);
+                updateSeccion(targetSection.id, 'contenido', newContent, true);
             } else {
                 addSeccion(sectionType, sectionType === 'sales' ? 'Historial de Ventas' : 'Suscripciones', [newRecord]);
             }
 
             setModalVenta(false);
             toast.success('Venta registrada en el historial');
-        } catch {
+        } catch (error) {
+            console.error('Error in handleGuardarVenta:', error);
             toast.error('Error al registrar la venta');
         } finally {
             setGuardandoVenta(false);
@@ -616,32 +629,39 @@ export default function ClienteDetalle({
 
             if (estado === 'ganada') {
                 const sectionType = tipoCierre === 'suscripcion' ? 'subscriptions' : 'sales';
-                const targetSection = customSections.find(s => s.tipo === sectionType);
+                
+                setCustomSections(prev => {
+                    const targetSection = prev.find(s => s.tipo === sectionType);
+                    const newRecord = {
+                        id: Date.now().toString(),
+                        descripcion: opp.nombre || 'Venta',
+                        monto: opp.valor || '',
+                        estado: 'completada',
+                        fecha: new Date().toISOString().slice(0, 10),
+                        url: opp.url || null,
+                        nombreArchivo: opp.nombreArchivo || null
+                    };
 
-                const newRecord = {
-                    id: Date.now().toString(),
-                    descripcion: opp.nombre || 'Venta',
-                    monto: opp.valor || '',
-                    estado: 'completada',
-                    fecha: new Date().toISOString().slice(0, 10),
-                    url: opp.url || null,
-                    nombreArchivo: opp.nombreArchivo || null
-                };
+                    if (sectionType === 'subscriptions') {
+                        newRecord.nombre = newRecord.descripcion;
+                        newRecord.frecuencia = 'mensual';
+                        newRecord.fechaInicio = newRecord.fecha;
+                        newRecord.fechaFin = '';
+                        newRecord.estado = 'activa';
+                    }
 
-                if (sectionType === 'subscriptions') {
-                    newRecord.nombre = newRecord.descripcion;
-                    newRecord.frecuencia = 'mensual';
-                    newRecord.fechaInicio = newRecord.fecha;
-                    newRecord.fechaFin = '';
-                    newRecord.estado = 'activa';
-                }
-
-                if (targetSection) {
-                    const newContent = [...(Array.isArray(targetSection.contenido) ? targetSection.contenido : []), newRecord];
-                    updateSeccion(targetSection.id, 'contenido', newContent);
-                } else {
-                    addSeccion(sectionType, sectionType === 'sales' ? 'Historial de Ventas' : 'Suscripciones', [newRecord]);
-                }
+                    let updated;
+                    if (targetSection) {
+                        const newContent = [...(Array.isArray(targetSection.contenido) ? targetSection.contenido : []), newRecord];
+                        updated = prev.map(s => s.id === targetSection.id ? { ...s, contenido: newContent } : s);
+                    } else {
+                        const newSection = { id: Date.now().toString(), tipo: sectionType, titulo: sectionType === 'sales' ? 'Historial de Ventas' : 'Suscripciones', contenido: [newRecord] };
+                        updated = [...prev, newSection];
+                    }
+                    
+                    handleGuardarSeccionesPersonalizadas(updated);
+                    return updated;
+                });
             }
             toast.success(`Oportunidad marcada como ${estado}`);
         } catch (error) {
