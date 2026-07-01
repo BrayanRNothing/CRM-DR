@@ -475,14 +475,17 @@ export default function ClienteDetalle({
             toast.success('Interacción registrada');
 
             // Recargar Cliente fresco desde el servidor (evitar estado obsoleto)
+            // pero preservar customSections locales para evitar borrar registros recién guardados
             const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
             const updated = res.data.find(p => p.id === pid || p._id === pid);
             if (updated) {
-                setClienteSeleccionado(updated);
+                // Preservar customSections locales (el servidor puede tardar en reflejar los cambios)
+                const localSections = customSectionsRef.current;
+                setClienteSeleccionado(prev => ({ ...updated, customSections: localSections }));
                 setClientes(res.data);
             }
-            // Recargar historial
-            handleSeleccionarCliente(updated || ClienteSeleccionado);
+            // Recargar historial de actividades sin reemplazar customSections
+            handleSeleccionarCliente(updated || ClienteSeleccionado, { preserveCustomSections: true });
             return true;
         } catch {
             toast.error('Error al registrar');
@@ -573,16 +576,7 @@ export default function ClienteDetalle({
         if (!ventaForm.descripcion.trim()) return toast.error('Escribe una descripción para la venta');
         setGuardandoVenta(true);
         try {
-            const desc = `${ventaForm.tipo === 'venta' ? '🛒 Venta' : '🔁 Suscripción'}: ${ventaForm.descripcion}${ventaForm.monto ? ` — $${ventaForm.monto}` : ''}${ventaForm.notas ? ` · ${ventaForm.notas}` : ''}`;
-            await registrarActividad({
-                tipo: 'venta',
-                resultado: 'exitoso',
-                descripcion: desc,
-                notas: ventaForm.notas
-            });
-
             const sectionType = ventaForm.tipo === 'suscripcion' ? 'subscriptions' : 'sales';
-            const targetSection = customSections.find(s => s.tipo === sectionType);
 
             const newRecord = {
                 id: Date.now().toString(),
@@ -602,12 +596,31 @@ export default function ClienteDetalle({
                 newRecord.estado = 'activa';
             }
 
-            if (targetSection) {
-                const newContent = [...(Array.isArray(targetSection.contenido) ? targetSection.contenido : []), newRecord];
-                updateSeccion(targetSection.id, 'contenido', newContent, true);
-            } else {
-                addSeccion(sectionType, sectionType === 'sales' ? 'Historial de Ventas' : 'Suscripciones', [newRecord]);
-            }
+            // 1. Primero guardar el registro en BD para que el servidor tenga los datos actualizados
+            await new Promise(resolve => {
+                setCustomSections(prev => {
+                    const targetSection = prev.find(s => s.tipo === sectionType);
+                    let updated;
+                    if (targetSection) {
+                        const newContent = [...(Array.isArray(targetSection.contenido) ? targetSection.contenido : []), newRecord];
+                        updated = prev.map(s => s.id === targetSection.id ? { ...s, contenido: newContent } : s);
+                    } else {
+                        const newSection = { id: Date.now().toString(), tipo: sectionType, titulo: sectionType === 'sales' ? 'Historial de Ventas' : 'Suscripciones', contenido: [newRecord] };
+                        updated = [...prev, newSection];
+                    }
+                    handleGuardarSeccionesPersonalizadas(updated).finally(resolve);
+                    return updated;
+                });
+            });
+
+            // 2. Después registrar la actividad (el reload del servidor ya encontrará los datos guardados)
+            const desc = `${ventaForm.tipo === 'venta' ? '🛒 Venta' : '🔁 Suscripción'}: ${ventaForm.descripcion}${ventaForm.monto ? ` — $${ventaForm.monto}` : ''}${ventaForm.notas ? ` · ${ventaForm.notas}` : ''}`;
+            await registrarActividad({
+                tipo: 'venta',
+                resultado: 'exitoso',
+                descripcion: desc,
+                notas: ventaForm.notas
+            });
 
             setModalVenta(false);
             toast.success('Venta registrada en el historial');
@@ -621,50 +634,57 @@ export default function ClienteDetalle({
 
     const handleOportunidadCerrada = async (opp, estado, tipoCierre = 'venta') => {
         try {
+            // 1. Si fue ganada, primero guardar el registro en el historial (en BD)
+            if (estado === 'ganada') {
+                const sectionType = tipoCierre === 'suscripcion' ? 'subscriptions' : 'sales';
+                
+                await new Promise(resolve => {
+                    setCustomSections(prev => {
+                        const targetSection = prev.find(s => s.tipo === sectionType);
+                        const newRecord = {
+                            id: Date.now().toString(),
+                            descripcion: opp.nombre || 'Venta',
+                            monto: opp.valor || '',
+                            estado: 'completada',
+                            fecha: new Date().toISOString().slice(0, 10),
+                            url: opp.url || null,
+                            nombreArchivo: opp.nombreArchivo || null
+                        };
+
+                        if (sectionType === 'subscriptions') {
+                            newRecord.nombre = newRecord.descripcion;
+                            newRecord.frecuencia = 'mensual';
+                            newRecord.fechaInicio = newRecord.fecha;
+                            newRecord.fechaFin = '';
+                            newRecord.estado = 'activa';
+                        }
+
+                        let updated;
+                        if (targetSection) {
+                            const newContent = [...(Array.isArray(targetSection.contenido) ? targetSection.contenido : []), newRecord];
+                            updated = prev.map(s => s.id === targetSection.id ? { ...s, contenido: newContent } : s);
+                        } else {
+                            const newSection = { id: Date.now().toString(), tipo: sectionType, titulo: sectionType === 'sales' ? 'Historial de Ventas' : 'Suscripciones', contenido: [newRecord] };
+                            updated = [...prev, newSection];
+                        }
+                        
+                        // Guardar en BD y resolver la promesa cuando termine
+                        handleGuardarSeccionesPersonalizadas(updated).finally(resolve);
+                        return updated;
+                    });
+                });
+            }
+
+            // 2. Después registrar la actividad (así el servidor ya tiene los datos actualizados)
             await registrarActividad({
                 tipo: 'venta',
                 resultado: estado === 'ganada' ? 'exitoso' : 'fallido',
                 descripcion: `Oportunidad ${estado} (${tipoCierre}): ${opp.nombre || 'Sin nombre'}`
             });
 
-            if (estado === 'ganada') {
-                const sectionType = tipoCierre === 'suscripcion' ? 'subscriptions' : 'sales';
-                
-                setCustomSections(prev => {
-                    const targetSection = prev.find(s => s.tipo === sectionType);
-                    const newRecord = {
-                        id: Date.now().toString(),
-                        descripcion: opp.nombre || 'Venta',
-                        monto: opp.valor || '',
-                        estado: 'completada',
-                        fecha: new Date().toISOString().slice(0, 10),
-                        url: opp.url || null,
-                        nombreArchivo: opp.nombreArchivo || null
-                    };
-
-                    if (sectionType === 'subscriptions') {
-                        newRecord.nombre = newRecord.descripcion;
-                        newRecord.frecuencia = 'mensual';
-                        newRecord.fechaInicio = newRecord.fecha;
-                        newRecord.fechaFin = '';
-                        newRecord.estado = 'activa';
-                    }
-
-                    let updated;
-                    if (targetSection) {
-                        const newContent = [...(Array.isArray(targetSection.contenido) ? targetSection.contenido : []), newRecord];
-                        updated = prev.map(s => s.id === targetSection.id ? { ...s, contenido: newContent } : s);
-                    } else {
-                        const newSection = { id: Date.now().toString(), tipo: sectionType, titulo: sectionType === 'sales' ? 'Historial de Ventas' : 'Suscripciones', contenido: [newRecord] };
-                        updated = [...prev, newSection];
-                    }
-                    
-                    handleGuardarSeccionesPersonalizadas(updated);
-                    return updated;
-                });
-            }
             toast.success(`Oportunidad marcada como ${estado}`);
         } catch (error) {
+            console.error('Error al cerrar oportunidad:', error);
             toast.error('Error al registrar la oportunidad');
         }
     };
