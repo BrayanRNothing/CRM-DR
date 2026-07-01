@@ -975,10 +975,14 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
         if ((tipo === 'venta' || tipo === 'suscripcion') && monto !== undefined && monto !== null && monto !== '') {
             const montoNum = parseFloat(monto);
             if (!isNaN(montoNum) && montoNum > 0) {
-                await db.prepare(`
-                    INSERT INTO ventas (vendedor, cliente, monto, descripcion, fecha)
-                    VALUES (?, ?, ?, ?, ?)
-                `).run(prospectorId, cid, montoNum, descripcion || 'Venta registrada', new Date().toISOString());
+                try {
+                    await db.prepare(`
+                        INSERT INTO ventas (cliente, vendedor, monto, fecha, estado, notas)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    `).run(cid, prospectorId, montoNum, new Date().toISOString(), 'completada', descripcion || 'Venta registrada');
+                } catch (e) {
+                    console.error('Error insertando en tabla ventas:', e);
+                }
             }
         }
 
@@ -2328,10 +2332,14 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
         if ((tipo === 'venta' || tipo === 'suscripcion') && monto !== undefined && monto !== null && monto !== '') {
             const montoNum = parseFloat(monto);
             if (!isNaN(montoNum) && montoNum > 0) {
-                await db.prepare(`
-                    INSERT INTO ventas (vendedor, cliente, monto, descripcion, fecha)
-                    VALUES (?, ?, ?, ?, ?)
-                `).run(closerId, cid, montoNum, descripcion || 'Venta registrada', new Date().toISOString());
+                try {
+                    await db.prepare(`
+                        INSERT INTO ventas (cliente, vendedor, monto, fecha, estado, notas)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    `).run(cid, closerId, montoNum, new Date().toISOString(), 'completada', descripcion || 'Venta registrada');
+                } catch (e) {
+                    console.error('Error insertando en tabla ventas:', e);
+                }
             }
         }
 
