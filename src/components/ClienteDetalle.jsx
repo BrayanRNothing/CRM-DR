@@ -575,7 +575,7 @@ export default function ClienteDetalle({
         try {
             const desc = `${ventaForm.tipo === 'venta' ? '🛒 Venta' : '🔁 Suscripción'}: ${ventaForm.descripcion}${ventaForm.monto ? ` — $${ventaForm.monto}` : ''}${ventaForm.notas ? ` · ${ventaForm.notas}` : ''}`;
             await registrarActividad({
-                tipo: ventaForm.tipo === 'suscripcion' ? 'suscripcion' : 'venta',
+                tipo: 'venta',
                 resultado: 'exitoso',
                 descripcion: desc,
                 notas: ventaForm.notas

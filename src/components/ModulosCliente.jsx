@@ -18,6 +18,7 @@ export default function ModulosCliente({
     clienteId,
     rolePath,
     handleGuardarSeccionesPersonalizadas,
+    onOportunidadCerrada,
     visibleSectionIds = null,
     showAddCard = true,
     containerClassName = 'mt-6',
