@@ -138,6 +138,9 @@ const LoginMobile = () => {
     if (params.get('expired')) {
       setError(params.get('msg') || 'Tu sesión ha expirado. Por favor inicia sesión de nuevo.');
     }
+    if (params.get('demo') === 'true') {
+      setShowDemoModal(true);
+    }
     const user = getUser();
     if (user) {
       // Todos los usuarios van al dashboard de vendedor
