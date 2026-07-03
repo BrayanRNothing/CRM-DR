@@ -39,9 +39,9 @@ const enviarCorreoBienvenida = async (emailUsuario, nombre = 'Usuario', usuario 
                 <!-- Content -->
                 <tr>
                   <td style="padding: 40px; color: #3f3f46;">
-                    <h2 style="font-size: 20px; font-weight: 600; color: #09090b; margin-top: 0; margin-bottom: 24px; letter-spacing: -0.02em;">¡Bienvenido/a, \${nombre.split(' ')[0]}!</h2>
+                    <h2 style="font-size: 20px; font-weight: 600; color: #09090b; margin-top: 0; margin-bottom: 24px; letter-spacing: -0.02em;">¡Bienvenido/a, ${nombre.split(' ')[0]}!</h2>
                     
-                    <p style="font-size: 16px; line-height: 1.6; margin: 0 0 24px 0; color: #52525b;">Tu pago fue procesado exitosamente y tu cuenta ya se encuentra activa con el plan <strong>\${plan}</strong>.</p>
+                    <p style="font-size: 16px; line-height: 1.6; margin: 0 0 24px 0; color: #52525b;">Tu pago fue procesado exitosamente y tu cuenta ya se encuentra activa con el plan <strong>${plan}</strong>.</p>
                     
                     <p style="font-size: 16px; line-height: 1.6; margin: 0 0 32px 0; color: #52525b;">Aquí tienes tus datos de acceso oficiales. Te recomendamos guardar este correo para futuras referencias:</p>
                     
@@ -49,8 +49,8 @@ const enviarCorreoBienvenida = async (emailUsuario, nombre = 'Usuario', usuario 
                     <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; margin-bottom: 32px;">
                       <tr>
                         <td style="padding: 24px;">
-                          <p style="margin: 0 0 16px 0; font-size: 15px; color: #27272a;"><span style="color: #71717a; display: inline-block; width: 90px;">Usuario:</span> <strong style="color: #09090b;">\${usuario}</strong></p>
-                          <p style="margin: 0 0 16px 0; font-size: 15px; color: #27272a;"><span style="color: #71717a; display: inline-block; width: 90px;">Correo:</span> <strong style="color: #09090b;">\${emailUsuario}</strong></p>
+                          <p style="margin: 0 0 16px 0; font-size: 15px; color: #27272a;"><span style="color: #71717a; display: inline-block; width: 90px;">Usuario:</span> <strong style="color: #09090b;">${usuario}</strong></p>
+                          <p style="margin: 0 0 16px 0; font-size: 15px; color: #27272a;"><span style="color: #71717a; display: inline-block; width: 90px;">Correo:</span> <strong style="color: #09090b;">${emailUsuario}</strong></p>
                           <p style="margin: 0; font-size: 15px; color: #27272a;"><span style="color: #71717a; display: inline-block; width: 90px;">Contraseña:</span> <span style="color: #09090b;"><em>La contraseña que elegiste al registrarte</em></span></p>
                         </td>
                       </tr>
@@ -60,7 +60,7 @@ const enviarCorreoBienvenida = async (emailUsuario, nombre = 'Usuario', usuario 
                     <table width="100%" border="0" cellspacing="0" cellpadding="0">
                       <tr>
                         <td align="center">
-                          <a href="\${loginUrl}" style="display: inline-block; background-color: #09090b; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 500; font-size: 16px; border: 1px solid #09090b;">Acceder a mi cuenta</a>
+                          <a href="${loginUrl}" style="display: inline-block; background-color: #09090b; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 500; font-size: 16px; border: 1px solid #09090b;">Acceder a mi cuenta</a>
                         </td>
                       </tr>
                     </table>
@@ -80,7 +80,7 @@ const enviarCorreoBienvenida = async (emailUsuario, nombre = 'Usuario', usuario 
                 <!-- Footer -->
                 <tr>
                   <td align="center" style="background-color: #ffffff; padding: 24px; border-top: 1px solid #e4e4e7;">
-                    <p style="margin: 0; font-size: 13px; color: #a1a1aa;">© \${new Date().getFullYear()} SoloMyCRM. Todos los derechos reservados.</p>
+                    <p style="margin: 0; font-size: 13px; color: #a1a1aa;">© ${new Date().getFullYear()} SoloMyCRM. Todos los derechos reservados.</p>
                   </td>
                 </tr>
 
