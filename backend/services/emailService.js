@@ -20,51 +20,64 @@ const enviarCorreoBienvenida = async (emailUsuario, nombre = 'Usuario', usuario 
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       </head>
-      <body style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 40px 0;">
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc;">
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 40px 0;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f4f5;">
           <tr>
             <td align="center">
-              <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); margin: 0 auto;">
+              <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; margin: 0 auto; border: 1px solid #e4e4e7; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
                 
                 <!-- Header -->
                 <tr>
-                  <td align="center" style="background-color: #0f172a; padding: 35px 20px;">
-                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">SoloMyCRM</h1>
+                  <td align="center" style="background-color: #ffffff; padding: 40px 40px 20px 40px; border-bottom: 1px solid #e4e4e7;">
+                    <h1 style="margin: 0; color: #09090b; font-size: 28px; font-weight: 800; letter-spacing: -0.04em;">SoloMyCRM</h1>
                   </td>
                 </tr>
 
                 <!-- Content -->
                 <tr>
-                  <td style="padding: 40px 35px; color: #334155;">
-                    <h2 style="font-size: 22px; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 20px;">¡Bienvenido/a a tu nuevo CRM, ${nombre.split(' ')[0]}!</h2>
-                    <p style="font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">Tu pago fue procesado con éxito y tu cuenta ya está activa con el plan <strong>${plan}</strong>. Aquí tienes los datos de acceso para que empieces a usar tu sistema ahora mismo:</p>
+                  <td style="padding: 40px; color: #3f3f46;">
+                    <h2 style="font-size: 20px; font-weight: 600; color: #09090b; margin-top: 0; margin-bottom: 24px; letter-spacing: -0.02em;">¡Bienvenido/a, \${nombre.split(' ')[0]}!</h2>
+                    
+                    <p style="font-size: 16px; line-height: 1.6; margin: 0 0 24px 0; color: #52525b;">Tu pago fue procesado exitosamente y tu cuenta ya se encuentra activa con el plan <strong>\${plan}</strong>.</p>
+                    
+                    <p style="font-size: 16px; line-height: 1.6; margin: 0 0 32px 0; color: #52525b;">Aquí tienes tus datos de acceso oficiales. Te recomendamos guardar este correo para futuras referencias:</p>
                     
                     <!-- Credentials Box -->
-                    <div style="background-color: #f1f5f9; border-radius: 12px; padding: 25px; margin-bottom: 35px; border: 1px solid #e2e8f0;">
-                      <p style="margin: 0 0 12px 0; font-size: 15px; line-height: 1.6;"><strong>👤 Usuario:</strong> ${usuario}</p>
-                      <p style="margin: 0 0 12px 0; font-size: 15px; line-height: 1.6;"><strong>✉️ Correo:</strong> ${emailUsuario}</p>
-                      <p style="margin: 0; font-size: 15px; line-height: 1.6;"><strong>🔑 Contraseña:</strong> <em>(La que escribiste al registrarte en el formulario)</em></p>
-                    </div>
+                    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #fafafa; border: 1px solid #e4e4e7; border-radius: 8px; margin-bottom: 32px;">
+                      <tr>
+                        <td style="padding: 24px;">
+                          <p style="margin: 0 0 16px 0; font-size: 15px; color: #27272a;"><span style="color: #71717a; display: inline-block; width: 90px;">Usuario:</span> <strong style="color: #09090b;">\${usuario}</strong></p>
+                          <p style="margin: 0 0 16px 0; font-size: 15px; color: #27272a;"><span style="color: #71717a; display: inline-block; width: 90px;">Correo:</span> <strong style="color: #09090b;">\${emailUsuario}</strong></p>
+                          <p style="margin: 0; font-size: 15px; color: #27272a;"><span style="color: #71717a; display: inline-block; width: 90px;">Contraseña:</span> <span style="color: #09090b;"><em>La contraseña que elegiste al registrarte</em></span></p>
+                        </td>
+                      </tr>
+                    </table>
 
                     <!-- Action Button -->
                     <table width="100%" border="0" cellspacing="0" cellpadding="0">
                       <tr>
                         <td align="center">
-                          <a href="${loginUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">Iniciar Sesión en el CRM</a>
+                          <a href="\${loginUrl}" style="display: inline-block; background-color: #09090b; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 500; font-size: 16px; border: 1px solid #09090b;">Acceder a mi cuenta</a>
                         </td>
                       </tr>
                     </table>
+                  </td>
+                </tr>
 
-                    <p style="font-size: 15px; color: #64748b; margin-top: 35px; margin-bottom: 0; border-top: 1px solid #e2e8f0; padding-top: 25px; line-height: 1.5;">
-                      Si tienes alguna duda o no recuerdas tu contraseña, puedes usar la opción de recuperar contraseña en la pantalla de inicio de sesión.
+                <!-- Help Section -->
+                <tr>
+                  <td style="background-color: #fafafa; padding: 32px 40px; border-top: 1px solid #e4e4e7;">
+                    <p style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #09090b;">¿Necesitas ayuda?</p>
+                    <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #71717a;">
+                      Si olvidaste tu contraseña o tienes problemas para entrar, puedes restablecerla directamente desde la pantalla de inicio de sesión o responder a este correo.
                     </p>
                   </td>
                 </tr>
 
                 <!-- Footer -->
                 <tr>
-                  <td align="center" style="background-color: #f8fafc; padding: 20px; border-top: 1px solid #e2e8f0;">
-                    <p style="margin: 0; font-size: 12px; color: #94a3b8;">© ${new Date().getFullYear()} SoloMyCRM. Todos los derechos reservados.</p>
+                  <td align="center" style="background-color: #ffffff; padding: 24px; border-top: 1px solid #e4e4e7;">
+                    <p style="margin: 0; font-size: 13px; color: #a1a1aa;">© \${new Date().getFullYear()} SoloMyCRM. Todos los derechos reservados.</p>
                   </td>
                 </tr>
 
