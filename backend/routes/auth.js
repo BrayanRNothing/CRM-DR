@@ -293,4 +293,148 @@ router.get('/debug-users', async (req, res) => {
     }
 });
 
+// @route   GET api/auth/validate-availability
+// @desc    Verifica si usuario y email están disponibles antes del pago en Stripe
+// @access  Public (llamado desde el serverless de Vercel)
+router.get('/validate-availability', async (req, res) => {
+    try {
+        const { usuario, email } = req.query;
+
+        if (!usuario && !email) {
+            return res.status(400).json({ mensaje: 'Se requiere usuario o email' });
+        }
+
+        const errors = {};
+
+        if (usuario && usuario.trim()) {
+            const existe = await db.prepare('SELECT id FROM usuarios WHERE LOWER(usuario) = LOWER(?)').get(usuario.trim());
+            if (existe) errors.usuario = 'El nombre de usuario ya está en uso';
+        }
+
+        if (email && email.trim()) {
+            const existe = await db.prepare('SELECT id FROM usuarios WHERE LOWER(email) = LOWER(?)').get(email.trim());
+            if (existe) errors.email = 'El correo electrónico ya está en uso';
+        }
+
+        if (Object.keys(errors).length > 0) {
+            return res.status(409).json({ disponible: false, errors });
+        }
+
+        res.json({ disponible: true });
+    } catch (error) {
+        console.error('Error en validate-availability:', error);
+        res.status(500).json({ mensaje: 'Error del servidor' });
+    }
+});
+
+// @route   POST api/auth/register-paid
+// @desc    Crea cuenta tras pago exitoso de Stripe (solo llamado desde webhook interno)
+// @access  Internal — protegido por WEBHOOK_INTERNAL_SECRET
+router.post('/register-paid', async (req, res) => {
+    try {
+        // Verificar secret interno para que solo el webhook de Vercel pueda llamar esto
+        const internalSecret = req.headers['x-internal-secret'];
+        if (!internalSecret || internalSecret !== process.env.WEBHOOK_INTERNAL_SECRET) {
+            console.warn('⛔ Intento no autorizado a /register-paid');
+            return res.status(403).json({ mensaje: 'No autorizado' });
+        }
+
+        const { usuario, contraseña_hash, nombre, email, telefono, plan, stripe_customer_id, stripe_subscription_id } = req.body;
+
+        if (!usuario || !contraseña_hash || !nombre || !plan) {
+            return res.status(400).json({ mensaje: 'Faltan campos obligatorios' });
+        }
+
+        // Verificar disponibilidad (por si acaso hubo race condition)
+        const usuarioExiste = await db.prepare('SELECT id FROM usuarios WHERE LOWER(usuario) = LOWER(?)').get(usuario.trim());
+        if (usuarioExiste) {
+            return res.status(409).json({ mensaje: 'El usuario ya existe', code: 'USUARIO_DUPLICADO' });
+        }
+
+        if (email && email.trim()) {
+            const emailExiste = await db.prepare('SELECT id FROM usuarios WHERE LOWER(email) = LOWER(?)').get(email.trim());
+            if (emailExiste) {
+                return res.status(409).json({ mensaje: 'El email ya existe', code: 'EMAIL_DUPLICADO' });
+            }
+        }
+
+        // Determinar max_usuarios según plan
+        const maxUsuariosPorPlan = {
+            mensual: 2,
+            mensual_equipo: 4,
+            anual: 2,
+        };
+        const maxUsuarios = maxUsuariosPorPlan[plan] || 2;
+
+        // Calcular fecha de vencimiento según plan
+        const ahora = new Date();
+        let planVencimiento;
+        if (plan === 'anual') {
+            planVencimiento = new Date(ahora.setFullYear(ahora.getFullYear() + 1));
+        } else {
+            planVencimiento = new Date(ahora.setMonth(ahora.getMonth() + 1));
+        }
+
+        // Insertar usuario con plan activo
+        const stmt = await db.prepare(`
+            INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono, activo,
+              stripe_customer_id, stripe_subscription_id, plan, plan_activo, plan_vencimiento, max_usuarios)
+            VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, TRUE, ?, ?)
+        `);
+        const result = await stmt.run(
+            usuario.trim(),
+            contraseña_hash,
+            'vendedor',
+            nombre.trim(),
+            (email || '').trim(),
+            (telefono || '').trim(),
+            stripe_customer_id || null,
+            stripe_subscription_id || null,
+            plan,
+            planVencimiento.toISOString(),
+            maxUsuarios
+        );
+
+        const nuevoUserId = result.lastInsertRowid;
+
+        // Crear equipo personal automáticamente
+        const equipoStmt = await db.prepare('INSERT INTO equipos (nombre, owner_id) VALUES (?, ?)');
+        const equipoResult = await equipoStmt.run(`Equipo de ${nombre.trim()}`, nuevoUserId);
+        const nuevoEquipoId = equipoResult.lastInsertRowid;
+
+        // Asignar equipo al usuario
+        await db.prepare('UPDATE usuarios SET "equipo_id" = ? WHERE id = ?').run(nuevoEquipoId, nuevoUserId);
+
+        const newUser = await db.prepare('SELECT id, usuario, nombre, rol, email, "equipo_id", plan, plan_activo FROM usuarios WHERE id = ?').get(nuevoUserId);
+
+        console.log(`✅ Cuenta creada via Stripe para: ${newUser.usuario} (plan: ${plan})`);
+
+        // Registrar actividad
+        try {
+            await db.prepare('INSERT INTO actividades (tipo, vendedor, descripcion, resultado) VALUES (?, ?, ?, ?)')
+                .run('registro', nuevoUserId, `Cuenta creada via pago Stripe — Plan: ${plan}`, 'exitoso');
+        } catch (actError) {
+            console.error('Error al registrar actividad:', actError);
+        }
+
+        // Enviar correo de bienvenida
+        if (newUser.email) {
+            try {
+                await enviarCorreoBienvenida(newUser.email);
+            } catch (emailError) {
+                console.error('No se pudo enviar correo de bienvenida:', emailError);
+            }
+        }
+
+        res.status(201).json({
+            mensaje: 'Cuenta creada exitosamente',
+            usuario: newUser
+        });
+    } catch (error) {
+        console.error('❌ Error en register-paid:', error);
+        res.status(500).json({ mensaje: 'Error del servidor' });
+    }
+});
+
 module.exports = router;
+

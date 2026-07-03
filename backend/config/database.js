@@ -580,6 +580,13 @@ const initDb = async () => {
       ['clientes',    'fuente',              'TEXT'],
       ['clientes',    '"motivoPerdida"',     'TEXT'],
       ['actividades', '"equipo_id"',         'INTEGER'],
+      // ── Stripe / Suscripción ──────────────────────────────────────────
+      ['usuarios', 'stripe_customer_id',      'TEXT'],
+      ['usuarios', 'stripe_subscription_id',  'TEXT'],
+      ['usuarios', 'plan',                    "TEXT DEFAULT 'ninguno'"],
+      ['usuarios', 'plan_activo',             'BOOLEAN DEFAULT FALSE'],
+      ['usuarios', 'plan_vencimiento',        'TIMESTAMPTZ'],
+      ['usuarios', 'max_usuarios',            'INTEGER DEFAULT 2'],
     ];
     for (const [table, col, type] of colsMissingPg) {
       try {
