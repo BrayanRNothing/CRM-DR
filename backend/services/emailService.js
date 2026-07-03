@@ -29,7 +29,7 @@ const enviarCorreoBienvenida = async (emailUsuario, nombre = 'Usuario', usuario 
                 <!-- Header -->
                 <tr>
                   <td align="center" style="background-color: #ffffff; padding: 40px 40px 20px 40px; border-bottom: 1px solid #e4e4e7;">
-                    <h1 style="margin: 0; color: #09090b; font-size: 28px; font-weight: 800; letter-spacing: -0.04em;">SoloMyCRM</h1>
+                    <img src="https://solomycrm.com/logosolomycrm.png" alt="SoloMyCRM" height="45" style="display: block; margin: 0 auto; border: 0;" />
                   </td>
                 </tr>
 
