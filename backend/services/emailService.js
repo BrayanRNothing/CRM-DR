@@ -77,7 +77,7 @@ const enviarCorreoBienvenida = async (emailUsuario, nombre = 'Usuario', usuario 
     `;
 
     const data = await resend.emails.send({
-      from: \`SoloMyCRM <\${senderEmail}>\`,
+      from: `SoloMyCRM <${senderEmail}>`,
       to: [emailUsuario],
       subject: '¡Tu cuenta ha sido creada con éxito! 🚀',
       html: htmlTemplate,
