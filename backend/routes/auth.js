@@ -158,7 +158,7 @@ router.post('/register', async (req, res) => {
         // Enviar correo de bienvenida si tiene email
         if (newUser.email) {
             try {
-                await enviarCorreoBienvenida(newUser.email);
+                await enviarCorreoBienvenida(newUser.email, newUser.nombre, newUser.usuario, newUser.plan || 'Básico');
             } catch (emailError) {
                 console.error('No se pudo enviar el correo de bienvenida:', emailError);
             }
@@ -420,7 +420,7 @@ router.post('/register-paid', async (req, res) => {
         // Enviar correo de bienvenida
         if (newUser.email) {
             try {
-                await enviarCorreoBienvenida(newUser.email);
+                await enviarCorreoBienvenida(newUser.email, newUser.nombre, newUser.usuario, newUser.plan);
             } catch (emailError) {
                 console.error('No se pudo enviar correo de bienvenida:', emailError);
             }
