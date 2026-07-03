@@ -30,8 +30,8 @@ const enviarCorreoBienvenida = async (emailUsuario, nombre = 'Usuario', usuario 
                 <tr>
                   <td align="center" style="background-color: #ffffff; padding: 40px 40px 20px 40px; border-bottom: 1px solid #e4e4e7;">
                     <div style="display: inline-block; text-align: center;">
-                      <img src="https://solomycrm.com/ISOTIPO%20SOLOMYCRM.png" alt="" height="36" style="vertical-align: middle; margin-right: 12px; border: 0;" />
-                      <span style="color: #09090b; font-size: 28px; font-weight: 800; letter-spacing: -0.04em; vertical-align: middle;">SoloMyCRM</span>
+                      <img src="https://solomycrm.com/ISOTIPO%20SOLOMYCRM.png" alt="" height="52" style="vertical-align: middle; margin-right: 12px; border: 0;" />
+                      <span style="color: #09090b; font-size: 32px; font-weight: 800; letter-spacing: -0.04em; vertical-align: middle;">SoloMyCRM</span>
                     </div>
                   </td>
                 </tr>
