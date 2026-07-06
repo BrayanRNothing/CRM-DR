@@ -269,18 +269,8 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
             return res.json(cached);
         }
 
-        // Si hay equipo, ver clientes del equipo, si no, solo los propios
-        let sql = 'SELECT * FROM clientes WHERE ';
-        let params = [];
-        if (equipoId) {
-            sql += 'equipo_id = ?';
-            params.push(equipoId);
-        } else {
-            sql += 'closerAsignado = ?';
-            params.push(closerId);
-        }
-
-        const clientes = await db.prepare(sql).all(...params);
+        // Ahora siempre consultamos individualmente por solicitud del usuario
+        const clientes = await db.prepare('SELECT * FROM clientes WHERE closerAsignado = ?').all(closerId);
 
         const embudo = {
             total: clientes.length,
@@ -343,9 +333,9 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
         // Agregación por motivo de pérdida (Premium)
         const perdidasRaw = await db.prepare(`
             SELECT "motivoPerdida", COUNT(*) as c FROM clientes 
-            WHERE (closerAsignado = ? ${equipoId ? 'OR equipo_id = ?' : ''}) AND etapaEmbudo = 'perdido'
+            WHERE closerAsignado = ? AND etapaEmbudo = 'perdido'
             GROUP BY "motivoPerdida"
-        `).all(...(equipoId ? [closerId, equipoId] : [closerId]));
+        `).all(closerId);
 
         const analisisPerdidasPremium = {};
         perdidasRaw.forEach(p => { analisisPerdidasPremium[p.motivoPerdida || 'Sin motivo'] = p.c; });
@@ -355,9 +345,9 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
             SELECT c.fuente, COUNT(c.id) as count, SUM(v.monto) as revenue
             FROM clientes c
             LEFT JOIN ventas v ON v.cliente = c.id
-            WHERE (c.closerAsignado = ? ${equipoId ? 'OR c.equipo_id = ?' : ''})
+            WHERE c.closerAsignado = ?
             GROUP BY c.fuente
-        `).all(...(equipoId ? [closerId, equipoId] : [closerId]));
+        `).all(closerId);
 
         const analisisFuentesPremium = {};
         fuentesRawCloser.forEach(f => {
@@ -374,8 +364,8 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
             SELECT v.fecha as fechaVenta, c.fechaRegistro
             FROM ventas v
             JOIN clientes c ON v.cliente = c.id
-            WHERE (v.vendedor = ? ${equipoId ? 'OR c.equipo_id = ?' : ''})
-        `).all(...(equipoId ? [closerId, equipoId] : [closerId]));
+            WHERE v.vendedor = ?
+        `).all(closerId);
 
         let totalDays = 0;
         cicloData.forEach(d => {
@@ -389,10 +379,10 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
             SELECT c.fechaRegistro, MIN(a.fecha) as firstContact
             FROM clientes c
             JOIN actividades a ON a.cliente = c.id
-            WHERE (c.closerAsignado = ? ${equipoId ? 'OR c.equipo_id = ?' : ''})
+            WHERE c.closerAsignado = ?
             AND a.tipo IN ('llamada', 'mensaje', 'cita')
             GROUP BY c.id
-        `).all(...(equipoId ? [closerId, equipoId] : [closerId]));
+        `).all(closerId);
 
         let totalHours = 0;
         responseData.forEach(d => {
@@ -424,22 +414,11 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
         hoyFin.setHours(23, 59, 59, 999);
 
         // Reuniones hoy (pertenecientes al usuario o equipo)
-        let sqlReuniones = `
+        const reunionesHoy = await db.prepare(`
             SELECT a.* FROM actividades a
             JOIN clientes c ON a.cliente = c.id
-            WHERE a.tipo = 'cita' AND a.fecha >= ? AND a.fecha <= ?
-        `;
-        let paramsReuniones = [hoyInicio.toISOString(), hoyFin.toISOString()];
-
-        if (equipoId) {
-            sqlReuniones += ' AND c.equipo_id = ?';
-            paramsReuniones.push(equipoId);
-        } else {
-            sqlReuniones += ' AND c.closerAsignado = ?';
-            paramsReuniones.push(closerId);
-        }
-
-        const reunionesHoy = await db.prepare(sqlReuniones).all(...paramsReuniones);
+            WHERE a.tipo = 'cita' AND a.fecha >= ? AND a.fecha <= ? AND c.closerAsignado = ?
+        `).all(hoyInicio.toISOString(), hoyFin.toISOString(), closerId);
 
         const actividadesHoy = await db.prepare('SELECT * FROM actividades WHERE vendedor = ? AND fecha >= ? AND fecha <= ?')
             .all(closerId, hoyInicio.toISOString(), hoyFin.toISOString());

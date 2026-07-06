@@ -209,31 +209,41 @@ export default function GestorEtiquetas({ clienteEtiquetas = '[]', onEtiquetasCh
                                     <Plus className="w-4 h-4 text-blue-600" />
                                     Crear nueva etiqueta
                                 </h4>
-                                <div className="flex gap-3">
-                                    <div className="relative flex-shrink-0" title="Elegir color">
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex gap-2">
                                         <input 
-                                            type="color" 
-                                            value={newTagColor}
-                                            onChange={(e) => setNewTagColor(e.target.value)}
-                                            className="w-10 h-10 rounded-lg cursor-pointer border-0 p-0 shadow-sm"
+                                            type="text" 
+                                            placeholder="Nombre de la etiqueta..." 
+                                            value={newTagName}
+                                            onChange={(e) => setNewTagName(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
+                                            className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
                                         />
-                                        <Palette className="w-4 h-4 absolute inset-0 m-auto pointer-events-none text-white mix-blend-difference" />
+                                        <button 
+                                            onClick={handleCreateTag}
+                                            disabled={loading || !newTagName.trim()}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50 flex-shrink-0"
+                                        >
+                                            Crear
+                                        </button>
                                     </div>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Nombre de la etiqueta..." 
-                                        value={newTagName}
-                                        onChange={(e) => setNewTagName(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
-                                        className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
-                                    />
-                                    <button 
-                                        onClick={handleCreateTag}
-                                        disabled={loading || !newTagName.trim()}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 rounded-lg transition-colors shadow-sm disabled:opacity-50 flex-shrink-0"
-                                    >
-                                        Crear
-                                    </button>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-xs text-gray-500 font-medium mr-1">Color:</span>
+                                        {['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#64748B', '#06B6D4'].map(color => (
+                                            <button
+                                                key={color}
+                                                type="button"
+                                                onClick={() => setNewTagColor(color)}
+                                                className={`w-6 h-6 rounded-full border-2 transition-all cursor-pointer ${
+                                                    newTagColor === color 
+                                                    ? 'border-gray-800 scale-110 shadow-md' 
+                                                    : 'border-transparent hover:scale-110 hover:shadow-sm'
+                                                }`}
+                                                style={{ backgroundColor: color }}
+                                                title={color}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
 

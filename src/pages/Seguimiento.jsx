@@ -1269,7 +1269,7 @@ const Seguimiento = () => {
                     prospecto={prospectoSeleccionado}
                     rolePath={rolePath}
                     onVolver={() => handleSeleccionarProspecto(null)}
-                    onActualizado={cargarDatos}
+                    onActualizado={async () => { invalidarCacheLocal(); const normalizados = await cargarDatos(false); if (prospectoSeleccionado) { const updated = normalizados?.find(p => p.id === prospectoSeleccionado.id || p._id === prospectoSeleccionado._id); if (updated) setProspectoSeleccionado(updated); } }}
                     abrirModalEditar={abrirModalEditar}
                     setModalPasarClienteAbierto={setModalPasarClienteAbierto}
                     setModalDescartarAbierto={setModalDescartarAbierto}
