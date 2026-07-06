@@ -37,15 +37,16 @@ const buildReminderByClienteMap = (tareas = []) => {
     return map;
 };
 
-const ETAPA_META = {
-    venta_ganada: { label: 'Venta ganada', className: 'bg-emerald-100 text-emerald-700' },
-    cotizacion_realizada: { label: 'Cotizacion realizada', className: 'bg-blue-100 text-blue-700' },
-    contrato_firmado: { label: 'Contrato firmado', className: 'bg-indigo-100 text-indigo-700' },
-    esperando_pago: { label: 'Esperando pago', className: 'bg-amber-100 text-amber-700' },
-    cliente_activo: { label: 'Cliente activo', className: 'bg-cyan-100 text-cyan-700' }
+const ETAPAS_CLIENTE = {
+    'cliente_nuevo': { label: 'Cliente nuevo', color: 'bg-emerald-100 text-emerald-700' },
+    'en_seguimiento': { label: 'En seguimiento', color: 'bg-blue-100 text-blue-700' },
+    'oportunidad_activa': { label: 'Oportunidad activa', color: 'bg-purple-100 text-purple-700' },
+    'reunion_con_cliente': { label: 'Reunión con cliente', color: 'bg-amber-100 text-amber-700' },
+    'inactivo': { label: 'Inactivo', color: 'bg-gray-100 text-gray-700' }
 };
 
-const getEtapaMeta = (etapa) => ETAPA_META[etapa] || { label: 'Sin etapa', className: 'bg-slate-100 text-slate-600' };
+const getEtapaLabel = (etapa) => ETAPAS_CLIENTE[etapa]?.label || (etapa || 'Cliente nuevo');
+const getEtapaColor = (etapa) => ETAPAS_CLIENTE[etapa]?.color || 'bg-emerald-100 text-emerald-700';
 
 const Clientes = () => {
     const location = useLocation();
@@ -1125,10 +1126,12 @@ const Clientes = () => {
                                             </td>
                                             <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
                                                 {(() => {
-                                                    const etapa = getEtapaMeta(cliente.etapaEmbudo);
+                                                    const etapaKey = cliente.etapaCliente || 'cliente_nuevo';
+                                                    const colorCls = getEtapaColor(etapaKey);
+                                                    const label = getEtapaLabel(etapaKey);
                                                     return (
-                                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${etapa.className}`}>
-                                                            {etapa.label}
+                                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${colorCls}`}>
+                                                            {label}
                                                         </span>
                                                     );
                                                 })()}
