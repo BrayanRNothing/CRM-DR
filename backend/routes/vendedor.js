@@ -1353,21 +1353,21 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
             // ultimaInteraccion NO se actualiza al editar datos — solo al registrar actividades reales
         ];
         const params = [
-            (nombres || '').trim(),
-            (apellidoPaterno || '').trim(),
-            (apellidoMaterno || '').trim(),
-            String(telefono || '').trim(),
-            String(telefono2 || '').trim(),
-            String(correo || '').trim().toLowerCase(),
-            (empresa || '').trim(),
-            (notas || '').trim(),
-            (sitioWeb || '').trim(),
-            (ubicacion || '').trim(),
+            nombres !== undefined ? (nombres || '').trim() : cliente.nombres,
+            apellidoPaterno !== undefined ? (apellidoPaterno || '').trim() : cliente.apellidoPaterno,
+            apellidoMaterno !== undefined ? (apellidoMaterno || '').trim() : cliente.apellidoMaterno,
+            telefono !== undefined ? String(telefono || '').trim() : cliente.telefono,
+            telefono2 !== undefined ? String(telefono2 || '').trim() : cliente.telefono2,
+            correo !== undefined ? String(correo || '').trim().toLowerCase() : cliente.correo,
+            empresa !== undefined ? (empresa || '').trim() : cliente.empresa,
+            notas !== undefined ? (notas || '').trim() : cliente.notas,
+            sitioWeb !== undefined ? (sitioWeb || '').trim() : cliente.sitioWeb,
+            ubicacion !== undefined ? (ubicacion || '').trim() : cliente.ubicacion,
             req.body.interes !== undefined ? req.body.interes : cliente.interes,
-            req.body.proximaLlamada || null,
+            req.body.proximaLlamada !== undefined ? req.body.proximaLlamada : cliente.proximaLlamada,
             customMetricLabel !== undefined ? customMetricLabel : cliente.customMetricLabel,
             customMetricValue !== undefined ? customMetricValue : cliente.customMetricValue,
-            (fuente !== undefined ? fuente : (cliente.fuente || ''))
+            fuente !== undefined ? fuente : cliente.fuente
         ];
 
         if (etiquetas !== undefined) {
@@ -2675,14 +2675,14 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
             'ultimaInteraccion = ?'
         ];
         const params = [
-            nombres.trim(),
-            (apellidoPaterno || '').trim(),
-            (apellidoMaterno || '').trim(),
-            String(telefono).trim(),
-            String(telefono2 || '').trim(),
-            String(correo || '').trim().toLowerCase(),
-            (empresa || '').trim(),
-            (notas || '').trim(),
+            nombres !== undefined ? (nombres || '').trim() : c.nombres,
+            apellidoPaterno !== undefined ? (apellidoPaterno || '').trim() : c.apellidoPaterno,
+            apellidoMaterno !== undefined ? (apellidoMaterno || '').trim() : c.apellidoMaterno,
+            telefono !== undefined ? String(telefono || '').trim() : c.telefono,
+            telefono2 !== undefined ? String(telefono2 || '').trim() : c.telefono2,
+            correo !== undefined ? String(correo || '').trim().toLowerCase() : c.correo,
+            empresa !== undefined ? (empresa || '').trim() : c.empresa,
+            notas !== undefined ? (notas || '').trim() : c.notas,
             now
         ];
 
