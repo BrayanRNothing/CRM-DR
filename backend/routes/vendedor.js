@@ -1298,10 +1298,7 @@ router.put('/prospectos/:id', auth, async (req, res) => {
         if (updates.length > 0) {
             params.push(prospectoId);
             await db.prepare(`UPDATE clientes SET ${updates.join(', ')} WHERE id = ?`).run(...params);
-            if (typeof clearCachePattern === 'function') {
-                clearCachePattern('prospectos:');
-                clearCachePattern('clientes:');
-            }
+            invalidateUserCache(usuarioId);
         }
 
         res.json({ msg: 'Prospecto actualizado' });
@@ -2400,6 +2397,7 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
 router.put('/prospectos/:id', auth, async (req, res) => {
     try {
         const prospectoId = parseInt(req.params.id);
+        const usuarioId = parseInt(req.usuario.id, 10);
         const { interes, proximaLlamada, customMetricLabel, customMetricValue, customSections } = req.body;
 
         const updates = [];
@@ -2417,10 +2415,7 @@ router.put('/prospectos/:id', auth, async (req, res) => {
         if (updates.length > 0) {
             params.push(prospectoId);
             await db.prepare(`UPDATE clientes SET ${updates.join(', ')} WHERE id = ?`).run(...params);
-            if (typeof clearCachePattern === 'function') {
-                clearCachePattern('prospectos:');
-                clearCachePattern('clientes:');
-            }
+            invalidateUserCache(usuarioId);
         }
 
         res.json({ msg: 'Prospecto actualizado' });
