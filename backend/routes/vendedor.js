@@ -1298,6 +1298,10 @@ router.put('/prospectos/:id', auth, async (req, res) => {
         if (updates.length > 0) {
             params.push(prospectoId);
             await db.prepare(`UPDATE clientes SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+            if (typeof clearCachePattern === 'function') {
+                clearCachePattern('prospectos:');
+                clearCachePattern('clientes:');
+            }
         }
 
         res.json({ msg: 'Prospecto actualizado' });
@@ -2413,6 +2417,10 @@ router.put('/prospectos/:id', auth, async (req, res) => {
         if (updates.length > 0) {
             params.push(prospectoId);
             await db.prepare(`UPDATE clientes SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+            if (typeof clearCachePattern === 'function') {
+                clearCachePattern('prospectos:');
+                clearCachePattern('clientes:');
+            }
         }
 
         res.json({ msg: 'Prospecto actualizado' });
