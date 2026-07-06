@@ -581,6 +581,8 @@ const initDb = async () => {
       ['clientes',    '"motivoPerdida"',     'TEXT'],
       // ── Pilar 1: Separador Vital (Tipo de Contacto) ───────────────────
       ['clientes',    'tipo',                "TEXT DEFAULT 'prospecto'"],
+      // ── Pilar 3: Pipeline de Clientes ─────────────────────────────────
+      ['clientes',    '"etapaCliente"',      "TEXT DEFAULT 'cliente_nuevo'"],
       ['actividades', '"equipo_id"',         'INTEGER'],
       // ── Stripe / Suscripción ──────────────────────────────────────────
       ['usuarios', 'stripe_customer_id',      'TEXT'],

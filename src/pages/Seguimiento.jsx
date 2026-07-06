@@ -155,12 +155,8 @@ const Seguimiento = () => {
     const [backgroundLoading, setBackgroundLoading] = useState(false); // carga silenciosa
     // Filtros
     const [busquedaProspecto, setBusquedaProspecto] = useState('');
-    const [filtroEtapa, setFiltroEtapa] = useState('todos'); // 'todos', 'prospecto_nuevo', 'reunion_agendada', etc.
     const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine'); // mine | shared | all
-    const [filtroFecha, setFiltroFecha] = useState('todos'); // 'todos', 'hoy', 'ayer', 'semana', 'mes', 'personalizado'
-    const [fechaDesde, setFechaDesde] = useState('');
-    const [fechaHasta, setFechaHasta] = useState('');
-    const [filtroRecordatorio, setFiltroRecordatorio] = useState(false);
+    const [ordenFiltro, setOrdenFiltro] = useState('todos'); // 'todos', 'en_proceso', 'mayor_valor'
     const [modalCrearAbierto, setModalCrearAbierto] = useState(false);
     const [loadingCrear, setLoadingCrear] = useState(false);
     const [formCrear, setFormCrear] = useState({
@@ -455,72 +451,17 @@ const Seguimiento = () => {
             );
         }
 
-        // Etapa (filtros agrupados)...
-        if (filtroEtapa === 'en_contacto') {
-            // Respondió: etapa avanzó más allá de prospecto_nuevo
-            filtrados = filtrados.filter(p => p.etapaEmbudo !== 'prospecto_nuevo');
-        } else if (filtroEtapa === 'sin_respuesta') {
-            // Intentaron contactar (hay actividades) pero sigue en prospecto_nuevo → no contestó
-            filtrados = filtrados.filter(p => p.etapaEmbudo === 'prospecto_nuevo' && !!p.ultimaActTipo);
-        } else if (filtroEtapa === 'no_contactado') {
-            // Sin ninguna actividad registrada = nuevo prospecto sin interacción
-            filtrados = filtrados.filter(p => p.etapaEmbudo === 'prospecto_nuevo' && !p.ultimaActTipo);
-        } else if (filtroEtapa === 'con_cita') {
-            // Tiene cita agendada o realizada
-            filtrados = filtrados.filter(p => ['reunion_agendada', 'reunion_realizada'].includes(p.etapaEmbudo));
-        }
-
-        // Fecha...
-        if (filtroFecha !== 'todos') {
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-
-            filtrados = filtrados.filter(p => {
-                const fechaCreacion = new Date(p.createdAt || new Date());
-                fechaCreacion.setHours(0, 0, 0, 0);
-
-                if (filtroFecha === 'hoy') {
-                    return fechaCreacion.getTime() === hoy.getTime();
-                }
-                if (filtroFecha === 'ayer') {
-                    const ayer = new Date(hoy);
-                    ayer.setDate(hoy.getDate() - 1);
-                    return fechaCreacion.getTime() === ayer.getTime();
-                }
-                if (filtroFecha === 'semana') {
-                    const semanaPasada = new Date(hoy);
-                    semanaPasada.setDate(hoy.getDate() - 7);
-                    return fechaCreacion >= semanaPasada && fechaCreacion <= hoy;
-                }
-                if (filtroFecha === 'mes') {
-                    const mesPasado = new Date(hoy);
-                    mesPasado.setDate(hoy.getDate() - 30);
-                    return fechaCreacion >= mesPasado && fechaCreacion <= hoy;
-                }
-                if (filtroFecha === 'personalizado' && fechaDesde && fechaHasta) {
-                    const dDesde = new Date(fechaDesde);
-                    dDesde.setHours(0, 0, 0, 0);
-                    // Aumentamos 1 día a la fechaHasta local para que sea inclusivo el día entero
-                    const dHasta = new Date(fechaHasta);
-                    dHasta.setHours(23, 59, 59, 999);
-                    return fechaCreacion >= dDesde && fechaCreacion <= dHasta;
-                }
-                return true;
-            });
-        }
-
-        // Recordatorio...
-        if (filtroRecordatorio) {
-            const ahora = new Date();
-            filtrados = filtrados.filter(p => {
-                if (!p.proximaLlamada) return false;
-                // 'vencido': ya pasó la fecha. 'futuro': aún no. Ambos se muestran, vencidos primero.
-                return true;
-            });
+        if (ordenFiltro === 'en_proceso') {
+            filtrados = filtrados.filter(p => !['perdido', 'venta_ganada'].includes(p.etapaEmbudo));
         }
 
         return filtrados;
-    }, [prospectos, busquedaProspecto, filtroEtapa, filtroFecha, fechaDesde, fechaHasta, filtroRecordatorio]).sort((a, b) => {
+    }, [prospectos, busquedaProspecto, ordenFiltro]).sort((a, b) => {
+        if (ordenFiltro === 'mayor_valor') {
+            const interesA = a.interes || 0;
+            const interesB = b.interes || 0;
+            if (interesA !== interesB) return interesB - interesA;
+        }
         // Perdidos siempre al fondo
         const esPerdidoA = a.etapaEmbudo === 'perdido';
         const esPerdidoB = b.etapaEmbudo === 'perdido';
@@ -1344,9 +1285,9 @@ const Seguimiento = () => {
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">Seguimiento de Prospectos</h1>
+                        <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">Prospectos</h1>
                         <p className="text-xs md:text-sm text-gray-500 mt-0.5 leading-snug">
-                            Selecciona un prospecto para ver su ficha y registrar interacciones
+                            Cartera de prospectos
                         </p>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto mt-2 sm:mt-0">
@@ -1379,31 +1320,36 @@ const Seguimiento = () => {
                 </div>
 
                 {/* Buscador + Filtros 30/70 */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-3 md:p-4 shadow-sm md:mt-0">
+                <div className="bg-white border border-slate-200 rounded-2xl p-2.5 md:p-3 shadow-sm md:mt-0">
                     <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-3 md:gap-4 items-center">
                         {/* 30% Búsqueda + Crear (Móvil) */}
                         <div className="flex items-stretch gap-2 w-full">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Buscar prospectos..."
-                                    value={busquedaProspecto}
-                                    onChange={(e) => setBusquedaProspecto(e.target.value)}
-                                    className="w-full h-full pl-8 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs md:text-sm"
-                                    title="Buscar por nombre, empresa, correo o teléfono"
-                                />
+                            <div className="relative flex-1 h-9">
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Buscar prospectos..."
+                                value={busquedaProspecto}
+                                onChange={(e) => setBusquedaProspecto(e.target.value)}
+                                className="w-full h-full pl-8 pr-14 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs"
+                                title="Buscar por nombre, empresa, correo o teléfono"
+                            />
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                                <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                                    {prospectosFiltrados.length}/{prospectos.length}
+                                </span>
+                            </div>
                             </div>
                             <button
                                 onClick={() => setModalCrearAbierto(true)}
-                                className="sm:hidden flex items-center justify-center gap-1.5 px-3 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs font-medium shrink-0"
+                                className="sm:hidden flex items-center justify-center gap-1.5 px-3 h-9 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs font-medium shrink-0"
                             >
                                 <UserPlus className="w-4 h-4" />
                                 Crear
                             </button>
                         </div>
                         {/* 70% Filtros */}
-                        <div className="hidden md:flex flex-wrap md:flex-wrap pb-2 -mx-2 px-2 md:mx-0 md:px-0 gap-2 items-center w-full">
+                        <div className="hidden md:flex flex-wrap md:flex-wrap -mx-2 px-2 md:mx-0 md:px-0 gap-2 items-center w-full">
                             <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden md:block" />
                             {/* Filtros rápidos por contacto */}
                             <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
@@ -1415,7 +1361,7 @@ const Seguimiento = () => {
                                     <button
                                         key={btn.value}
                                         onClick={() => setFiltroVisibilidad(btn.value)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtroVisibilidad === btn.value
+                                        className={`px-3 h-9 flex items-center justify-center rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtroVisibilidad === btn.value
                                             ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
                                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400 hover:text-slate-800'
                                             }`}
@@ -1426,41 +1372,21 @@ const Seguimiento = () => {
                             </div>
                             <div className="w-px h-6 bg-slate-200 mx-1 shrink-0 hidden md:block"></div>
                             <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
-                                {[
-                                    { value: 'todos', label: 'Todos' },
-                                    { value: 'en_contacto', label: 'En contacto' },
-                                    { value: 'sin_respuesta', label: 'Sin respuesta' },
-                                    { value: 'no_contactado', label: 'No contactado' },
-                                    { value: 'con_cita', label: 'Con cita' },
-                                ].map(btn => (
-                                    <button
-                                        key={btn.value}
-                                        onClick={() => setFiltroEtapa(btn.value)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtroEtapa === btn.value
-                                            ? 'bg-(--theme-600) text-white border-(--theme-600) shadow-sm'
-                                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-(--theme-400) hover:text-(--theme-700)'
-                                            }`}
-                                    >
-                                        {btn.label}
-                                    </button>
-                                ))}
+                                <select
+                                    value={ordenFiltro}
+                                    onChange={(e) => setOrdenFiltro(e.target.value)}
+                                    className="px-3 h-9 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-(--theme-500) transition-all cursor-pointer"
+                                >
+                                    <option value="todos">Todos los prospectos</option>
+                                    <option value="en_proceso">En oportunidad de ventas</option>
+                                    <option value="mayor_valor">Mayor valor (Interés)</option>
+                                </select>
                             </div>
-                            {/* Recordatorio pendiente */}
-                            <button
-                                onClick={() => setFiltroRecordatorio(v => !v)}
-                                className={`shrink-0 flex items-center justify-center w-8 h-8 rounded-lg border text-sm transition-all ${filtroRecordatorio
-                                    ? 'bg-(--theme-50) border-(--theme-400) text-(--theme-700)'
-                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'
-                                    }`}
-                                title="Solo con recordatorio de llamada"
-                            >
-                                <Bell className="w-3.5 h-3.5" />
-                            </button>
                             {/* Reset filtros */}
-                            {(filtroEtapa !== 'todos' || filtroRecordatorio || busquedaProspecto || filtroVisibilidad !== 'mine') && (
+                            {(ordenFiltro !== 'todos' || busquedaProspecto || filtroVisibilidad !== 'mine') && (
                                 <button
-                                    onClick={() => { setFiltroEtapa('todos'); setFiltroRecordatorio(false); setBusquedaProspecto(''); setFiltroVisibilidad('mine'); }}
-                                    className="shrink-0 flex items-center justify-center w-8 h-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
+                                    onClick={() => { setOrdenFiltro('todos'); setBusquedaProspecto(''); setFiltroVisibilidad('mine'); }}
+                                    className="shrink-0 flex items-center justify-center w-9 h-9 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
                                     title="Limpiar filtros"
                                 >
                                     ✕
@@ -1468,10 +1394,6 @@ const Seguimiento = () => {
                             )}
                         </div>
                     </div>
-                    {/* Contador de resultados */}
-                    <p className="text-xs text-slate-400 mt-2">
-                        Mostrando <span className="font-semibold text-slate-600">{prospectosFiltrados.length}</span> de <span className="font-semibold text-slate-600">{prospectos.length}</span> prospectos
-                    </p>
                 </div>
 
                 {/* Lista de Prospectos (Tarjetas o Tabla simplificada) */}

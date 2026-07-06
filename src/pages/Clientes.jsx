@@ -56,7 +56,7 @@ const Clientes = () => {
     const [clienteAEliminar, setClienteAEliminar] = useState(null);
     const [eliminando, setEliminando] = useState(false);
     const [importando, setImportando] = useState(false);
-    const [filtro, setFiltro] = useState('todos');
+    const [ordenFiltro, setOrdenFiltro] = useState('todos');
     const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine'); // mine | shared | all
     const fileInputRef = useRef(null);
     const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
@@ -840,7 +840,7 @@ const Clientes = () => {
     };
 
     const clientesFiltrados = useMemo(() => {
-        return clientes.filter((cliente) => {
+        const filtrados = clientes.filter((cliente) => {
             const matchBusqueda =
                 busqueda === '' ||
                 (cliente.nombres || '').toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -849,15 +849,22 @@ const Clientes = () => {
                 (cliente.correo || '').toLowerCase().includes(busqueda.toLowerCase()) ||
                 (cliente.telefono || '').includes(busqueda);
             
-            if (filtro === 'con_recordatorio') {
-                return matchBusqueda && !!cliente.proximaLlamada;
-            }
-            if (filtro === 'sin_recordatorio') {
-                return matchBusqueda && !cliente.proximaLlamada;
-            }
             return matchBusqueda;
         });
-    }, [clientes, busqueda, filtro]);
+
+        return filtrados.sort((a, b) => {
+            if (ordenFiltro === 'mayor_facturado') {
+                const facturadoA = Number(a.customMetricValue) || 0;
+                const facturadoB = Number(b.customMetricValue) || 0;
+                if (facturadoA !== facturadoB) return facturadoB - facturadoA;
+            } else if (ordenFiltro === 'mayor_valor') {
+                const interesA = a.interes || 0;
+                const interesB = b.interes || 0;
+                if (interesA !== interesB) return interesB - interesA;
+            }
+            return 0; // fallback a creación (como vienen)
+        });
+    }, [clientes, busqueda, ordenFiltro]);
 
     // VISTA DETALLADA PREMIUM (Post-Venta)
     if (prospectoSeleccionado) {
@@ -928,30 +935,34 @@ const Clientes = () => {
                     </div>
                 </div>
 
-                <div className="bg-white border border-slate-200 rounded-2xl p-3 md:p-4 shadow-sm mb-6">
+                <div className="bg-white border border-slate-200 rounded-2xl p-2.5 md:p-3 shadow-sm mb-6">
                     <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-3 md:gap-4 items-center">
-                        {/* 30% Búsqueda + Crear (Móvil) */}
                         <div className="flex items-stretch gap-2 w-full">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-gray-400" />
+                            <div className="relative flex-1 h-9">
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
                                     type="text"
                                     placeholder="Buscar clientes..."
                                     value={busqueda}
-                                    onChange={(event) => setBusqueda(event.target.value)}
-                                    className="w-full h-full pl-8 md:pl-10 pr-3 md:pr-4 py-2 md:py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs md:text-sm"
+                                    onChange={(e) => setBusqueda(e.target.value)}
+                                    className="w-full h-full pl-8 pr-14 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs"
                                     title="Buscar por nombre, empresa, correo o teléfono"
                                 />
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                                    <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                                        {clientesFiltrados.length}/{clientes.length}
+                                    </span>
+                                </div>
                             </div>
                             <button
                                 onClick={() => setMostrarModalCrear(true)}
-                                className="sm:hidden flex items-center justify-center gap-1.5 px-3 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs font-medium shrink-0"
+                                className="sm:hidden flex items-center justify-center gap-1.5 px-3 h-9 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs font-medium shrink-0"
                             >
                                 <Plus className="w-4 h-4" />
                                 Crear
                             </button>
                         </div>
-                        <div className="hidden md:flex flex-wrap md:flex-wrap pb-2 -mx-2 px-2 md:mx-0 md:px-0 gap-2 items-center w-full">
+                        <div className="hidden md:flex flex-wrap md:flex-wrap -mx-2 px-2 md:mx-0 md:px-0 gap-2 items-center w-full">
                             <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden md:block" />
                             <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
                                 {[
@@ -962,7 +973,7 @@ const Clientes = () => {
                                     <button
                                         key={btn.value}
                                         onClick={() => setFiltroVisibilidad(btn.value)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtroVisibilidad === btn.value
+                                        className={`px-3 h-9 flex items-center justify-center rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtroVisibilidad === btn.value
                                             ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
                                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400 hover:text-slate-800'
                                             }`}
@@ -973,37 +984,20 @@ const Clientes = () => {
                             </div>
                             <div className="w-px h-6 bg-slate-200 mx-1 shrink-0 hidden md:block"></div>
                             <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
-                                {[
-                                    { value: 'todos', label: 'Todos' },
-                                    { value: 'con_recordatorio', label: 'Con recordatorio' },
-                                    { value: 'sin_recordatorio', label: 'Sin recordatorio' },
-                                ].map(btn => (
-                                    <button
-                                        key={btn.value}
-                                        onClick={() => setFiltro(btn.value)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtro === btn.value
-                                            ? 'bg-(--theme-600) text-white border-(--theme-600) shadow-sm'
-                                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-(--theme-400) hover:text-(--theme-700)'
-                                            }`}
-                                    >
-                                        {btn.label}
-                                    </button>
-                                ))}
+                                <select
+                                    value={ordenFiltro}
+                                    onChange={(e) => setOrdenFiltro(e.target.value)}
+                                    className="px-3 h-9 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-(--theme-500) transition-all cursor-pointer"
+                                >
+                                    <option value="todos">Todos los clientes</option>
+                                    <option value="mayor_facturado">Mayor facturado</option>
+                                    <option value="mayor_valor">Mayor valor (Interés)</option>
+                                </select>
                             </div>
-                            <button
-                                onClick={() => setFiltro(f => f === 'con_recordatorio' ? 'todos' : 'con_recordatorio')}
-                                className={`shrink-0 flex items-center justify-center w-8 h-8 rounded-lg border text-sm transition-all ${filtro === 'con_recordatorio'
-                                    ? 'bg-(--theme-50) border-(--theme-400) text-(--theme-700)'
-                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'
-                                    }`}
-                                title="Solo con recordatorio de llamada"
-                            >
-                                <Bell className="w-3.5 h-3.5" />
-                            </button>
-                            {(filtro !== 'todos' || busqueda || filtroVisibilidad !== 'mine') && (
+                            {(ordenFiltro !== 'todos' || busqueda || filtroVisibilidad !== 'mine') && (
                                 <button
-                                    onClick={() => { setFiltro('todos'); setBusqueda(''); setFiltroVisibilidad('mine'); }}
-                                    className="shrink-0 flex items-center justify-center w-8 h-8 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
+                                    onClick={() => { setOrdenFiltro('todos'); setBusqueda(''); setFiltroVisibilidad('mine'); }}
+                                    className="shrink-0 flex items-center justify-center w-9 h-9 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
                                     title="Limpiar filtros"
                                 >
                                     ✕
@@ -1011,10 +1005,6 @@ const Clientes = () => {
                             )}
                         </div>
                     </div>
-                    {/* Contador de resultados */}
-                    <p className="text-xs text-slate-400 mt-2">
-                        Mostrando <span className="font-semibold text-slate-600">{clientesFiltrados.length}</span> de <span className="font-semibold text-slate-600">{clientes.length}</span> clientes
-                    </p>
                 </div>
 
                 {loading ? (
@@ -1208,13 +1198,6 @@ const Clientes = () => {
                                                             <Share2 className="w-4 h-4" />
                                                         </button>
                                                     )}
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleVerDetalles(cliente); }}
-                                                        className="text-gray-400 hover:text-(--theme-600) transition-colors p-2 rounded-full hover:bg-(--theme-50)"
-                                                        title="Ver Detalles / Historial"
-                                                    >
-                                                        <History className="w-4 h-4" />
-                                                    </button>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); abrirModalEditar(cliente); }}
                                                         className="text-gray-400 hover:text-(--theme-600) transition-colors p-2 rounded-full hover:bg-(--theme-50)"

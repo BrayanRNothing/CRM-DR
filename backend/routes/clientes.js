@@ -320,7 +320,7 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
             return res.status(403).json({ mensaje: 'Solo el propietario puede editar este cliente' });
         }
 
-        const { nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, notas, vendedorAsignado, etapaEmbudo, customSections, fuente } = req.body;
+        const { nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, notas, vendedorAsignado, etapaEmbudo, customSections, fuente, etiquetas, etapaCliente } = req.body;
         const updates = [];
         const params = [];
         const now = new Date().toISOString();
@@ -332,8 +332,16 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
         if (correo) { updates.push('correo = ?'); params.push(correo); }
         if (empresa !== undefined) { updates.push('empresa = ?'); params.push(empresa); }
         if (customSections !== undefined) {
-            updates.push('customSections = ?');
+            updates.push('"customSections" = ?');
             params.push(typeof customSections === 'string' ? customSections : JSON.stringify(customSections));
+        }
+        if (etiquetas !== undefined) {
+            updates.push('etiquetas = ?');
+            params.push(typeof etiquetas === 'string' ? etiquetas : JSON.stringify(etiquetas));
+        }
+        if (etapaCliente !== undefined) {
+            updates.push('"etapaCliente" = ?');
+            params.push(etapaCliente);
         }
 
         // Manejo de cambio de etapa

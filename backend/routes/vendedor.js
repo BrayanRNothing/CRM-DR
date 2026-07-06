@@ -729,6 +729,7 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
         const visibilityScope = parseScope(scope);
 
         let sql = `SELECT c.*, u.nombre as closerNombre, owner.nombre as propietarioNombre,
+            rem.proximoRecordatorio,
             (
                 SELECT MIN(a.fecha)
                 FROM actividades a
@@ -739,6 +740,12 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
             FROM clientes c
             LEFT JOIN usuarios u ON c.closerAsignado = u.id
             LEFT JOIN usuarios owner ON owner.id = COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado)
+            LEFT JOIN (
+                SELECT cliente, MIN("fechaLimite") as proximoRecordatorio
+                FROM tareas
+                WHERE titulo = 'Recordatorio de llamada' AND estado = 'pendiente'
+                GROUP BY cliente
+            ) rem ON rem.cliente = c.id
             WHERE`;
 
         const params = [];
@@ -777,11 +784,31 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
         sql += ' ORDER BY c.fechaUltimaEtapa DESC';
 
         const rows = await db.prepare(sql).all(...params);
+
+        // Traer última actividad de cada cliente
+        const ids = rows.map(r => r.id).filter(Boolean);
+        const ultimasActs = ids.length > 0
+            ? await db.prepare(
+                `SELECT a.cliente, a.tipo, COALESCE(NULLIF(a.notas, ''), a.descripcion) as texto
+                 FROM actividades a
+                 WHERE a.id IN (
+                   SELECT MAX(id) FROM actividades WHERE cliente IN (${ids.map(() => '?').join(',')}) GROUP BY cliente
+                 )`
+            ).all(...ids)
+            : [];
+
+        const actMap = {};
+        for (const a of ultimasActs) actMap[a.cliente] = { tipo: a.tipo, notas: a.texto };
+
         const clientes = rows.map(r => {
             const { closerNombre, propietarioNombre, ...c } = r;
             const out = toMongoFormat(c);
             if (out && closerNombre) out.closerAsignado = { nombre: closerNombre };
+            const act = actMap[r.id];
             if (out) {
+                out.proximaLlamada = out.proximaLlamada || out.proximallamada || out.proximoRecordatorio || out.proximorecordatorio || null;
+                out.ultimaActTipo = act?.tipo || null;
+                out.ultimaActNotas = act?.notas || null;
                 out.esPropietario = getOwnerId(c) === prospectorId;
                 out.compartido = isShared(c);
                 out.propietarioNombre = propietarioNombre || null;
@@ -931,9 +958,14 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
         }
 
         // Cambio manual o automático de etapa
-        let nuevaEtapa = (tipo === 'llamada' && resultadoFinal === 'exitoso' && cliente.etapaEmbudo === 'prospecto_nuevo')
-            ? 'en_contacto'
-            : etapaEmbudo;
+        let nuevaEtapa = etapaEmbudo;
+        if (!nuevaEtapa) {
+            if (tipo === 'llamada' && resultadoFinal === 'exitoso' && cliente.etapaEmbudo === 'prospecto_nuevo') {
+                nuevaEtapa = 'en_contacto';
+            } else if (tipo === 'cita' && resultadoFinal === 'exitoso') {
+                nuevaEtapa = 'en_negociacion';
+            }
+        }
 
         // PROTECCIÓN: Si el cliente ya está en una etapa ganada (CLIENT_STAGES),
         // no permitir retroceder a etapas de prospección (a menos que sea 'perdido').
@@ -1321,7 +1353,7 @@ router.patch('/prospectos/:id/compartir', auth, async (req, res) => {
 router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
     try {
         const prospectoId = parseInt(req.params.id);
-        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, ubicacion, notas, etapaEmbudo, sitioWeb, customMetricLabel, customMetricValue, fuente } = req.body;
+        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, ubicacion, notas, etapaEmbudo, sitioWeb, customMetricLabel, customMetricValue, fuente, etiquetas, etapaCliente } = req.body;
         const prospectorId = parseInt(req.usuario.id);
         const now = new Date().toISOString();
 
@@ -1357,6 +1389,15 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
             customMetricValue !== undefined ? customMetricValue : cliente.customMetricValue,
             (fuente !== undefined ? fuente : (cliente.fuente || ''))
         ];
+
+        if (etiquetas !== undefined) {
+            updates.push('etiquetas = ?');
+            params.push(typeof etiquetas === 'string' ? etiquetas : JSON.stringify(etiquetas));
+        }
+        if (etapaCliente !== undefined) {
+            updates.push('"etapaCliente" = ?');
+            params.push(etapaCliente);
+        }
 
         // Manejo de cambio de etapa
         if (etapaEmbudo && etapaEmbudo !== cliente.etapaEmbudo) {
@@ -3437,6 +3478,35 @@ router.post('/etiquetas', [auth, esVendedor], async (req, res) => {
     } catch (error) {
         console.error('Error al crear etiqueta:', error);
         res.status(500).json({ msg: 'Error al crear etiqueta' });
+    }
+});
+
+// DELETE /api/vendedor/etiquetas/:id
+router.delete('/etiquetas/:id', [auth, esVendedor], async (req, res) => {
+    try {
+        const equipoId = req.usuario.equipo_id;
+        const etiquetaId = parseInt(req.params.id);
+
+        let existente;
+        if (equipoId) {
+            existente = await db.prepare('SELECT * FROM etiquetas_globales WHERE id = ? AND (equipo_id = ? OR equipo_id IS NULL)')
+                .get(etiquetaId, equipoId);
+        } else {
+            existente = await db.prepare('SELECT * FROM etiquetas_globales WHERE id = ? AND equipo_id IS NULL')
+                .get(etiquetaId);
+        }
+
+        if (!existente) {
+            return res.status(404).json({ msg: 'Etiqueta no encontrada' });
+        }
+
+        // Si es global (equipo_id nulo) pero el usuario es vendedor y pertenece a un equipo, podría denegarse, pero lo dejaremos así
+        await db.prepare('DELETE FROM etiquetas_globales WHERE id = ?').run(etiquetaId);
+
+        res.json({ msg: 'Etiqueta eliminada' });
+    } catch (error) {
+        console.error('Error al eliminar etiqueta:', error);
+        res.status(500).json({ msg: 'Error al eliminar etiqueta' });
     }
 });
 

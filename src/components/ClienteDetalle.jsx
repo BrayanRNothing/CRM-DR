@@ -16,24 +16,18 @@ import PlantillasMensajesModal from './PlantillasMensajesModal';
 import ModulosCliente from './ModulosCliente';
 import KpiRotativas from './KpiRotativas';
 import GmailIcon from '../assets/google-gmail-svgrepo-com.svg';
+import GestorEtiquetas from './GestorEtiquetas';
 
-const ETAPAS_EMBUDO = {
-    'venta_ganada': { label: 'Cliente ganado', color: 'bg-green-100 text-green-700' },
-    'cotizacion_realizada': { label: 'Cotización realizada', color: 'bg-blue-100 text-blue-700' },
-    'contrato_firmado': { label: 'Contrato firmado', color: 'bg-indigo-100 text-indigo-700' },
-    'esperando_pago': { label: 'Esperando pago', color: 'bg-amber-100 text-amber-700' },
-    'cliente_activo': { label: 'Cliente activo', color: 'bg-emerald-100 text-emerald-700' },
-    // Compatibilidad con etapas antiguas que podrían existir en datos ya guardados.
-    'Cliente_nuevo': { label: 'Sin contacto', color: 'bg-red-100 text-red-600' },
-    'en_contacto': { label: 'En contacto', color: 'bg-[var(--theme-100)] text-[var(--theme-600)]' },
-    'reunion_agendada': { label: 'Cita agendada', color: 'bg-[var(--theme-100)] text-[var(--theme-600)]' },
-    'reunion_realizada': { label: 'Cita realizada', color: 'bg-[var(--theme-100)] text-[var(--theme-600)]' },
-    'en_negociacion': { label: 'Negociación', color: 'bg-amber-100 text-amber-600' },
-    'perdido': { label: 'Perdido', color: 'bg-rose-100 text-rose-600' }
+const ETAPAS_CLIENTE = {
+    'cliente_nuevo': { label: 'Cliente nuevo', color: 'bg-emerald-100 text-emerald-700' },
+    'en_seguimiento': { label: 'En seguimiento', color: 'bg-blue-100 text-blue-700' },
+    'oportunidad_activa': { label: 'Oportunidad activa', color: 'bg-purple-100 text-purple-700' },
+    'reunion_con_cliente': { label: 'Reunión con cliente', color: 'bg-amber-100 text-amber-700' },
+    'inactivo': { label: 'Inactivo', color: 'bg-gray-100 text-gray-700' }
 };
 
-const getEtapaLabel = (etapa) => ETAPAS_EMBUDO[etapa]?.label || etapa;
-const getEtapaColor = (etapa) => ETAPAS_EMBUDO[etapa]?.color || 'bg-gray-100 text-gray-600';
+const getEtapaLabel = (etapa) => ETAPAS_CLIENTE[etapa]?.label || (etapa || 'cliente_nuevo');
+const getEtapaColor = (etapa) => ETAPAS_CLIENTE[etapa]?.color || 'bg-emerald-100 text-emerald-700';
 
 const getAuthHeaders = () => ({
     'x-auth-token': getToken() || ''
@@ -827,30 +821,36 @@ export default function ClienteDetalle({
     const handleCambiarEtapa = async (nuevaEtapa) => {
         setLoadingEtapa(true);
         try {
-            await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}/editar`, {
-                nombres: ClienteSeleccionado.nombres || '',
-                apellidoPaterno: ClienteSeleccionado.apellidoPaterno || '',
-                apellidoMaterno: ClienteSeleccionado.apellidoMaterno || '',
-                telefono: ClienteSeleccionado.telefono || '',
-                telefono2: ClienteSeleccionado.telefono2 || '',
-                correo: ClienteSeleccionado.correo || '',
-                empresa: ClienteSeleccionado.empresa || '',
-                sitioWeb: ClienteSeleccionado.sitioWeb || '',
-                ubicacion: ClienteSeleccionado.ubicacion || '',
-                notas: ClienteSeleccionado.notas || '',
-                etapaEmbudo: nuevaEtapa
-            }, { headers: getAuthHeaders() });
+            await axios.put(`${API_URL}/api/${rolePath}/prospectos/${ClienteSeleccionado.id || ClienteSeleccionado._id}/editar`,
+                {
+                    etapaCliente: nuevaEtapa
+                },
+                { headers: getAuthHeaders() }
+            );
+            setClienteSeleccionado(prev => ({ ...prev, etapaCliente: nuevaEtapa }));
             toast.success(`Etapa actualizada: ${getEtapaLabel(nuevaEtapa)}`);
             setEditandoEtapa(false);
-            const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
-            const updated = res.data.find(p => p.id === pid || p._id === pid);
-            if (updated) { setClienteSeleccionado(updated); }
             if (onActualizado) onActualizado();
         } catch (error) {
-            console.error(error);
+            console.error('Error al cambiar la etapa:', error);
             toast.error('Error al cambiar la etapa');
         } finally {
             setLoadingEtapa(false);
+        }
+    };
+
+    const handleEtiquetasChange = async (nuevasEtiquetas) => {
+        try {
+            const etiquetasStr = JSON.stringify(nuevasEtiquetas);
+            await axios.put(`${API_URL}/api/${rolePath}/prospectos/${ClienteSeleccionado.id || ClienteSeleccionado._id}/editar`,
+                { etiquetas: etiquetasStr },
+                { headers: getAuthHeaders() }
+            );
+            setClienteSeleccionado(prev => ({ ...prev, etiquetas: etiquetasStr }));
+            if (onActualizado) onActualizado();
+        } catch (error) {
+            console.error('Error al actualizar etiquetas:', error);
+            toast.error('Error al actualizar etiquetas');
         }
     };
 
@@ -893,43 +893,69 @@ export default function ClienteDetalle({
                                         </div>
                                         <div className="flex items-center gap-3 flex-wrap">
                                             {editandoEtapa ? (
-                                                <div className="flex items-center gap-1">
+                                                <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-md p-0.5 shadow-sm">
                                                     <select
-                                                        autoFocus
-                                                        defaultValue={ClienteSeleccionado.etapaEmbudo}
+                                                        className="text-xs bg-transparent border-none outline-none text-gray-700 py-1 pl-2 pr-6 cursor-pointer"
+                                                        defaultValue={ClienteSeleccionado.etapaCliente || 'cliente_nuevo'}
                                                         onChange={(e) => handleCambiarEtapa(e.target.value)}
                                                         disabled={loadingEtapa}
-                                                        className="border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold bg-white focus:ring-2 focus:ring-(--theme-500) outline-none"
                                                     >
-                                                        {Object.entries(ETAPAS_EMBUDO).map(([key, val]) => (
+                                                        <option value="" disabled>Seleccionar etapa...</option>
+                                                        {Object.entries(ETAPAS_CLIENTE).map(([key, val]) => (
                                                             <option key={key} value={key}>{val.label}</option>
                                                         ))}
                                                     </select>
                                                     <button
                                                         onClick={() => setEditandoEtapa(false)}
-                                                        className="p-1 text-slate-400 hover:text-slate-600 rounded"
-                                                        title="Cancelar"
+                                                        className="p-1 hover:bg-gray-100 rounded-md text-gray-400"
+                                                        disabled={loadingEtapa}
                                                     >
                                                         <X className="w-3.5 h-3.5" />
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center gap-1">
-                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEtapaColor(ClienteSeleccionado.etapaEmbudo)}`}>
-                                                        {getEtapaLabel(ClienteSeleccionado.etapaEmbudo)}
+                                                <div className="flex items-center gap-2 group/etapa cursor-pointer">
+                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-medium tracking-wide uppercase shadow-sm ${getEtapaColor(ClienteSeleccionado.etapaCliente || 'cliente_nuevo')}`}>
+                                                        {getEtapaLabel(ClienteSeleccionado.etapaCliente || 'cliente_nuevo')}
                                                     </span>
                                                     <button
                                                         onClick={() => setEditandoEtapa(true)}
-                                                        className="p-1 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded transition-all"
+                                                        className="p-1 text-gray-300 hover:text-[var(--theme-500)] hover:bg-[var(--theme-50)] rounded-full transition-colors opacity-0 group-hover/etapa:opacity-100"
                                                         title="Cambiar etapa"
                                                     >
                                                         <Edit2 className="w-3 h-3" />
                                                     </button>
                                                 </div>
                                             )}
-                                            <div className="md:absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-1.5 px-3 py-1 bg-green-100/80 backdrop-blur-sm text-green-700 rounded-lg text-xs font-black uppercase tracking-widest border border-green-200 shadow-sm z-10">
-                                                <Star className="w-4 h-4 fill-green-500 text-green-500" />
-                                                Cliente Ganado
+                                            
+                                            <div className="ml-2 pl-2 border-l border-gray-200">
+                                                <GestorEtiquetas 
+                                                    clienteEtiquetas={ClienteSeleccionado.etiquetas}
+                                                    onEtiquetasChange={handleEtiquetasChange}
+                                                />
+                                            </div>
+                                            <div className="md:absolute top-4 right-4 sm:top-6 sm:right-6 flex flex-col items-end gap-2 z-10">
+                                                <div className="flex items-center gap-1.5 px-3 py-1 bg-green-100/80 backdrop-blur-sm text-green-700 rounded-lg text-xs font-black uppercase tracking-widest border border-green-200 shadow-sm">
+                                                    <Star className="w-4 h-4 fill-green-500 text-green-500" />
+                                                    Cliente Ganado
+                                                </div>
+                                                
+                                                <div className="flex items-center gap-2 py-1 mt-1">
+                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Interés:</span>
+                                                    <div className="flex items-center gap-0.5 text-yellow-500">
+                                                        {[1, 2, 3, 4, 5].map((value) => (
+                                                            <button
+                                                                key={value}
+                                                                type="button"
+                                                                onClick={() => actualizarInteres(ClienteSeleccionado.id || ClienteSeleccionado._id, ClienteSeleccionado.interes === value ? 0 : value)}
+                                                                className="hover:scale-110 transition-transform active:scale-95 px-0.5"
+                                                                title={`Nivel de interés: ${value} de 5`}
+                                                            >
+                                                                <Star className={`w-5.5 h-5.5 ${ClienteSeleccionado.interes >= value ? 'fill-yellow-400' : 'fill-slate-100 text-slate-300'}`} />
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </div>
                                             {ClienteSeleccionado.empresa && (
                                                 <span className="text-gray-500 text-sm font-medium flex items-center gap-1.5 border-l border-slate-200 pl-3">

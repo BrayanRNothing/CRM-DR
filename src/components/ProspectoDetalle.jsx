@@ -13,6 +13,7 @@ import API_URL from '../config/api';
 import TimeWheelPicker from './TimeWheelPicker';
 import HistorialInteracciones from './HistorialInteracciones';
 import PlantillasMensajesModal from './PlantillasMensajesModal';
+import GestorEtiquetas from './GestorEtiquetas';
 import GmailIcon from '../assets/google-gmail-svgrepo-com.svg';
 
 const ETAPAS_EMBUDO = {
@@ -687,6 +688,21 @@ export default function ProspectoDetalle({
         }
     };
 
+    const handleEtiquetasChange = async (nuevasEtiquetas) => {
+        try {
+            const etiquetasStr = JSON.stringify(nuevasEtiquetas);
+            await axios.put(`${API_URL}/api/${rolePath}/prospectos/${prospectoSeleccionado.id || prospectoSeleccionado._id}/editar`,
+                { etiquetas: etiquetasStr },
+                { headers: getAuthHeaders() }
+            );
+            setProspectoSeleccionado(prev => ({ ...prev, etiquetas: etiquetasStr }));
+            if (onActualizado) onActualizado();
+        } catch (error) {
+            console.error('Error al actualizar etiquetas:', error);
+            toast.error('Error al actualizar etiquetas');
+        }
+    };
+
     return (
         <div className="fixed inset-0 overflow-hidden p-4 sm:p-6 bg-slate-50 z-40">
             <style>{`
@@ -760,6 +776,12 @@ export default function ProspectoDetalle({
                                                     </button>
                                                 </div>
                                             )}
+                                            <div className='ml-2 pl-2 border-l border-gray-200'>
+                                                <GestorEtiquetas
+                                                    clienteEtiquetas={prospectoSeleccionado.etiquetas}
+                                                    onEtiquetasChange={handleEtiquetasChange}
+                                                />
+                                            </div>
                                             {prospectoSeleccionado.empresa && (
                                                 <span className="text-gray-500 text-sm font-medium flex items-center gap-1.5 border-l border-slate-200 pl-2">
                                                     <Building2 className="w-4 h-4 text-slate-400" />
