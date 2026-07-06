@@ -75,6 +75,14 @@ export default function ProspectoDetalle({
     const [prospectoSeleccionado, setProspectoSeleccionado] = useState(initialProspecto);
     const pid = prospectoSeleccionado?.id || prospectoSeleccionado?._id;
 
+    // Sync internal state when the parent updates the prospecto prop (e.g. after editing)
+    useEffect(() => {
+        if (initialProspecto) {
+            setProspectoSeleccionado(initialProspecto);
+            setNotasRapidas(initialProspecto.notas || '');
+        }
+    }, [initialProspecto]);
+
     const [actividadesContext, setActividadesContext] = useState([]);
     const [loadingContext, setLoadingContext] = useState(false);
 

@@ -231,11 +231,12 @@ const Seguimiento = () => {
             });
             toast.success('Prospecto actualizado');
             setModalEditarAbierto(false);
-            // Recargar datos usando caché y actualizar el panel de detalle si está abierto
+            // Recargar datos y actualizar el panel de detalle si está abierto
             invalidarCacheLocal();
             const normalizados = await cargarDatos(false);
-            if (prospectoSeleccionado && (prospectoSeleccionado.id === prospectoAEditar.id || prospectoSeleccionado._id === prospectoAEditar.id)) {
-                const updated = normalizados?.find(p => p.id === prospectoAEditar.id || p._id === prospectoAEditar.id);
+            if (prospectoSeleccionado && normalizados) {
+                const editadoId = String(prospectoAEditar.id);
+                const updated = normalizados.find(p => String(p.id) === editadoId || String(p._id) === editadoId);
                 if (updated) setProspectoSeleccionado(updated);
             }
         } catch (error) {
