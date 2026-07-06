@@ -264,15 +264,15 @@ export default function Equipo() {
   });
 
   return (
-    <div className="min-h-screen md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 pb-8 md:pb-6">
+    <div className="min-h-full flex flex-col md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 pb-8 md:pb-6">
       {/* Team Info Card - NOW AT THE TOP */}
-      <div className="max-w-full mx-auto space-y-6">
+      <div className="max-w-full w-full mx-auto space-y-6 flex flex-col flex-1">
         {!loading && !error && equipo && (
           <div className="bg-white rounded-2xl p-4 md:p-5 border border-slate-200 shadow-sm transition-all">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-(--theme-500) to-(--theme-600) flex items-center justify-center shadow-lg shadow-(--theme-500)/20">
-                  <Crown size={28} className="text-white" />
+                  <Users size={28} className="text-white" />
                 </div>
                 <div>
                   {renameMode ? (
@@ -312,13 +312,7 @@ export default function Equipo() {
               </div>
 
               <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 md:gap-3 w-full md:w-auto mt-2 md:mt-0">
-                <button
-                  className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2.5 bg-white border border-gray-200 rounded-xl text-[11px] md:text-xs font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm"
-                  onClick={fetchEquipo}
-                >
-                  <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-                  ACTUALIZAR
-                </button>
+
                 {esOwner && (
                   <button
                     className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2.5 bg-linear-to-r from-(--theme-600) to-(--theme-500) text-white rounded-xl text-[11px] md:text-xs font-bold shadow-lg shadow-(--theme-600)/20 hover:-translate-y-0.5 transition-all"
@@ -349,56 +343,19 @@ export default function Equipo() {
 
         {/* Member List Section */}
         {!loading && equipo && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="bg-white rounded-2xl p-4 md:p-5 border border-slate-200 shadow-sm overflow-hidden">
+          <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex-1 bg-white rounded-2xl p-4 md:p-5 border border-slate-200 shadow-sm overflow-hidden flex flex-col">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                   <h2 className="text-lg md:text-xl font-bold text-gray-900 leading-tight">Miembros del Equipo</h2>
-                  <p className="text-[10px] md:text-xs text-gray-400 font-semibold uppercase tracking-widest mt-1">Gestión de acceso y roles</p>
                 </div>
 
-                <div className="flex flex-col md:flex-row flex-wrap gap-3 w-full md:w-auto">
-                  <div className="relative group w-full md:w-auto">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-(--theme-500) transition-colors" size={16} />
-                    <input
-                      className="pl-10 pr-4 py-2 md:py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium w-full md:w-64 outline-none focus:bg-white focus:border-(--theme-500) focus:ring-4 focus:ring-(--theme-500)/10 transition-all"
-                      value={draftFilters.busqueda}
-                      onChange={e => setDraftFilters(prev => ({ ...prev, busqueda: e.target.value }))}
-                      placeholder="Buscar por nombre, usuario..."
-                    />
-                  </div>
-                  <div className="flex gap-2 w-full md:w-auto">
-                    <select
-                      className="flex-1 md:flex-none px-3 py-2 md:py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs md:text-sm font-semibold text-gray-700 outline-none focus:bg-white focus:border-(--theme-500) transition-all cursor-pointer"
-                      value={draftFilters.estado}
-                      onChange={e => setDraftFilters(prev => ({ ...prev, estado: e.target.value }))}
-                    >
-                      <option value="todos">Todos los estados</option>
-                      <option value="activo">Activos</option>
-                      <option value="inactivo">Inactivos</option>
-                    </select>
-                    <button
-                      className="px-4 py-2 md:px-6 md:py-2.5 bg-gray-900 text-white rounded-xl text-[11px] md:text-xs font-bold shadow-sm hover:bg-black transition-all whitespace-nowrap"
-                      onClick={applyFilters}
-                    >
-                      FILTRAR
-                    </button>
-                    {esOwner && (
-                      <button
-                        className="px-3 py-2 md:p-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center shrink-0"
-                        onClick={handleExportCSV}
-                        title="Exportar a CSV"
-                      >
-                        <Download size={18} />
-                      </button>
-                    )}
-                  </div>
-                </div>
+
               </div>
 
               {miembrosFiltrados.length === 0 ? (
-                <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-                  <Users size={48} className="mx-auto text-gray-300 mb-4" />
+                <div className="flex-1 flex flex-col items-center justify-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                  <Users size={48} className="text-gray-300 mb-4" />
                   <p className="text-gray-500 font-semibold">No se encontraron miembros</p>
                 </div>
               ) : (
@@ -406,7 +363,7 @@ export default function Equipo() {
                   {miembrosFiltrados.map(m => (
                     <div
                       key={m.id}
-                      className={`group relative p-5 bg-white border border-gray-200 rounded-2xl transition-all hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 ${!m.activo ? 'grayscale opacity-70' : ''}`}
+                      className={`group relative p-5 bg-white border border-gray-200 rounded-2xl transition-all hover:shadow-xl hover:shadow-gray-200/50 ${!m.activo ? 'grayscale opacity-70' : ''}`}
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">

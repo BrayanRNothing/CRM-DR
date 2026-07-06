@@ -679,24 +679,27 @@ const Dashboard = () => {
 
                 <div className="flex-1 flex flex-col min-w-0">
                     <div className="shrink-0 relative z-20">
-                        <div className="flex items-end gap-2.5 overflow-x-auto pb-px -mb-px" style={{ scrollbarWidth: 'none' }}>
+                        <div className="flex items-end gap-2.5 overflow-x-auto pb-px -mb-px pt-2 -mt-2 pr-2 -mr-2" style={{ scrollbarWidth: 'none' }}>
                             {[
                                 { key: 'resumen', label: 'Resumen', Icon: TrendingUp },
                                 { key: 'kpis', label: 'Métricas', Icon: BarChart3 },
-                                { key: 'tareas', label: 'Tareas', Icon: Bell },
-                                { key: 'acciones', label: 'Acciones', Icon: Activity },
-                                { key: 'proximamente', label: 'Próximamente', Icon: Zap }
+                                { key: 'tareas', label: 'Tareas', Icon: Bell, badge: teamTasks.filter(t => t.estado !== 'completada').length }
                             ].map(tab => (
                                 <button
                                     key={tab.key}
                                     onClick={() => setHealthTab(tab.key)}
-                                    className={`px-3.5 py-2 text-xs font-extrabold transition-all border whitespace-nowrap flex items-center gap-1.5 ${healthTab === tab.key
-                                        ? 'bg-white text-(--theme-700) border-gray-200 border-b-white rounded-t-xl rounded-b-none -mb-px relative z-20'
+                                    className={`relative px-3.5 py-2 text-xs font-extrabold transition-all border whitespace-nowrap flex items-center gap-1.5 ${healthTab === tab.key
+                                        ? 'bg-white text-(--theme-700) border-gray-200 border-b-white rounded-t-xl rounded-b-none -mb-px z-20'
                                         : 'bg-white text-gray-500 border-gray-200 rounded-xl shadow-sm mb-1 hover:-translate-y-0.5 hover:bg-gray-50 hover:text-gray-700'
                                         }`}
                                 >
                                     <tab.Icon className="w-3.5 h-3.5" />
-                                    {tab.label}
+                                    <span>{tab.label}</span>
+                                    {tab.badge > 0 && (
+                                        <span className="bg-rose-500 text-white text-[9px] font-black px-1 min-w-[16px] h-[16px] rounded-full flex items-center justify-center shadow-sm ml-0.5">
+                                            {tab.badge}
+                                        </span>
+                                    )}
                                 </button>
                             ))}
                         </div>
