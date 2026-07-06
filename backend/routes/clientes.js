@@ -267,6 +267,9 @@ router.post('/', auth, esSuperUser, async (req, res) => {
         const vendedorId = req.usuario.rol === 'admin' && vendedorAsignado ? parseInt(vendedorAsignado) : usuarioId;
         const etapa = etapaEmbudo || 'venta_ganada';
         const estadoCliente = estado || (etapa === 'venta_ganada' ? 'ganado' : 'proceso');
+        // Pilar 1: tipo define si es prospecto o cliente
+        const CLIENT_STAGES = ['venta_ganada','cotizacion_realizada','contrato_firmado','esperando_pago','cliente_activo'];
+        const tipoContacto = CLIENT_STAGES.includes(etapa) ? 'cliente' : 'prospecto';
         const now = new Date().toISOString();
         const hist = JSON.stringify([{ etapa, fecha: now, vendedor: vendedorId }]);
 
@@ -274,8 +277,8 @@ router.post('/', auth, esSuperUser, async (req, res) => {
         const closerAsignado = usuarioId;
 
         await db.prepare(`
-            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaEmbudo, historialEmbudo, vendedorAsignado, prospectorAsignado, closerAsignado, fechaUltimaEtapa, "equipo_id", "propietarioId", compartido, fuente)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaEmbudo, historialEmbudo, vendedorAsignado, prospectorAsignado, closerAsignado, fechaUltimaEtapa, "equipo_id", "propietarioId", compartido, fuente, tipo)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
             nombres,
             apellidoPaterno || '',
@@ -293,7 +296,8 @@ router.post('/', auth, esSuperUser, async (req, res) => {
             equipoId,
             usuarioId,
             false,
-            (fuente || 'Desconocido').trim()
+            (fuente || 'Desconocido').trim(),
+            tipoContacto
         );
 
         const row = await db.prepare('SELECT * FROM clientes ORDER BY id DESC LIMIT 1').get();
@@ -333,6 +337,7 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
         }
 
         // Manejo de cambio de etapa
+        const CLIENT_STAGES = ['venta_ganada','cotizacion_realizada','contrato_firmado','esperando_pago','cliente_activo'];
         if (etapaEmbudo && etapaEmbudo !== c.etapaEmbudo) {
             updates.push('etapaEmbudo = ?');
             params.push(etapaEmbudo);
@@ -349,13 +354,21 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
             updates.push('historialEmbudo = ?');
             params.push(JSON.stringify(hist));
 
-            // Sincronizar estado si es ganado/perdido
-            if (etapaEmbudo === 'ganado' || etapaEmbudo === 'venta_ganada') {
+            // Pilar 1: sincronizar tipo y estado según la nueva etapa
+            if (CLIENT_STAGES.includes(etapaEmbudo)) {
+                updates.push('tipo = ?');
+                params.push('cliente');
                 updates.push('estado = ?');
                 params.push('ganado');
             } else if (etapaEmbudo === 'perdido') {
                 updates.push('estado = ?');
                 params.push('perdido');
+            } else {
+                // Vuelve a ser un prospecto en proceso
+                updates.push('tipo = ?');
+                params.push('prospecto');
+                updates.push('estado = ?');
+                params.push('proceso');
             }
         } else if (estado) {
             updates.push('estado = ?');
@@ -428,11 +441,18 @@ router.patch('/:id/etapa', auth, esSuperUser, async (req, res) => {
         const now = new Date().toISOString();
         const hist = c.historialEmbudo ? JSON.parse(c.historialEmbudo) : [];
         hist.push({ etapa: etapaNueva, fecha: now, vendedor: parseInt(req.usuario.id) });
+        // Pilar 1: sincronizar tipo y estado al cambiar etapa
+        const CLIENT_STAGES_PATCH = ['venta_ganada','cotizacion_realizada','contrato_firmado','esperando_pago','cliente_activo'];
         let estado = 'proceso';
-        if (etapaNueva === 'ganado') estado = 'ganado';
-        else if (etapaNueva === 'perdido') estado = 'perdido';
-        await db.prepare('UPDATE clientes SET etapaEmbudo = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, estado = ? WHERE id = ?')
-            .run(etapaNueva, now, now, JSON.stringify(hist), estado, parseInt(req.params.id));
+        let tipoContacto = 'prospecto';
+        if (CLIENT_STAGES_PATCH.includes(etapaNueva)) {
+            estado = 'ganado';
+            tipoContacto = 'cliente';
+        } else if (etapaNueva === 'perdido') {
+            estado = 'perdido';
+        }
+        await db.prepare('UPDATE clientes SET "etapaEmbudo" = ?, "fechaUltimaEtapa" = ?, "ultimaInteraccion" = ?, "historialEmbudo" = ?, estado = ?, tipo = ? WHERE id = ?')
+            .run(etapaNueva, now, now, JSON.stringify(hist), estado, tipoContacto, parseInt(req.params.id));
         const row = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(parseInt(req.params.id));
 
         // ✅ INVALIDAR CACHÉ: afecta dashboard y listas

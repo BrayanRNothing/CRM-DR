@@ -660,8 +660,8 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
 
         sql += ` ${visibilityWhere.join(' AND ')}`;
 
-        sql += ' AND c.etapaEmbudo NOT IN (?, ?, ?, ?, ?, ?)';
-        params.push('venta_ganada', 'cotizacion_realizada', 'contrato_firmado', 'esperando_pago', 'cliente_activo', 'perdido');
+        // Pilar 1: filtrar por tipo de contacto (no por lista de etapas)
+        sql += " AND COALESCE(c.tipo, 'prospecto') = 'prospecto'";
 
         if (etapa && etapa !== 'todos') {
             sql += ' AND c.etapaEmbudo = ?';
@@ -765,8 +765,9 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
 
         sql += ` ${visibilityWhere.join(' AND ')}`;
 
-        sql += ' AND c.etapaEmbudo IN (?, ?, ?, ?, ?)';
-        params.push(...CLIENT_STAGES);
+        // Pilar 1: filtrar por tipo de contacto (no por lista de etapas)
+        sql += " AND COALESCE(c.tipo, 'prospecto') = 'cliente'";
+
 
         if (busqueda) {
             sql += ' AND (c.nombres LIKE ? OR c.apellidoPaterno LIKE ? OR c.empresa LIKE ? OR c.telefono LIKE ?)';
@@ -957,8 +958,13 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
             updates.push('historialEmbudo = ?');
             params.push(JSON.stringify(hist));
 
-            // Sincronizar estado
-            if (nuevaEtapa === 'perdido') {
+            // Pilar 1: sincronizar tipo y estado
+            if (CLIENT_STAGES.includes(nuevaEtapa)) {
+                updates.push('tipo = ?');
+                params.push('cliente');
+                updates.push('estado = ?');
+                params.push('ganado');
+            } else if (nuevaEtapa === 'perdido') {
                 updates.push('estado = ?');
                 params.push('perdido');
             }
@@ -1368,6 +1374,22 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
             });
             updates.push('historialEmbudo = ?');
             params.push(JSON.stringify(hist));
+
+            // Pilar 1: sincronizar tipo y estado
+            if (CLIENT_STAGES.includes(etapaEmbudo)) {
+                updates.push('tipo = ?');
+                params.push('cliente');
+                updates.push('estado = ?');
+                params.push('ganado');
+            } else if (etapaEmbudo === 'perdido') {
+                updates.push('estado = ?');
+                params.push('perdido');
+            } else {
+                updates.push('tipo = ?');
+                params.push('prospecto');
+                updates.push('estado = ?');
+                params.push('proceso');
+            }
         }
 
         params.push(prospectoId);
@@ -1635,8 +1657,8 @@ router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
 
         const closerParaAsignar = cliente.closerAsignado || prospectorId;
 
-        await db.prepare('UPDATE clientes SET etapaEmbudo = ?, estado = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, proximaLlamada = NULL, closerAsignado = ?, fuente = ? WHERE id = ?')
-            .run('venta_ganada', 'ganado', now, now, JSON.stringify(hist), closerParaAsignar, (fuente || cliente.fuente || '').trim(), clienteId);
+        await db.prepare('UPDATE clientes SET "etapaEmbudo" = ?, estado = ?, tipo = ?, "fechaUltimaEtapa" = ?, "ultimaInteraccion" = ?, "historialEmbudo" = ?, "proximaLlamada" = NULL, "closerAsignado" = ?, fuente = ? WHERE id = ?')
+            .run('venta_ganada', 'ganado', 'cliente', now, now, JSON.stringify(hist), closerParaAsignar, (fuente || cliente.fuente || '').trim(), clienteId);
 
         // Auto-registrar venta en $0 para que aparezca en el dashboard inmediatamente
         try {
@@ -1691,7 +1713,7 @@ router.post('/descartar-prospecto/:id', [auth, esVendedor], async (req, res) => 
         const hist = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
         hist.push({ etapa: 'perdido', fecha: now, vendedor: prospectorId, motivoPerdida });
 
-        await db.prepare('UPDATE clientes SET etapaEmbudo = ?, motivoPerdida = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ?, proximaLlamada = NULL WHERE id = ?')
+        await db.prepare('UPDATE clientes SET "etapaEmbudo" = ?, "motivoPerdida" = ?, "fechaUltimaEtapa" = ?, "ultimaInteraccion" = ?, "historialEmbudo" = ?, "proximaLlamada" = NULL WHERE id = ?')
             .run('perdido', motivoPerdida || 'Otro', now, now, JSON.stringify(hist), clienteId);
 
         // ✅ INVALIDAR CACHÉ: prospecto descartado, afecta dashboard

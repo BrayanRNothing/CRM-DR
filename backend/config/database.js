@@ -579,6 +579,8 @@ const initDb = async () => {
       ['clientes',    '"customSections"',    'TEXT'],
       ['clientes',    'fuente',              'TEXT'],
       ['clientes',    '"motivoPerdida"',     'TEXT'],
+      // ── Pilar 1: Separador Vital (Tipo de Contacto) ───────────────────
+      ['clientes',    'tipo',                "TEXT DEFAULT 'prospecto'"],
       ['actividades', '"equipo_id"',         'INTEGER'],
       // ── Stripe / Suscripción ──────────────────────────────────────────
       ['usuarios', 'stripe_customer_id',      'TEXT'],
@@ -626,6 +628,20 @@ const initDb = async () => {
       await internalDb.query(`UPDATE clientes SET "etapaEmbudo" = 'prospecto_nuevo' WHERE "etapaEmbudo" IS NULL`);
     } catch (e) {
       console.error('⚠️ Migración etapaEmbudo falló:', e.message);
+    }
+
+    // Migrar campo 'tipo': marcar como 'cliente' los que ya tienen etapa de cliente
+    try {
+      await internalDb.query(`
+        UPDATE clientes
+        SET tipo = 'cliente'
+        WHERE "etapaEmbudo" IN ('venta_ganada','cotizacion_realizada','contrato_firmado','esperando_pago','cliente_activo')
+          AND (tipo IS NULL OR tipo = 'prospecto')
+      `);
+      await internalDb.query(`UPDATE clientes SET tipo = 'prospecto' WHERE tipo IS NULL`);
+      console.log('✅ Migración: campo tipo (prospecto/cliente) poblado correctamente');
+    } catch (e) {
+      console.error('⚠️ Migración tipo falló:', e.message);
     }
 
     // Rellenar propietarioId y compartido para registros antiguos
