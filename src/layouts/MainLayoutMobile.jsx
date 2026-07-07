@@ -3,8 +3,11 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedGridBackground from '../components/ui/AnimatedGridBackground';
 import logosolomycrm from '../assets/logosolomycrm.png';
+import GracePeriodBanner from '../components/ui/GracePeriodBanner';
+import { getToken } from '../utils/authUtils';
+import API_URL from '../config/api';
 
-const MainLayoutMobile = ({ menuItems, userInfo }) => {
+const MainLayoutMobile = ({ menuItems, userInfo, diasGracia }) => {
     const location = useLocation();
     const isDashboard = location.pathname === '/' || location.pathname === '/dashboard';
 
@@ -33,20 +36,74 @@ const MainLayoutMobile = ({ menuItems, userInfo }) => {
 
                 {/* ── Main Content Area ── */}
                 <main className={`flex-1 overflow-y-auto pb-[90px] relative scrollbar-hide ${!isDashboard ? 'bg-white' : ''}`}>
-                    <div className="p-4 min-h-full">
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={location.pathname}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.2 }}
-                                className="h-full"
+                    {diasGracia === -1 ? (
+                        <div className="min-h-full flex flex-col items-center justify-center p-6 text-center bg-white">
+                            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4 border border-red-200">
+                                <span className="text-2xl">🔒</span>
+                            </div>
+                            <h2 className="text-2xl font-black text-slate-800 mb-2">Suscripción Expirada</h2>
+                            <p className="text-slate-600 mb-6 text-sm font-medium">
+                                Tu periodo de gracia terminó. Renueva tu suscripción para seguir usando SoloMyCRM.
+                            </p>
+                            <button
+                                onClick={async (e) => {
+                                    const btn = e.currentTarget;
+                                    btn.innerText = 'Cargando...';
+                                    btn.disabled = true;
+                                    try {
+                                        const res = await fetch(`${API_URL}/api/auth/billing-portal`, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'x-auth-token': getToken(),
+                                            },
+                                        });
+                                        const data = await res.json();
+                                        if (res.ok && data.url) {
+                                            window.location.href = data.url;
+                                        } else {
+                                            alert('Error: ' + (data.mensaje || 'No se pudo abrir'));
+                                            btn.innerText = '💳 Renovar';
+                                            btn.disabled = false;
+                                        }
+                                    } catch (err) {
+                                        alert('Error de red');
+                                        btn.innerText = '💳 Renovar';
+                                        btn.disabled = false;
+                                    }
+                                }}
+                                className="px-6 py-3 w-full bg-slate-900 text-white font-bold rounded-xl shadow-lg"
                             >
-                                <Outlet />
-                            </motion.div>
-                        </AnimatePresence>
-                    </div>
+                                💳 Renovar
+                            </button>
+                            <button 
+                                onClick={() => { localStorage.clear(); sessionStorage.clear(); window.location.href = '/'; }}
+                                className="mt-4 text-slate-500 font-bold"
+                            >
+                                Cerrar sesión
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="p-4 min-h-full">
+                            {diasGracia !== null && diasGracia >= 0 && (
+                                <div className="-mx-4 -mt-4 mb-4">
+                                    <GracePeriodBanner diasRestantes={diasGracia} />
+                                </div>
+                            )}
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={location.pathname}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="h-full"
+                                >
+                                    <Outlet />
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
+                    )}
                 </main>
 
                 {/* ── Bottom Navigation Bar (Docked) ── */}

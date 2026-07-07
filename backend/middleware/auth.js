@@ -35,11 +35,17 @@ const auth = async (req, res, next) => {
                 const ahora = new Date();
 
                 if (ahora > graciaHasta) {
-                    // Periodo de gracia expirado → bloquear acceso
-                    return res.status(403).json({
-                        mensaje: 'Tu suscripción ha expirado. Renueva tu plan para continuar usando el CRM.',
-                        code: 'PLAN_EXPIRED'
-                    });
+                    // Periodo de gracia expirado → bloquear acceso excepto a rutas vitales
+                    const exemptPaths = ['/api/auth/me', '/api/auth/billing-portal'];
+                    const path = req.originalUrl.split('?')[0];
+                    if (!exemptPaths.includes(path)) {
+                        return res.status(403).json({
+                            mensaje: 'Tu suscripción ha expirado. Renueva tu plan para continuar usando el CRM.',
+                            code: 'PLAN_EXPIRED'
+                        });
+                    } else {
+                        req.planExpirado = true; // Flag for downstream if needed
+                    }
                 } else {
                     // Dentro del periodo de gracia → permitir acceso pero avisar
                     const diasRestantes = Math.ceil((graciaHasta - ahora) / (1000 * 60 * 60 * 24));

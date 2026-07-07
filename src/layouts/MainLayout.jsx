@@ -46,8 +46,9 @@ const MainLayout = () => {
                     if (ahora <= graciaHasta) {
                         const dias = Math.ceil((graciaHasta - ahora) / (1000 * 60 * 60 * 24));
                         setDiasGracia(dias);
+                    } else {
+                        setDiasGracia(-1); // Expirado totalmente
                     }
-                    // Si expiró, el interceptor de Axios lo manejará en la próxima llamada API
                 }
             })
             .catch(() => {}); // Silenciar error de red — no crítico
@@ -141,6 +142,7 @@ const MainLayout = () => {
             <MainLayoutMobile
                 menuItems={menuItems}
                 userInfo={{ ...usuario, rol: 'Vendedor' }}
+                diasGracia={diasGracia}
             />
         );
     }
@@ -168,14 +170,66 @@ const MainLayout = () => {
                     className="flex-1 bg-white/80 backdrop-blur-md border border-white/40 rounded-3xl overflow-hidden transition-all duration-300 relative premium-reflejo"
                     style={{ display: 'flex', flexDirection: 'column' }}
                 >
-                    {/* Banner de periodo de gracia */}
-                    {diasGracia !== null && (
-                        <GracePeriodBanner diasRestantes={diasGracia} />
-                    )}
+                    {/* Pantalla de Expiración (Lock Screen) */}
+                    {diasGracia === -1 ? (
+                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white/95 backdrop-blur-xl z-50">
+                            <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6 shadow-sm border border-red-200">
+                                <span className="text-3xl">🔒</span>
+                            </div>
+                            <h2 className="text-3xl font-black text-slate-800 mb-4 tracking-tight">Suscripción Expirada</h2>
+                            <p className="text-slate-600 mb-8 max-w-md text-lg font-medium leading-relaxed">
+                                Tu periodo de gracia ha terminado. Para seguir utilizando SoloMyCRM y no perder acceso a tus prospectos y ventas, renueva tu suscripción.
+                            </p>
+                            <button
+                                onClick={async (e) => {
+                                    const btn = e.currentTarget;
+                                    btn.innerText = 'Cargando...';
+                                    btn.disabled = true;
+                                    try {
+                                        const res = await fetch(`${API_URL}/api/auth/billing-portal`, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'x-auth-token': getToken(),
+                                            },
+                                        });
+                                        const data = await res.json();
+                                        if (res.ok && data.url) {
+                                            window.location.href = data.url;
+                                        } else {
+                                            alert('Error: ' + (data.mensaje || 'No se pudo abrir el portal'));
+                                            btn.innerText = '💳 Renovar Suscripción';
+                                            btn.disabled = false;
+                                        }
+                                    } catch (err) {
+                                        alert('Error de red al intentar abrir el portal.');
+                                        btn.innerText = '💳 Renovar Suscripción';
+                                        btn.disabled = false;
+                                    }
+                                }}
+                                className="px-8 py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95 text-lg flex items-center gap-3"
+                            >
+                                💳 Renovar Suscripción
+                            </button>
+                            <button 
+                                onClick={() => { localStorage.clear(); sessionStorage.clear(); window.location.href = '/'; }}
+                                className="mt-6 text-slate-500 hover:text-slate-800 font-bold transition-colors"
+                            >
+                                Cerrar sesión
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Banner de periodo de gracia */}
+                            {diasGracia !== null && diasGracia >= 0 && (
+                                <GracePeriodBanner diasRestantes={diasGracia} />
+                            )}
 
-                    <div className={`flex-1 scrollbar-hide ${isAjustesRoute || isDashboard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-                        <Outlet />
-                    </div>
+                            <div className={`flex-1 scrollbar-hide ${isAjustesRoute || isDashboard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+                                <Outlet />
+                            </div>
+                        </>
+                    )}
                 </main>
             </div>
         </AnimatedGridBackground>
