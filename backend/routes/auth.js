@@ -865,13 +865,13 @@ router.post('/create-renewal-checkout', async (req, res) => {
 
         // Precios por defecto si no mandan uno
         const PLAN_PRICES = {
-            'mensual': 'price_1QxI6cK320aTnsf99S0Qo211',
-            'mensual_equipo': 'price_1QxIBhK320aTnsf9W5H0G7eN',
-            'anual': 'price_1QxICjK320aTnsf9L3G2uH65',
+            'mensual': process.env.STRIPE_PRICE_MENSUAL || 'price_1Tp9yNPKUtOAyTecD3XfVORb',
+            'mensual_equipo': process.env.STRIPE_PRICE_MENSUAL_EQUIPO || 'price_1Tp9yNPKUtOAyTecD3XfVORb', // fallback a mensual si no existe
+            'anual': process.env.STRIPE_PRICE_ANUAL || 'price_1TpA70PKUtOAyTecTHMTUmfy',
         };
 
         const planDeseado = req.body.plan || usuario.plan || 'mensual';
-        const priceId = PLAN_PRICES[planDeseado];
+        const priceId = PLAN_PRICES[planDeseado] || PLAN_PRICES['mensual'];
 
         if (!priceId) {
             return res.status(400).json({ mensaje: 'Plan no válido' });
