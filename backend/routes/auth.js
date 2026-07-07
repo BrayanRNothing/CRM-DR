@@ -186,7 +186,7 @@ router.post('/demo-login', async (req, res) => {
         const passwordHash = await bcrypt.hash('demo123', 10);
 
         // Crear usuario
-        const stmt = await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, activo) VALUES (?, ?, ?, ?, 1)');
+        const stmt = await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, activo) VALUES (?, ?, ?, ?, TRUE)');
         const result = await stmt.run(usuario, passwordHash, rol, nombre);
         const userId = result.lastInsertRowid;
 
@@ -348,7 +348,7 @@ router.post('/register-paid', async (req, res) => {
 
             // El plan vuelve a estar activo. Stripe enviará el plan_vencimiento más tarde vía el webhook customer.subscription.updated
             // Pero por ahora lo marcamos como activo.
-            await db.prepare('UPDATE usuarios SET plan = ?, plan_activo = 1, stripe_customer_id = ?, stripe_subscription_id = ? WHERE id = ?').run(
+            await db.prepare('UPDATE usuarios SET plan = ?, plan_activo = TRUE, stripe_customer_id = ?, stripe_subscription_id = ? WHERE id = ?').run(
                 plan, stripe_customer_id, stripe_subscription_id, existingUser.id
             );
             return res.json({ mensaje: 'Renovación procesada' });
@@ -392,7 +392,7 @@ router.post('/register-paid', async (req, res) => {
         const stmt = await db.prepare(`
             INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono, activo,
               stripe_customer_id, stripe_subscription_id, plan, plan_activo, plan_vencimiento, max_usuarios)
-            VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, TRUE, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, TRUE, ?, ?, ?, TRUE, ?, ?)
         `);
         const result = await stmt.run(
             usuario.trim(),
@@ -548,7 +548,7 @@ router.post('/update-subscription', async (req, res) => {
         }
 
         // Determinar si la cuenta debe estar activa según el status de Stripe
-        const estaActivo = ['active', 'trialing'].includes(status) ? 1 : 0;
+        const estaActivo = ['active', 'trialing'].includes(status) ? true : false;
         const planActivo = estaActivo;
 
         // Construir SET dinámicamente según qué campos llegaron
@@ -743,7 +743,7 @@ router.post('/update-subscription', async (req, res) => {
         }
 
         // Determinar si la cuenta debe estar activa según el status de Stripe
-        const estaActivo = ['active', 'trialing'].includes(status) ? 1 : 0;
+        const estaActivo = ['active', 'trialing'].includes(status) ? true : false;
         const planActivo = estaActivo;
 
         // Construir SET dinámicamente según qué campos llegaron

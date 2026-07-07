@@ -150,7 +150,7 @@ router.post('/:id/activate-plan', auth, esAdminUnico, async (req, res) => {
         // auth.js middleware usa plan_activo = 1 para dar paso libre.
         await db.prepare(`
             UPDATE usuarios 
-            SET plan_activo = 1, plan_vencimiento = NULL, plan = 'premium_gratis' 
+            SET plan_activo = TRUE, plan_vencimiento = NULL, plan = 'premium_gratis' 
             WHERE id = ?
         `).run(userId);
 
