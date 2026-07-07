@@ -343,11 +343,24 @@ router.delete('/team-owners/:id', auth, esAdminUnico, async (req, res) => {
         }
 
         const owner = await db.prepare(
-            'SELECT id, rol, "equipo_id" FROM usuarios WHERE id = ?'
+            'SELECT id, rol, "equipo_id", stripe_subscription_id FROM usuarios WHERE id = ?'
         ).get(ownerId);
 
         if (!owner || owner.rol === 'admin') {
             return res.status(404).json({ mensaje: 'Propietario de equipo no encontrado' });
+        }
+
+        // Cancelar suscripción en Stripe si existe
+        if (owner.stripe_subscription_id && process.env.STRIPE_SECRET_KEY) {
+            try {
+                const Stripe = require('stripe');
+                const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+                await stripe.subscriptions.cancel(owner.stripe_subscription_id);
+                console.log(`Suscripción ${owner.stripe_subscription_id} cancelada en Stripe por eliminación/desactivación del usuario ${ownerId}`);
+            } catch (stripeError) {
+                console.error('Error al intentar cancelar suscripción en Stripe:', stripeError.message);
+                // No bloqueamos la eliminación local si falla Stripe, pero queda registrado.
+            }
         }
 
         const isHardDelete = req.query.hard === 'true';
@@ -377,7 +390,7 @@ router.delete('/team-owners/:id', auth, esAdminUnico, async (req, res) => {
         }
 
         // Soft delete (desactivar)
-        await db.prepare('UPDATE usuarios SET activo = 0 WHERE id = ?').run(ownerId);
+        await db.prepare('UPDATE usuarios SET activo = 0, stripe_subscription_id = NULL, plan_activo = 0 WHERE id = ?').run(ownerId);
 
         if (owner.equipo_id) {
             await db.prepare('UPDATE equipos SET owner_id = NULL WHERE id = ?').run(owner.equipo_id);
