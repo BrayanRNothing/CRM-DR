@@ -44,6 +44,7 @@ export default function VendedorAjustes() {
     const [activeTab, setActiveTab] = useState('perfil');
     const [googleAccountInfo, setGoogleAccountInfo] = useState(null);
     const [loadingGoogle, setLoadingGoogle] = useState(false);
+    const [loadingPortal, setLoadingPortal] = useState(false);
 
     // Theme Global State
     const { currentThemeId, setTheme } = useThemeStore();
@@ -197,6 +198,37 @@ export default function VendedorAjustes() {
         navigate('/');
     };
 
+    const handleManageSubscription = async () => {
+        setLoadingPortal(true);
+        const tid = toast.loading('Abriendo portal de clientes...');
+        try {
+            const token = getToken();
+            const res = await fetch(`${API_URL}/api/auth/billing-portal`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-auth-token': token,
+                },
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.url) {
+                toast.success('Redirigiendo...', { id: tid });
+                window.location.href = data.url;
+            } else if (data.code === 'NO_STRIPE_CUSTOMER') {
+                toast.error('Tu cuenta no tiene una suscripción de Stripe.', { id: tid });
+            } else {
+                toast.error('No se pudo abrir el portal.', { id: tid });
+            }
+        } catch (err) {
+            console.error('Error abriendo billing portal:', err);
+            toast.error('Error de red', { id: tid });
+        } finally {
+            setLoadingPortal(false);
+        }
+    };
+
     const roleBg = 'from-(--theme-500) to-(--theme-600)';
 
     const inp = "w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-(--theme-500)/30 focus:border-(--theme-500) outline-none transition-all text-sm shadow-sm";
@@ -298,6 +330,15 @@ export default function VendedorAjustes() {
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm font-bold text-(--theme-600)">Sesión</span>
                                         <span className="text-xs font-medium text-(--theme-500)">Activa</span>
+                                    </div>
+                                    <div className="pt-2 mt-2 border-t border-(--theme-200)/50">
+                                        <button
+                                            onClick={handleManageSubscription}
+                                            disabled={loadingPortal}
+                                            className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-white border border-(--theme-200) text-(--theme-600) font-bold rounded-xl hover:bg-(--theme-50) hover:border-(--theme-300) active:scale-95 transition-all text-xs shadow-xs"
+                                        >
+                                            {loadingPortal ? 'Cargando...' : '💳 Portal de Clientes'}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
