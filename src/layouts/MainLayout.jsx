@@ -15,6 +15,7 @@ const MainLayout = () => {
     const [usuario, setUsuario] = useState(null);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [diasGracia, setDiasGracia] = useState(null); // null = sin gracia, número = días restantes
+    const [checkingPlan, setCheckingPlan] = useState(true); // Bloquea el Outlet hasta conocer el estado del plan
 
 
     useEffect(() => {
@@ -51,7 +52,10 @@ const MainLayout = () => {
                     }
                 }
             })
-            .catch(() => {}); // Silenciar error de red — no crítico
+            .catch(() => {}) // Silenciar error de red — no crítico
+            .finally(() => setCheckingPlan(false)); // ✅ Desbloquear el Outlet
+        } else {
+            setCheckingPlan(false);
         }
     }, []);
 
@@ -170,8 +174,15 @@ const MainLayout = () => {
                     className="flex-1 bg-white/80 backdrop-blur-md border border-white/40 rounded-3xl overflow-hidden transition-all duration-300 relative premium-reflejo"
                     style={{ display: 'flex', flexDirection: 'column' }}
                 >
-                    {/* Pantalla de Expiración (Lock Screen) */}
-                    {diasGracia === -1 ? (
+                    {/* Skeleton mientras verificamos el plan — evita peticiones prematuras */}
+                    {checkingPlan ? (
+                        <div className="flex-1 flex items-center justify-center">
+                            <div className="flex flex-col items-center gap-3 opacity-40">
+                                <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                                <span className="text-xs font-semibold text-slate-500 tracking-wide">Cargando...</span>
+                            </div>
+                        </div>
+                    ) : diasGracia === -1 ? (
                         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white/95 backdrop-blur-xl z-50">
                             <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6 shadow-sm border border-red-200">
                                 <span className="text-3xl">🔒</span>
