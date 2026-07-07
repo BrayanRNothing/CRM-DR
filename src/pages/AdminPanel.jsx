@@ -26,6 +26,7 @@ export default function AdminPanel() {
   const [form, setForm] = useState(initialForm);
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [expandedOwnerId, setExpandedOwnerId] = useState(null);
+  const [sortBy, setSortBy] = useState('fecha_desc');
 
   const isAdminRoot = currentUser?.rol === 'admin';
 
@@ -50,6 +51,27 @@ export default function AdminPanel() {
       fetchOwners();
     }
   }, [isAdminRoot]);
+
+  const sortedOwners = useMemo(() => {
+    let sorted = [...owners];
+    switch (sortBy) {
+      case 'fecha_desc':
+        sorted.sort((a, b) => new Date(b.fechaCreacion || 0) < new Date(a.fechaCreacion || 0) ? -1 : 1);
+        break;
+      case 'suscripcion_activa':
+        sorted.sort((a, b) => (b.plan_activo ? 1 : 0) - (a.plan_activo ? 1 : 0));
+        break;
+      case 'estado_activos':
+        sorted.sort((a, b) => (b.activo ? 1 : 0) - (a.activo ? 1 : 0));
+        break;
+      case 'estado_desactivados':
+        sorted.sort((a, b) => (a.activo ? 1 : 0) - (b.activo ? 1 : 0));
+        break;
+      default:
+        break;
+    }
+    return sorted;
+  }, [owners, sortBy]);
 
   if (!currentUser) {
     return <Navigate to="/" replace />;
@@ -106,7 +128,7 @@ export default function AdminPanel() {
       nombre: owner.nombre || '',
       email: owner.email || '',
       telefono: owner.telefono || '',
-      equipoNombre: owner.equipo?.nombre || ''
+      equipoNombre: owner.team_name || ''
     });
   };
 
@@ -221,7 +243,7 @@ export default function AdminPanel() {
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="text-sm text-slate-600">
-                Usuarios propietarios activos: <span className="font-bold text-slate-900">{owners.length}</span>
+                Usuarios propietarios activos: <span className="font-bold text-slate-900">{owners.filter(o => o.activo).length}</span> de <span className="font-bold text-slate-900">{owners.length}</span>
               </div>
               <p className="text-xs text-slate-500">
                 Haz click en "usuarios creados" para ver el detalle de cada equipo.
@@ -230,7 +252,19 @@ export default function AdminPanel() {
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-            <h2 className="font-black text-slate-900 text-lg mb-4">Propietarios creados</h2>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+              <h2 className="font-black text-slate-900 text-lg">Propietarios creados</h2>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-slate-300"
+              >
+                <option value="fecha_desc">Más recientes</option>
+                <option value="suscripcion_activa">Suscripción Activa</option>
+                <option value="estado_activos">Usuarios Activos</option>
+                <option value="estado_desactivados">Usuarios Desactivados</option>
+              </select>
+            </div>
 
             {loading ? (
               <div className="h-40 flex items-center justify-center text-slate-500">
@@ -253,17 +287,22 @@ export default function AdminPanel() {
                     </tr>
                   </thead>
                   <tbody>
-                    {owners.map((owner, ownerIndex) => {
+                    {sortedOwners.map((owner, ownerIndex) => {
                       const isEvenRow = ownerIndex % 2 === 0;
                       const baseRowClass = isEvenRow
                         ? 'bg-white hover:bg-slate-50/70'
                         : 'bg-slate-100/70 hover:bg-slate-200/60';
 
                       return (
-                        <tr key={owner.id} className={`border-b border-slate-200 text-slate-800 align-top transition-colors ${baseRowClass}`}>
+                        <tr key={owner.id} className={`border-b border-slate-200 text-slate-800 align-top transition-colors ${baseRowClass} ${!owner.activo ? 'opacity-70 grayscale-[20%]' : ''}`}>
                           <td className="py-3 font-semibold">
                             <div className="flex flex-col gap-1">
                               <span>{owner.nombre}</span>
+                              {!owner.activo && (
+                                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 self-start">
+                                  DESACTIVADO
+                                </span>
+                              )}
                               <span className="text-xs text-slate-500 font-normal">Creado: {new Date(owner.fechaCreacion).toLocaleDateString()}</span>
                             </div>
                           </td>
@@ -297,7 +336,7 @@ export default function AdminPanel() {
                           </td>
                           <td className="py-3">
                             <div className="flex items-center justify-end gap-2">
-                              {!owner.plan_activo && (
+                              {!owner.plan_activo && owner.activo ? (
                                 <button
                                   type="button"
                                   onClick={async () => {
@@ -322,7 +361,7 @@ export default function AdminPanel() {
                                 >
                                   Activar Gratis
                                 </button>
-                              )}
+                              ) : null}
                               <button
                                 type="button"
                                 onClick={() => handleStartEdit(owner)}
@@ -333,10 +372,12 @@ export default function AdminPanel() {
                               <button
                                 type="button"
                                 onClick={() => handleDeleteOwner(owner)}
-                                disabled={deletingId === owner.id}
+                                disabled={deletingId === owner.id || !owner.activo}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60 transition-colors"
+                                title={!owner.activo ? 'Este usuario ya está desactivado' : ''}
                               >
-                                {deletingId === owner.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Eliminar
+                                {deletingId === owner.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} 
+                                {!owner.activo ? 'Desactivado' : 'Eliminar'}
                               </button>
                             </div>
                           </td>
