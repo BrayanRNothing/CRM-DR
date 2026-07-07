@@ -392,7 +392,7 @@ router.post('/register-paid', async (req, res) => {
         const stmt = await db.prepare(`
             INSERT INTO usuarios (usuario, contraseña, rol, nombre, email, telefono, activo,
               stripe_customer_id, stripe_subscription_id, plan, plan_activo, plan_vencimiento, max_usuarios)
-            VALUES (?, ?, ?, ?, ?, ?, TRUE, ?, ?, ?, TRUE, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, TRUE, ?, ?)
         `);
         const result = await stmt.run(
             usuario.trim(),
