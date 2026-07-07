@@ -349,13 +349,40 @@ router.delete('/team-owners/:id', auth, esAdminUnico, async (req, res) => {
             return res.status(404).json({ mensaje: 'Propietario de equipo no encontrado' });
         }
 
+        const isHardDelete = req.query.hard === 'true';
+
+        if (isHardDelete) {
+            // Delete tareas
+            await db.prepare("DELETE FROM tareas WHERE vendedor = ? OR cliente IN (SELECT id FROM clientes WHERE prospectorAsignado = ? OR vendedorAsignado = ?)").run(ownerId, ownerId, ownerId);
+            // Delete ventas
+            await db.prepare("DELETE FROM ventas WHERE vendedor = ? OR cliente IN (SELECT id FROM clientes WHERE prospectorAsignado = ? OR vendedorAsignado = ?)").run(ownerId, ownerId, ownerId);
+            // Delete actividades
+            await db.prepare("DELETE FROM actividades WHERE vendedor = ? OR cliente IN (SELECT id FROM clientes WHERE prospectorAsignado = ? OR vendedorAsignado = ?)").run(ownerId, ownerId, ownerId);
+            // Delete clientes
+            await db.prepare("DELETE FROM clientes WHERE prospectorAsignado = ? OR vendedorAsignado = ?").run(ownerId, ownerId);
+            
+            // Buscar equipos del usuario para borrar sus dependencias
+            const equipos = await db.prepare("SELECT id FROM equipos WHERE owner_id = ?").all(ownerId);
+            for (const eq of equipos) {
+                await db.prepare("DELETE FROM etiquetas_globales WHERE equipo_id = ?").run(eq.id);
+            }
+            
+            // Delete equipos
+            await db.prepare("DELETE FROM equipos WHERE owner_id = ?").run(ownerId);
+            // Delete usuario
+            await db.prepare("DELETE FROM usuarios WHERE id = ?").run(ownerId);
+            
+            return res.json({ mensaje: 'Propietario de equipo y todos sus datos han sido eliminados permanentemente' });
+        }
+
+        // Soft delete (desactivar)
         await db.prepare('UPDATE usuarios SET activo = 0 WHERE id = ?').run(ownerId);
 
         if (owner.equipo_id) {
             await db.prepare('UPDATE equipos SET owner_id = NULL WHERE id = ?').run(owner.equipo_id);
         }
 
-        res.json({ mensaje: 'Propietario de equipo eliminado correctamente' });
+        res.json({ mensaje: 'Propietario de equipo desactivado correctamente' });
     } catch (error) {
         console.error('Error en DELETE /api/usuarios/team-owners/:id:', error);
         res.status(500).json({ mensaje: 'Error del servidor' });

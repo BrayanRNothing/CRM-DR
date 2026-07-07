@@ -191,27 +191,33 @@ export default function AdminPanel() {
     }
   };
 
-  const handleDeleteOwner = async (owner) => {
-    const confirmDelete = window.confirm(`¿Seguro que quieres eliminar a ${owner.nombre}?`);
+  const handleDeleteOwner = async (owner, hardDelete = false) => {
+    const actionText = hardDelete ? 'eliminar permanentemente' : 'desactivar';
+    const confirmDelete = window.confirm(
+      hardDelete
+        ? `¿⚠️ ATENCIÓN ⚠️\nEstás a punto de ELIMINAR PERMANENTEMENTE a ${owner.nombre} y TODOS sus clientes, ventas y tareas.\n\nEsta acción NO se puede deshacer.\n\n¿Seguro que quieres continuar?`
+        : `¿Seguro que quieres desactivar a ${owner.nombre}? Sus datos se conservarán.`
+    );
     if (!confirmDelete) return;
 
     setDeletingId(owner.id);
     try {
-      const res = await fetch(`${API_URL}/api/usuarios/team-owners/${owner.id}`, {
+      const url = `${API_URL}/api/usuarios/team-owners/${owner.id}${hardDelete ? '?hard=true' : ''}`;
+      const res = await fetch(url, {
         method: 'DELETE',
         headers: { 'x-auth-token': token }
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.mensaje || 'No se pudo eliminar propietario de equipo');
+      if (!res.ok) throw new Error(data.mensaje || `No se pudo ${actionText} el propietario de equipo`);
 
-      toast.success('Propietario de equipo eliminado');
+      toast.success(hardDelete ? 'Usuario eliminado permanentemente' : 'Usuario desactivado');
       if (editingOwner && editingOwner.id === owner.id) {
         handleCancelEdit();
       }
       fetchOwners();
     } catch (error) {
-      toast.error(error.message || 'Error al eliminar propietario de equipo');
+      toast.error(error.message || `Error al ${actionText} propietario de equipo`);
     } finally {
       setDeletingId(null);
     }
@@ -377,16 +383,29 @@ export default function AdminPanel() {
                               >
                                 <Pencil className="w-3.5 h-3.5" /> Editar
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteOwner(owner)}
-                                disabled={deletingId === owner.id || !owner.activo}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60 transition-colors"
-                                title={!owner.activo ? 'Este usuario ya está desactivado' : ''}
-                              >
-                                {deletingId === owner.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} 
-                                {!owner.activo ? 'Desactivado' : 'Eliminar'}
-                              </button>
+                              {owner.activo ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteOwner(owner, false)}
+                                  disabled={deletingId === owner.id}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-60 transition-colors"
+                                  title="Desactivar usuario (conservar historial)"
+                                >
+                                  {deletingId === owner.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} 
+                                  Desactivar
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteOwner(owner, true)}
+                                  disabled={deletingId === owner.id}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 transition-colors shadow-sm"
+                                  title="Eliminar usuario y todos sus datos para siempre"
+                                >
+                                  {deletingId === owner.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} 
+                                  Eliminar Permanente
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
