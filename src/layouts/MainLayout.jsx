@@ -1,20 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import AnimatedGridBackground from '../components/ui/AnimatedGridBackground';
 import FloatingSidebar from '../components/ui/FloatingSidebar';
-import { getUser } from '../utils/authUtils';
+import { getUser, getToken } from '../utils/authUtils';
 import logosolomycrm from '../assets/logosolomycrm.png';
 import useWindowSize from '../hooks/useWindowSize';
 import MainLayoutMobile from './MainLayoutMobile';
+import GracePeriodBanner from '../components/ui/GracePeriodBanner';
+import API_URL from '../config/api';
 
 const MainLayout = () => {
     const { width } = useWindowSize();
     const location = useLocation();
     const [usuario, setUsuario] = useState(null);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [diasGracia, setDiasGracia] = useState(null); // null = sin gracia, número = días restantes
 
 
-    React.useEffect(() => {
+    useEffect(() => {
         const userGuardado = getUser();
         if (!userGuardado) {
             window.location.href = '/'; // Force redirect if no session
@@ -26,6 +29,29 @@ const MainLayout = () => {
             return;
         }
         setUsuario(userGuardado);
+
+        // ── Verificar estado de suscripción (periodo de gracia) ────────────
+        const token = getToken();
+        if (token) {
+            fetch(`${API_URL}/api/auth/me`, {
+                headers: { 'x-auth-token': token }
+            })
+            .then(res => res.json())
+            .then(data => {
+                // Si plan_activo es false y hay plan_vencimiento → calcular días de gracia restantes
+                if (data.plan_activo === false && data.plan_vencimiento) {
+                    const vencimiento = new Date(data.plan_vencimiento);
+                    const graciaHasta = new Date(vencimiento.getTime() + (3 * 24 * 60 * 60 * 1000));
+                    const ahora = new Date();
+                    if (ahora <= graciaHasta) {
+                        const dias = Math.ceil((graciaHasta - ahora) / (1000 * 60 * 60 * 24));
+                        setDiasGracia(dias);
+                    }
+                    // Si expiró, el interceptor de Axios lo manejará en la próxima llamada API
+                }
+            })
+            .catch(() => {}); // Silenciar error de red — no crítico
+        }
     }, []);
 
     const isAdminRoot = usuario?.rol === 'admin';
@@ -140,8 +166,14 @@ const MainLayout = () => {
                 {/* Contenido flotante - Estilo Contenedor Blanco */}
                 <main
                     className="flex-1 bg-white/80 backdrop-blur-md border border-white/40 rounded-3xl overflow-hidden transition-all duration-300 relative premium-reflejo"
+                    style={{ display: 'flex', flexDirection: 'column' }}
                 >
-                    <div className={`h-full scrollbar-hide ${isAjustesRoute || isDashboard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+                    {/* Banner de periodo de gracia */}
+                    {diasGracia !== null && (
+                        <GracePeriodBanner diasRestantes={diasGracia} />
+                    )}
+
+                    <div className={`flex-1 scrollbar-hide ${isAjustesRoute || isDashboard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                         <Outlet />
                     </div>
                 </main>

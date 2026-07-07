@@ -715,7 +715,12 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
                 WHERE a.cliente = c.id
                   AND a.tipo = 'cita'
                   AND (a.resultado = 'pendiente' OR a.resultado IS NULL)
-            ) as proximaCita
+            ) as proximaCita,
+            (
+                SELECT SUM(CAST(a.monto AS REAL))
+                FROM actividades a
+                WHERE a.cliente = c.id AND a.tipo = 'venta'
+            ) as totalFacturado
             FROM clientes c
             LEFT JOIN usuarios u ON c.closerAsignado = u.id
             LEFT JOIN usuarios owner ON owner.id = COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado)
@@ -780,7 +785,7 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
         for (const a of ultimasActs) actMap[a.cliente] = { tipo: a.tipo, notas: a.texto };
 
         const clientes = rows.map(r => {
-            const { closerNombre, propietarioNombre, ...c } = r;
+            const { closerNombre, propietarioNombre, totalFacturado, ...c } = r;
             const out = toMongoFormat(c);
             if (out && closerNombre) out.closerAsignado = { nombre: closerNombre };
             const act = actMap[r.id];
@@ -791,6 +796,7 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
                 out.esPropietario = getOwnerId(c) === prospectorId;
                 out.compartido = isShared(c);
                 out.propietarioNombre = propietarioNombre || null;
+                if (totalFacturado !== undefined && totalFacturado !== null) out.totalFacturado = totalFacturado;
             }
             return out || c;
         });
@@ -2195,7 +2201,7 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
         for (const a of ultimasActs) actMap[a.cliente] = { tipo: a.tipo, notas: a.texto };
 
         res.json(rows.map(r => {
-            const { prospectorNombre, ...c } = r;
+            const { prospectorNombre, totalFacturado, ...c } = r;
             const out = toMongoFormat(c);
             if (out) {
                 out.prospectorAsignado = { nombre: prospectorNombre };
@@ -2204,6 +2210,7 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
                 out.ultimaActNotas = act?.notas || null;
                 // Asegurar proximaLlamada unificada
                 out.proximaLlamada = out.proximaLlamada || out.proximallamada || null;
+                if (totalFacturado !== undefined && totalFacturado !== null) out.totalFacturado = totalFacturado;
             }
             return out;
         }));

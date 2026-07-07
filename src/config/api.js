@@ -41,6 +41,22 @@ axios.interceptors.response.use(
                 }
             }
         }
+
+        // Suscripción expirada — periodo de gracia agotado
+        if (error.response && error.response.status === 403) {
+            const code = error.response.data?.code;
+            if (code === 'PLAN_EXPIRED') {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('user');
+                if (window.location.pathname !== '/') {
+                    const msg = 'Tu suscripción ha expirado. Renueva tu plan en solomycrm.com para continuar.';
+                    window.location.href = `/?expired=1&msg=${encodeURIComponent(msg)}`;
+                }
+            }
+        }
+
         return Promise.reject(error);
     }
 );

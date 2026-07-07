@@ -15,8 +15,8 @@ const auth = async (req, res, next) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
 
-        // Verificar que el usuario exista y esté activo — incluye equipo_id
-        const row = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo, "equipo_id" FROM usuarios WHERE id = ?').get(decoded.id);
+        // Verificar que el usuario exista y esté activo — incluye equipo_id y estado del plan
+        const row = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo, "equipo_id", plan_activo, plan_vencimiento FROM usuarios WHERE id = ?').get(decoded.id);
 
         if (!row) {
             return res.status(401).json({ mensaje: 'Token inválido - Usuario no encontrado' });
@@ -24,6 +24,30 @@ const auth = async (req, res, next) => {
 
         if (row.activo === 0 || row.activo === false) {
             return res.status(401).json({ mensaje: 'Usuario desactivado' });
+        }
+
+        // ── Verificación de suscripción con periodo de gracia de 3 días ──
+        // Solo aplicar a cuentas que tienen plan (stripe). Si plan_activo es null → cuenta admin/demo sin plan.
+        if (row.plan_activo === false || row.plan_activo === 0) {
+            if (row.plan_vencimiento) {
+                const vencimiento = new Date(row.plan_vencimiento);
+                const graciaHasta = new Date(vencimiento.getTime() + (3 * 24 * 60 * 60 * 1000)); // +3 días
+                const ahora = new Date();
+
+                if (ahora > graciaHasta) {
+                    // Periodo de gracia expirado → bloquear acceso
+                    return res.status(403).json({
+                        mensaje: 'Tu suscripción ha expirado. Renueva tu plan para continuar usando el CRM.',
+                        code: 'PLAN_EXPIRED'
+                    });
+                } else {
+                    // Dentro del periodo de gracia → permitir acceso pero avisar
+                    const diasRestantes = Math.ceil((graciaHasta - ahora) / (1000 * 60 * 60 * 24));
+                    req.planEnGracia = true;
+                    req.diasGracia = diasRestantes;
+                }
+            }
+            // Si no hay plan_vencimiento, es una cuenta sin stripe (admin/demo) → dejar pasar
         }
 
         // Añadir usuario al request (normalizando id a string por si acaso)

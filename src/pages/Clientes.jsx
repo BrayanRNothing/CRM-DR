@@ -855,8 +855,8 @@ const Clientes = () => {
 
         return filtrados.sort((a, b) => {
             if (ordenFiltro === 'mayor_facturado') {
-                const facturadoA = Number(a.customMetricValue) || 0;
-                const facturadoB = Number(b.customMetricValue) || 0;
+                const facturadoA = Number(a.totalFacturado) || Number(a.customMetricValue) || 0;
+                const facturadoB = Number(b.totalFacturado) || Number(b.customMetricValue) || 0;
                 if (facturadoA !== facturadoB) return facturadoB - facturadoA;
             } else if (ordenFiltro === 'mayor_valor') {
                 const interesA = a.interes || 0;
@@ -1101,7 +1101,7 @@ const Clientes = () => {
                                             <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
                                                 <div className="flex flex-col">
                                                     <span className="text-[11px] md:text-sm font-semibold text-gray-800">
-                                                        {cliente.customMetricValue ? `${cliente.customMetricLabel || 'MXN'} $${Number(cliente.customMetricValue).toLocaleString('es-MX')}` : '—'}
+                                                        {(cliente.totalFacturado || cliente.customMetricValue) ? `${cliente.customMetricLabel || 'MXN'} $${Number(cliente.totalFacturado || cliente.customMetricValue).toLocaleString('es-MX')}` : '—'}
                                                     </span>
                                                 </div>
                                             </td>

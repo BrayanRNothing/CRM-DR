@@ -274,7 +274,7 @@ router.post('/demo-login', async (req, res) => {
 // @access  Private
 router.get('/me', auth, async (req, res) => {
     try {
-        const user = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo, "equipo_id" FROM usuarios WHERE id = ?').get(req.usuario.id);
+        const user = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo, "equipo_id", plan_activo, plan_vencimiento, plan, stripe_customer_id FROM usuarios WHERE id = ?').get(req.usuario.id);
         res.json(user);
     } catch (error) {
         console.error('Error en auth/me:', error);
@@ -433,6 +433,201 @@ router.post('/register-paid', async (req, res) => {
     } catch (error) {
         console.error('❌ Error en register-paid:', error);
         res.status(500).json({ mensaje: 'Error del servidor' });
+    }
+});
+
+
+// @route   POST api/auth/suspend-subscription
+// @desc    Inicia periodo de gracia (3 días) cuando Stripe cancela/pausa una suscripcion
+// @access  Internal — protegido por WEBHOOK_INTERNAL_SECRET
+router.post('/suspend-subscription', async (req, res) => {
+    try {
+        const internalSecret = req.headers['x-internal-secret'];
+        if (!internalSecret || internalSecret !== process.env.WEBHOOK_INTERNAL_SECRET) {
+            console.warn('⛔ Intento no autorizado a /suspend-subscription');
+            return res.status(403).json({ mensaje: 'No autorizado' });
+        }
+
+        const { stripe_subscription_id, stripe_customer_id, action } = req.body;
+        // action: 'suspend' (inicia gracia) | 'reactivate' (reactiva plan)
+
+        if (!stripe_subscription_id && !stripe_customer_id) {
+            return res.status(400).json({ mensaje: 'Se requiere stripe_subscription_id o stripe_customer_id' });
+        }
+
+        let usuario;
+        if (stripe_subscription_id) {
+            usuario = await db.prepare('SELECT id, usuario, email, nombre FROM usuarios WHERE stripe_subscription_id = ?').get(stripe_subscription_id);
+        }
+        if (!usuario && stripe_customer_id) {
+            usuario = await db.prepare('SELECT id, usuario, email, nombre FROM usuarios WHERE stripe_customer_id = ?').get(stripe_customer_id);
+        }
+
+        if (!usuario) {
+            console.warn(`⚠️ /suspend-subscription: No se encontró usuario con sub_id=${stripe_subscription_id} o cus_id=${stripe_customer_id}`);
+            return res.status(200).json({ mensaje: 'Usuario no encontrado, ignorado' });
+        }
+
+        let accion;
+        if (action === 'reactivate') {
+            // Reactivar completamente: plan activo, sin vencimiento inmediato
+            await db.prepare('UPDATE usuarios SET plan_activo = TRUE WHERE id = ?').run(usuario.id);
+            accion = 'Cuenta reactivada';
+        } else {
+            // Iniciar periodo de gracia: plan_activo=false, plan_vencimiento=ahora+3días, activo sigue en 1
+            const graciaHasta = new Date(Date.now() + (3 * 24 * 60 * 60 * 1000));
+            await db.prepare('UPDATE usuarios SET plan_activo = FALSE, plan_vencimiento = ? WHERE id = ?')
+                .run(graciaHasta.toISOString(), usuario.id);
+            accion = `Periodo de gracia iniciado (hasta ${graciaHasta.toDateString()})`;
+        }
+
+        console.log(`✅ ${accion} para usuario: ${usuario.usuario} (id: ${usuario.id})`);
+
+        try {
+            await db.prepare('INSERT INTO actividades (tipo, vendedor, descripcion, resultado) VALUES (?, ?, ?, ?)')
+                .run('registro', usuario.id, `${accion} via Stripe webhook`, 'exitoso');
+        } catch (actError) {
+            console.error('Error registrando actividad de suspensión:', actError);
+        }
+
+        res.json({ mensaje: `${accion} exitosamente`, usuario: usuario.usuario });
+    } catch (error) {
+        console.error('❌ Error en /suspend-subscription:', error);
+        res.status(500).json({ mensaje: 'Error del servidor' });
+    }
+});
+
+// @route   POST api/auth/update-subscription
+// @desc    Actualiza el plan, estado y fechas de vencimiento cuando cambia la suscripcion en Stripe
+// @access  Internal — protegido por WEBHOOK_INTERNAL_SECRET
+router.post('/update-subscription', async (req, res) => {
+    try {
+        const internalSecret = req.headers['x-internal-secret'];
+        if (!internalSecret || internalSecret !== process.env.WEBHOOK_INTERNAL_SECRET) {
+            console.warn('⛔ Intento no autorizado a /update-subscription');
+            return res.status(403).json({ mensaje: 'No autorizado' });
+        }
+
+        const {
+            stripe_subscription_id,
+            stripe_customer_id,
+            status,          // 'active' | 'past_due' | 'canceled' | 'paused' | 'unpaid'
+            plan,            // opcional — si el plan cambió (mensual, anual, mensual_equipo)
+            plan_vencimiento // opcional — nueva fecha de vencimiento ISO string
+        } = req.body;
+
+        if (!stripe_subscription_id && !stripe_customer_id) {
+            return res.status(400).json({ mensaje: 'Se requiere stripe_subscription_id o stripe_customer_id' });
+        }
+
+        let usuario;
+        if (stripe_subscription_id) {
+            usuario = await db.prepare('SELECT id, usuario, email, nombre, plan FROM usuarios WHERE stripe_subscription_id = ?').get(stripe_subscription_id);
+        }
+        if (!usuario && stripe_customer_id) {
+            usuario = await db.prepare('SELECT id, usuario, email, nombre, plan FROM usuarios WHERE stripe_customer_id = ?').get(stripe_customer_id);
+        }
+
+        if (!usuario) {
+            console.warn(`⚠️ /update-subscription: No se encontró usuario con sub_id=${stripe_subscription_id} o cus_id=${stripe_customer_id}`);
+            return res.status(200).json({ mensaje: 'Usuario no encontrado, ignorado' });
+        }
+
+        // Determinar si la cuenta debe estar activa según el status de Stripe
+        const estaActivo = ['active', 'trialing'].includes(status) ? 1 : 0;
+        const planActivo = estaActivo;
+
+        // Construir SET dinámicamente según qué campos llegaron
+        const updates = ['activo = ?', 'plan_activo = ?'];
+        const params = [estaActivo, planActivo];
+
+        if (plan && plan !== usuario.plan) {
+            updates.push('plan = ?');
+            params.push(plan);
+
+            // Actualizar max_usuarios según nuevo plan
+            const maxUsuariosPorPlan = { mensual: 2, mensual_equipo: 4, anual: 2 };
+            const maxUsuarios = maxUsuariosPorPlan[plan] || 2;
+            updates.push('max_usuarios = ?');
+            params.push(maxUsuarios);
+        }
+
+        if (plan_vencimiento) {
+            updates.push('plan_vencimiento = ?');
+            params.push(plan_vencimiento);
+        }
+
+        params.push(usuario.id);
+        await db.prepare(`UPDATE usuarios SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+
+        const planFinal = plan || usuario.plan;
+        console.log(`✅ Suscripción actualizada para ${usuario.usuario}: status=${status}, plan=${planFinal}, activo=${estaActivo}`);
+
+        try {
+            await db.prepare('INSERT INTO actividades (tipo, vendedor, descripcion, resultado) VALUES (?, ?, ?, ?)')
+                .run('registro', usuario.id, `Suscripción actualizada via Stripe — status: ${status}, plan: ${planFinal}`, 'exitoso');
+        } catch (actError) {
+            console.error('Error registrando actividad de actualización:', actError);
+        }
+
+        res.json({ mensaje: 'Suscripción actualizada exitosamente', usuario: usuario.usuario, status, plan: planFinal });
+    } catch (error) {
+        console.error('❌ Error en /update-subscription:', error);
+        res.status(500).json({ mensaje: 'Error del servidor' });
+    }
+});
+
+// @route   POST api/auth/billing-portal
+// @desc    Genera una sesión del Portal de Cliente de Stripe para gestionar suscripción
+// @access  Private (requiere JWT del usuario autenticado)
+router.post('/billing-portal', async (req, res) => {
+    try {
+        // Verificar token (reutilizamos lógica directa aquí para no depender del middleware)
+        const jwt = require('jsonwebtoken');
+        const token = req.header('x-auth-token') || req.header('Authorization')?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ mensaje: 'No autenticado' });
+        }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+
+        // Buscar usuario y su stripe_customer_id
+        const usuario = await db.prepare(
+            'SELECT id, usuario, email, stripe_customer_id FROM usuarios WHERE id = ?'
+        ).get(decoded.id);
+
+        if (!usuario) {
+            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+        }
+
+        if (!usuario.stripe_customer_id) {
+            return res.status(400).json({
+                mensaje: 'Tu cuenta no tiene una suscripción de Stripe asociada.',
+                code: 'NO_STRIPE_CUSTOMER'
+            });
+        }
+
+        // Importar Stripe dinámicamente (es un paquete server-side)
+        const Stripe = require('stripe');
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+        const returnUrl = process.env.CRM_URL
+            ? `${process.env.CRM_URL}/configuracion`
+            : 'https://app.solomycrm.com/configuracion';
+
+        const portalSession = await stripe.billingPortal.sessions.create({
+            customer: usuario.stripe_customer_id,
+            return_url: returnUrl,
+        });
+
+        console.log(`✅ Portal de facturación generado para: ${usuario.usuario}`);
+        res.json({ url: portalSession.url });
+
+    } catch (error) {
+        if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+            return res.status(401).json({ mensaje: 'Sesión inválida o expirada' });
+        }
+        console.error('❌ Error en /billing-portal:', error);
+        res.status(500).json({ mensaje: 'Error al generar el portal de facturación' });
     }
 });
 
