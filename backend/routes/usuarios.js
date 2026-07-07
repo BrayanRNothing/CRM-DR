@@ -125,7 +125,8 @@ router.get('/all', auth, esAdminUnico, async (req, res) => {
                 u.plan_activo,
                 u.plan_vencimiento,
                 u.stripe_subscription_id,
-                e.nombre AS team_name
+                e.nombre AS team_name,
+                e.owner_id
             FROM usuarios u
             LEFT JOIN equipos e ON e.id = u."equipo_id"
             WHERE u.rol <> 'admin'

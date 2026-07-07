@@ -80,6 +80,30 @@ export default function AdminPanel() {
     return sorted;
   }, [owners, sortBy]);
 
+  const groupedOwners = useMemo(() => {
+    const ownersMap = new Map();
+    const subUsers = [];
+
+    sortedOwners.forEach(user => {
+      if (user.owner_id && user.id !== user.owner_id) {
+        subUsers.push(user);
+      } else {
+        ownersMap.set(user.id, { ...user, subUsers: [] });
+      }
+    });
+
+    subUsers.forEach(sub => {
+      const owner = ownersMap.get(sub.owner_id);
+      if (owner) {
+        owner.subUsers.push(sub);
+      } else {
+        ownersMap.set(sub.id, { ...sub, subUsers: [] });
+      }
+    });
+
+    return Array.from(ownersMap.values());
+  }, [sortedOwners]);
+
   if (!currentUser) {
     return <Navigate to="/" replace />;
   }
@@ -256,7 +280,7 @@ export default function AdminPanel() {
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="text-sm text-slate-600">
-                Usuarios propietarios activos: <span className="font-bold text-slate-900">{owners.filter(o => o.activo).length}</span> de <span className="font-bold text-slate-900">{owners.length}</span>
+                Usuarios propietarios activos: <span className="font-bold text-slate-900">{groupedOwners.filter(o => o.activo).length}</span> de <span className="font-bold text-slate-900">{groupedOwners.length}</span>
               </div>
               <p className="text-xs text-slate-500">
                 Haz click en "usuarios creados" para ver el detalle de cada equipo.
@@ -301,14 +325,15 @@ export default function AdminPanel() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedOwners.map((owner, ownerIndex) => {
+                    {groupedOwners.map((owner, ownerIndex) => {
                       const isEvenRow = ownerIndex % 2 === 0;
                       const baseRowClass = isEvenRow
                         ? 'bg-white hover:bg-slate-50/70'
                         : 'bg-slate-100/70 hover:bg-slate-200/60';
 
                       return (
-                        <tr key={owner.id} className={`border-b border-slate-200 text-slate-800 align-top transition-colors ${baseRowClass} ${!owner.activo ? 'opacity-70 grayscale-[20%]' : ''}`}>
+                        <React.Fragment key={owner.id}>
+                        <tr className={`border-b border-slate-200 text-slate-800 align-top transition-colors ${baseRowClass} ${!owner.activo ? 'opacity-70 grayscale-[20%]' : ''}`}>
                           <td className="py-3 font-semibold">
                             <div className="flex flex-col gap-1">
                               <span>{owner.nombre}</span>
@@ -318,6 +343,15 @@ export default function AdminPanel() {
                                 </span>
                               )}
                               <span className="text-xs text-slate-500 font-normal">Creado: {new Date(owner.fechaCreacion).toLocaleDateString()}</span>
+                              {owner.subUsers.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleOwnerMembers(owner.id)}
+                                  className="mt-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 self-start"
+                                >
+                                  {expandedOwnerId === owner.id ? 'Ocultar usuarios' : `Ver ${owner.subUsers.length} usuarios`}
+                                </button>
+                              )}
                             </div>
                           </td>
                           <td className="py-3">
@@ -409,6 +443,77 @@ export default function AdminPanel() {
                             </div>
                           </td>
                         </tr>
+                        {expandedOwnerId === owner.id && owner.subUsers.map(sub => (
+                          <tr key={sub.id} className="border-b border-slate-100 bg-indigo-50/30 text-slate-800 align-top transition-colors">
+                            <td className="py-3 font-semibold pl-6 border-l-4 border-indigo-400">
+                              <div className="flex flex-col gap-1">
+                                <span className="flex items-center gap-2 text-sm text-indigo-900">
+                                  <Users className="w-3.5 h-3.5 text-indigo-500" />
+                                  {sub.nombre}
+                                </span>
+                                {!sub.activo && (
+                                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 self-start">
+                                    DESACTIVADO
+                                  </span>
+                                )}
+                                <span className="text-xs text-slate-500 font-normal">Creado: {new Date(sub.fechaCreacion).toLocaleDateString()}</span>
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex flex-col gap-1 text-sm">
+                                <span className="font-medium text-slate-700">@{sub.usuario}</span>
+                                <span className="text-slate-500 text-xs">{sub.email || '-'}</span>
+                                <span className="text-slate-500 text-xs">{sub.telefono || '-'}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 text-sm">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-slate-500">Miembro del equipo</span>
+                                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-600 self-start">
+                                  {sub.rol}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex flex-col gap-1 text-sm text-slate-500">
+                                <span className="italic text-xs">Suscripción gestionada por el dueño</span>
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEdit(sub)}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-xs"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" /> Editar
+                                </button>
+                                {sub.activo ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteOwner(sub, false)}
+                                    disabled={deletingId === sub.id}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-60 transition-colors text-xs"
+                                  >
+                                    {deletingId === sub.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} 
+                                    Desactivar
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteOwner(sub, true)}
+                                    disabled={deletingId === sub.id}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 transition-colors shadow-sm text-xs"
+                                  >
+                                    {deletingId === sub.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} 
+                                    Eliminar Permanente
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        </React.Fragment>
                       );
                     })}
                   </tbody>
