@@ -339,8 +339,6 @@ router.post('/register-paid', async (req, res) => {
             return res.status(403).json({ mensaje: 'No autorizado' });
         }
 
-        }
-
         const { usuario, contraseña_hash, contraseña_plana, nombre, email, telefono, plan, stripe_customer_id, stripe_subscription_id } = req.body;
 
         if (!usuario || !contraseña_hash || !nombre || !plan) {
