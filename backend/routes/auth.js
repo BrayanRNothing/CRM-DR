@@ -186,7 +186,7 @@ router.post('/demo-login', async (req, res) => {
         const passwordHash = await bcrypt.hash('demo123', 10);
 
         // Crear usuario
-        const stmt = await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, activo) VALUES (?, ?, ?, ?, TRUE)');
+        const stmt = await db.prepare('INSERT INTO usuarios (usuario, contraseña, rol, nombre, activo) VALUES (?, ?, ?, ?, 1)');
         const result = await stmt.run(usuario, passwordHash, rol, nombre);
         const userId = result.lastInsertRowid;
 
