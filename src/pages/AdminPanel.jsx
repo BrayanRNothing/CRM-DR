@@ -26,7 +26,7 @@ export default function AdminPanel() {
   const [form, setForm] = useState(initialForm);
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [expandedOwnerId, setExpandedOwnerId] = useState(null);
-  const [sortBy, setSortBy] = useState('fecha_desc');
+  const [sortBy, setSortBy] = useState('estado_suscripcion');
 
   const isAdminRoot = currentUser?.rol === 'admin';
 
@@ -55,6 +55,13 @@ export default function AdminPanel() {
   const sortedOwners = useMemo(() => {
     let sorted = [...owners];
     switch (sortBy) {
+      case 'estado_suscripcion':
+        sorted.sort((a, b) => {
+          if (b.activo !== a.activo) return (b.activo ? 1 : 0) - (a.activo ? 1 : 0);
+          if (b.plan_activo !== a.plan_activo) return (b.plan_activo ? 1 : 0) - (a.plan_activo ? 1 : 0);
+          return new Date(b.fechaCreacion || 0) - new Date(a.fechaCreacion || 0);
+        });
+        break;
       case 'fecha_desc':
         sorted.sort((a, b) => new Date(b.fechaCreacion || 0) < new Date(a.fechaCreacion || 0) ? -1 : 1);
         break;
@@ -259,6 +266,7 @@ export default function AdminPanel() {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-slate-300"
               >
+                <option value="estado_suscripcion">Recomendado (Suscripción y Estado)</option>
                 <option value="fecha_desc">Más recientes</option>
                 <option value="suscripcion_activa">Suscripción Activa</option>
                 <option value="estado_activos">Usuarios Activos</option>
