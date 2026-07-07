@@ -390,7 +390,7 @@ router.delete('/team-owners/:id', auth, esAdminUnico, async (req, res) => {
         }
 
         // Soft delete (desactivar)
-        await db.prepare('UPDATE usuarios SET activo = 0, stripe_subscription_id = NULL, plan_activo = 0 WHERE id = ?').run(ownerId);
+        await db.prepare('UPDATE usuarios SET activo = 0, stripe_subscription_id = NULL, plan_activo = FALSE WHERE id = ?').run(ownerId);
 
         if (owner.equipo_id) {
             await db.prepare('UPDATE equipos SET owner_id = NULL WHERE id = ?').run(owner.equipo_id);
