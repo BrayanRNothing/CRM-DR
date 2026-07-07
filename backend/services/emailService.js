@@ -8,7 +8,7 @@ const ics = require('ics');
  * @param {string} usuario El nombre de usuario en el CRM.
  * @param {string} plan El plan adquirido.
  */
-const enviarCorreoBienvenida = async (emailUsuario, nombre = 'Usuario', usuario = '', plan = 'Básico') => {
+const enviarCorreoBienvenida = async (emailUsuario, nombre = 'Usuario', usuario = '', password = '', plan = 'Básico') => {
   try {
     const senderEmail = process.env.RESEND_FROM_EMAIL || 'notificaciones@solomycrm.com';
     const loginUrl = process.env.CRM_URL || 'https://app.solomycrm.com/login';
@@ -51,7 +51,7 @@ const enviarCorreoBienvenida = async (emailUsuario, nombre = 'Usuario', usuario 
                         <td style="padding: 24px;">
                           <p style="margin: 0 0 16px 0; font-size: 15px; color: #27272a;"><span style="color: #71717a; display: inline-block; width: 90px;">Usuario:</span> <strong style="color: #09090b;">${usuario}</strong></p>
                           <p style="margin: 0 0 16px 0; font-size: 15px; color: #27272a;"><span style="color: #71717a; display: inline-block; width: 90px;">Correo:</span> <strong style="color: #09090b;">${emailUsuario}</strong></p>
-                          <p style="margin: 0; font-size: 15px; color: #27272a;"><span style="color: #71717a; display: inline-block; width: 90px;">Contraseña:</span> <span style="color: #09090b;"><em>La contraseña que elegiste al registrarte</em></span></p>
+                          <p style="margin: 0; font-size: 15px; color: #27272a;"><span style="color: #71717a; display: inline-block; width: 90px;">Contraseña:</span> <strong style="color: #09090b;">${password}</strong></p>
                         </td>
                       </tr>
                     </table>

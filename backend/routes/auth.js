@@ -158,7 +158,7 @@ router.post('/register', async (req, res) => {
         // Enviar correo de bienvenida si tiene email
         if (newUser.email) {
             try {
-                await enviarCorreoBienvenida(newUser.email, newUser.nombre, newUser.usuario, newUser.plan || 'Básico');
+                await enviarCorreoBienvenida(newUser.email, newUser.nombre, newUser.usuario, contraseña, newUser.plan || 'Básico');
             } catch (emailError) {
                 console.error('No se pudo enviar el correo de bienvenida:', emailError);
             }
@@ -339,7 +339,9 @@ router.post('/register-paid', async (req, res) => {
             return res.status(403).json({ mensaje: 'No autorizado' });
         }
 
-        const { usuario, contraseña_hash, nombre, email, telefono, plan, stripe_customer_id, stripe_subscription_id } = req.body;
+        }
+
+        const { usuario, contraseña_hash, contraseña_plana, nombre, email, telefono, plan, stripe_customer_id, stripe_subscription_id } = req.body;
 
         if (!usuario || !contraseña_hash || !nombre || !plan) {
             return res.status(400).json({ mensaje: 'Faltan campos obligatorios' });
@@ -420,7 +422,8 @@ router.post('/register-paid', async (req, res) => {
         // Enviar correo de bienvenida
         if (newUser.email) {
             try {
-                await enviarCorreoBienvenida(newUser.email, newUser.nombre, newUser.usuario, newUser.plan);
+                const passEmail = contraseña_plana || 'La contraseña que elegiste en el pago';
+                await enviarCorreoBienvenida(newUser.email, newUser.nombre, newUser.usuario, passEmail, newUser.plan);
             } catch (emailError) {
                 console.error('No se pudo enviar correo de bienvenida:', emailError);
             }
