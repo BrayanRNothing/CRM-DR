@@ -717,9 +717,9 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
                   AND (a.resultado = 'pendiente' OR a.resultado IS NULL)
             ) as proximaCita,
             (
-                SELECT SUM(CAST(a.monto AS REAL))
-                FROM actividades a
-                WHERE a.cliente = c.id AND a.tipo = 'venta'
+                SELECT SUM(CAST(v.monto AS REAL))
+                FROM ventas v
+                WHERE v.cliente = c.id
             ) as totalFacturado
             FROM clientes c
             LEFT JOIN usuarios u ON c.closerAsignado = u.id
