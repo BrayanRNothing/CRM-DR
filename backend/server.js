@@ -162,6 +162,41 @@ io.on('connection', (socket) => {
     });
 });
 
+// ✅ LIMPIEZA DE CUENTAS DEMO (Cada 1 hora)
+const cleanDemoAccounts = async () => {
+    try {
+        const { db } = require('./config/database');
+        const demoUsers = await db.prepare("SELECT id, usuario, fechaCreacion FROM usuarios WHERE usuario LIKE 'demo_%'").all();
+        
+        const ahora = Date.now();
+        const maxAgeMs = 24 * 60 * 60 * 1000; // 24 horas
+
+        for (const user of demoUsers) {
+            const userDate = new Date(user.fechaCreacion).getTime();
+            if (ahora - userDate > maxAgeMs || !user.fechaCreacion) {
+                console.log(`🧹 Limpiando cuenta demo expirada: ${user.usuario} (ID: ${user.id})`);
+                
+                // Borrar dependencias primero para evitar fallos de Foreign Key
+                await db.prepare('DELETE FROM actividades WHERE vendedor = ?').run(user.id);
+                await db.prepare('DELETE FROM tareas WHERE vendedor_id = ?').run(user.id);
+                await db.prepare('DELETE FROM ventas WHERE vendedor = ?').run(user.id);
+                await db.prepare('DELETE FROM clientes WHERE "propietarioId" = ? OR vendedorAsignado = ?').run(user.id, user.id);
+                await db.prepare('DELETE FROM equipos WHERE owner_id = ?').run(user.id);
+                
+                // Finalmente borrar al usuario
+                await db.prepare('DELETE FROM usuarios WHERE id = ?').run(user.id);
+                console.log(`✅ Cuenta demo ${user.usuario} eliminada completamente.`);
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error en el cron de limpieza de cuentas demo:', error);
+    }
+};
+
+// Iniciar el cron job
+setInterval(cleanDemoAccounts, 60 * 60 * 1000); // Se ejecuta cada 1 hora
+// cleanDemoAccounts(); // Descomentar para probar inmediatamente al iniciar
+
 // Graceful shutdown
 process.on('SIGTERM', () => {
     console.log('📴 Recibido SIGTERM, cerrando servidor...');

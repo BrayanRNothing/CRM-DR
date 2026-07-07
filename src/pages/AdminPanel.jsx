@@ -32,14 +32,14 @@ export default function AdminPanel() {
   const fetchOwners = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/usuarios/team-owners`, {
+      const res = await fetch(`${API_URL}/api/usuarios/all`, {
         headers: { 'x-auth-token': token }
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.mensaje || 'No se pudo cargar propietarios de equipo');
+      if (!res.ok) throw new Error(data.mensaje || 'No se pudieron cargar los usuarios');
       setOwners(Array.isArray(data) ? data : []);
     } catch (error) {
-      toast.error(error.message || 'Error al cargar propietarios de equipo');
+      toast.error(error.message || 'Error al cargar usuarios');
     } finally {
       setLoading(false);
     }
@@ -245,112 +245,102 @@ export default function AdminPanel() {
                 <table className="w-full min-w-[620px] text-sm border-collapse">
                   <thead>
                     <tr className="text-left text-slate-500 border-b border-slate-100">
-                      <th className="py-2">Nombre</th>
-                      <th className="py-2">Usuario</th>
-                      <th className="py-2">Equipo</th>
-                      <th className="py-2">Email</th>
-                      <th className="py-2">Teléfono</th>
-                      <th className="py-2 text-right">Acciones</th>
+                      <th className="py-2 text-left font-black uppercase tracking-[0.16em] text-[10px] text-slate-500 w-1/4">Usuario</th>
+                      <th className="py-2 text-left font-black uppercase tracking-[0.16em] text-[10px] text-slate-500">Credenciales</th>
+                      <th className="py-2 text-left font-black uppercase tracking-[0.16em] text-[10px] text-slate-500">Equipo</th>
+                      <th className="py-2 text-left font-black uppercase tracking-[0.16em] text-[10px] text-slate-500">Suscripción</th>
+                      <th className="py-2 text-right font-black uppercase tracking-[0.16em] text-[10px] text-slate-500">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {owners.map((owner, ownerIndex) => {
-                      const miembros = Array.isArray(owner.miembros) ? owner.miembros : [];
-                      const isExpanded = String(expandedOwnerId) === String(owner.id);
                       const isEvenRow = ownerIndex % 2 === 0;
                       const baseRowClass = isEvenRow
                         ? 'bg-white hover:bg-slate-50/70'
                         : 'bg-slate-100/70 hover:bg-slate-200/60';
-                      const expandedRowClass = isEvenRow
-                        ? 'bg-slate-100/80 border-b border-slate-200'
-                        : 'bg-slate-200/70 border-b border-slate-300/70';
 
                       return (
-                        <React.Fragment key={owner.id}>
-                          <tr className={`border-b border-slate-200 text-slate-800 align-top transition-colors ${baseRowClass}`}>
-                            <td className="py-3 font-semibold">
-                              <div className="flex flex-col gap-2">
-                                <span>{owner.nombre}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleOwnerMembers(owner.id)}
-                                  className="self-start inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-200 transition-colors"
-                                >
-                                  <Users className="w-3 h-3" />
-                                  {miembros.length} usuarios creados
-                                </button>
+                        <tr key={owner.id} className={`border-b border-slate-200 text-slate-800 align-top transition-colors ${baseRowClass}`}>
+                          <td className="py-3 font-semibold">
+                            <div className="flex flex-col gap-1">
+                              <span>{owner.nombre}</span>
+                              <span className="text-xs text-slate-500 font-normal">Creado: {new Date(owner.fechaCreacion).toLocaleDateString()}</span>
+                            </div>
+                          </td>
+                          <td className="py-3">
+                            <div className="flex flex-col gap-1 text-sm">
+                              <span className="font-medium text-slate-700">@{owner.usuario}</span>
+                              <span className="text-slate-500 text-xs">{owner.email || '-'}</span>
+                              <span className="text-slate-500 text-xs">{owner.telefono || '-'}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 text-sm">
+                            <div className="flex flex-col gap-1">
+                              <span>{owner.team_name || '-'}</span>
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-600 self-start">
+                                {owner.rol}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3">
+                            <div className="flex flex-col gap-1 text-sm">
+                              <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${owner.plan_activo ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                                <span className="font-medium capitalize">{owner.plan || 'Básico'}</span>
                               </div>
-                            </td>
-                            <td className="py-3">{owner.usuario}</td>
-                            <td className="py-3">{owner.equipo?.nombre || '-'}</td>
-                            <td className="py-3">{owner.email || '-'}</td>
-                            <td className="py-3">{owner.telefono || '-'}</td>
-                            <td className="py-3">
-                              <div className="flex items-center justify-end gap-2">
+                              {owner.plan_vencimiento ? (
+                                <span className="text-xs text-slate-500">Vence: {new Date(owner.plan_vencimiento).toLocaleDateString()}</span>
+                              ) : (
+                                <span className="text-xs text-slate-500">Sin vencimiento</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3">
+                            <div className="flex items-center justify-end gap-2">
+                              {!owner.plan_activo && (
                                 <button
                                   type="button"
-                                  onClick={() => handleStartEdit(owner)}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                                  onClick={async () => {
+                                    if (window.confirm('¿Activar acceso gratuito indefinido a este usuario?')) {
+                                      try {
+                                        const res = await fetch(`${API_URL}/api/usuarios/${owner.id}/activate-plan`, {
+                                          method: 'POST',
+                                          headers: { 'x-auth-token': token }
+                                        });
+                                        if (res.ok) {
+                                          toast.success('Suscripción activada');
+                                          fetchOwners();
+                                        } else {
+                                          toast.error('Error al activar');
+                                        }
+                                      } catch (err) {
+                                        toast.error('Error de red al activar');
+                                      }
+                                    }
+                                  }}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors font-medium text-sm"
                                 >
-                                  <Pencil className="w-3.5 h-3.5" /> Editar
+                                  Activar Gratis
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteOwner(owner)}
-                                  disabled={deletingId === owner.id}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60 transition-colors"
-                                >
-                                  {deletingId === owner.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Eliminar
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                          {isExpanded && (
-                            <tr className={expandedRowClass}>
-                              <td colSpan="6" className="py-4 px-4">
-                                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                                  <div className="flex items-center justify-between gap-3 mb-3">
-                                    <div>
-                                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Usuarios creados por este usuario</p>
-                                      <h3 className="text-sm font-black text-slate-900">{owner.nombre}</h3>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => toggleOwnerMembers(owner.id)}
-                                      className="text-xs font-bold text-slate-500 hover:text-slate-900"
-                                    >
-                                      Ocultar
-                                    </button>
-                                  </div>
-
-                                  {miembros.length === 0 ? (
-                                    <div className="text-sm text-slate-500">Este usuario aún no tiene usuarios creados en su equipo.</div>
-                                  ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                                      {miembros.map((miembro) => (
-                                        <div key={miembro.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                          <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                              <p className="font-bold text-slate-900 leading-tight">{miembro.nombre}</p>
-                                              <p className="text-xs text-slate-500">@{miembro.usuario}</p>
-                                            </div>
-                                            <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white">
-                                              {miembro.rol}
-                                            </span>
-                                          </div>
-                                          <div className="mt-3 space-y-1 text-xs text-slate-600">
-                                            <div>Email: {miembro.email || '-'}</div>
-                                            <div>Teléfono: {miembro.telefono || '-'}</div>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleStartEdit(owner)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                              >
+                                <Pencil className="w-3.5 h-3.5" /> Editar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteOwner(owner)}
+                                disabled={deletingId === owner.id}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60 transition-colors"
+                              >
+                                {deletingId === owner.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} Eliminar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
                       );
                     })}
                   </tbody>

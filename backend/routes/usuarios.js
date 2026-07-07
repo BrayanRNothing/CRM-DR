@@ -106,6 +106,61 @@ router.get('/team-owners', auth, esAdminUnico, async (req, res) => {
     }
 });
 
+// @route   GET api/usuarios/all
+// @desc    Listar todos los usuarios y suscripciones (Para Admin Root)
+// @access  Private (Admins root)
+router.get('/all', auth, esAdminUnico, async (req, res) => {
+    try {
+        const rows = await db.prepare(
+            `SELECT 
+                u.id, 
+                u.usuario, 
+                u.nombre, 
+                u.rol, 
+                u.email, 
+                u.telefono, 
+                u.activo,
+                u.fechaCreacion,
+                u.plan,
+                u.plan_activo,
+                u.plan_vencimiento,
+                u.stripe_subscription_id,
+                e.nombre AS team_name
+            FROM usuarios u
+            LEFT JOIN equipos e ON e.id = u."equipo_id"
+            WHERE u.rol <> 'admin'
+            ORDER BY u.fechaCreacion DESC`
+        ).all();
+
+        res.json(rows);
+    } catch (error) {
+        console.error('Error en GET /api/usuarios/all:', error);
+        res.status(500).json({ mensaje: 'Error del servidor al obtener usuarios' });
+    }
+});
+
+// @route   POST api/usuarios/:id/activate-plan
+// @desc    Activa la suscripción de un usuario gratis
+// @access  Private (Admins root)
+router.post('/:id/activate-plan', auth, esAdminUnico, async (req, res) => {
+    try {
+        const userId = req.params.id;
+        
+        // Asignamos un plan_vencimiento alto o simplemente dejamos activo en 1.
+        // auth.js middleware usa plan_activo = 1 para dar paso libre.
+        await db.prepare(`
+            UPDATE usuarios 
+            SET plan_activo = 1, plan_vencimiento = NULL, plan = 'premium_gratis' 
+            WHERE id = ?
+        `).run(userId);
+
+        res.json({ mensaje: 'Suscripción activada gratuitamente con éxito' });
+    } catch (error) {
+        console.error('Error en POST /api/usuarios/:id/activate-plan:', error);
+        res.status(500).json({ mensaje: 'Error del servidor al activar plan' });
+    }
+});
+
 // @route   POST api/usuarios/team-owners
 // @desc    Crear un propietario de equipo (usuario + equipo propio)
 // @access  Private (Admins root)
