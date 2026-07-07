@@ -197,12 +197,13 @@ const MainLayout = () => {
                                     btn.innerText = 'Cargando...';
                                     btn.disabled = true;
                                     try {
-                                        const res = await fetch(`${API_URL}/api/auth/billing-portal`, {
+                                        const res = await fetch(`${API_URL}/api/auth/create-renewal-checkout`, {
                                             method: 'POST',
                                             headers: {
                                                 'Content-Type': 'application/json',
                                                 'x-auth-token': getToken(),
                                             },
+                                            body: JSON.stringify({ plan: 'mensual' }) // O el plan que deseen
                                         });
                                         const data = await res.json();
                                         if (res.ok && data.url) {

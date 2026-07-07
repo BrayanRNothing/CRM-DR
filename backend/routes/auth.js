@@ -339,7 +339,20 @@ router.post('/register-paid', async (req, res) => {
             return res.status(403).json({ mensaje: 'No autorizado' });
         }
 
-        const { usuario, contraseña_hash, contraseña_plana, nombre, email, telefono, plan, stripe_customer_id, stripe_subscription_id } = req.body;
+        const { usuario, contraseña_hash, contraseña_plana, nombre, email, telefono, plan, stripe_customer_id, stripe_subscription_id, is_renewal } = req.body;
+
+        if (is_renewal) {
+            if (!usuario || !plan) return res.status(400).json({ mensaje: 'Faltan campos para renovación' });
+            const existingUser = await db.prepare('SELECT id FROM usuarios WHERE LOWER(usuario) = LOWER(?)').get(usuario.trim());
+            if (!existingUser) return res.status(404).json({ mensaje: 'Usuario no encontrado para renovar' });
+
+            // El plan vuelve a estar activo. Stripe enviará el plan_vencimiento más tarde vía el webhook customer.subscription.updated
+            // Pero por ahora lo marcamos como activo.
+            await db.prepare('UPDATE usuarios SET plan = ?, plan_activo = 1, stripe_customer_id = ?, stripe_subscription_id = ? WHERE id = ?').run(
+                plan, stripe_customer_id, stripe_subscription_id, existingUser.id
+            );
+            return res.json({ mensaje: 'Renovación procesada' });
+        }
 
         if (!usuario || !contraseña_hash || !nombre || !plan) {
             return res.status(400).json({ mensaje: 'Faltan campos obligatorios' });
@@ -632,5 +645,80 @@ router.post('/billing-portal', async (req, res) => {
     }
 });
 
-module.exports = router;
+// @route   POST api/auth/create-renewal-checkout
+// @desc    Genera una sesión de Checkout de Stripe para reactivar una suscripción expirada
+// @access  Private (requiere JWT)
+router.post('/create-renewal-checkout', async (req, res) => {
+    try {
+        const jwt = require('jsonwebtoken');
+        const token = req.header('x-auth-token') || req.header('Authorization')?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ mensaje: 'No autenticado' });
+        }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
 
+        const usuario = await db.prepare(
+            'SELECT id, usuario, email, plan, stripe_customer_id FROM usuarios WHERE id = ?'
+        ).get(decoded.id);
+
+        if (!usuario) {
+            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+        }
+
+        const Stripe = require('stripe');
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+        // Precios por defecto si no mandan uno
+        const PLAN_PRICES = {
+            'mensual': 'price_1QxI6cK320aTnsf99S0Qo211',
+            'mensual_equipo': 'price_1QxIBhK320aTnsf9W5H0G7eN',
+            'anual': 'price_1QxICjK320aTnsf9L3G2uH65',
+        };
+
+        const planDeseado = req.body.plan || usuario.plan || 'mensual';
+        const priceId = PLAN_PRICES[planDeseado];
+
+        if (!priceId) {
+            return res.status(400).json({ mensaje: 'Plan no válido' });
+        }
+
+        const returnUrl = process.env.CRM_URL || 'https://app.solomycrm.com';
+
+        // Opciones del checkout
+        const sessionConfig = {
+            payment_method_types: ['card'],
+            mode: 'subscription',
+            line_items: [{ price: priceId, quantity: 1 }],
+            success_url: `${returnUrl}/vendedor`,
+            cancel_url: `${returnUrl}/vendedor`,
+            locale: 'es',
+            metadata: {
+                usuario: usuario.usuario,
+                email: usuario.email,
+                plan: planDeseado,
+                is_renewal: "true"
+            }
+        };
+
+        // Si tiene un customer en Stripe, usamos ese mismo para no duplicar
+        if (usuario.stripe_customer_id) {
+            sessionConfig.customer = usuario.stripe_customer_id;
+        } else {
+            sessionConfig.customer_email = usuario.email;
+        }
+
+        const session = await stripe.checkout.sessions.create(sessionConfig);
+
+        console.log(`✅ Checkout de reactivación generado para: ${usuario.usuario}`);
+        res.json({ url: session.url });
+
+    } catch (error) {
+        if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+            return res.status(401).json({ mensaje: 'Sesión inválida o expirada' });
+        }
+        console.error('❌ Error en /create-renewal-checkout:', error);
+        res.status(500).json({ mensaje: 'Error del servidor al crear checkout' });
+    }
+});
+
+module.exports = router;
