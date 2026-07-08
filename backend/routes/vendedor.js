@@ -153,7 +153,7 @@ router.get('/dashboard', [auth, esVendedor], async (req, res) => {
         // Ejecutar las 3 en PARALELO con Promise.all
         const [clientes, actMetrics, fuentesRaw] = await Promise.all([
             db.prepare(`
-                SELECT id, "etapaEmbudo", "closerAsignado", "historialEmbudo", "fechaRegistro", "fechaUltimaEtapa"
+                SELECT id, "etapaEmbudo", "closerAsignado", "historialEmbudo", "fechaRegistro", "fechaUltimaEtapa", tipo
                 FROM clientes
                 WHERE "prospectorAsignado" = ? OR id IN (SELECT cliente FROM actividades WHERE vendedor = ?)
             `).all(prospectorId, prospectorId),
@@ -190,6 +190,7 @@ router.get('/dashboard', [auth, esVendedor], async (req, res) => {
         // Embudo histórico unificado
         const embudo = { 
             total: clientes.length, 
+            prospectos_activos: clientes.filter(c => c.tipo !== 'cliente').length,
             prospecto_nuevo: clientes.length, 
             en_contacto: 0, 
             reunion_agendada: 0, 
@@ -2984,6 +2985,7 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
 
         const embudo = {
             total: clientes.length,
+            prospectos_activos: clientes.filter(c => c.tipo !== 'cliente').length,
             reunion_agendada: clientes.length, // Todo cliente asignado pasa por agendada
             reunion_realizada: 0,
             propuesta_enviada: 0,

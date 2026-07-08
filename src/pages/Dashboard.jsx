@@ -544,6 +544,7 @@ const Dashboard = () => {
     const formatNumber = new Intl.NumberFormat('es-MX');
 
     const totalEntrada = vendedorData.embudo.total || 0;
+    const prospectosActivos = vendedorData.embudo.prospectos_activos !== undefined ? vendedorData.embudo.prospectos_activos : totalEntrada;
     const enContacto = vendedorData.embudo.en_contacto || 0;
     const sinContactar = Math.max(0, totalEntrada - enContacto);
     // Para negociación usamos reuniones agendadas o realizadas, dependiendo de qué se prefiera mostrar en el funnel.
@@ -580,7 +581,7 @@ const Dashboard = () => {
     mergeFuentes(closerData?.analisisFuentes);
 
     const cardsResumen = [
-        { title: 'Prospectos activos', value: formatNumber.format(totalEntrada), icon: '👥', color: 'blue', subtext: `${mP.prospectos || 0} recibidos ${periodoSuffix}` },
+        { title: 'Prospectos activos', value: formatNumber.format(prospectosActivos), icon: '👥', color: 'blue', subtext: `${mP.prospectos || 0} recibidos ${periodoSuffix}` },
         { title: 'En contacto', value: formatNumber.format(enContacto), icon: '📞', color: 'green', subtext: `${sinContactar} todavía sin tocar` },
         { title: 'En negociación', value: formatNumber.format(negociacion), icon: '🤝', color: 'purple', subtext: `${closerData.metricas.reuniones.realizadasHoy || 0} citas realizadas hoy` },
         { title: 'Ventas ganadas', value: formatNumber.format(ganadas), icon: '🏆', color: 'yellow', subtext: `${formatPercent(tasaGlobal)} de conversión global` }
@@ -779,7 +780,7 @@ const Dashboard = () => {
                                                 <div className="bg-(--theme-50) border border-(--theme-100) rounded-xl p-4 flex items-center justify-between">
                                                     <div>
                                                         <p className="text-[10px] text-(--theme-600) font-black uppercase tracking-widest">Prospectos Totales</p>
-                                                        <h4 className="text-2xl font-black text-(--theme-700)">{totalEntrada}</h4>
+                                                        <h4 className="text-2xl font-black text-(--theme-700)">{prospectosActivos}</h4>
                                                     </div>
                                                     <div className="w-10 h-10 bg-(--theme-100) text-(--theme-600) rounded-full flex items-center justify-center">
                                                         <Users className="w-5 h-5" />
@@ -799,7 +800,7 @@ const Dashboard = () => {
                                         <div className="grid grid-cols-2 gap-3 auto-rows-fr">
                                             <MetricKPICard
                                                 title="Prospectos Totales"
-                                                value={totalEntrada}
+                                                value={prospectosActivos}
                                                 format="number"
                                                 icon={<Users className="w-5 h-5" />}
                                                 detail={`Histórico de leads`}
