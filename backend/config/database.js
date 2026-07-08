@@ -663,6 +663,44 @@ const initDb = async () => {
     }
 
     // ================================================================
+    // MIGRACIÓN DE DATOS: Índices para mejorar rendimiento
+    // ================================================================
+    try {
+      await internalDb.query(`
+        CREATE INDEX IF NOT EXISTS idx_clientes_propietario ON clientes ("propietarioId");
+        CREATE INDEX IF NOT EXISTS idx_clientes_equipo ON clientes ("equipo_id");
+        CREATE INDEX IF NOT EXISTS idx_clientes_etapa ON clientes ("etapaEmbudo");
+        CREATE INDEX IF NOT EXISTS idx_clientes_tipo ON clientes (tipo);
+        CREATE INDEX IF NOT EXISTS idx_clientes_email ON clientes (correo);
+        CREATE INDEX IF NOT EXISTS idx_clientes_telefono ON clientes (telefono);
+        CREATE INDEX IF NOT EXISTS idx_actividades_cliente ON actividades (cliente);
+        CREATE INDEX IF NOT EXISTS idx_tareas_cliente ON tareas (cliente);
+      `);
+      console.log('✅ Índices de Postgres creados/verificados');
+    } catch (e) {
+      console.error('⚠️ Migración de índices falló:', e.message);
+    }
+
+    // ================================================================
+    // MIGRACIÓN DE DATOS: Índices para mejorar rendimiento
+    // ================================================================
+    try {
+      await internalDb.query(`
+        CREATE INDEX IF NOT EXISTS idx_clientes_propietario ON clientes ("propietarioId");
+        CREATE INDEX IF NOT EXISTS idx_clientes_equipo ON clientes ("equipo_id");
+        CREATE INDEX IF NOT EXISTS idx_clientes_etapa ON clientes ("etapaEmbudo");
+        CREATE INDEX IF NOT EXISTS idx_clientes_tipo ON clientes (tipo);
+        CREATE INDEX IF NOT EXISTS idx_clientes_email ON clientes (correo);
+        CREATE INDEX IF NOT EXISTS idx_clientes_telefono ON clientes (telefono);
+        CREATE INDEX IF NOT EXISTS idx_actividades_cliente ON actividades (cliente);
+        CREATE INDEX IF NOT EXISTS idx_tareas_cliente ON tareas (cliente);
+      `);
+      console.log('✅ Índices de Postgres creados/verificados');
+    } catch (e) {
+      console.error('⚠️ Migración de índices falló:', e.message);
+    }
+
+    // ================================================================
     // MIGRACIÓN DE DATOS: Sistema de Equipos (idempotente)
     // Crea un equipo personal por cada usuario que no tenga equipo_id
     // ================================================================
@@ -808,6 +846,25 @@ const initDb = async () => {
       `).run();
       internalDb.prepare(`UPDATE clientes SET compartido = 0 WHERE compartido IS NULL`).run();
     } catch (e) { /* ignorar */ }
+
+    // ================================================================
+    // MIGRACIÓN DE DATOS: Índices para mejorar rendimiento (SQLite)
+    // ================================================================
+    try {
+      internalDb.exec(`
+        CREATE INDEX IF NOT EXISTS idx_clientes_propietario ON clientes (propietarioId);
+        CREATE INDEX IF NOT EXISTS idx_clientes_equipo ON clientes (equipo_id);
+        CREATE INDEX IF NOT EXISTS idx_clientes_etapa ON clientes (etapaEmbudo);
+        CREATE INDEX IF NOT EXISTS idx_clientes_tipo ON clientes (tipo);
+        CREATE INDEX IF NOT EXISTS idx_clientes_email ON clientes (correo);
+        CREATE INDEX IF NOT EXISTS idx_clientes_telefono ON clientes (telefono);
+        CREATE INDEX IF NOT EXISTS idx_actividades_cliente ON actividades (cliente);
+        CREATE INDEX IF NOT EXISTS idx_tareas_cliente ON tareas (cliente);
+      `);
+      console.log('✅ Índices de SQLite creados/verificados');
+    } catch (e) {
+      console.error('⚠️ Migración de índices falló:', e.message);
+    }
   }
 
   // MIGRACIÓN POSTGRESQL PARA EL NUEVO ROL (vendedor)

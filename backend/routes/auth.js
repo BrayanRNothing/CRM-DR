@@ -5,13 +5,23 @@ const bcrypt = require('bcryptjs');
 const { db } = require('../config/database');
 const { auth } = require('../middleware/auth');
 const { enviarCorreoBienvenida } = require('../services/emailService');
+const rateLimit = require('express-rate-limit');
 
 const ROLES_PERMITIDOS = ['vendedor'];
+
+// Rate Limiter para el login: Máximo 5 intentos por IP en 15 minutos
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 5, // Limita cada IP a 5 peticiones por ventana de tiempo
+    message: { mensaje: 'Demasiados intentos de inicio de sesión. Por favor, inténtelo de nuevo después de 15 minutos.' },
+    standardHeaders: true, // Retorna rate limit info en los headers `RateLimit-*`
+    legacyHeaders: false, // Deshabilita los headers `X-RateLimit-*`
+});
 
 // @route   POST api/auth/login
 // @desc    Autenticar usuario y obtener token
 // @access  Public
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
     try {
         console.log('--- INICIO INTENTO DE LOGIN ---');
         console.log('Body recibido (sin contraseña):', { ...req.body, contraseña: '***' });

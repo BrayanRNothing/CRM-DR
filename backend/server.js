@@ -46,6 +46,10 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ✅ Global XSS Middleware (Prevención de Inyecciones)
+const xssMiddleware = require('./middleware/xss');
+app.use(xssMiddleware);
+
 // ✅ LOGGER (Para ver qué endpoints se llaman, con qué código responden y el tiempo)
 // Esto NO loguea contraseñas ni tokens, solo la ruta y el estado, por lo que es 100% seguro.
 app.use((req, res, next) => {
