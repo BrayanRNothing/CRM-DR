@@ -200,19 +200,17 @@ export default function VendedorAjustes() {
 
     const handleManageSubscription = async () => {
         setLoadingPortal(true);
-        const endpoint = user?.plan_activo ? '/api/auth/billing-portal' : '/api/auth/create-renewal-checkout';
-        const loadingMsg = user?.plan_activo ? 'Abriendo portal de clientes...' : 'Abriendo pasarela de pago...';
-        const tid = toast.loading(loadingMsg);
-        
+        const tid = toast.loading('Abriendo portal de clientes...');
         try {
             const token = getToken();
-            const res = await fetch(`${API_URL}${endpoint}`, {
+
+            // Siempre intentar primero el portal de clientes (para gestionar/cancelar)
+            const res = await fetch(`${API_URL}/api/auth/billing-portal`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'x-auth-token': token,
                 },
-                body: JSON.stringify({ plan: user?.plan || 'mensual' })
             });
 
             const data = await res.json();
@@ -220,8 +218,12 @@ export default function VendedorAjustes() {
             if (res.ok && data.url) {
                 toast.success('Redirigiendo...', { id: tid });
                 window.location.href = data.url;
-            } else if (data.code === 'NO_STRIPE_CUSTOMER') {
-                // Fallback to renewal checkout if they don't have a Stripe customer id yet
+                return;
+            }
+
+            // Solo si NO tiene stripe_customer_id, redirigir a checkout de pago
+            if (data.code === 'NO_STRIPE_CUSTOMER') {
+                toast.loading('Abriendo pasarela de pago...', { id: tid });
                 const res2 = await fetch(`${API_URL}/api/auth/create-renewal-checkout`, {
                     method: 'POST',
                     headers: {
