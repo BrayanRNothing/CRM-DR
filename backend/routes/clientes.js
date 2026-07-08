@@ -8,6 +8,15 @@ const { invalidateUserCache } = require('../lib/cache');
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
 const normalizePhone = (value) => String(value || '').replace(/\D/g, '');
 
+// Parser seguro para campos JSON — previene que el servidor crashee con datos corruptos en BD
+const parseJsonSeguro = (value) => {
+    if (!value) return [];
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+};
+
 const getOwnerId = (cliente) => parseInt(
     cliente?.propietarioId ?? cliente?.prospectorAsignado ?? cliente?.vendedorAsignado ?? 0,
     10
@@ -15,14 +24,18 @@ const getOwnerId = (cliente) => parseInt(
 
 const isShared = (cliente) => cliente?.compartido === true || cliente?.compartido === 1 || cliente?.compartido === '1';
 
-const canReadCliente = (cliente, usuarioId, equipoId) => {
+const canReadCliente = (cliente, usuarioId, equipoId, rol) => {
+    if (rol === 'admin') return true;
     if (getOwnerId(cliente) === usuarioId) return true;
     if (!isShared(cliente)) return false;
     if (!equipoId || !cliente?.equipo_id) return false;
     return String(cliente.equipo_id) === String(equipoId);
 };
 
-const canWriteCliente = (cliente, usuarioId) => getOwnerId(cliente) === usuarioId;
+const canWriteCliente = (cliente, usuarioId, rol) => {
+    if (rol === 'admin') return true;
+    return getOwnerId(cliente) === usuarioId;
+};
 
 router.get('/', auth, esSuperUser, async (req, res) => {
     try {
@@ -31,11 +44,18 @@ router.get('/', auth, esSuperUser, async (req, res) => {
         let sql = 'SELECT c.*, u.nombre as vendedorNombre FROM clientes c JOIN usuarios u ON c.vendedorAsignado = u.id WHERE 1=1';
         const params = [];
 
-        // Filtrar por equipo
-        if (equipoId) {
-            sql += ' AND c."equipo_id" = ?';
-            params.push(equipoId);
+        // Filtrar por equipo y rol
+        if (req.usuario.rol === 'admin') {
+            if (equipoId) {
+                sql += ' AND c."equipo_id" = ?';
+                params.push(equipoId);
+            }
+        } else {
+            // Vendedor solo puede ver los suyos o compartidos de su equipo
+            sql += ' AND (c.vendedorAsignado = ? OR c.prospectorAsignado = ? OR c.closerAsignado = ? OR c."propietarioId" = ? OR (c.compartido = true AND c."equipo_id" = ?))';
+            params.push(req.usuario.id, req.usuario.id, req.usuario.id, req.usuario.id, equipoId);
         }
+        
         if (estado) {
             sql += ' AND c.estado = ?';
             params.push(estado);
@@ -69,9 +89,15 @@ router.get('/duplicados', auth, esSuperUser, async (req, res) => {
         let sql = 'SELECT id, nombres, apellidoPaterno, telefono, correo, empresa, estado, "equipo_id" FROM clientes WHERE 1=1';
         const params = [];
 
-        if (equipoId) {
-            sql += ' AND "equipo_id" = ?';
-            params.push(equipoId);
+        if (req.usuario.rol === 'admin') {
+            if (equipoId) {
+                sql += ' AND "equipo_id" = ?';
+                params.push(equipoId);
+            }
+        } else {
+            // Vendedor solo puede ver los suyos o compartidos de su equipo
+            sql += ' AND (vendedorAsignado = ? OR prospectorAsignado = ? OR closerAsignado = ? OR "propietarioId" = ? OR (compartido = true AND "equipo_id" = ?))';
+            params.push(req.usuario.id, req.usuario.id, req.usuario.id, req.usuario.id, equipoId);
         }
 
         const clientes = await db.prepare(sql).all(...params);
@@ -243,7 +269,7 @@ router.get('/:id', auth, esSuperUser, async (req, res) => {
         }
 
         const usuarioId = parseInt(req.usuario.id, 10);
-        if (!canReadCliente(row, usuarioId, req.usuario.equipo_id)) {
+        if (!canReadCliente(row, usuarioId, req.usuario.equipo_id, req.usuario.rol)) {
             return res.status(403).json({ mensaje: 'No tiene permiso para ver este cliente' });
         }
         const { vendedorNombre, ...c } = row;
@@ -316,8 +342,8 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
         const c = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(parseInt(req.params.id));
         if (!c) return res.status(404).json({ mensaje: 'Cliente no encontrado' });
         const usuarioId = parseInt(req.usuario.id, 10);
-        if (!canWriteCliente(c, usuarioId)) {
-            return res.status(403).json({ mensaje: 'Solo el propietario puede editar este cliente' });
+        if (!canWriteCliente(c, usuarioId, req.usuario.rol)) {
+            return res.status(403).json({ mensaje: 'No tiene permiso para editar este cliente' });
         }
 
         const { nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, notas, vendedorAsignado, etapaEmbudo, customSections, fuente, etiquetas, etapaCliente } = req.body;
@@ -352,7 +378,7 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
             updates.push('fechaUltimaEtapa = ?');
             params.push(now);
 
-            const hist = c.historialEmbudo ? JSON.parse(c.historialEmbudo) : [];
+            const hist = parseJsonSeguro(c.historialEmbudo);
             hist.push({
                 etapa: etapaEmbudo,
                 fecha: now,
@@ -417,7 +443,7 @@ router.delete('/:id', auth, esSuperUser, async (req, res) => {
         if (!existe) return res.status(404).json({ mensaje: 'Cliente no encontrado' });
 
         const cliente = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(clienteId);
-        if (!canWriteCliente(cliente, parseInt(req.usuario.id, 10))) {
+        if (!canWriteCliente(cliente, parseInt(req.usuario.id, 10), req.usuario.rol)) {
             return res.status(403).json({ mensaje: 'Solo el propietario puede eliminar este cliente' });
         }
 
@@ -443,11 +469,11 @@ router.patch('/:id/etapa', auth, esSuperUser, async (req, res) => {
         if (!etapaNueva) return res.status(400).json({ mensaje: 'etapaNueva requerida' });
         const c = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(parseInt(req.params.id));
         if (!c) return res.status(404).json({ mensaje: 'Cliente no encontrado' });
-        if (!canWriteCliente(c, parseInt(req.usuario.id, 10))) {
-            return res.status(403).json({ mensaje: 'Solo el propietario puede cambiar la etapa' });
+        if (!canWriteCliente(c, parseInt(req.usuario.id, 10), req.usuario.rol)) {
+            return res.status(403).json({ mensaje: 'No tiene permiso para cambiar la etapa de este cliente' });
         }
         const now = new Date().toISOString();
-        const hist = c.historialEmbudo ? JSON.parse(c.historialEmbudo) : [];
+        const hist = parseJsonSeguro(c.historialEmbudo);
         hist.push({ etapa: etapaNueva, fecha: now, vendedor: parseInt(req.usuario.id) });
         // Pilar 1: sincronizar tipo y estado al cambiar etapa
         const CLIENT_STAGES_PATCH = ['venta_ganada','cotizacion_realizada','contrato_firmado','esperando_pago','cliente_activo'];

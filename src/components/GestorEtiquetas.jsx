@@ -69,11 +69,15 @@ export default function GestorEtiquetas({ clienteEtiquetas = '[]', onEtiquetasCh
             await axios.delete(`${API_URL}/api/vendedor/etiquetas/${id}`, {
                 headers: { 'x-auth-token': getToken() }
             });
-            setGlobalTags(globalTags.filter(t => t.id !== id));
-            
             const tagToDelete = globalTags.find(t => t.id === id);
+            setGlobalTags(prev => prev.filter(t => t.id !== id));
+            
+            // ✅ FIX: Si la etiqueta eliminada estaba seleccionada, quitarla directamente
+            // del estado sin pasar por handleToggleTag (que leería el estado viejo).
             if (tagToDelete && selectedTags.includes(tagToDelete.nombre)) {
-                handleToggleTag(tagToDelete.nombre);
+                const newSelected = selectedTags.filter(t => t !== tagToDelete.nombre);
+                setSelectedTags(newSelected);
+                onEtiquetasChange(newSelected); // Persistir el cambio en el servidor
             }
             toast.success('Etiqueta eliminada');
         } catch (error) {

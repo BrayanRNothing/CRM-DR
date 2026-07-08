@@ -169,7 +169,7 @@ const cleanDemoAccounts = async () => {
         const demoUsers = await db.prepare("SELECT id, usuario, fechaCreacion FROM usuarios WHERE usuario LIKE 'demo_%'").all();
         
         const ahora = Date.now();
-        const maxAgeMs = 24 * 60 * 60 * 1000; // 24 horas
+        const maxAgeMs = 1 * 60 * 60 * 1000; // 1 hora (antes era 24 horas)
 
         for (const user of demoUsers) {
             const userDate = new Date(user.fechaCreacion).getTime();
@@ -181,6 +181,10 @@ const cleanDemoAccounts = async () => {
                 await db.prepare('DELETE FROM tareas WHERE vendedor_id = ?').run(user.id);
                 await db.prepare('DELETE FROM ventas WHERE vendedor = ?').run(user.id);
                 await db.prepare('DELETE FROM clientes WHERE "propietarioId" = ? OR vendedorAsignado = ?').run(user.id, user.id);
+                
+                // IMPORTANTE: Liberar la FK de usuarios.equipo_id antes de borrar el equipo
+                await db.prepare('UPDATE usuarios SET "equipo_id" = NULL WHERE id = ?').run(user.id);
+                
                 await db.prepare('DELETE FROM equipos WHERE owner_id = ?').run(user.id);
                 
                 // Finalmente borrar al usuario

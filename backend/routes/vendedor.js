@@ -965,7 +965,7 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
             updates.push('fechaUltimaEtapa = ?');
             params.push(now);
 
-            const hist = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
+            const hist = parseHistorialSeguro(cliente.historialEmbudo);
             hist.push({
                 etapa: nuevaEtapa,
                 fecha: now,
@@ -1054,7 +1054,7 @@ router.get('/prospecto/:id/historial-completo', auth, async (req, res) => {
         `).all(prospectoId);
 
         // Obtener historial del embudo
-        const historialEmbudo = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
+        const historialEmbudo = parseHistorialSeguro(cliente.historialEmbudo);
 
         // Construir respuesta enriquecida
         const timeline = [];
@@ -1392,7 +1392,7 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
             updates.push('fechaUltimaEtapa = ?');
             params.push(now);
 
-            const hist = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
+            const hist = parseHistorialSeguro(cliente.historialEmbudo);
             hist.push({
                 etapa: etapaEmbudo,
                 fecha: now,
@@ -1472,7 +1472,7 @@ router.post('/agendar-reunion', [auth, esVendedor], async (req, res) => {
         const nuevaEtapa = isAlreadyClient ? currentEtapa : 'reunion_agendada';
         const huboCambio = nuevaEtapa !== currentEtapa;
 
-        const hist = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
+        const hist = parseHistorialSeguro(cliente.historialEmbudo);
         if (huboCambio) {
             hist.push({ etapa: 'reunion_agendada', fecha: now, vendedor: prospectorId });
         }
@@ -1679,7 +1679,7 @@ router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
         `).run('prospecto', prospectorId, clienteId, now, 'Prospecto convertido a cliente', 'exitoso', notas || 'Convertido a cliente');
 
         // Actualizar etapa del prospecto y asegurar que tenga closerAsignado para que aparezca en la lista
-        const hist = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
+        const hist = parseHistorialSeguro(cliente.historialEmbudo);
         hist.push({ etapa: 'venta_ganada', fecha: now, vendedor: prospectorId });
 
         const closerParaAsignar = cliente.closerAsignado || prospectorId;
@@ -1737,7 +1737,7 @@ router.post('/descartar-prospecto/:id', [auth, esVendedor], async (req, res) => 
         `).run('prospecto', prospectorId, clienteId, now, 'Prospecto descartado', 'fallido', notas || `Descartado: ${motivoPerdida || 'Sin motivo'}`);
 
         // Actualizar etapa del prospecto
-        const hist = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
+        const hist = parseHistorialSeguro(cliente.historialEmbudo);
         hist.push({ etapa: 'perdido', fecha: now, vendedor: prospectorId, motivoPerdida });
 
         await db.prepare('UPDATE clientes SET "etapaEmbudo" = ?, "motivoPerdida" = ?, "fechaUltimaEtapa" = ?, "ultimaInteraccion" = ?, "historialEmbudo" = ?, "proximaLlamada" = NULL WHERE id = ?')
@@ -2360,7 +2360,7 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
             updates.push('fechaUltimaEtapa = ?');
             params.push(now);
 
-            const hist = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
+            const hist = parseHistorialSeguro(cliente.historialEmbudo);
             hist.push({
                 etapa: nuevaEtapa,
                 fecha: now,
@@ -2465,7 +2465,7 @@ router.get(['/prospecto/:id/historial-completo', '/Cliente/:id/historial-complet
         `).all(prospectoId);
 
         // Obtener historial del embudo
-        const historialEmbudo = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
+        const historialEmbudo = parseHistorialSeguro(cliente.historialEmbudo);
 
         // Construir respuesta enriquecida
         const timeline = [];
@@ -2610,7 +2610,7 @@ router.post('/registrar-reunion', [auth, esVendedor], async (req, res) => {
         const descripcion = descMap[resultado];
         const now = new Date().toISOString();
 
-        const hist = c.historialEmbudo ? JSON.parse(c.historialEmbudo) : [];
+        const hist = parseHistorialSeguro(c.historialEmbudo);
         if (huboCambio) {
             hist.push({ etapa: etapaNueva, fecha: now, vendedor: closerId, resultado, descripcion });
         }
@@ -2708,7 +2708,7 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
             updates.push('fechaUltimaEtapa = ?');
             params.push(now);
 
-            const hist = c.historialEmbudo ? JSON.parse(c.historialEmbudo) : [];
+            const hist = parseHistorialSeguro(c.historialEmbudo);
             hist.push({
                 etapa: etapaEmbudo,
                 fecha: now,
@@ -2800,7 +2800,7 @@ router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
             `).run('prospecto', closerId, clienteId, now, 'Prospecto convertido a cliente', 'exitoso', notas || 'Convertido a cliente');
 
         // Actualizar etapa del prospecto y asegurar que tenga closerAsignado
-        const hist = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
+        const hist = parseHistorialSeguro(cliente.historialEmbudo);
         hist.push({ etapa: 'venta_ganada', fecha: now, vendedor: closerId });
 
         const closerParaAsignar = cliente.closerAsignado || closerId;
@@ -2845,7 +2845,7 @@ router.post('/descartar-prospecto/:id', [auth, esVendedor], async (req, res) => 
         `).run('prospecto', closerId, clienteId, now, 'Prospecto descartado', 'fallido', notas || 'Descartado');
 
         // Actualizar etapa del prospecto
-        const hist = cliente.historialEmbudo ? JSON.parse(cliente.historialEmbudo) : [];
+        const hist = parseHistorialSeguro(cliente.historialEmbudo);
         hist.push({ etapa: 'perdido', fecha: now, vendedor: closerId });
 
         await db.prepare('UPDATE clientes SET etapaEmbudo = ?, fechaUltimaEtapa = ?, ultimaInteraccion = ?, historialEmbudo = ? WHERE id = ?')
@@ -2971,7 +2971,7 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
             if (c.etapaEmbudo === 'en_negociacion') embudo.en_negociacion++;
             if (c.etapaEmbudo === 'perdido') embudo.perdido++;
 
-            const hist = c.historialEmbudo ? JSON.parse(c.historialEmbudo) : [];
+            const hist = parseHistorialSeguro(c.historialEmbudo);
             const results = hist.map(h => h.resultado).filter(Boolean);
             const rLast = results.length > 0 ? results[results.length - 1] : null;
 
