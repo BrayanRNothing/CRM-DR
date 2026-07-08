@@ -750,6 +750,54 @@ router.post('/suspend-subscription', async (req, res) => {
     }
 });
 
+// @route   POST api/auth/renew-subscription
+// @desc    Disparado cuando Stripe emite invoice.paid (renovación de ciclo)
+// @access  Internal — protegido por WEBHOOK_INTERNAL_SECRET
+router.post('/renew-subscription', async (req, res) => {
+    try {
+        const internalSecret = req.headers['x-internal-secret'];
+        if (!internalSecret || internalSecret !== process.env.WEBHOOK_INTERNAL_SECRET) {
+            console.warn('⛔ Intento no autorizado a /renew-subscription');
+            return res.status(403).json({ mensaje: 'No autorizado' });
+        }
+
+        const { stripe_subscription_id, stripe_customer_id } = req.body;
+
+        let usuario;
+        if (stripe_subscription_id) {
+            usuario = await db.prepare('SELECT id, usuario, email, nombre, plan FROM usuarios WHERE stripe_subscription_id = ?').get(stripe_subscription_id);
+        }
+        if (!usuario && stripe_customer_id) {
+            usuario = await db.prepare('SELECT id, usuario, email, nombre, plan FROM usuarios WHERE stripe_customer_id = ?').get(stripe_customer_id);
+        }
+
+        if (!usuario) {
+            return res.status(200).json({ mensaje: 'Usuario no encontrado' });
+        }
+
+        // Asegurar plan activo (aunque ya lo hace update-subscription)
+        await db.prepare('UPDATE usuarios SET plan_activo = TRUE WHERE id = ?').run(usuario.id);
+
+        try {
+            await db.prepare('INSERT INTO actividades (tipo, vendedor, descripcion, resultado) VALUES (?, ?, ?, ?)')
+                .run('registro', usuario.id, \`Renovación de suscripción exitosa (\${usuario.plan})\`, 'exitoso');
+        } catch (actError) {}
+
+        // Enviar correo de renovación
+        try {
+            await enviarCorreoRenovacion(usuario.email, usuario.nombre, usuario.plan);
+        } catch (e) {
+            console.error('Error enviando correo de renovación:', e);
+        }
+
+        console.log(\`✅ Renovación procesada y correo enviado para: \${usuario.usuario}\`);
+        res.json({ mensaje: 'Renovación procesada', usuario: usuario.usuario });
+    } catch (error) {
+        console.error('❌ Error en /renew-subscription:', error);
+        res.status(500).json({ mensaje: \`Error del servidor: \${error?.message || error}\` });
+    }
+});
+
 // @route   POST api/auth/update-subscription
 // @desc    Actualiza el plan, estado y fechas de vencimiento cuando cambia la suscripcion en Stripe
 // @access  Internal — protegido por WEBHOOK_INTERNAL_SECRET
