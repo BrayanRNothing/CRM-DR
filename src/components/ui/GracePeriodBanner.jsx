@@ -18,7 +18,7 @@ const GracePeriodBanner = ({ diasRestantes }) => {
         setLoading(true);
         try {
             const token = getToken();
-            const res = await fetch(`${API_URL}/api/auth/billing-portal`, {
+            const res = await fetch(`${API_URL}/api/auth/create-renewal-checkout`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -30,13 +30,11 @@ const GracePeriodBanner = ({ diasRestantes }) => {
 
             if (res.ok && data.url) {
                 window.location.href = data.url;
-            } else if (data.code === 'NO_STRIPE_CUSTOMER') {
-                alert('Tu cuenta no tiene una suscripción de Stripe. Contacta a soporte.');
             } else {
-                alert('No se pudo abrir el portal de facturación. Intenta de nuevo.');
+                alert('No se pudo abrir la pasarela de pago. Intenta de nuevo.');
             }
         } catch (err) {
-            console.error('Error abriendo billing portal:', err);
+            console.error('Error abriendo pasarela de pago:', err);
             alert('Error de conexión. Intenta de nuevo.');
         } finally {
             setLoading(false);
