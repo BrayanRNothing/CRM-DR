@@ -343,7 +343,7 @@ router.delete('/team-owners/:id', auth, esAdminUnico, async (req, res) => {
         }
 
         const owner = await db.prepare(
-            'SELECT id, rol, "equipo_id", stripe_subscription_id FROM usuarios WHERE id = ?'
+            'SELECT id, rol, "equipo_id", stripe_subscription_id, usuario, email FROM usuarios WHERE id = ?'
         ).get(ownerId);
 
         if (!owner || owner.rol === 'admin') {
@@ -389,8 +389,13 @@ router.delete('/team-owners/:id', auth, esAdminUnico, async (req, res) => {
             return res.json({ mensaje: 'Propietario de equipo y todos sus datos han sido eliminados permanentemente' });
         }
 
-        // Soft delete (desactivar)
-        await db.prepare('UPDATE usuarios SET activo = 0, stripe_subscription_id = NULL, plan_activo = FALSE WHERE id = ?').run(ownerId);
+        // Soft delete (desactivar y liberar usuario/email para que puedan reusarse)
+        const deletedSuffix = `_deleted_${Date.now()}`;
+        const newUsuario = owner.usuario + deletedSuffix;
+        const newEmail = owner.email ? owner.email + deletedSuffix : null;
+        
+        await db.prepare('UPDATE usuarios SET activo = 0, stripe_subscription_id = NULL, plan_activo = FALSE, usuario = ?, email = ? WHERE id = ?')
+            .run(newUsuario, newEmail, ownerId);
 
         if (owner.equipo_id) {
             await db.prepare('UPDATE equipos SET owner_id = NULL WHERE id = ?').run(owner.equipo_id);
@@ -507,7 +512,15 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
 // @access  Private (Admin)
 router.delete('/:id', auth, esSuperUser, async (req, res) => {
     try {
-        await db.prepare('UPDATE usuarios SET activo = 0 WHERE id = ?').run(parseInt(req.params.id));
+        const id = parseInt(req.params.id);
+        const row = await db.prepare('SELECT usuario, email FROM usuarios WHERE id = ?').get(id);
+        if (!row) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+
+        const deletedSuffix = `_deleted_${Date.now()}`;
+        const newUsuario = row.usuario + deletedSuffix;
+        const newEmail = row.email ? row.email + deletedSuffix : null;
+
+        await db.prepare('UPDATE usuarios SET activo = 0, usuario = ?, email = ? WHERE id = ?').run(newUsuario, newEmail, id);
         res.json({ mensaje: 'Usuario desactivado' });
     } catch (error) {
         res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
