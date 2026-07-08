@@ -780,7 +780,7 @@ router.post('/renew-subscription', async (req, res) => {
 
         try {
             await db.prepare('INSERT INTO actividades (tipo, vendedor, descripcion, resultado) VALUES (?, ?, ?, ?)')
-                .run('registro', usuario.id, \`Renovación de suscripción exitosa (\${usuario.plan})\`, 'exitoso');
+                .run('registro', usuario.id, `Renovación de suscripción exitosa (${usuario.plan})`, 'exitoso');
         } catch (actError) {}
 
         // Enviar correo de renovación
@@ -790,11 +790,11 @@ router.post('/renew-subscription', async (req, res) => {
             console.error('Error enviando correo de renovación:', e);
         }
 
-        console.log(\`✅ Renovación procesada y correo enviado para: \${usuario.usuario}\`);
+        console.log(`✅ Renovación procesada y correo enviado para: ${usuario.usuario}`);
         res.json({ mensaje: 'Renovación procesada', usuario: usuario.usuario });
     } catch (error) {
         console.error('❌ Error en /renew-subscription:', error);
-        res.status(500).json({ mensaje: \`Error del servidor: \${error?.message || error}\` });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
