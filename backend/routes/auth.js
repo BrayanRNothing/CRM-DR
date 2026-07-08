@@ -864,8 +864,8 @@ router.post('/billing-portal', async (req, res) => {
         const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
         const returnUrl = process.env.CRM_URL
-            ? `${process.env.CRM_URL}/configuracion`
-            : 'https://app.solomycrm.com/configuracion';
+            ? `${process.env.CRM_URL}/vendedor/ajustes`
+            : 'https://app.solomycrm.com/vendedor/ajustes';
 
         const portalSession = await stripe.billingPortal.sessions.create({
             customer: usuario.stripe_customer_id,
