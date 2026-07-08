@@ -285,6 +285,21 @@ router.post('/demo-login', async (req, res) => {
 router.get('/me', auth, async (req, res) => {
     try {
         const user = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo, "equipo_id", plan_activo, plan_vencimiento, plan, stripe_customer_id FROM usuarios WHERE id = ?').get(req.usuario.id);
+        
+        if (user && user.equipo_id) {
+            const equipo = await db.prepare('SELECT owner_id FROM equipos WHERE id = ?').get(user.equipo_id);
+            if (equipo && equipo.owner_id !== user.id) {
+                const owner = await db.prepare('SELECT plan_activo, plan_vencimiento, plan, stripe_customer_id FROM usuarios WHERE id = ?').get(equipo.owner_id);
+                if (owner) {
+                    user.plan_activo = owner.plan_activo;
+                    user.plan_vencimiento = owner.plan_vencimiento;
+                    user.plan = owner.plan;
+                    // Algunos módulos pueden depender de tener un stripe_customer_id aunque no sea el de ellos
+                    // user.stripe_customer_id = owner.stripe_customer_id; 
+                }
+            }
+        }
+        
         res.json(user);
     } catch (error) {
         console.error('Error en auth/me:', error);

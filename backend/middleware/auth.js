@@ -26,6 +26,18 @@ const auth = async (req, res, next) => {
             return res.status(401).json({ mensaje: 'Usuario desactivado' });
         }
 
+        // Si el usuario pertenece a un equipo y no es el dueño, heredar estado de membresía
+        if (row.equipo_id) {
+            const equipo = await db.prepare('SELECT owner_id FROM equipos WHERE id = ?').get(row.equipo_id);
+            if (equipo && equipo.owner_id !== row.id) {
+                const owner = await db.prepare('SELECT plan_activo, plan_vencimiento FROM usuarios WHERE id = ?').get(equipo.owner_id);
+                if (owner) {
+                    row.plan_activo = owner.plan_activo;
+                    row.plan_vencimiento = owner.plan_vencimiento;
+                }
+            }
+        }
+
         // ── Verificación de suscripción con periodo de gracia de 3 días ──
         // Solo aplicar a cuentas que tienen plan (stripe). Si plan_activo es null → cuenta admin/demo sin plan.
         if (row.plan_activo === false || row.plan_activo === 0) {
