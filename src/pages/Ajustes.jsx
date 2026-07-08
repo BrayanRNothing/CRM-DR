@@ -200,17 +200,20 @@ export default function VendedorAjustes() {
 
     const handleManageSubscription = async () => {
         setLoadingPortal(true);
-        const tid = toast.loading('Abriendo portal de clientes...');
+        const endpoint = user?.plan_activo ? '/api/auth/billing-portal' : '/api/auth/create-renewal-checkout';
+        const loadingMsg = user?.plan_activo ? 'Abriendo portal de clientes...' : 'Abriendo pasarela de pago...';
+        const tid = toast.loading(loadingMsg);
+        
         try {
             const token = getToken();
 
-            // Siempre intentar primero el portal de clientes (para gestionar/cancelar)
-            const res = await fetch(`${API_URL}/api/auth/billing-portal`, {
+            const res = await fetch(`${API_URL}${endpoint}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'x-auth-token': token,
                 },
+                body: JSON.stringify({ plan: user?.plan || 'mensual' })
             });
 
             const data = await res.json();
@@ -221,8 +224,8 @@ export default function VendedorAjustes() {
                 return;
             }
 
-            // Solo si NO tiene stripe_customer_id, redirigir a checkout de pago
-            if (data.code === 'NO_STRIPE_CUSTOMER') {
+            // Fallback si falla el portal de clientes por falta de customer ID
+            if (data.code === 'NO_STRIPE_CUSTOMER' && user?.plan_activo) {
                 toast.loading('Abriendo pasarela de pago...', { id: tid });
                 const res2 = await fetch(`${API_URL}/api/auth/create-renewal-checkout`, {
                     method: 'POST',
@@ -240,7 +243,7 @@ export default function VendedorAjustes() {
                     toast.error('No se pudo procesar la solicitud.', { id: tid });
                 }
             } else {
-                toast.error('No se pudo abrir el portal.', { id: tid });
+                toast.error('No se pudo procesar la solicitud.', { id: tid });
             }
         } catch (err) {
             console.error('Error gestionando suscripción:', err);
