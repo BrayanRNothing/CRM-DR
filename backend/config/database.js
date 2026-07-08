@@ -678,7 +678,7 @@ const initDb = async () => {
       // 2. Asignar cada usuario a su equipo recién creado
       await internalDb.query(`
         UPDATE usuarios u
-        SET "equipo_id" = (SELECT id FROM equipos WHERE owner_id = u.id)
+        SET "equipo_id" = (SELECT id FROM equipos WHERE owner_id = u.id ORDER BY id DESC LIMIT 1)
         WHERE "equipo_id" IS NULL
       `);
 
@@ -686,7 +686,7 @@ const initDb = async () => {
       await internalDb.query(`
         UPDATE clientes
         SET "equipo_id" = (
-          SELECT "equipo_id" FROM usuarios WHERE id = clientes."prospectorAsignado"
+          SELECT "equipo_id" FROM usuarios WHERE id = clientes."prospectorAsignado" LIMIT 1
         )
         WHERE "equipo_id" IS NULL AND "prospectorAsignado" IS NOT NULL
       `);
@@ -695,7 +695,7 @@ const initDb = async () => {
       await internalDb.query(`
         UPDATE clientes
         SET "equipo_id" = (
-          SELECT "equipo_id" FROM usuarios WHERE id = clientes."vendedorAsignado"
+          SELECT "equipo_id" FROM usuarios WHERE id = clientes."vendedorAsignado" LIMIT 1
         )
         WHERE "equipo_id" IS NULL AND "vendedorAsignado" IS NOT NULL
       `);
