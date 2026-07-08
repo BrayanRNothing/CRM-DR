@@ -724,12 +724,12 @@ router.post('/suspend-subscription', async (req, res) => {
         let accion;
         if (action === 'reactivate') {
             // Reactivar completamente: plan activo, sin vencimiento inmediato
-            await db.prepare('UPDATE usuarios SET plan_activo = TRUE WHERE id = ?').run(usuario.id);
+            await db.prepare('UPDATE usuarios SET plan_activo = 1 WHERE id = ?').run(usuario.id);
             accion = 'Cuenta reactivada';
         } else {
             // Iniciar periodo de gracia: plan_activo=false, plan_vencimiento=ahora+3días, activo sigue en 1
             const graciaHasta = new Date(Date.now() + (3 * 24 * 60 * 60 * 1000));
-            await db.prepare('UPDATE usuarios SET plan_activo = FALSE, plan_vencimiento = ? WHERE id = ?')
+            await db.prepare('UPDATE usuarios SET plan_activo = 0, plan_vencimiento = ? WHERE id = ?')
                 .run(graciaHasta.toISOString(), usuario.id);
             accion = `Periodo de gracia iniciado (hasta ${graciaHasta.toDateString()})`;
         }
@@ -776,7 +776,7 @@ router.post('/renew-subscription', async (req, res) => {
         }
 
         // Asegurar plan activo (aunque ya lo hace update-subscription)
-        await db.prepare('UPDATE usuarios SET plan_activo = TRUE WHERE id = ?').run(usuario.id);
+        await db.prepare('UPDATE usuarios SET plan_activo = 1 WHERE id = ?').run(usuario.id);
 
         try {
             await db.prepare('INSERT INTO actividades (tipo, vendedor, descripcion, resultado) VALUES (?, ?, ?, ?)')
@@ -840,7 +840,7 @@ router.post('/update-subscription', async (req, res) => {
 
         // Construir SET dinámicamente según qué campos llegaron
         const updates = ['activo = ?', 'plan_activo = ?'];
-        const params = [estaActivo, planActivo];
+        const params = [estaActivo ? 1 : 0, planActivo ? 1 : 0];
 
         if (plan && plan !== usuario.plan) {
             updates.push('plan = ?');
