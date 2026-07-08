@@ -16,6 +16,7 @@ const MainLayout = () => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [diasGracia, setDiasGracia] = useState(null); // null = sin gracia, número = días restantes
     const [checkingPlan, setCheckingPlan] = useState(true); // Bloquea el Outlet hasta conocer el estado del plan
+    const [planData, setPlanData] = useState(null); // Datos del plan del usuario (para el botón de renovación)
 
 
     useEffect(() => {
@@ -39,6 +40,11 @@ const MainLayout = () => {
             })
             .then(res => res.json())
             .then(data => {
+                // Guardar datos del plan para el botón de renovación
+                setPlanData({
+                    plan: data.plan || 'mensual',
+                    stripe_customer_id: data.stripe_customer_id || null
+                });
                 // Si plan_activo es false y hay plan_vencimiento → calcular días de gracia restantes
                 if (data.plan_activo === false && data.plan_vencimiento) {
                     const vencimiento = new Date(data.plan_vencimiento);
@@ -147,6 +153,7 @@ const MainLayout = () => {
                 menuItems={menuItems}
                 userInfo={{ ...usuario, rol: 'Vendedor' }}
                 diasGracia={diasGracia}
+                planData={planData}
             />
         );
     }
@@ -197,13 +204,32 @@ const MainLayout = () => {
                                     btn.innerText = 'Cargando...';
                                     btn.disabled = true;
                                     try {
+                                        const token = getToken();
+                                        const stripeCustomerId = planData?.stripe_customer_id;
+                                        const planActual = planData?.plan || 'mensual';
+
+                                        if (stripeCustomerId) {
+                                            // Tiene cuenta en Stripe → abrir el Portal de Cliente
+                                            // (ahí puede reactivar su suscripción existente sin crear una nueva)
+                                            const res = await fetch(`${API_URL}/api/auth/billing-portal`, {
+                                                method: 'POST',
+                                                headers: { 'x-auth-token': token },
+                                            });
+                                            const data = await res.json();
+                                            if (res.ok && data.url) {
+                                                window.location.href = data.url;
+                                                return;
+                                            }
+                                        }
+
+                                        // Sin stripe_customer_id o falló el portal → crear nuevo checkout
                                         const res = await fetch(`${API_URL}/api/auth/create-renewal-checkout`, {
                                             method: 'POST',
                                             headers: {
                                                 'Content-Type': 'application/json',
-                                                'x-auth-token': getToken(),
+                                                'x-auth-token': token,
                                             },
-                                            body: JSON.stringify({ plan: 'mensual' }) // O el plan que deseen
+                                            body: JSON.stringify({ plan: planActual })
                                         });
                                         const data = await res.json();
                                         if (res.ok && data.url) {

@@ -7,7 +7,7 @@ import GracePeriodBanner from '../components/ui/GracePeriodBanner';
 import { getToken } from '../utils/authUtils';
 import API_URL from '../config/api';
 
-const MainLayoutMobile = ({ menuItems, userInfo, diasGracia }) => {
+const MainLayoutMobile = ({ menuItems, userInfo, diasGracia, planData }) => {
     const location = useLocation();
     const isDashboard = location.pathname === '/' || location.pathname === '/dashboard';
 
@@ -51,13 +51,31 @@ const MainLayoutMobile = ({ menuItems, userInfo, diasGracia }) => {
                                     btn.innerText = 'Cargando...';
                                     btn.disabled = true;
                                     try {
+                                        const token = getToken();
+                                        const stripeCustomerId = planData?.stripe_customer_id;
+                                        const planActual = planData?.plan || 'mensual';
+
+                                        if (stripeCustomerId) {
+                                            // Tiene cuenta en Stripe → abrir el Portal de Cliente
+                                            const res = await fetch(`${API_URL}/api/auth/billing-portal`, {
+                                                method: 'POST',
+                                                headers: { 'x-auth-token': token },
+                                            });
+                                            const data = await res.json();
+                                            if (res.ok && data.url) {
+                                                window.location.href = data.url;
+                                                return;
+                                            }
+                                        }
+
+                                        // Sin stripe_customer_id o falló el portal → nuevo checkout
                                         const res = await fetch(`${API_URL}/api/auth/create-renewal-checkout`, {
                                             method: 'POST',
                                             headers: {
                                                 'Content-Type': 'application/json',
-                                                'x-auth-token': getToken(),
+                                                'x-auth-token': token,
                                             },
-                                            body: JSON.stringify({ plan: 'mensual' })
+                                            body: JSON.stringify({ plan: planActual })
                                         });
                                         const data = await res.json();
                                         if (res.ok && data.url) {
