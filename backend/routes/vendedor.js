@@ -1370,7 +1370,7 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
             sitioWeb !== undefined ? (sitioWeb || '').trim() : cliente.sitioWeb,
             ubicacion !== undefined ? (ubicacion || '').trim() : cliente.ubicacion,
             req.body.interes !== undefined ? req.body.interes : cliente.interes,
-            req.body.proximaLlamada !== undefined ? req.body.proximaLlamada : cliente.proximaLlamada,
+            req.body.proximaLlamada !== undefined ? (req.body.proximaLlamada === '' ? null : req.body.proximaLlamada) : cliente.proximaLlamada,
             customMetricLabel !== undefined ? customMetricLabel : cliente.customMetricLabel,
             customMetricValue !== undefined ? customMetricValue : cliente.customMetricValue,
             fuente !== undefined ? fuente : cliente.fuente
