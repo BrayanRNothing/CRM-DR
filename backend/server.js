@@ -10,6 +10,7 @@ const fs = require('fs');
 require('./config/database');
 
 const app = express();
+app.set('trust proxy', 1); // Confiar en el proxy de Railway para Rate Limit
 
 // ✅ HEALTHCHECK - FIRST PRIORITY (Railway require 200 fast)
 app.get('/health', (req, res) => {
