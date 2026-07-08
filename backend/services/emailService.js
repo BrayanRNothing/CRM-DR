@@ -247,7 +247,171 @@ const enviarInvitacionCalendario = async ({
   }
 };
 
+/**
+ * Envia un correo cuando el usuario renueva su suscripción o se actualiza.
+ */
+const enviarCorreoRenovacion = async (emailUsuario, nombre, plan) => {
+  try {
+    const senderEmail = process.env.RESEND_FROM_EMAIL || 'notificaciones@solomycrm.com';
+    const loginUrl = process.env.CRM_URL || 'https://app.solomycrm.com/login';
+    
+    const htmlTemplate = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 40px 0;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f4f5;">
+          <tr>
+            <td align="center">
+              <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; margin: 0 auto; border: 1px solid #e4e4e7; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
+                
+                <tr>
+                  <td align="center" style="background-color: #ffffff; padding: 40px 40px 20px 40px; border-bottom: 1px solid #e4e4e7;">
+                    <div style="display: inline-block; text-align: center;">
+                      <img src="https://solomycrm.com/ISOTIPO%20SOLOMYCRM.png" alt="" height="52" style="vertical-align: middle; margin-right: 12px; border: 0;" />
+                      <span style="color: #09090b; font-size: 32px; font-weight: 800; letter-spacing: -0.04em; vertical-align: middle;">SoloMyCRM</span>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding: 40px; color: #3f3f46;">
+                    <h2 style="font-size: 20px; font-weight: 600; color: #09090b; margin-top: 0; margin-bottom: 24px; letter-spacing: -0.02em;">¡Gracias por renovar, ${nombre.split(' ')[0]}!</h2>
+                    
+                    <p style="font-size: 16px; line-height: 1.6; margin: 0 0 24px 0; color: #52525b;">Tu suscripción ha sido reactivada/renovada exitosamente con el plan <strong>${plan}</strong>.</p>
+                    
+                    <p style="font-size: 16px; line-height: 1.6; margin: 0 0 32px 0; color: #52525b;">Ya puedes volver a acceder a todas tus herramientas y continuar gestionando tus ventas sin interrupciones.</p>
+                    
+                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td align="center">
+                          <a href="${loginUrl}" style="display: inline-block; background-color: #09090b; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 500; font-size: 16px; border: 1px solid #09090b;">Ir al Dashboard</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td align="center" style="background-color: #ffffff; padding: 24px; border-top: 1px solid #e4e4e7;">
+                    <p style="margin: 0; font-size: 13px; color: #a1a1aa;">© ${new Date().getFullYear()} SoloMyCRM. Todos los derechos reservados.</p>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const data = await resend.emails.send({
+      from: `SoloMyCRM <${senderEmail}>`,
+      to: [emailUsuario],
+      subject: '¡Tu suscripción ha sido renovada! 🚀',
+      html: htmlTemplate,
+    });
+
+    console.log('Correo de renovación enviado:', data);
+    return data;
+  } catch (error) {
+    console.error('Error al enviar el correo de renovación:', error);
+    throw error;
+  }
+};
+
+/**
+ * Envia un correo cuando la suscripción expira o hay problema de pago, iniciando el periodo de gracia.
+ */
+const enviarCorreoCancelacion = async (emailUsuario, nombre, gracia = true) => {
+  try {
+    const senderEmail = process.env.RESEND_FROM_EMAIL || 'notificaciones@solomycrm.com';
+    const loginUrl = process.env.CRM_URL || 'https://app.solomycrm.com/login';
+    
+    let mensajePrincipal = gracia 
+      ? 'Hemos detectado que tu suscripción fue cancelada o hubo un problema con el pago. Hemos iniciado un <strong>periodo de gracia de 3 días</strong> para que no pierdas acceso inmediato a tus datos.'
+      : 'Tu suscripción ha expirado o fue cancelada completamente. Ya no tienes acceso a la plataforma.';
+
+    let accion = gracia
+      ? 'Renovar Suscripción'
+      : 'Reactivar Cuenta';
+
+    const htmlTemplate = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 40px 0;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f4f5;">
+          <tr>
+            <td align="center">
+              <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; margin: 0 auto; border: 1px solid #e4e4e7; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
+                
+                <tr>
+                  <td align="center" style="background-color: #ffffff; padding: 40px 40px 20px 40px; border-bottom: 1px solid #e4e4e7;">
+                    <div style="display: inline-block; text-align: center;">
+                      <img src="https://solomycrm.com/ISOTIPO%20SOLOMYCRM.png" alt="" height="52" style="vertical-align: middle; margin-right: 12px; border: 0;" />
+                      <span style="color: #09090b; font-size: 32px; font-weight: 800; letter-spacing: -0.04em; vertical-align: middle;">SoloMyCRM</span>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding: 40px; color: #3f3f46;">
+                    <h2 style="font-size: 20px; font-weight: 600; color: #09090b; margin-top: 0; margin-bottom: 24px; letter-spacing: -0.02em;">Aviso sobre tu suscripción, ${nombre.split(' ')[0]}</h2>
+                    
+                    <p style="font-size: 16px; line-height: 1.6; margin: 0 0 24px 0; color: #52525b;">${mensajePrincipal}</p>
+                    
+                    ${gracia ? '<p style="font-size: 16px; line-height: 1.6; margin: 0 0 32px 0; color: #52525b;">Para evitar interrupciones en tu servicio, por favor actualiza tu método de pago o reactiva tu suscripción ingresando a tu cuenta.</p>' : ''}
+                    
+                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td align="center">
+                          <a href="${loginUrl}" style="display: inline-block; background-color: #09090b; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 500; font-size: 16px; border: 1px solid #09090b;">${accion}</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td align="center" style="background-color: #ffffff; padding: 24px; border-top: 1px solid #e4e4e7;">
+                    <p style="margin: 0; font-size: 13px; color: #a1a1aa;">© ${new Date().getFullYear()} SoloMyCRM. Todos los derechos reservados.</p>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const data = await resend.emails.send({
+      from: `SoloMyCRM <${senderEmail}>`,
+      to: [emailUsuario],
+      subject: gracia ? 'Acción Requerida: Problema con tu Suscripción' : 'Tu suscripción ha finalizado',
+      html: htmlTemplate,
+    });
+
+    console.log('Correo de cancelación enviado:', data);
+    return data;
+  } catch (error) {
+    console.error('Error al enviar el correo de cancelación:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   enviarCorreoBienvenida,
-  enviarInvitacionCalendario
+  enviarInvitacionCalendario,
+  enviarCorreoRenovacion,
+  enviarCorreoCancelacion
 };

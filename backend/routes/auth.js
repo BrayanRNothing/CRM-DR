@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { db } = require('../config/database');
 const { auth } = require('../middleware/auth');
-const { enviarCorreoBienvenida } = require('../services/emailService');
+const { enviarCorreoBienvenida, enviarCorreoRenovacion, enviarCorreoCancelacion } = require('../services/emailService');
 const rateLimit = require('express-rate-limit');
 
 const ROLES_PERMITIDOS = ['vendedor'];
@@ -368,7 +368,7 @@ router.post('/register-paid', async (req, res) => {
 
         if (is_renewal) {
             if (!usuario || !plan) return res.status(400).json({ mensaje: 'Faltan campos para renovación' });
-            const existingUser = await db.prepare('SELECT id FROM usuarios WHERE LOWER(usuario) = LOWER(?)').get(usuario.trim());
+            const existingUser = await db.prepare('SELECT id, email, nombre FROM usuarios WHERE LOWER(usuario) = LOWER(?)').get(usuario.trim());
             if (!existingUser) return res.status(404).json({ mensaje: 'Usuario no encontrado para renovar' });
 
             // El plan vuelve a estar activo. Stripe enviará el plan_vencimiento más tarde vía el webhook customer.subscription.updated
@@ -376,6 +376,16 @@ router.post('/register-paid', async (req, res) => {
             await db.prepare('UPDATE usuarios SET plan = ?, plan_activo = TRUE, stripe_customer_id = ?, stripe_subscription_id = ? WHERE id = ?').run(
                 plan, stripe_customer_id, stripe_subscription_id, existingUser.id
             );
+
+            // Enviar correo de renovación
+            if (existingUser.email) {
+                try {
+                    await enviarCorreoRenovacion(existingUser.email, existingUser.nombre, plan);
+                } catch (emailErr) {
+                    console.error('Error enviando correo de renovación:', emailErr);
+                }
+            }
+
             return res.json({ mensaje: 'Renovación procesada' });
         }
 
@@ -518,6 +528,15 @@ router.post('/suspend-subscription', async (req, res) => {
             await db.prepare('UPDATE usuarios SET plan_activo = FALSE, plan_vencimiento = ? WHERE id = ?')
                 .run(graciaHasta.toISOString(), usuario.id);
             accion = `Periodo de gracia iniciado (hasta ${graciaHasta.toDateString()})`;
+            
+            // Enviar correo indicando problema / cancelación / gracia
+            if (usuario.email) {
+                try {
+                    await enviarCorreoCancelacion(usuario.email, usuario.nombre, true);
+                } catch (emailErr) {
+                    console.error('Error enviando correo de cancelación/gracia:', emailErr);
+                }
+            }
         }
 
         console.log(`✅ ${accion} para usuario: ${usuario.usuario} (id: ${usuario.id})`);
