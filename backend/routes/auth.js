@@ -665,6 +665,15 @@ router.post('/suspend-subscription', async (req, res) => {
             console.error('Error registrando actividad de suspensión:', actError);
         }
 
+        if (action !== 'reactivate') {
+            try {
+                await enviarCorreoCancelacion(usuario.email, usuario.nombre, true);
+                console.log(`✉️ Correo de cancelación enviado a ${usuario.email}`);
+            } catch (e) {
+                console.error('Error enviando correo de cancelación desde suspend-subscription:', e);
+            }
+        }
+
         res.json({ mensaje: `${accion} exitosamente`, usuario: usuario.usuario });
     } catch (error) {
         console.error('❌ Error en /suspend-subscription:', error);
