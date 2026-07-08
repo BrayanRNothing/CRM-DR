@@ -15,7 +15,7 @@ router.get('/', auth, async (req, res) => {
             clientes: rowClientesTotal.c
         });
     } catch (error) {
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 

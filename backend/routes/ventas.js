@@ -14,7 +14,7 @@ router.get('/', auth, async (req, res) => {
         }
         res.json(rows.map(toMongoFormat));
     } catch (error) {
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -28,7 +28,7 @@ router.post('/', auth, async (req, res) => {
         const row = await db.prepare('SELECT * FROM ventas ORDER BY id DESC LIMIT 1').get();
         res.status(201).json({ mensaje: 'Venta registrada', venta: toMongoFormat(row) || row });
     } catch (error) {
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 

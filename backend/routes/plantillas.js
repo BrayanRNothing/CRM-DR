@@ -75,7 +75,7 @@ router.get('/', auth, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Error al obtener plantillas:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -111,7 +111,7 @@ router.post('/', auth, async (req, res) => {
         res.status(201).json({ mensaje: 'Plantilla creada', plantilla: row });
     } catch (error) {
         console.error('Error al crear plantilla:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -165,7 +165,7 @@ router.put('/:id', auth, async (req, res) => {
         res.json({ mensaje: 'Plantilla actualizada', plantilla: row });
     } catch (error) {
         console.error('Error al actualizar plantilla:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -185,7 +185,7 @@ router.delete('/:id', auth, async (req, res) => {
         res.json({ mensaje: 'Plantilla eliminada' });
     } catch (error) {
         console.error('Error al eliminar plantilla:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 

@@ -37,7 +37,7 @@ router.get('/', auth, async (req, res) => {
         res.json(rows.map(toMongoFormat));
     } catch (error) {
         console.error('Error al obtener tareas:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -63,7 +63,7 @@ router.post('/', auth, async (req, res) => {
         res.status(201).json({ mensaje: 'Tarea creada', tarea: toMongoFormat(row) || row });
     } catch (error) {
         console.error('Error al crear tarea:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -106,7 +106,7 @@ router.put('/:id', auth, async (req, res) => {
         res.json({ mensaje: 'Tarea actualizada' });
     } catch (error) {
         console.error('Error al actualizar tarea:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -131,7 +131,7 @@ router.delete('/:id', auth, async (req, res) => {
         res.json({ mensaje: 'Tarea eliminada exitosamente' });
     } catch (error) {
         console.error('Error al eliminar tarea:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 

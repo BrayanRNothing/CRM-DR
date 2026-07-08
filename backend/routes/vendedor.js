@@ -458,7 +458,7 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
         res.json(closerResponse);
     } catch (error) {
         console.error('Error en dashboard-closer:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -573,7 +573,7 @@ router.get('/calendario', [auth, esVendedor], async (req, res) => {
         res.json(reuniones);
     } catch (error) {
         console.error('Error en calendario:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -695,7 +695,7 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
         res.json(prospectos);
     } catch (error) {
         console.error('Error al obtener prospectos:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -804,7 +804,7 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
         res.json(clientes);
     } catch (error) {
         console.error('Error al obtener clientes ganados:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -871,7 +871,7 @@ router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
         res.status(201).json({ msg: 'Prospecto creado', cliente: cliente || row });
     } catch (error) {
         console.error('Error al crear prospecto:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1015,7 +1015,7 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
         res.status(201).json({ msg: 'Actividad registrada', actividad: actividad || actRow });
     } catch (error) {
         console.error('Error al registrar actividad:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1118,7 +1118,7 @@ router.get('/prospecto/:id/historial-completo', auth, async (req, res) => {
         });
     } catch (error) {
         console.error('Error al obtener historial completo:', error);
-        res.status(500).json({ msg: 'Error del servidor', error: error.message });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}`, error: error.message });
     }
 });
 
@@ -1150,7 +1150,7 @@ router.get('/actividades-hoy', [auth, esVendedor], async (req, res) => {
         res.json(actividades);
     } catch (error) {
         console.error('Error al obtener actividades:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1181,7 +1181,7 @@ router.get('/prospectos/:id/actividades', auth, async (req, res) => {
         res.json(actividades);
     } catch (error) {
         console.error('Error al obtener actividades de prospecto:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1205,7 +1205,7 @@ router.get('/prospectos/:id/recordatorios', auth, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Error al obtener recordatorios:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1233,7 +1233,7 @@ router.post('/prospectos/:id/recordatorios', auth, async (req, res) => {
         res.status(201).json({ msg: 'Recordatorio creado', recordatorio: row });
     } catch (error) {
         console.error('Error al crear recordatorio:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1248,7 +1248,7 @@ router.delete('/recordatorios/:recordatorioId', auth, async (req, res) => {
         res.json({ msg: 'Recordatorio eliminado' });
     } catch (error) {
         console.error('Error al eliminar recordatorio:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1272,7 +1272,7 @@ router.put('/recordatorios/:recordatorioId', auth, async (req, res) => {
         res.json({ msg: 'Recordatorio actualizado', recordatorio: row });
     } catch (error) {
         console.error('Error al actualizar recordatorio:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1310,7 +1310,7 @@ router.put('/prospectos/:id', auth, async (req, res) => {
         res.json({ msg: 'Prospecto actualizado' });
     } catch (error) {
         console.error('Error al actualizar prospecto:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1331,7 +1331,7 @@ router.patch('/prospectos/:id/compartir', auth, async (req, res) => {
         res.json({ msg: 'Visibilidad actualizada', compartido });
     } catch (error) {
         console.error('Error al actualizar visibilidad:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1433,7 +1433,7 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
         res.json({ msg: 'Prospecto actualizado exitosamente' });
     } catch (error) {
         console.error('Error al editar prospecto:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1644,7 +1644,7 @@ router.post('/agendar-reunion', [auth, esVendedor], async (req, res) => {
         });
     } catch (error) {
         console.error('Error al agendar reunión:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1701,7 +1701,7 @@ router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
         res.json({ msg: '✓ Prospecto convertido a cliente' });
     } catch (error) {
         console.error('Error al pasar a cliente:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1749,7 +1749,7 @@ router.post('/descartar-prospecto/:id', [auth, esVendedor], async (req, res) => 
         res.json({ msg: '✓ Prospecto descartado' });
     } catch (error) {
         console.error('Error al descartar prospecto:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1904,7 +1904,7 @@ router.get('/estadisticas', [auth, esVendedor], async (req, res) => {
         });
     } catch (error) {
         console.error('Error en estadísticas prospector:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -1979,7 +1979,7 @@ router.delete('/prospectos/:id', [auth, esVendedor], async (req, res) => {
         res.json({ msg: 'Prospecto eliminado correctamente' });
     } catch (error) {
         console.error('Error al eliminar prospecto:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -2109,7 +2109,7 @@ router.get('/calendario', [auth, esVendedor], async (req, res) => {
         res.json(reuniones);
     } catch (error) {
         console.error('Error en calendario:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -2129,7 +2129,7 @@ router.get('/reuniones-pendientes', [auth, esVendedor], async (req, res) => {
         });
         res.json(clientes);
     } catch (error) {
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -2163,7 +2163,7 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
             return out;
         }));
     } catch (error) {
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -2215,7 +2215,7 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
             return out;
         }));
     } catch (error) {
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -2259,7 +2259,7 @@ router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
         res.status(201).json({ msg: 'Prospecto creado', cliente: cliente || row });
     } catch (error) {
         console.error('Error al crear prospecto:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -2396,7 +2396,7 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
         res.status(201).json({ msg: 'Actividad registrada', actividad: actividad || actRow });
     } catch (error) {
         console.error('Error al registrar actividad:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -2428,7 +2428,7 @@ router.put('/prospectos/:id', auth, async (req, res) => {
         res.json({ msg: 'Prospecto actualizado' });
     } catch (error) {
         console.error('Error al actualizar prospecto:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -2528,7 +2528,7 @@ router.get(['/prospecto/:id/historial-completo', '/Cliente/:id/historial-complet
         });
     } catch (error) {
         console.error('Error al obtener historial completo:', error);
-        res.status(500).json({ msg: 'Error del servidor', error: error.message });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}`, error: error.message });
     }
 });
 
@@ -2555,7 +2555,7 @@ router.get('/prospectos/:id/actividades', auth, async (req, res) => {
         });
         res.json(actividades);
     } catch (error) {
-        res.status(500).json({ msg: 'Error al obtener actividades' });
+        res.status(500).json({ msg: `Error: ${error?.message || error}` });
     }
 });
 
@@ -2662,7 +2662,7 @@ router.post('/registrar-reunion', [auth, esVendedor], async (req, res) => {
         res.json({ msg: 'Reunión registrada', cliente: toMongoFormat(row) || row });
     } catch (error) {
         console.error('Error al registrar reunión:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -2742,7 +2742,7 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
         res.json({ msg: 'Prospecto actualizado exitosamente' });
     } catch (error) {
         console.error('Error al editar prospecto:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -2769,7 +2769,7 @@ router.delete('/prospectos/:id', [auth, esVendedor], async (req, res) => {
         res.json({ msg: 'Prospecto eliminado correctamente' });
     } catch (error) {
         console.error('Error al eliminar prospecto:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -2814,7 +2814,7 @@ router.post('/pasar-a-cliente/:id', [auth, esVendedor], async (req, res) => {
         res.json({ msg: '✓ Prospecto convertido a cliente' });
     } catch (error) {
         console.error('Error al pasar a cliente:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -2854,7 +2854,7 @@ router.post('/descartar-prospecto/:id', [auth, esVendedor], async (req, res) => 
         res.json({ msg: '✓ Prospecto descartado' });
     } catch (error) {
         console.error('Error al descartar prospecto:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -3059,7 +3059,7 @@ router.get('/dashboard-closer', [auth, esVendedor], async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -3189,7 +3189,7 @@ router.get('/calendario', [auth, esVendedor], async (req, res) => {
         res.json(reuniones);
     } catch (error) {
         console.error('Error en calendario:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -3209,7 +3209,7 @@ router.get('/reuniones-pendientes', [auth, esVendedor], async (req, res) => {
         });
         res.json(clientes);
     } catch (error) {
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -3243,7 +3243,7 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
             return out;
         }));
     } catch (error) {
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -3294,7 +3294,7 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
             return out;
         }));
     } catch (error) {
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -3338,7 +3338,7 @@ router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
         res.status(201).json({ msg: 'Prospecto creado', cliente: cliente || row });
     } catch (error) {
         console.error('Error al crear prospecto:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -3405,7 +3405,7 @@ router.post('/registrar-actividad', [auth, esVendedor], async (req, res) => {
         res.json({ msg: 'Actividad registrada y cliente actualizado', cliente: toMongoFormat(rowFinal) || rowFinal });
     } catch (error) {
         console.error('Error al registrar actividad:', error);
-        res.status(500).json({ msg: 'Error al registrar actividad' });
+        res.status(500).json({ msg: `Error: ${error?.message || error}` });
     }
 });
 
@@ -3432,7 +3432,7 @@ router.get('/etiquetas', [auth, esVendedor], async (req, res) => {
         res.json(etiquetas);
     } catch (error) {
         console.error('Error al obtener etiquetas:', error);
-        res.status(500).json({ msg: 'Error al obtener etiquetas' });
+        res.status(500).json({ msg: `Error: ${error?.message || error}` });
     }
 });
 
@@ -3466,7 +3466,7 @@ router.post('/etiquetas', [auth, esVendedor], async (req, res) => {
         res.json({ id: result.lastInsertRowid, nombre: nombreLimpio, color: color || '#10b981' });
     } catch (error) {
         console.error('Error al crear etiqueta:', error);
-        res.status(500).json({ msg: 'Error al crear etiqueta' });
+        res.status(500).json({ msg: `Error: ${error?.message || error}` });
     }
 });
 
@@ -3495,7 +3495,7 @@ router.delete('/etiquetas/:id', [auth, esVendedor], async (req, res) => {
         res.json({ msg: 'Etiqueta eliminada' });
     } catch (error) {
         console.error('Error al eliminar etiqueta:', error);
-        res.status(500).json({ msg: 'Error al eliminar etiqueta' });
+        res.status(500).json({ msg: `Error: ${error?.message || error}` });
     }
 });
 

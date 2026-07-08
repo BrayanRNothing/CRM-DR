@@ -115,7 +115,7 @@ router.get('/mi-equipo', auth, async (req, res) => {
         });
     } catch (error) {
         console.error('Error en GET /api/equipos/mi-equipo:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -169,7 +169,7 @@ router.post('/agregar-miembro', auth, esTeamOwner, async (req, res) => {
         });
     } catch (error) {
         console.error('Error en POST /api/equipos/agregar-miembro:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -212,7 +212,7 @@ router.put('/miembro/:id', auth, esTeamOwner, async (req, res) => {
         res.json({ mensaje: 'Miembro actualizado', usuario });
     } catch (error) {
         console.error('Error en PUT /api/equipos/miembro/:id:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -235,7 +235,7 @@ router.patch('/miembro/:id/reactivar', auth, esTeamOwner, async (req, res) => {
         res.json({ mensaje: `Usuario ${miembro.nombre} reactivado correctamente` });
     } catch (error) {
         console.error('Error en PATCH /api/equipos/miembro/:id/reactivar:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -256,7 +256,7 @@ router.put('/mi-equipo', auth, esTeamOwner, async (req, res) => {
         res.json({ mensaje: 'Equipo actualizado', equipo });
     } catch (error) {
         console.error('Error en PUT /api/equipos/mi-equipo:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -287,7 +287,7 @@ router.delete('/miembro/:id', auth, esTeamOwner, async (req, res) => {
         res.json({ mensaje: `Usuario ${miembro.nombre} desactivado correctamente` });
     } catch (error) {
         console.error('Error en DELETE /api/equipos/miembro/:id:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -317,7 +317,7 @@ router.delete('/miembro/:id/eliminar', auth, esTeamOwner, async (req, res) => {
         res.json({ mensaje: `Usuario ${miembro.nombre} eliminado del equipo correctamente` });
     } catch (error) {
         console.error('Error en DELETE /api/equipos/miembro/:id/eliminar:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -416,7 +416,7 @@ router.get('/mi-equipo/metricas', auth, async (req, res) => {
         res.json({ periodo, metricas });
     } catch (error) {
         console.error('Error en GET /api/equipos/mi-equipo/metricas:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -439,7 +439,7 @@ router.get('/metas', auth, async (req, res) => {
         res.json({ periodo, metas: metas.map(m => ({ ...m, objetivo: Number(m.objetivo || 0) })) });
     } catch (error) {
         console.error('Error en GET /api/equipos/metas:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -478,7 +478,7 @@ router.post('/metas', auth, esTeamOwner, async (req, res) => {
         res.status(201).json({ mensaje: 'Meta guardada correctamente', meta: { ...meta, objetivo: Number(meta.objetivo || 0) } });
     } catch (error) {
         console.error('Error en POST /api/equipos/metas:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -526,7 +526,7 @@ router.get('/exportar-miembros.csv', auth, esTeamOwner, async (req, res) => {
         res.status(200).send(lines.join('\n'));
     } catch (error) {
         console.error('Error en GET /api/equipos/exportar-miembros.csv:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 

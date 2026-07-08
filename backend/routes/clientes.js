@@ -77,7 +77,7 @@ router.get('/', auth, esSuperUser, async (req, res) => {
         res.json(clientes);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -144,7 +144,7 @@ router.get('/duplicados', auth, esSuperUser, async (req, res) => {
         res.json({ campo, totalGrupos: grupos.length, grupos });
     } catch (error) {
         console.error('Error al detectar duplicados:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -253,7 +253,7 @@ router.post('/fusionar-duplicados', auth, esSuperUser, async (req, res) => {
         });
     } catch (error) {
         console.error('Error al fusionar duplicados:', error);
-        res.status(500).json({ mensaje: 'Error del servidor', detalle: error.message });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}`, detalle: error.message });
     }
 });
 
@@ -277,7 +277,7 @@ router.get('/:id', auth, esSuperUser, async (req, res) => {
         if (cliente) cliente.vendedorAsignado = { nombre: vendedorNombre };
         res.json(cliente || row);
     } catch (error) {
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -333,7 +333,7 @@ router.post('/', auth, esSuperUser, async (req, res) => {
 
         res.status(201).json({ mensaje: 'Cliente creado', cliente: toMongoFormat(row) || row });
     } catch (error) {
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -432,7 +432,7 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
 
         res.json({ mensaje: 'Cliente actualizado', cliente: toMongoFormat(row) || row });
     } catch (error) {
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -459,7 +459,7 @@ router.delete('/:id', auth, esSuperUser, async (req, res) => {
         res.json({ mensaje: 'Cliente eliminado' });
     } catch (error) {
         console.error('Error al eliminar cliente:', error);
-        res.status(500).json({ mensaje: 'Error del servidor', detalle: error.message });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}`, detalle: error.message });
     }
 });
 
@@ -494,7 +494,7 @@ router.patch('/:id/etapa', auth, esSuperUser, async (req, res) => {
 
         res.json({ mensaje: 'Etapa actualizada', cliente: toMongoFormat(row) || row });
     } catch (error) {
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 

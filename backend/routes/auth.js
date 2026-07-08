@@ -100,7 +100,7 @@ router.post('/login', loginLimiter, async (req, res) => {
         );
     } catch (error) {
         console.error('Error en login:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -180,7 +180,7 @@ router.post('/register', async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error en registro:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -288,7 +288,7 @@ router.get('/me', auth, async (req, res) => {
         res.json(user);
     } catch (error) {
         console.error('Error en auth/me:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -299,7 +299,7 @@ router.get('/debug-users', async (req, res) => {
         res.json({ total: users.length, usuarios: users });
     } catch (error) {
         console.error('Error en debug-users:', error);
-        res.status(500).json({ mensaje: 'Error del servidor', error: error.message });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}`, error: error.message });
     }
 });
 
@@ -333,7 +333,7 @@ router.get('/validate-availability', async (req, res) => {
         res.json({ disponible: true });
     } catch (error) {
         console.error('Error en validate-availability:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -456,7 +456,7 @@ router.post('/register-paid', async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error en register-paid:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -517,7 +517,7 @@ router.post('/suspend-subscription', async (req, res) => {
         res.json({ mensaje: `${accion} exitosamente`, usuario: usuario.usuario });
     } catch (error) {
         console.error('❌ Error en /suspend-subscription:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -597,7 +597,7 @@ router.post('/update-subscription', async (req, res) => {
         res.json({ mensaje: 'Suscripción actualizada exitosamente', usuario: usuario.usuario, status, plan: planFinal });
     } catch (error) {
         console.error('❌ Error en /update-subscription:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -712,7 +712,7 @@ router.post('/suspend-subscription', async (req, res) => {
         res.json({ mensaje: `${accion} exitosamente`, usuario: usuario.usuario });
     } catch (error) {
         console.error('❌ Error en /suspend-subscription:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -792,7 +792,7 @@ router.post('/update-subscription', async (req, res) => {
         res.json({ mensaje: 'Suscripción actualizada exitosamente', usuario: usuario.usuario, status, plan: planFinal });
     } catch (error) {
         console.error('❌ Error en /update-subscription:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 

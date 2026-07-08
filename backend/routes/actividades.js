@@ -123,7 +123,7 @@ router.get('/cliente/:clienteId/historial-completo', auth, async (req, res) => {
         });
     } catch (error) {
         console.error('Error al obtener historial completo:', error);
-        res.status(500).json({ msg: 'Error del servidor' });
+        res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -173,7 +173,7 @@ router.get('/', auth, async (req, res) => {
         res.json(actividades);
     } catch (error) {
         console.error('Error en GET /api/actividades:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -197,7 +197,7 @@ router.post('/', auth, esSuperUser, async (req, res) => {
 
         res.status(201).json({ mensaje: 'Actividad registrada', actividad: toMongoFormat(row) || row });
     } catch (error) {
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -241,7 +241,7 @@ router.put('/:id', auth, async (req, res) => {
         res.json({ mensaje: 'Actividad actualizada', actividad: toMongoFormat(row) || row });
     } catch (error) {
         console.error('Error al actualizar actividad:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -272,7 +272,7 @@ router.delete('/:id', auth, async (req, res) => {
         res.json({ mensaje: 'Actividad eliminada correctamente' });
     } catch (error) {
         console.error('Error al eliminar actividad:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 

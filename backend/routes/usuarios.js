@@ -102,7 +102,7 @@ router.get('/team-owners', auth, esAdminUnico, async (req, res) => {
         })));
     } catch (error) {
         console.error('Error en GET /api/usuarios/team-owners:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -136,7 +136,7 @@ router.get('/all', auth, esAdminUnico, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Error en GET /api/usuarios/all:', error);
-        res.status(500).json({ mensaje: 'Error del servidor al obtener usuarios' });
+        res.status(500).json({ mensaje: `Error: ${error?.message || error}` });
     }
 });
 
@@ -158,7 +158,7 @@ router.post('/:id/activate-plan', auth, esAdminUnico, async (req, res) => {
         res.json({ mensaje: 'Suscripción activada gratuitamente con éxito' });
     } catch (error) {
         console.error('Error en POST /api/usuarios/:id/activate-plan:', error);
-        res.status(500).json({ mensaje: 'Error del servidor al activar plan' });
+        res.status(500).json({ mensaje: `Error: ${error?.message || error}` });
     }
 });
 
@@ -227,7 +227,7 @@ router.post('/team-owners', auth, esAdminUnico, async (req, res) => {
         });
     } catch (error) {
         console.error('Error en POST /api/usuarios/team-owners:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -327,7 +327,7 @@ router.put('/team-owners/:id', auth, esAdminUnico, async (req, res) => {
         });
     } catch (error) {
         console.error('Error en PUT /api/usuarios/team-owners/:id:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -399,7 +399,7 @@ router.delete('/team-owners/:id', auth, esAdminUnico, async (req, res) => {
         res.json({ mensaje: 'Propietario de equipo desactivado correctamente' });
     } catch (error) {
         console.error('Error en DELETE /api/usuarios/team-owners/:id:', error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -423,7 +423,7 @@ router.get('/', auth, async (req, res) => {
         res.json(rows.map(formatUser));
     } catch (error) {
         console.error("Error in GET /api/usuarios:", error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -456,7 +456,7 @@ router.post('/', auth, esSuperUser, async (req, res) => {
         res.status(201).json({ mensaje: 'Usuario creado', usuario: formatUser(row) });
     } catch (error) {
         console.error("Error creating user:", error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -498,7 +498,7 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
         res.json({ mensaje: 'Usuario actualizado', usuario: formatUser(updated) });
     } catch (error) {
         console.error("Error updating user:", error);
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
@@ -510,7 +510,7 @@ router.delete('/:id', auth, esSuperUser, async (req, res) => {
         await db.prepare('UPDATE usuarios SET activo = 0 WHERE id = ?').run(parseInt(req.params.id));
         res.json({ mensaje: 'Usuario desactivado' });
     } catch (error) {
-        res.status(500).json({ mensaje: 'Error del servidor' });
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
     }
 });
 
