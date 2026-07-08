@@ -118,7 +118,7 @@ const MainLayoutMobile = ({ menuItems, userInfo, diasGracia, planData }) => {
                                     transition={{ duration: 0.2 }}
                                     className="h-full"
                                 >
-                                    <Outlet />
+                                    <Outlet context={{ planData, plan_activo: planData?.plan_activo }} />
                                 </motion.div>
                             </AnimatePresence>
                         </div>

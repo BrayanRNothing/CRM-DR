@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import Avatar from '../components/ui/Avatar';
 import toast from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import API_URL from '../config/api';
 import { getUser, saveUser, getToken } from '../utils/authUtils';
@@ -33,6 +33,8 @@ const Toggle = ({ value, onChange }) => (
 
 export default function VendedorAjustes() {
     const navigate = useNavigate();
+    const context = useOutletContext();
+    const planData = context?.planData;
     const [user, setUser] = useState({ nombre: 'Usuario', usuario: 'usuario', email: '', telefono: '', rol: 'vendedor', id: null });
     const [notifs, setNotifs] = useState({ email: true, tasks: true, updates: false });
     const [googleConnected, setGoogleConnected] = useState(false);
@@ -200,8 +202,9 @@ export default function VendedorAjustes() {
 
     const handleManageSubscription = async () => {
         setLoadingPortal(true);
-        const endpoint = user?.plan_activo ? '/api/auth/billing-portal' : '/api/auth/create-renewal-checkout';
-        const loadingMsg = user?.plan_activo ? 'Abriendo portal de clientes...' : 'Abriendo pasarela de pago...';
+        const hasActivePlan = planData?.plan_activo !== false && planData?.stripe_customer_id;
+        const endpoint = hasActivePlan ? '/api/auth/billing-portal' : '/api/auth/create-renewal-checkout';
+        const loadingMsg = hasActivePlan ? 'Abriendo portal de clientes...' : 'Abriendo pasarela de pago...';
         const tid = toast.loading(loadingMsg);
         
         try {
@@ -225,7 +228,7 @@ export default function VendedorAjustes() {
             }
 
             // Fallback si falla el portal de clientes por falta de customer ID
-            if (data.code === 'NO_STRIPE_CUSTOMER' && user?.plan_activo) {
+            if (data.code === 'NO_STRIPE_CUSTOMER' && hasActivePlan) {
                 toast.loading('Abriendo pasarela de pago...', { id: tid });
                 const res2 = await fetch(`${API_URL}/api/auth/create-renewal-checkout`, {
                     method: 'POST',

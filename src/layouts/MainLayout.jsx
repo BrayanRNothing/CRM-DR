@@ -43,7 +43,8 @@ const MainLayout = () => {
                 // Guardar datos del plan para el botón de renovación
                 setPlanData({
                     plan: data.plan || 'mensual',
-                    stripe_customer_id: data.stripe_customer_id || null
+                    stripe_customer_id: data.stripe_customer_id || null,
+                    plan_activo: data.plan_activo
                 });
                 // Si plan_activo es false y hay plan_vencimiento → calcular días de gracia restantes
                 if (data.plan_activo === false && data.plan_vencimiento) {
@@ -264,7 +265,7 @@ const MainLayout = () => {
                             )}
 
                             <div className={`flex-1 scrollbar-hide ${isAjustesRoute || isDashboard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-                                <Outlet />
+                                <Outlet context={{ planData, plan_activo: planData?.plan_activo }} />
                             </div>
                         </>
                     )}
