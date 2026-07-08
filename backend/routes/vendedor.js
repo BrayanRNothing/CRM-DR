@@ -43,6 +43,34 @@ const isShared = (cliente) => {
     return false;
 };
 
+const calculateFacturadoFromSections = (customSectionsRaw, fallback = 0) => {
+    let total = parseFloat(fallback) || 0;
+    if (!customSectionsRaw) return total;
+    try {
+        const sections = typeof customSectionsRaw === 'string' ? JSON.parse(customSectionsRaw) : customSectionsRaw;
+        if (!Array.isArray(sections)) return total;
+        
+        let customTotal = 0;
+        let hasSales = false;
+        
+        sections.forEach(sec => {
+            if (sec.tipo === 'sales' || sec.tipo === 'subscriptions') {
+                hasSales = true;
+                if (Array.isArray(sec.contenido)) {
+                    sec.contenido.forEach(item => {
+                        const m = parseFloat(item.monto);
+                        if (!isNaN(m)) customTotal += m;
+                    });
+                }
+            }
+        });
+        
+        return hasSales ? customTotal : total;
+    } catch (e) {
+        return total;
+    }
+};
+
 const canReadCliente = (cliente, usuarioId, equipoId) => {
     const ownerId = getOwnerId(cliente);
     if (ownerId && ownerId === usuarioId) return true;
@@ -797,6 +825,7 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
                 out.compartido = isShared(c);
                 out.propietarioNombre = propietarioNombre || null;
                 if (totalFacturado !== undefined && totalFacturado !== null) out.totalFacturado = totalFacturado;
+                out.totalFacturado = calculateFacturadoFromSections(c.customSections, out.totalFacturado);
             }
             return out || c;
         });
@@ -2211,6 +2240,7 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
                 // Asegurar proximaLlamada unificada
                 out.proximaLlamada = out.proximaLlamada || out.proximallamada || null;
                 if (totalFacturado !== undefined && totalFacturado !== null) out.totalFacturado = totalFacturado;
+                out.totalFacturado = calculateFacturadoFromSections(c.customSections, out.totalFacturado);
             }
             return out;
         }));
@@ -3290,6 +3320,7 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
                 out.ultimaActNotas = act?.notas || null;
                 // Asegurar proximaLlamada unificada
                 out.proximaLlamada = out.proximaLlamada || out.proximallamada || null;
+                out.totalFacturado = calculateFacturadoFromSections(c.customSections, 0);
             }
             return out;
         }));
