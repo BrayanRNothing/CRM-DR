@@ -736,7 +736,8 @@ router.post('/update-subscription', async (req, res) => {
             stripe_customer_id,
             status,          // 'active' | 'past_due' | 'canceled' | 'paused' | 'unpaid'
             plan,            // opcional — si el plan cambió (mensual, anual, mensual_equipo)
-            plan_vencimiento // opcional — nueva fecha de vencimiento ISO string
+            plan_vencimiento, // opcional — nueva fecha de vencimiento ISO string
+            is_renewal       // opcional — true si el webhook detectó avance de ciclo
         } = req.body;
 
         if (!stripe_subscription_id && !stripe_customer_id) {
@@ -791,6 +792,16 @@ router.post('/update-subscription', async (req, res) => {
                 .run('registro', usuario.id, `Suscripción actualizada via Stripe — status: ${status}, plan: ${planFinal}`, 'exitoso');
         } catch (actError) {
             console.error('Error registrando actividad de actualización:', actError);
+        }
+
+        if (is_renewal && estaActivo) {
+            try {
+                const { enviarCorreoRenovacion } = require('../services/emailService');
+                await enviarCorreoRenovacion(usuario.email, usuario.nombre, planFinal);
+                console.log(`✉️ Correo de renovación de ciclo enviado a ${usuario.email}`);
+            } catch (e) {
+                console.error('Error enviando correo de renovación desde update-subscription:', e);
+            }
         }
 
         res.json({ mensaje: 'Suscripción actualizada exitosamente', usuario: usuario.usuario, status, plan: planFinal });
