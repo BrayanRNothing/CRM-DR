@@ -352,11 +352,17 @@ export default function VendedorAjustes() {
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <span className="text-sm font-bold text-(--theme-600)">Plan</span>
-                                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black text-white bg-linear-to-r ${roleBg}`}>PREMIUM</span>
+                                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black text-white bg-linear-to-r ${roleBg}`}>{(planData?.plan || 'Gratis').toUpperCase()}</span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-bold text-(--theme-600)">Sesión</span>
-                                        <span className="text-xs font-medium text-(--theme-500)">Activa</span>
+                                        <span className="text-sm font-bold text-(--theme-600)">Estado Suscripción</span>
+                                        <span className={`text-xs font-medium ${planData?.plan_activo !== false ? 'text-(--theme-500)' : 'text-red-500'}`}>
+                                            {planData?.plan_activo !== false ? 'Activo' : 'Inactivo/Expirado'}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-bold text-(--theme-600)">ID de Stripe</span>
+                                        <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{planData?.stripe_customer_id || 'No vinculado'}</span>
                                     </div>
                                     <div className="pt-2 mt-2 border-t border-(--theme-200)/50">
                                         <button
