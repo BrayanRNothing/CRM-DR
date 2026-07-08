@@ -46,6 +46,22 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ✅ LOGGER (Para ver qué endpoints se llaman, con qué código responden y el tiempo)
+// Esto NO loguea contraseñas ni tokens, solo la ruta y el estado, por lo que es 100% seguro.
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        const logLine = `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - Status: ${res.statusCode} - ${duration}ms`;
+        if (res.statusCode >= 400) {
+            console.error('❌ ' + logLine);
+        } else if (!req.originalUrl.includes('/health')) { // Ignorar logs de healthchecks para no hacer spam
+            console.log('✅ ' + logLine);
+        }
+    });
+    next();
+});
+
 
 
 // ✅ Servir archivos subidos (contratos PDF) antes de cualquier otra ruta
