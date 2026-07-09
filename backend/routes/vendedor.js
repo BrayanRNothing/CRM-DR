@@ -187,11 +187,31 @@ router.get('/dashboard', [auth, esVendedor], async (req, res) => {
             `).all(prospectorId, prospectorId)
         ]);
 
+        // Filtramos para incluir solo los que son o fueron prospectos
+        const clientesEmbudo = clientes.filter(c => {
+            // Si NO es cliente, es prospecto, entra al embudo seguro.
+            if (c.tipo !== 'cliente') return true;
+
+            // Si ES cliente, ¿cómo sabemos que fue un prospecto que se convirtió?
+            // 1. Tiene a este usuario como prospectorAsignado (los clientes directos no suelen tener prospector, o si lo tienen es porque empezaron como prospecto)
+            if (c.prospectorAsignado && c.prospectorAsignado === prospectorId) return true;
+
+            // 2. Tiene historial de embudo de prospecto.
+            const hist = parseHistorialSeguro(c.historialEmbudo);
+            const tuvoEtapaProspecto = hist.some(h => 
+                ['prospecto_nuevo', 'en_contacto', 'reunion_agendada', 'reunion_realizada', 'en_negociacion', 'venta_ganada'].includes(h.etapa)
+            );
+            if (tuvoEtapaProspecto) return true;
+
+            // Si fue un cliente directo que simplemente contactó el vendedor, no va en el embudo
+            return false;
+        });
+
         // Embudo histórico unificado
         const embudo = { 
-            total: clientes.length, 
-            prospectos_activos: clientes.filter(c => c.tipo !== 'cliente').length,
-            prospecto_nuevo: clientes.length, 
+            total: clientesEmbudo.length, 
+            prospectos_activos: clientesEmbudo.filter(c => c.tipo !== 'cliente').length,
+            prospecto_nuevo: clientesEmbudo.length, 
             en_contacto: 0, 
             reunion_agendada: 0, 
             transferidos: 0,
@@ -204,7 +224,7 @@ router.get('/dashboard', [auth, esVendedor], async (req, res) => {
         const etapasRealizado = new Set(['reunion_realizada','venta_ganada','en_negociacion','cotizacion_realizada','contrato_firmado','esperando_pago','cliente_activo']);
         const etapasGanada = new Set(['venta_ganada','contrato_firmado','esperando_pago','cliente_activo']);
 
-        for (const c of clientes) {
+        for (const c of clientesEmbudo) {
             let contactado = false, agendado = false, realizado = false, ganado = false;
             const transferido = !!c.closerAsignado;
 

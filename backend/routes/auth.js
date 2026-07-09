@@ -918,6 +918,7 @@ router.post('/create-renewal-checkout', async (req, res) => {
             payment_method_types: ['card'],
             mode: 'subscription',
             line_items: [{ price: priceId, quantity: 1 }],
+            allow_promotion_codes: true,
             success_url: `${returnUrl}/vendedor`,
             cancel_url: `${returnUrl}/vendedor`,
             locale: 'es',
