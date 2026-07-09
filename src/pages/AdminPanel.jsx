@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { UserPlus, Users, Loader2, Pencil, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import API_URL from '../config/api';
 import { getToken, getUser } from '../utils/authUtils';
 import socket from '../config/socket';
 
