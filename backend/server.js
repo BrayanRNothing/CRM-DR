@@ -161,8 +161,20 @@ const io = new Server(server, {
 // Guardar io en la app para usarlo en las rutas
 app.set('io', io);
 
+// Mapa en memoria para rastrear conexiones: socketId -> userId
+const onlineUsers = new Map();
+
 io.on('connection', (socket) => {
     console.log(`⚡ Cliente conectado a WebSockets: ${socket.id}`);
+
+    // Registrar usuario como conectado
+    socket.on('user_connected', (userId) => {
+        if (userId) {
+            onlineUsers.set(socket.id, userId);
+            // Avisar a todos que el usuario está online
+            io.emit('user_status_changed', { userId, isOnline: true });
+        }
+    });
 
     // Unirse a la sala del equipo (el frontend debe emitir este evento tras el login)
     socket.on('join_team', (equipoId) => {
@@ -178,8 +190,26 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
         console.log(`🔌 Cliente desconectado: ${socket.id}`);
+        const userId = onlineUsers.get(socket.id);
+        
+        if (userId) {
+            onlineUsers.delete(socket.id);
+            const now = new Date().toISOString();
+            
+            // Emitir offline a todos
+            io.emit('user_status_changed', { userId, isOnline: false, ultimaConexion: now });
+            
+            // Actualizar la última conexión en la base de datos
+            try {
+                const { db } = require('./config/database');
+                // IMPORTANTE: Asegurarse de usar comillas dobles para ultimaConexion en PostgreSQL
+                await db.prepare('UPDATE usuarios SET "ultimaConexion" = ? WHERE id = ?').run(now, userId);
+            } catch (err) {
+                console.error('❌ Error al actualizar ultimaConexion en DB:', err);
+            }
+        }
     });
 });
 

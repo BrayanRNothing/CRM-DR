@@ -16,6 +16,9 @@ const joinTeamRoom = () => {
         const raw = localStorage.getItem('user') || sessionStorage.getItem('user');
         if (raw) {
             const user = JSON.parse(raw);
+            if (user?.id) {
+                socket.emit('user_connected', user.id);
+            }
             if (user?.equipo_id) {
                 socket.emit('join_team', user.equipo_id);
                 console.log(`👥 Unido a sala WebSocket: team_${user.equipo_id}`);

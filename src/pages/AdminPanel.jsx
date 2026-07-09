@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { UserPlus, Users, Loader2, Pencil, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import API_URL from '../config/api';
 import { getToken, getUser } from '../utils/authUtils';
+import socket from '../config/socket';
 
 const initialForm = {
   usuario: '',
@@ -27,6 +27,8 @@ export default function AdminPanel() {
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [expandedOwnerId, setExpandedOwnerId] = useState(null);
   const [sortBy, setSortBy] = useState('estado_suscripcion');
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
+  const [lastConnections, setLastConnections] = useState({});
 
   const isAdminRoot = currentUser?.rol === 'admin';
 
@@ -51,6 +53,31 @@ export default function AdminPanel() {
       fetchOwners();
     }
   }, [isAdminRoot]);
+
+  useEffect(() => {
+    const handleStatusChange = (data) => {
+      const { userId, isOnline, ultimaConexion } = data;
+      setOnlineUsers(prev => {
+        const next = new Set(prev);
+        if (isOnline) {
+          next.add(Number(userId));
+        } else {
+          next.delete(Number(userId));
+        }
+        return next;
+      });
+
+      if (!isOnline && ultimaConexion) {
+        setLastConnections(prev => ({ ...prev, [Number(userId)]: ultimaConexion }));
+      }
+    };
+
+    socket.on('user_status_changed', handleStatusChange);
+
+    return () => {
+      socket.off('user_status_changed', handleStatusChange);
+    };
+  }, []);
 
   const sortedOwners = useMemo(() => {
     let sorted = [...owners];
@@ -336,13 +363,21 @@ export default function AdminPanel() {
                         <tr className={`border-b border-slate-200 text-slate-800 align-top transition-colors ${baseRowClass} ${!owner.activo ? 'opacity-70 grayscale-[20%]' : ''}`}>
                           <td className="py-3 font-semibold">
                             <div className="flex flex-col gap-1">
-                              <span>{owner.nombre}</span>
+                              <span className="flex items-center gap-2">
+                                {owner.nombre}
+                                {onlineUsers.has(owner.id) && (
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="En línea ahora"></span>
+                                )}
+                              </span>
                               {!owner.activo && (
                                 <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 self-start">
                                   DESACTIVADO
                                 </span>
                               )}
                               <span className="text-xs text-slate-500 font-normal">Creado: {new Date(owner.fechaCreacion).toLocaleDateString()}</span>
+                              {!onlineUsers.has(owner.id) && (lastConnections[owner.id] || owner.ultimaConexion) && (
+                                <span className="text-xs text-slate-400 font-normal">Última vez: {new Date(lastConnections[owner.id] || owner.ultimaConexion).toLocaleString()}</span>
+                              )}
                               {owner.subUsers.length > 0 && (
                                 <button
                                   type="button"
@@ -450,6 +485,9 @@ export default function AdminPanel() {
                                 <span className="flex items-center gap-2 text-sm text-indigo-900">
                                   <Users className="w-3.5 h-3.5 text-indigo-500" />
                                   {sub.nombre}
+                                  {onlineUsers.has(sub.id) && (
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="En línea ahora"></span>
+                                  )}
                                 </span>
                                 {!sub.activo && (
                                   <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 self-start">
@@ -457,6 +495,9 @@ export default function AdminPanel() {
                                   </span>
                                 )}
                                 <span className="text-xs text-slate-500 font-normal">Creado: {new Date(sub.fechaCreacion).toLocaleDateString()}</span>
+                                {!onlineUsers.has(sub.id) && (lastConnections[sub.id] || sub.ultimaConexion) && (
+                                  <span className="text-xs text-slate-400 font-normal">Última vez: {new Date(lastConnections[sub.id] || sub.ultimaConexion).toLocaleString()}</span>
+                                )}
                               </div>
                             </td>
                             <td className="py-3">

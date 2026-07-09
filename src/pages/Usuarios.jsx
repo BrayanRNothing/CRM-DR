@@ -3,6 +3,7 @@ import Avatar from '../components/ui/Avatar';
 import toast from 'react-hot-toast';
 import API_URL from '../config/api';
 import { getToken } from '../utils/authUtils';
+import socket from '../config/socket';
 import { X, User, Phone, Mail, Lock, Shield, Trash2, Edit2, Search, Plus, Calendar, CheckCircle2, XCircle, Eye, EyeOff, Target } from 'lucide-react';
 
 const GoogleIcon = ({ size = 14 }) => (
@@ -177,6 +178,8 @@ function Usuarios({ initialRole }) {
     const [formData, setFormData] = useState({ username: '', nombre: '', email: '', telefono: '', password: '', rol: 'vendedor' });
     const [confirmarEliminar, setConfirmarEliminar] = useState({ visible: false, id: null, nombre: '' });
     const [eliminando, setEliminando] = useState(false);
+    const [onlineUsers, setOnlineUsers] = useState(new Set());
+    const [lastConnections, setLastConnections] = useState({});
 
     const token = () => getToken();
 
@@ -184,6 +187,31 @@ function Usuarios({ initialRole }) {
     useEffect(() => {
         if (initialRole) setFormData(p => ({ ...p, rol: initialRole }));
     }, [initialRole]);
+
+    useEffect(() => {
+        const handleStatusChange = (data) => {
+            const { userId, isOnline, ultimaConexion } = data;
+            setOnlineUsers(prev => {
+                const next = new Set(prev);
+                if (isOnline) {
+                    next.add(Number(userId));
+                } else {
+                    next.delete(Number(userId));
+                }
+                return next;
+            });
+
+            if (!isOnline && ultimaConexion) {
+                setLastConnections(prev => ({ ...prev, [Number(userId)]: ultimaConexion }));
+            }
+        };
+
+        socket.on('user_status_changed', handleStatusChange);
+
+        return () => {
+            socket.off('user_status_changed', handleStatusChange);
+        };
+    }, []);
 
     const cargarUsuarios = async () => {
         setCargando(true);
@@ -354,7 +382,12 @@ function Usuarios({ initialRole }) {
                                         <div className="flex items-start gap-3 mb-4">
                                             <Avatar name={user.nombre} size="lg" />
                                             <div className="flex-1 min-w-0">
-                                                <h3 className="font-bold text-gray-900 truncate leading-tight">{user.nombre}</h3>
+                                                <h3 className="font-bold text-gray-900 truncate leading-tight flex items-center gap-2">
+                                                    {user.nombre}
+                                                    {onlineUsers.has(user.id) && (
+                                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" title="En línea ahora"></span>
+                                                    )}
+                                                </h3>
                                                 <p className="text-xs text-gray-400 truncate">@{user.usuario}</p>
                                                 <span className={`inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border ${role.badge}`}>
                                                     {role.label}
@@ -400,6 +433,12 @@ function Usuarios({ initialRole }) {
                                                 <div className="flex items-center gap-2 text-xs text-gray-400">
                                                     <Calendar size={12} className="text-gray-300 shrink-0" />
                                                     <span>Desde {new Date(user.fechaCreacion).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                                                </div>
+                                            )}
+                                            {!onlineUsers.has(user.id) && (lastConnections[user.id] || user.ultimaConexion) && (
+                                                <div className="flex items-center gap-2 text-xs text-gray-400">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0"></span>
+                                                    <span>Últ. vez: {new Date(lastConnections[user.id] || user.ultimaConexion).toLocaleString()}</span>
                                                 </div>
                                             )}
                                         </div>

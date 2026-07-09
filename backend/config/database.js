@@ -309,6 +309,7 @@ const initDb = async () => {
     telefono TEXT,
     activo INTEGER DEFAULT 1,
     fechaCreacion TEXT DEFAULT CURRENT_TIMESTAMP,
+    "ultimaConexion" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     "googleRefreshToken" TEXT,
     "googleAccessToken" TEXT,
     "googleTokenExpiry" DOUBLE PRECISION
@@ -591,6 +592,7 @@ const initDb = async () => {
       ['usuarios', 'plan_activo',             'BOOLEAN DEFAULT FALSE'],
       ['usuarios', 'plan_vencimiento',        'TIMESTAMPTZ'],
       ['usuarios', 'max_usuarios',            'INTEGER DEFAULT 2'],
+      ['usuarios', '"ultimaConexion"',        'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP'],
     ];
     for (const [table, col, type] of colsMissingPg) {
       try {
@@ -756,6 +758,7 @@ const initDb = async () => {
       ['usuarios', 'googleRefreshToken TEXT'],
       ['usuarios', 'googleAccessToken TEXT'],
       ['usuarios', 'googleTokenExpiry REAL'],
+      ['usuarios', 'ultimaConexion TEXT DEFAULT (datetime(\'now\'))'],
       ['clientes', 'customMetricValue TEXT'],
       ['actividades', 'invitados TEXT'],
       ['actividades', 'createdAt TEXT DEFAULT (datetime(\'now\'))'],
