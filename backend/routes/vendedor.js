@@ -670,16 +670,10 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
         if (visibilityScope === 'mine') {
             visibilityWhere.push('COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) = ?');
             params.push(prospectorId);
-        } else if (visibilityScope === 'shared') {
-            visibilityWhere.push('COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) <> ?');
-            params.push(prospectorId);
-            visibilityWhere.push('c.compartido = TRUE');
-            if (equipoId) {
-                visibilityWhere.push('c."equipo_id" = ?');
-                params.push(equipoId);
-            } else {
-                visibilityWhere.push('1 = 0');
-            }
+                } else if (visibilityScope === 'shared') {
+            visibilityWhere.push('c.compartido = 1');
+            visibilityWhere.push('(COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) = ? OR c."equipo_id" = ?)');
+            params.push(prospectorId, equipoId || null);
         } else {
             visibilityWhere.push('(COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) = ? OR (c.compartido = TRUE AND COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) <> ?' + (equipoId ? ' AND c."equipo_id" = ?' : '') + '))');
             params.push(prospectorId, prospectorId);
@@ -787,16 +781,10 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
         if (visibilityScope === 'mine') {
             visibilityWhere.push('COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) = ?');
             params.push(prospectorId);
-        } else if (visibilityScope === 'shared') {
-            visibilityWhere.push('COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) <> ?');
-            params.push(prospectorId);
-            visibilityWhere.push('c.compartido = TRUE');
-            if (equipoId) {
-                visibilityWhere.push('c."equipo_id" = ?');
-                params.push(equipoId);
-            } else {
-                visibilityWhere.push('1 = 0');
-            }
+                } else if (visibilityScope === 'shared') {
+            visibilityWhere.push('c.compartido = 1');
+            visibilityWhere.push('(COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) = ? OR c."equipo_id" = ?)');
+            params.push(prospectorId, equipoId || null);
         } else {
             visibilityWhere.push('(COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) = ? OR (c.compartido = TRUE AND COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) <> ?' + (equipoId ? ' AND c."equipo_id" = ?' : '') + '))');
             params.push(prospectorId, prospectorId);
@@ -1375,10 +1363,13 @@ router.patch('/prospectos/:id/compartir', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Solo el propietario puede cambiar la visibilidad' });
         }
 
-        const compartido = req.body?.compartido === true || req.body?.compartido === 1 || req.body?.compartido === '1';
+        const compartido = req.body?.compartido === true || req.body?.compartido === 1 || req.body?.compartido === '1' ? 1 : 0;
         await db.prepare('UPDATE clientes SET compartido = ? WHERE id = ?').run(compartido, prospectoId);
+        
+        // Invalidate cache so the changes persist on reload
+        invalidateUserCache(usuarioId);
 
-        res.json({ msg: 'Visibilidad actualizada', compartido });
+        res.json({ msg: 'Visibilidad actualizada', compartido: !!compartido });
     } catch (error) {
         console.error('Error al actualizar visibilidad:', error);
         res.status(500).json({ msg: `Error del servidor: ${error?.message || error}` });

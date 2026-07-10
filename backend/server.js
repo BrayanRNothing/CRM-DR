@@ -176,6 +176,12 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Solicitar lista inicial de usuarios online
+    socket.on('get_online_users', () => {
+        const activeIds = Array.from(new Set(onlineUsers.values()));
+        socket.emit('online_users_list', activeIds);
+    });
+
     // Unirse a la sala del equipo (el frontend debe emitir este evento tras el login)
     socket.on('join_team', (equipoId) => {
         if (equipoId) {

@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { UserPlus, Users, Loader2, Pencil, Trash2, X } from 'lucide-react';
+import { UserPlus, Users, Loader2, Pencil, Trash2, X, Shield, Mail, Phone, Clock, ChevronRight, ChevronsRight, ChevronDown, Zap, CreditCard, Key, Copy, Check, Settings, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../config/api';
 import { getToken, getUser } from '../utils/authUtils';
 import socket from '../config/socket';
+import AdminUserDetalle from '../components/AdminUserDetalle';
 
 const initialForm = {
   usuario: '',
@@ -30,6 +31,7 @@ export default function AdminPanel() {
   const [sortBy, setSortBy] = useState('estado_suscripcion');
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [lastConnections, setLastConnections] = useState({});
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const isAdminRoot = currentUser?.rol === 'admin';
 
@@ -56,6 +58,12 @@ export default function AdminPanel() {
   }, [isAdminRoot]);
 
   useEffect(() => {
+    socket.emit('get_online_users');
+
+    socket.on('online_users_list', (userIds) => {
+      setOnlineUsers(new Set(userIds.map(id => Number(id))));
+    });
+
     const handleStatusChange = (data) => {
       const { userId, isOnline, ultimaConexion } = data;
       setOnlineUsers(prev => {
@@ -76,6 +84,7 @@ export default function AdminPanel() {
     socket.on('user_status_changed', handleStatusChange);
 
     return () => {
+      socket.off('online_users_list');
       socket.off('user_status_changed', handleStatusChange);
     };
   }, []);
@@ -131,6 +140,9 @@ export default function AdminPanel() {
 
     return Array.from(ownersMap.values());
   }, [sortedOwners]);
+
+  const normalOwners = useMemo(() => groupedOwners.filter(o => !o.usuario?.startsWith('demo_')), [groupedOwners]);
+  const demoOwners = useMemo(() => groupedOwners.filter(o => o.usuario?.startsWith('demo_')), [groupedOwners]);
 
   if (!currentUser) {
     return <Navigate to="/" replace />;
@@ -243,6 +255,26 @@ export default function AdminPanel() {
     }
   };
 
+  const handleForcePassword = async (userId, newPassword) => {
+    try {
+      const res = await fetch(`${API_URL}/api/usuarios/${userId}/force-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify({ nuevaContraseña: newPassword })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.mensaje || 'No se pudo cambiar la contraseña');
+      
+      toast.success('Contraseña actualizada correctamente');
+    } catch (error) {
+      toast.error(error.message || 'Error al cambiar la contraseña');
+    }
+  };
+
   const handleDeleteOwner = async (owner, hardDelete = false) => {
     const actionText = hardDelete ? 'eliminar permanentemente' : 'desactivar';
     const confirmDelete = window.confirm(
@@ -279,10 +311,221 @@ export default function AdminPanel() {
     setExpandedOwnerId((current) => (String(current) === String(ownerId) ? null : ownerId));
   };
 
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  };
+
+  const getAvatarColor = (name) => {
+    const colors = ['bg-blue-100 text-blue-700', 'bg-indigo-100 text-indigo-700', 'bg-purple-100 text-purple-700', 'bg-pink-100 text-pink-700', 'bg-emerald-100 text-emerald-700', 'bg-teal-100 text-teal-700'];
+    if (!name) return colors[0];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+  const renderTable = (ownersList, isDemo) => (
+    <div className="overflow-x-auto bg-white rounded-xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05),0_0_1px_rgba(0,0,0,0.1)]">
+      <table className="w-full min-w-[900px] text-sm text-left">
+        <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-500">
+          <tr>
+            <th className="py-4 px-5 font-bold uppercase tracking-wider text-[11px] rounded-tl-xl w-[30%]">Usuario & Contacto</th>
+            <th className="py-4 px-5 font-bold uppercase tracking-wider text-[11px] w-[20%] text-center">Equipo</th>
+            <th className="py-4 px-5 font-bold uppercase tracking-wider text-[11px] w-[20%]">Suscripción</th>
+            <th className="py-4 px-5 font-bold uppercase tracking-wider text-[11px] w-[15%]">Actividad</th>
+            <th className="py-4 px-5 font-bold uppercase tracking-wider text-[11px] text-right rounded-tr-xl w-[15%]">Acciones</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {ownersList.map((owner, index) => {
+            const isOnline = onlineUsers.has(owner.id);
+            const avatarColor = getAvatarColor(owner.nombre);
+            
+            return (
+              <React.Fragment key={owner.id}>
+              <tr className={`transition-colors border-b-4 border-white ${
+                  !owner.activo 
+                    ? (index % 2 === 0 ? 'bg-slate-50 opacity-75 grayscale-[20%]' : 'bg-slate-100 opacity-75 grayscale-[20%]')
+                    : isDemo 
+                      ? (index % 2 === 0 ? 'bg-orange-50/30 hover:bg-orange-50/60' : 'bg-orange-50/50 hover:bg-orange-50/80')
+                      : owner.plan_activo 
+                        ? (index % 2 === 0 ? 'bg-emerald-50/40 hover:bg-emerald-50/70' : 'bg-emerald-50/60 hover:bg-emerald-50/80')
+                        : (index % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-slate-50 hover:bg-slate-100')
+                }`}>
+                {/* 1. Usuario & Contacto */}
+                <td className="py-4 px-5 align-top">
+                  <div className="flex items-start gap-3.5">
+                    <div className="flex flex-col min-w-0 pt-0.5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-slate-900 truncate">{owner.nombre}</span>
+                        {!owner.activo && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-red-100 text-red-700">Inactivo</span>
+                        )}
+                        {isDemo && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-orange-100 text-orange-700">Demo</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 truncate mb-0.5">
+                        <Shield className="w-3 h-3 text-slate-400" />
+                        <span className="font-medium text-slate-600">@{owner.usuario}</span>
+                      </div>
+                      {owner.telefono && (
+                        <div className="flex items-center gap-3 text-xs text-slate-500 truncate mt-1">
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-slate-400" />
+                            {owner.telefono}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </td>
+
+                {/* 2. Equipo */}
+                <td className="py-4 px-5 align-middle">
+                  <div className="flex items-center justify-center">
+                    {owner.subUsers.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedOwnerId(expandedOwnerId === owner.id ? null : owner.id)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all shadow-sm ${expandedOwnerId === owner.id ? 'bg-indigo-600 text-white shadow-indigo-200' : 'bg-white text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200'}`}
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        {owner.subUsers.length} miembros
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandedOwnerId === owner.id ? 'rotate-180' : ''}`} />
+                      </button>
+                    ) : (
+                      <span className="text-xs font-semibold text-slate-400">Sin miembros</span>
+                    )}
+                  </div>
+                </td>
+
+                {/* 3. Suscripción */}
+                <td className="py-4 px-5 align-top">
+                  <div className="flex flex-col gap-2 pt-0.5 items-start">
+                    {owner.plan_activo && !isDemo ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200 shadow-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.5)] animate-pulse"></span>
+                        {String(owner.plan || 'PRO').toUpperCase()} {String(owner.plan || '').toLowerCase().includes('gratis') ? '(Gratis)' : String(owner.plan || '').toLowerCase().includes('anual') ? '($1,990)' : '($199)'}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold border border-slate-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                        {String(owner.plan || 'BÁSICO').toUpperCase()} (Gratis)
+                      </span>
+                    )}
+                    {owner.plan_vencimiento ? (
+                      <span className="text-[11px] text-slate-500 font-medium bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                        Vence: {new Date(owner.plan_vencimiento).toLocaleDateString()}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-slate-400 font-medium">Sin vencimiento</span>
+                    )}
+                  </div>
+                </td>
+
+                {/* 4. Actividad */}
+                <td className="py-4 px-5 align-top">
+                  <div className="flex flex-col gap-2 pt-1">
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.6)]' : 'bg-slate-300'}`}></div>
+                      <span className={`text-[11px] font-bold uppercase tracking-wider ${isOnline ? 'text-emerald-700' : 'text-slate-500'}`}>
+                        {isOnline ? 'En línea' : 'Desconectado'}
+                      </span>
+                    </div>
+                    {!isOnline && (lastConnections[owner.id] || owner.ultimaConexion) && (
+                      <span className="text-[10px] text-slate-400 mt-1">
+                        Últ: {new Date(lastConnections[owner.id] || owner.ultimaConexion).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                      </span>
+                    )}
+                  </div>
+                </td>
+
+                {/* 5. Acciones */}
+                <td className="py-4 px-5 align-top">
+                  <div className="flex flex-wrap items-center justify-end gap-1.5 pt-0.5">
+                    <button
+                      onClick={() => setSelectedUser(owner)}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black tracking-widest uppercase text-white bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all focus:ring-4 focus:ring-indigo-600/20"
+                    >
+                      Gestionar
+                      <ChevronsRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              {expandedOwnerId === owner.id && owner.subUsers.length > 0 && owner.subUsers.map((sub, idx) => (
+                <tr key={sub.id} className="bg-slate-50/60 border-b border-slate-100/50 hover:bg-slate-100/60 transition-colors">
+                  {/* 1. Usuario & Contacto (Member) */}
+                  <td className="py-3 px-5 align-top pl-12 border-l-4 border-indigo-300">
+                    <div className="flex items-center gap-3">
+                      <div className="flex flex-col min-w-0 pt-0.5">
+                        <span className="font-semibold text-slate-800 text-sm truncate">{sub.nombre}</span>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500 truncate mt-0.5">
+                          <Shield className="w-3 h-3 text-slate-400" />
+                          <span className="font-medium text-slate-600">@{sub.usuario}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  {/* 2. Equipo */}
+                  <td className="py-3 px-5 align-middle text-center">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm">Miembro</span>
+                  </td>
+                  {/* 3. Suscripción */}
+                  <td className="py-3 px-5 align-middle">
+                    <span className="text-xs text-slate-500 font-medium">Plan Heredado</span>
+                  </td>
+                  {/* 4. Actividad */}
+                  <td className="py-3 px-5 align-middle">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <div className={`w-1.5 h-1.5 rounded-full ${onlineUsers.has(sub.id) ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                        <span className={`text-[10px] font-bold uppercase ${onlineUsers.has(sub.id) ? 'text-emerald-700' : 'text-slate-500'}`}>
+                          {onlineUsers.has(sub.id) ? 'En línea' : 'Desconectado'}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  {/* 5. Acciones */}
+                  <td className="py-3 px-5 align-middle">
+                    <div className="flex flex-wrap items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => setSelectedUser({...sub, subUsers: [], plan: owner.plan, plan_activo: owner.plan_activo, stripe_subscription_id: 'Heredado', stripe_customer_id: 'Heredado'})}
+                        className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase text-slate-600 bg-white border border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 shadow-sm transition-all"
+                      >
+                        Gestionar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              </React.Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  if (selectedUser) {
+    return (
+      <AdminUserDetalle
+        user={selectedUser}
+        token={token}
+        onVolver={() => setSelectedUser(null)}
+        onActualizado={fetchOwners}
+        handleForcePassword={handleForcePassword}
+        handleStartEdit={(u) => { setSelectedUser(null); handleStartEdit(u); }}
+        handleDeleteOwner={(u, p) => { setSelectedUser(null); handleDeleteOwner(u, p); }}
+      />
+    );
+  }
+
   return (
     <>
       <div className="w-full min-h-full bg-slate-50 p-6 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-6">
+        <div className="w-full max-w-full mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">Administración de usuarios del sistema</h1>
@@ -308,7 +551,9 @@ export default function AdminPanel() {
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="text-sm text-slate-600">
-                Usuarios propietarios activos: <span className="font-bold text-slate-900">{groupedOwners.filter(o => o.activo).length}</span> de <span className="font-bold text-slate-900">{groupedOwners.length}</span>
+                Usuarios propietarios activos: <span className="font-bold text-slate-900">{normalOwners.filter(o => o.activo).length}</span> de <span className="font-bold text-slate-900">{normalOwners.length}</span> (Normales)
+                <span className="mx-2 text-slate-300">|</span>
+                Demos: <span className="font-bold text-slate-900">{demoOwners.length}</span>
               </div>
               <p className="text-xs text-slate-500">
                 Haz click en "usuarios creados" para ver el detalle de cada equipo.
@@ -341,226 +586,22 @@ export default function AdminPanel() {
                 Aún no hay propietarios de equipo creados.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[620px] text-sm border-collapse">
-                  <thead>
-                    <tr className="text-left text-slate-500 border-b border-slate-100">
-                      <th className="py-2 text-left font-black uppercase tracking-[0.16em] text-[10px] text-slate-500 w-1/4">Usuario</th>
-                      <th className="py-2 text-left font-black uppercase tracking-[0.16em] text-[10px] text-slate-500">Credenciales</th>
-                      <th className="py-2 text-left font-black uppercase tracking-[0.16em] text-[10px] text-slate-500">Equipo</th>
-                      <th className="py-2 text-left font-black uppercase tracking-[0.16em] text-[10px] text-slate-500">Suscripción</th>
-                      <th className="py-2 text-right font-black uppercase tracking-[0.16em] text-[10px] text-slate-500">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {groupedOwners.map((owner, ownerIndex) => {
-                      const isEvenRow = ownerIndex % 2 === 0;
-                      const baseRowClass = isEvenRow
-                        ? 'bg-white hover:bg-slate-50/70'
-                        : 'bg-slate-100/70 hover:bg-slate-200/60';
-
-                      return (
-                        <React.Fragment key={owner.id}>
-                        <tr className={`border-b border-slate-200 text-slate-800 align-top transition-colors ${baseRowClass} ${!owner.activo ? 'opacity-70 grayscale-[20%]' : ''}`}>
-                          <td className="py-3 font-semibold">
-                            <div className="flex flex-col gap-1">
-                              <span className="flex items-center gap-2">
-                                {owner.nombre}
-                                {onlineUsers.has(owner.id) && (
-                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="En línea ahora"></span>
-                                )}
-                              </span>
-                              {!owner.activo && (
-                                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 self-start">
-                                  DESACTIVADO
-                                </span>
-                              )}
-                              <span className="text-xs text-slate-500 font-normal">Creado: {new Date(owner.fechaCreacion).toLocaleDateString()}</span>
-                              {!onlineUsers.has(owner.id) && (lastConnections[owner.id] || owner.ultimaConexion) && (
-                                <span className="text-xs text-slate-400 font-normal">Última vez: {new Date(lastConnections[owner.id] || owner.ultimaConexion).toLocaleString()}</span>
-                              )}
-                              {owner.subUsers.length > 0 && (
-                                <button
-                                  type="button"
-                                  onClick={() => toggleOwnerMembers(owner.id)}
-                                  className="mt-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 self-start"
-                                >
-                                  {expandedOwnerId === owner.id ? 'Ocultar usuarios' : `Ver ${owner.subUsers.length} usuarios`}
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex flex-col gap-1 text-sm">
-                              <span className="font-medium text-slate-700">@{owner.usuario}</span>
-                              <span className="text-slate-500 text-xs">{owner.email || '-'}</span>
-                              <span className="text-slate-500 text-xs">{owner.telefono || '-'}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 text-sm">
-                            <div className="flex flex-col gap-1">
-                              <span>{owner.team_name || '-'}</span>
-                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-600 self-start">
-                                {owner.rol}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex flex-col gap-1 text-sm">
-                              <div className="flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full ${owner.plan_activo ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
-                                <span className="font-medium capitalize">{owner.plan || 'Básico'}</span>
-                              </div>
-                              {owner.plan_vencimiento ? (
-                                <span className="text-xs text-slate-500">Vence: {new Date(owner.plan_vencimiento).toLocaleDateString()}</span>
-                              ) : (
-                                <span className="text-xs text-slate-500">Sin vencimiento</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex items-center justify-end gap-2">
-                              {!owner.plan_activo && owner.activo ? (
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    if (window.confirm('¿Activar acceso gratuito indefinido a este usuario?')) {
-                                      try {
-                                        const res = await fetch(`${API_URL}/api/usuarios/${owner.id}/activate-plan`, {
-                                          method: 'POST',
-                                          headers: { 'x-auth-token': token }
-                                        });
-                                        if (res.ok) {
-                                          toast.success('Suscripción activada');
-                                          fetchOwners();
-                                        } else {
-                                          toast.error('Error al activar');
-                                        }
-                                      } catch (err) {
-                                        toast.error('Error de red al activar');
-                                      }
-                                    }
-                                  }}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors font-medium text-sm"
-                                >
-                                  Activar Gratis
-                                </button>
-                              ) : null}
-                              <button
-                                type="button"
-                                onClick={() => handleStartEdit(owner)}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
-                              >
-                                <Pencil className="w-3.5 h-3.5" /> Editar
-                              </button>
-                              {owner.activo ? (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteOwner(owner, false)}
-                                  disabled={deletingId === owner.id}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-60 transition-colors"
-                                  title="Desactivar usuario (conservar historial)"
-                                >
-                                  {deletingId === owner.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} 
-                                  Desactivar
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteOwner(owner, true)}
-                                  disabled={deletingId === owner.id}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 transition-colors shadow-sm"
-                                  title="Eliminar usuario y todos sus datos para siempre"
-                                >
-                                  {deletingId === owner.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} 
-                                  Eliminar Permanente
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                        {expandedOwnerId === owner.id && owner.subUsers.map(sub => (
-                          <tr key={sub.id} className="border-b border-slate-100 bg-indigo-50/30 text-slate-800 align-top transition-colors">
-                            <td className="py-3 font-semibold pl-6 border-l-4 border-indigo-400">
-                              <div className="flex flex-col gap-1">
-                                <span className="flex items-center gap-2 text-sm text-indigo-900">
-                                  <Users className="w-3.5 h-3.5 text-indigo-500" />
-                                  {sub.nombre}
-                                  {onlineUsers.has(sub.id) && (
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="En línea ahora"></span>
-                                  )}
-                                </span>
-                                {!sub.activo && (
-                                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 self-start">
-                                    DESACTIVADO
-                                  </span>
-                                )}
-                                <span className="text-xs text-slate-500 font-normal">Creado: {new Date(sub.fechaCreacion).toLocaleDateString()}</span>
-                                {!onlineUsers.has(sub.id) && (lastConnections[sub.id] || sub.ultimaConexion) && (
-                                  <span className="text-xs text-slate-400 font-normal">Última vez: {new Date(lastConnections[sub.id] || sub.ultimaConexion).toLocaleString()}</span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-3">
-                              <div className="flex flex-col gap-1 text-sm">
-                                <span className="font-medium text-slate-700">@{sub.usuario}</span>
-                                <span className="text-slate-500 text-xs">{sub.email || '-'}</span>
-                                <span className="text-slate-500 text-xs">{sub.telefono || '-'}</span>
-                              </div>
-                            </td>
-                            <td className="py-3 text-sm">
-                              <div className="flex flex-col gap-1">
-                                <span className="text-slate-500">Miembro del equipo</span>
-                                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-600 self-start">
-                                  {sub.rol}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="py-3">
-                              <div className="flex flex-col gap-1 text-sm text-slate-500">
-                                <span className="italic text-xs">Suscripción gestionada por el dueño</span>
-                              </div>
-                            </td>
-                            <td className="py-3">
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleStartEdit(sub)}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-xs"
-                                >
-                                  <Pencil className="w-3.5 h-3.5" /> Editar
-                                </button>
-                                {sub.activo ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteOwner(sub, false)}
-                                    disabled={deletingId === sub.id}
-                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-60 transition-colors text-xs"
-                                  >
-                                    {deletingId === sub.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} 
-                                    Desactivar
-                                  </button>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteOwner(sub, true)}
-                                    disabled={deletingId === sub.id}
-                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 transition-colors shadow-sm text-xs"
-                                  >
-                                    {deletingId === sub.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} 
-                                    Eliminar Permanente
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        </React.Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <>
+                {renderTable(normalOwners, false)}
+                
+                {demoOwners.length > 0 && (
+                  <div className="mt-8 border-t border-slate-200 pt-8">
+                    <h3 className="font-black text-slate-900 text-lg mb-4 flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-orange-400"></span>
+                      Usuarios Demo (Pruebas)
+                    </h3>
+                    <p className="text-sm text-slate-500 mb-4">
+                      Estos usuarios fueron creados desde la página principal de prueba. No son clientes reales.
+                    </p>
+                    {renderTable(demoOwners, true)}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -669,6 +710,7 @@ export default function AdminPanel() {
           </form>
         </div>
       )}
+
     </>
   );
 }

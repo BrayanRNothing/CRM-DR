@@ -1066,23 +1066,28 @@ const Clientes = () => {
                         <p className="text-gray-400 text-sm mt-1">Intenta con otra busqueda o ajusta los filtros.</p>
                     </div>
                 ) : (
-                    <div className="bg-white md:border md:border-slate-200 md:rounded-2xl md:shadow-sm overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full text-sm">
-                                <thead className="bg-slate-100/70 text-slate-500 uppercase">
-                                    <tr>
-                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Cliente</th>
-                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Facturado</th>
-                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Contacto</th>
-                                        <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[9px] md:text-xs uppercase tracking-wider">Etapa</th>
-                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs whitespace-nowrap">Última interacción</th>
-                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Recordatorio</th>
-                                        <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[10px] md:text-xs">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {clientesFiltrados.map((cliente) => (
-                                        <tr key={cliente._id || cliente.id} className="hover:bg-slate-50/70 transition-colors cursor-pointer" onClick={() => handleVerDetalles(cliente)}>
+                    <div className="space-y-6">
+                        {(() => {
+                            const misPrivados = [];
+                            const misCompartidos = [];
+                            const deOtros = {};
+
+                            clientesFiltrados.forEach(cliente => {
+                                const isMine = cliente.esPropietario === true || isOwnerRecord(cliente);
+                                if (isMine) {
+                                    if (cliente.compartido) {
+                                        misCompartidos.push(cliente);
+                                    } else {
+                                        misPrivados.push(cliente);
+                                    }
+                                } else {
+                                    const ownerName = cliente.propietarioNombre || cliente.vendedor?.nombres || cliente.prospectorAsignadoNombre || 'Otro Usuario';
+                                    if (!deOtros[ownerName]) deOtros[ownerName] = [];
+                                    deOtros[ownerName].push(cliente);
+                                }
+                            });
+
+                            const renderRow = (cliente) => (<tr key={cliente._id || cliente.id} className="hover:bg-slate-50/70 transition-colors cursor-pointer" onClick={() => handleVerDetalles(cliente)}>
                                             <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
                                                 <div className="flex flex-col">
                                                     <p className="font-bold text-gray-900 leading-tight text-[11px] md:text-sm">
@@ -1192,10 +1197,7 @@ const Clientes = () => {
                                                                 e.stopPropagation();
                                                                 handleToggleCompartido(cliente, !cliente.compartido);
                                                             }}
-                                                            className={`p-2 rounded-full transition-colors ${cliente.compartido
-                                                                ? 'text-emerald-600 hover:bg-emerald-50'
-                                                                : 'text-gray-400 hover:text-(--theme-600) hover:bg-(--theme-50)'
-                                                                }`}
+                                                            className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${cliente.compartido ? 'text-emerald-700 bg-emerald-100 hover:bg-emerald-200 shadow-sm border-2 border-emerald-200' : 'text-gray-400 hover:text-(--theme-600) hover:bg-(--theme-50)'}`}
                                                             title={cliente.compartido ? "Dejar de compartir" : "Compartir con el equipo"}
                                                         >
                                                             <Share2 className="w-4 h-4" />
@@ -1217,11 +1219,47 @@ const Clientes = () => {
                                                     </button>
                                                 </div>
                                             </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                        </tr>);
+
+                            const renderGroup = (groupItems, title, colorClass) => {
+                                if (groupItems.length === 0) return null;
+                                return (
+                                    <div key={title} className="bg-white md:border md:border-slate-200 md:rounded-2xl md:shadow-sm overflow-hidden mb-6 last:mb-0">
+                                        <div className={`px-4 py-3 border-b border-slate-100 ${colorClass}`}>
+                                            <h3 className="font-black text-xs uppercase tracking-wider">{title} ({groupItems.length})</h3>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full text-sm">
+                                                <thead className="bg-slate-100/70 text-slate-500 uppercase">
+                                                    <tr>
+                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Cliente</th>
+                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Facturado</th>
+                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Contacto</th>
+                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[9px] md:text-xs uppercase tracking-wider">Etapa</th>
+                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs whitespace-nowrap">Última interacción</th>
+                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Recordatorio</th>
+                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[10px] md:text-xs">Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {groupItems.map(renderRow)}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                );
+                            };
+
+                            return (
+                                <>
+                                    {renderGroup(misPrivados, "Mi Lista (Privados)", "bg-slate-50 text-slate-700")}
+                                    {renderGroup(misCompartidos, "Mis Clientes Compartidos", "bg-emerald-50 text-emerald-800")}
+                                    {Object.entries(deOtros).map(([owner, list]) => 
+                                        renderGroup(list, `Compartidos por ${owner}`, "bg-indigo-50 text-indigo-800")
+                                    )}
+                                </>
+                            );
+                        })()}
                     </div>
                 )}
             </div>

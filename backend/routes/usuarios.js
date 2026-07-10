@@ -533,4 +533,29 @@ router.delete('/:id', auth, esSuperUser, async (req, res) => {
     }
 });
 
+// @route   POST api/usuarios/:id/force-password
+// @desc    Restablecer contraseña de un usuario a la fuerza
+// @access  Private (Admins root)
+router.post('/:id/force-password', auth, esAdminUnico, async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { nuevaContraseña } = req.body;
+
+        if (!nuevaContraseña || nuevaContraseña.trim().length < 6) {
+            return res.status(400).json({ mensaje: 'La contraseña debe tener al menos 6 caracteres' });
+        }
+
+        const row = await db.prepare('SELECT id FROM usuarios WHERE id = ?').get(id);
+        if (!row) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+
+        const hash = await bcrypt.hash(nuevaContraseña.trim(), 10);
+        await db.prepare('UPDATE usuarios SET contraseña = ? WHERE id = ?').run(hash, id);
+
+        res.json({ mensaje: 'Contraseña actualizada correctamente' });
+    } catch (error) {
+        console.error("Error updating password:", error);
+        res.status(500).json({ mensaje: `Error del servidor: ${error?.message || error}` });
+    }
+});
+
 module.exports = router;
