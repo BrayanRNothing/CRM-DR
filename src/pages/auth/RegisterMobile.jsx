@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Phone, Eye, EyeOff, Shield, Check, ArrowRight, Zap } from 'lucide-react';
 import { getUser, saveUser, saveToken } from '../../utils/authUtils';
 import API_URL from '../../config/api';
+import socket from '../../config/socket';
 import logosolomycrm from '../../assets/logosolomycrm.png';
 
 const DEFAULT_ROL = 'vendedor';
@@ -60,6 +61,12 @@ const RegisterMobile = () => {
         const userData = data.usuario || data.user;
         saveUser(userData);
         if (data.token) saveToken(data.token);
+        if (userData.id) {
+          socket.emit('user_connected', userData.id);
+        }
+        if (userData.equipo_id) {
+          socket.emit('join_team', userData.equipo_id);
+        }
         navigate('/vendedor');
       } else {
         setError(data.mensaje || data.message || 'Error al registrar');

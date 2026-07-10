@@ -197,7 +197,7 @@ export default function VendedorAjustes() {
     const handleLogout = () => {
         localStorage.clear();
         sessionStorage.clear();
-        navigate('/');
+        window.location.href = '/';
     };
 
     const handleManageSubscription = async () => {

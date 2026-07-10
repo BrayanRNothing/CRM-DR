@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowDown, Layout, Check } from 'lucide-react';
 import { getUser, saveUser, saveToken } from '../../utils/authUtils';
 import API_URL from '../../config/api';
+import socket from '../../config/socket';
 import logosolomycrm from '../../assets/logosolomycrm.png';
 import AnimatedGridBackground from '../../components/ui/AnimatedGridBackground';
 import Typewriter from 'typewriter-effect';
@@ -190,6 +191,12 @@ const Login = () => {
         const userData = data.usuario || data.user;
         saveUser(userData, rememberMe);
         if (data.token) saveToken(data.token, rememberMe);
+        if (userData.id) {
+          socket.emit('user_connected', userData.id);
+        }
+        if (userData.equipo_id) {
+          socket.emit('join_team', userData.equipo_id);
+        }
         // Todos los usuarios van al dashboard de vendedor
         navigate('/vendedor');
       } else {
@@ -215,6 +222,12 @@ const Login = () => {
         const userData = data.usuario || data.user;
         saveUser(userData, rememberMe);
         if (data.token) saveToken(data.token, rememberMe);
+        if (userData.id) {
+          socket.emit('user_connected', userData.id);
+        }
+        if (userData.equipo_id) {
+          socket.emit('join_team', userData.equipo_id);
+        }
         setShowDemoModal(false);
         navigate('/vendedor');
       } else {

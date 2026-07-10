@@ -329,11 +329,11 @@ export default function AdminPanel() {
       <table className="w-full min-w-[900px] text-sm text-left">
         <thead className="bg-slate-50 border-b border-slate-200/80 text-slate-500">
           <tr>
-            <th className="py-4 px-5 font-bold uppercase tracking-wider text-[11px] rounded-tl-xl w-[30%]">Usuario & Contacto</th>
-            <th className="py-4 px-5 font-bold uppercase tracking-wider text-[11px] w-[20%] text-center">Equipo</th>
-            <th className="py-4 px-5 font-bold uppercase tracking-wider text-[11px] w-[20%]">Suscripción</th>
+            <th className="py-4 px-5 font-bold uppercase tracking-wider text-[11px] rounded-tl-xl w-[25%]">Usuario & Contacto</th>
+            <th className="py-4 px-5 font-bold uppercase tracking-wider text-[11px] w-[15%] text-center">Equipo</th>
+            <th className="py-4 px-5 font-bold uppercase tracking-wider text-[11px] w-[25%] text-center">Suscripción</th>
             <th className="py-4 px-5 font-bold uppercase tracking-wider text-[11px] w-[15%]">Actividad</th>
-            <th className="py-4 px-5 font-bold uppercase tracking-wider text-[11px] text-right rounded-tr-xl w-[15%]">Acciones</th>
+            <th className="py-4 px-5 font-bold uppercase tracking-wider text-[11px] text-right rounded-tr-xl w-[20%]">Acciones</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -401,8 +401,8 @@ export default function AdminPanel() {
                 </td>
 
                 {/* 3. Suscripción */}
-                <td className="py-4 px-5 align-top">
-                  <div className="flex flex-col gap-2 pt-0.5 items-start">
+                <td className="py-4 px-5 align-middle text-center">
+                  <div className="flex flex-col gap-2 items-center justify-center">
                     {owner.plan_activo && !isDemo ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200 shadow-sm">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.5)] animate-pulse"></span>
@@ -473,7 +473,7 @@ export default function AdminPanel() {
                     <span className="text-[10px] uppercase font-bold text-slate-400 bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm">Miembro</span>
                   </td>
                   {/* 3. Suscripción */}
-                  <td className="py-3 px-5 align-middle">
+                  <td className="py-3 px-5 align-middle text-center">
                     <span className="text-xs text-slate-500 font-medium">Plan Heredado</span>
                   </td>
                   {/* 4. Actividad */}

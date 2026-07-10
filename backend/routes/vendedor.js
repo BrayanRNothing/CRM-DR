@@ -671,7 +671,7 @@ router.get('/prospectos', [auth, esVendedor], async (req, res) => {
             visibilityWhere.push('COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) = ?');
             params.push(prospectorId);
                 } else if (visibilityScope === 'shared') {
-            visibilityWhere.push('c.compartido = 1');
+            visibilityWhere.push('c.compartido = TRUE');
             visibilityWhere.push('(COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) = ? OR c."equipo_id" = ?)');
             params.push(prospectorId, equipoId || null);
         } else {
@@ -782,7 +782,7 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
             visibilityWhere.push('COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) = ?');
             params.push(prospectorId);
                 } else if (visibilityScope === 'shared') {
-            visibilityWhere.push('c.compartido = 1');
+            visibilityWhere.push('c.compartido = TRUE');
             visibilityWhere.push('(COALESCE(c."propietarioId", c.prospectorAsignado, c.vendedorAsignado) = ? OR c."equipo_id" = ?)');
             params.push(prospectorId, equipoId || null);
         } else {
