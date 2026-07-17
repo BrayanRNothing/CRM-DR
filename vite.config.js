@@ -19,7 +19,7 @@ export default defineConfig({
   server: {
     https: true,
     headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups'
+      'Cross-Origin-Opener-Policy': 'unsafe-none'
     },
     proxy: {
       '/api': {
