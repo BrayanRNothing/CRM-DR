@@ -98,7 +98,7 @@ export default function VendedorAjustes() {
 
     const loginGoogle = useGoogleLogin({
         flow: 'auth-code',
-        scope: 'openid profile email https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events',
+        scope: 'openid profile email https://www.googleapis.com/auth/calendar.freebusy https://www.googleapis.com/auth/calendar.events',
         access_type: 'offline',
         prompt: 'consent',
         include_granted_scopes: false,

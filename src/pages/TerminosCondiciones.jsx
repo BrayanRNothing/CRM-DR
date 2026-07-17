@@ -75,6 +75,15 @@ const secciones = [
       'Estos términos se interpretan conforme a la legislación aplicable en la jurisdicción de operación de la empresa.',
       'Cualquier controversia será atendida ante las autoridades competentes conforme a la normativa vigente.'
     ]
+  },
+  {
+    titulo: '11. Pagos, suscripciones y reembolsos',
+    contenido: [
+      'El procesamiento de pagos y suscripciones se realiza a través de nuestro proveedor de pagos seguro, Stripe.',
+      'SoloMyCRM no procesa ni almacena directamente los datos completos de tarjetas de crédito o débito en sus servidores.',
+      'Las suscripciones se renuevan automáticamente al final de cada ciclo de facturación. Puedes cancelar tu suscripción en cualquier momento desde la configuración de tu cuenta.',
+      'Política de reembolso: ofrecemos una garantía de devolución de dinero durante los primeros 7 días de tu primera compra si decides que el sistema no es para ti. Posterior a este plazo, los pagos no son reembolsables.'
+    ]
   }
 ];
 
@@ -139,7 +148,7 @@ const TerminosCondiciones = () => {
           </div>
 
           <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-800">11. Métodos de contacto oficiales</h2>
+            <h2 className="text-lg font-bold text-slate-800">12. Métodos de contacto oficiales</h2>
             <p className="mt-2 text-slate-600 leading-relaxed">
               Para cualquier duda legal, operativa o de privacidad, utiliza exclusivamente los siguientes canales verificados.
             </p>

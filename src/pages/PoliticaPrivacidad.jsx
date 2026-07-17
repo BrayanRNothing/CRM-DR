@@ -86,7 +86,14 @@ const secciones = [
     ]
   },
   {
-    titulo: '12. Cambios a esta política',
+    titulo: '12. Procesamiento de pagos (Stripe)',
+    contenido: [
+      'Al realizar una compra o suscripción, tus datos de pago son procesados por Stripe, nuestro proveedor de pagos.',
+      'Nosotros no almacenamos los datos completos de tu tarjeta. Stripe maneja estos datos de acuerdo con su propia política de privacidad y seguridad, cumpliendo con los estándares PCI-DSS.'
+    ]
+  },
+  {
+    titulo: '13. Cambios a esta política',
     contenido: [
       'Esta política puede actualizarse por cambios legales, técnicos o de negocio.',
       'La versión vigente será la publicada en esta página, con su fecha de última actualización.'
@@ -149,7 +156,7 @@ const PoliticaPrivacidad = () => {
           </div>
 
           <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-800">13. Contacto de privacidad y soporte</h2>
+            <h2 className="text-lg font-bold text-slate-800">14. Contacto de privacidad y soporte</h2>
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
               {contactos.map((contacto) => (
                 <article key={contacto.titulo} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
