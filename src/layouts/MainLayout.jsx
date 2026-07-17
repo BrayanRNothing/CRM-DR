@@ -38,29 +38,29 @@ const MainLayout = () => {
             fetch(`${API_URL}/api/auth/me`, {
                 headers: { 'x-auth-token': token }
             })
-            .then(res => res.json())
-            .then(data => {
-                // Guardar datos del plan para el botón de renovación
-                setPlanData({
-                    plan: data.plan || 'mensual',
-                    stripe_customer_id: data.stripe_customer_id || null,
-                    plan_activo: data.plan_activo
-                });
-                // Si plan_activo es false y hay plan_vencimiento → calcular días de gracia restantes
-                if (data.plan_activo === false && data.plan_vencimiento) {
-                    const vencimiento = new Date(data.plan_vencimiento);
-                    const graciaHasta = new Date(vencimiento.getTime() + (3 * 24 * 60 * 60 * 1000));
-                    const ahora = new Date();
-                    if (ahora <= graciaHasta) {
-                        const dias = Math.ceil((graciaHasta - ahora) / (1000 * 60 * 60 * 24));
-                        setDiasGracia(dias);
-                    } else {
-                        setDiasGracia(-1); // Expirado totalmente
+                .then(res => res.json())
+                .then(data => {
+                    // Guardar datos del plan para el botón de renovación
+                    setPlanData({
+                        plan: data.plan || 'mensual',
+                        stripe_customer_id: data.stripe_customer_id || null,
+                        plan_activo: data.plan_activo
+                    });
+                    // Si plan_activo es false y hay plan_vencimiento → calcular días de gracia restantes
+                    if (data.plan_activo === false && data.plan_vencimiento) {
+                        const vencimiento = new Date(data.plan_vencimiento);
+                        const graciaHasta = new Date(vencimiento.getTime() + (3 * 24 * 60 * 60 * 1000));
+                        const ahora = new Date();
+                        if (ahora <= graciaHasta) {
+                            const dias = Math.ceil((graciaHasta - ahora) / (1000 * 60 * 60 * 24));
+                            setDiasGracia(dias);
+                        } else {
+                            setDiasGracia(-1); // Expirado totalmente
+                        }
                     }
-                }
-            })
-            .catch(() => {}) // Silenciar error de red — no crítico
-            .finally(() => setCheckingPlan(false)); // ✅ Desbloquear el Outlet
+                })
+                .catch(() => { }) // Silenciar error de red — no crítico
+                .finally(() => setCheckingPlan(false)); // ✅ Desbloquear el Outlet
         } else {
             setCheckingPlan(false);
         }
@@ -250,7 +250,7 @@ const MainLayout = () => {
                             >
                                 💳 Renovar Suscripción
                             </button>
-                            <button 
+                            <button
                                 onClick={() => { localStorage.clear(); sessionStorage.clear(); window.location.href = '/'; }}
                                 className="mt-6 text-slate-500 hover:text-slate-800 font-bold transition-colors"
                             >
@@ -264,7 +264,7 @@ const MainLayout = () => {
                                 <GracePeriodBanner diasRestantes={diasGracia} />
                             )}
 
-                            <div className={`flex-1 scrollbar-hide ${isAjustesRoute || isDashboard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+                            <div id="main-scroll-container" className={`flex-1 scrollbar-hide ${isAjustesRoute || isDashboard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                                 <Outlet context={{ planData, plan_activo: planData?.plan_activo }} />
                             </div>
                         </>

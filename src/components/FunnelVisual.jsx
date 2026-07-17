@@ -59,18 +59,20 @@ const FunnelVisual = ({ stages }) => {
                                     </div>
                                 </div>
 
-                                {/* Contador Hoy - Posicionado absoluto para no mover el layout */}
-                                {stage.contadorHoy > 0 && (
-                                    <div className="absolute top-9 right-2.5 z-20 inline-flex items-center gap-1 bg-white/20 backdrop-blur-md rounded-full px-1.5 py-0.5 border border-white/10">
-                                        <TrendingUp className="w-2 h-2 text-white" />
-                                        <span className="text-white text-[9px] font-bold">
-                                            +{stage.contadorHoy} {stage.labelContador || 'hoy'}
-                                        </span>
-                                    </div>
-                                )}
-
                                 {/* Spacer para empujar stats al fondo */}
                                 <div className="flex-1"></div>
+
+                                {/* Contador Hoy - Pegado a las estadísticas de abajo */}
+                                {stage.contadorHoy > 0 && (
+                                    <div className="flex justify-end mb-1.5">
+                                        <div className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-md rounded-full px-2 py-0.5 border border-white/10 shadow-sm">
+                                            <TrendingUp className="w-2.5 h-2.5 text-white" />
+                                            <span className="text-white text-[9px] font-bold">
+                                                +{stage.contadorHoy} {stage.labelContador || 'hoy'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Estadísticas al fondo */}
                                 {(stage.cantidadExito !== undefined || stage.cantidadPerdida !== undefined) && (

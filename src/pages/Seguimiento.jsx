@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
     Phone,
@@ -248,6 +248,8 @@ const Seguimiento = () => {
 
     // Estados para la nueva vista detallada
     const [prospectoSeleccionado, setProspectoSeleccionado] = useState(null);
+    const [scrollPosition, setScrollPosition] = useState(0);
+    const [lastViewedId, setLastViewedId] = useState(null);
         // Estado para el flujo de llamada inline
                     
     
@@ -426,6 +428,13 @@ const Seguimiento = () => {
         }
     }, [location.state?.selectedId, prospectos]);
 
+    useLayoutEffect(() => {
+        if (!prospectoSeleccionado && scrollPosition > 0) {
+            const container = document.getElementById('main-scroll-container');
+            if (container) container.scrollTo({ top: scrollPosition, behavior: 'instant' });
+        }
+    }, [prospectoSeleccionado, scrollPosition]);
+
     // Orden de prioridad de etapas (más avanzadas primero, perdido al fondo)
     const ORDEN_ETAPA = {
         'reunion_agendada': 1,
@@ -565,9 +574,20 @@ const Seguimiento = () => {
     };
 
     const handleSeleccionarProspecto = (p) => {
+        if (p) {
+            const container = document.getElementById('main-scroll-container');
+            if (container) setScrollPosition(container.scrollTop);
+        } else if (prospectoSeleccionado) {
+            const id = prospectoSeleccionado.id || prospectoSeleccionado._id;
+            setLastViewedId(id);
+            setTimeout(() => setLastViewedId(null), 1500);
+        }
+
         setProspectoSeleccionado(p);
         if (p) {
             setSearchParams({ p: p.id || p._id });
+            const container = document.getElementById('main-scroll-container');
+            if (container) container.scrollTo({ top: 0, behavior: 'instant' });
         } else {
             setSearchParams({});
         }
@@ -1477,7 +1497,10 @@ const Seguimiento = () => {
                                 }
                             });
 
-                            const renderRow = (p) => (<tr key={p._id || p.id} className="hover:bg-slate-50/70 transition-colors cursor-pointer" onClick={() => handleSeleccionarProspecto(p)}>
+                            const renderRow = (p) => {
+                                const id = p._id || p.id;
+                                const isLastViewed = lastViewedId && id === lastViewedId;
+                                return (<tr key={id} className={`transition-all cursor-pointer ${isLastViewed ? 'row-highlight-shimmer' : 'hover:bg-slate-50/70'}`} onClick={() => handleSeleccionarProspecto(p)}>
                                             <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
                                                 <div className="flex flex-col">
                                                     <p className="font-bold text-gray-900 leading-tight text-[11px] md:text-sm">
@@ -1631,6 +1654,7 @@ const Seguimiento = () => {
                                                 </div>
                                             </td>
                                         </tr>);
+                            };
 
                             const renderGroup = (groupItems, title, colorClass) => {
                                 if (groupItems.length === 0) return null;

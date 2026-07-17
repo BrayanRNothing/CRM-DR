@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar, Filter, Star, Mail, MessageSquare, Clock, Share2, Edit2, Bell } from 'lucide-react';
 import axios from 'axios';
@@ -81,6 +81,8 @@ const Clientes = () => {
     const [modalEditarAbierto, setModalEditarAbierto] = useState(false);
     const [clienteAEditar, setClienteAEditar] = useState({});
     const [loadingEditar, setLoadingEditar] = useState(false);
+    const [scrollPosition, setScrollPosition] = useState(0);
+    const [lastViewedId, setLastViewedId] = useState(null);
 
     const getAuthHeaders = () => ({
         'x-auth-token': getToken() || ''
@@ -215,7 +217,22 @@ const Clientes = () => {
         }
     };
 
+    useLayoutEffect(() => {
+        if (!prospectoSeleccionado && scrollPosition > 0) {
+            const container = document.getElementById('main-scroll-container');
+            if (container) container.scrollTo({ top: scrollPosition, behavior: 'instant' });
+        }
+    }, [prospectoSeleccionado, scrollPosition]);
+
     const handleVerDetalles = async (cliente) => {
+        if (cliente) {
+            const container = document.getElementById('main-scroll-container');
+            if (container) setScrollPosition(container.scrollTop);
+        } else if (prospectoSeleccionado) {
+            const id = prospectoSeleccionado.id || prospectoSeleccionado._id;
+            setLastViewedId(id);
+            setTimeout(() => setLastViewedId(null), 1500);
+        }
         setProspectoSeleccionado(cliente);
         setLlamadaFlow(null);
         if (!cliente) {
@@ -251,10 +268,10 @@ const Clientes = () => {
             const rolePath = 'vendedor'; // O corregir según rol real
             const id = clienteAEditar.id;
             const telefonosLimpios = (clienteAEditar.telefonos || []).filter(t => t.trim());
-            const payload = { 
-                ...clienteAEditar, 
-                telefono: telefonosLimpios[0] || '', 
-                telefono2: telefonosLimpios.slice(1).join(', ') || '' 
+            const payload = {
+                ...clienteAEditar,
+                telefono: telefonosLimpios[0] || '',
+                telefono2: telefonosLimpios.slice(1).join(', ') || ''
             };
             delete payload.telefonos;
 
@@ -849,7 +866,7 @@ const Clientes = () => {
                 (cliente.empresa || '').toLowerCase().includes(busqueda.toLowerCase()) ||
                 (cliente.correo || '').toLowerCase().includes(busqueda.toLowerCase()) ||
                 (cliente.telefono || '').includes(busqueda);
-            
+
             return matchBusqueda;
         });
 
@@ -871,7 +888,7 @@ const Clientes = () => {
     if (prospectoSeleccionado) {
         return (
             <>
-                <ClienteDetalle 
+                <ClienteDetalle
                     Cliente={prospectoSeleccionado}
                     rolePath={'vendedor'}
                     onVolver={() => handleVerDetalles(null)}
@@ -889,382 +906,386 @@ const Clientes = () => {
 
     return (
         <>
-        <div className="min-h-screen md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 pb-8 md:pb-6">
-            <div className="max-w-full mx-auto">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                    <div>
-                        <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
-                            {esMenuSeguimiento ? 'Seguimiento de Clientes' : 'Clientes'}
-                        </h1>
-                        <p className="text-xs md:text-sm text-gray-500 mt-0.5 leading-snug">
-                            {esMenuSeguimiento
-                                ? 'Gestiona y da seguimiento a tu cartera de clientes ganados.'
-                                : 'Cartera de clientes ganados.'}
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto mt-2 sm:mt-0">
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept=".csv,text/csv"
-                            className="hidden"
-                            onChange={handleImportarClientes}
-                        />
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={importando}
-                            className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
-                        >
-                            {importando ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />}
-                            {importando ? 'Importando...' : 'Importar CSV'}
-                        </button>
-                        <button
-                            onClick={exportarClientesCsv}
-                            disabled={loading || !clientesFiltrados.length}
-                            className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
-                        >
-                            <Upload className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                            Exportar CSV
-                        </button>
-                        <button
-                            onClick={() => setMostrarModalCrear(true)}
-                            className="hidden sm:flex w-full sm:w-auto justify-center items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs md:text-sm font-medium"
-                        >
-                            <Plus className="w-4 h-4 md:w-5 md:h-5" />
-                            Crear Cliente
-                        </button>
-                    </div>
-                </div>
-
-                <div className="bg-white border border-slate-200 rounded-2xl p-2.5 md:p-3 shadow-sm mb-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-3 md:gap-4 items-center">
-                        <div className="flex items-stretch gap-2 w-full">
-                            <div className="relative flex-1 h-9">
-                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Buscar clientes..."
-                                    value={busqueda}
-                                    onChange={(e) => setBusqueda(e.target.value)}
-                                    className="w-full h-full pl-8 pr-14 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs"
-                                    title="Buscar por nombre, empresa, correo o teléfono"
-                                />
-                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
-                                    <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
-                                        {clientesFiltrados.length}/{clientes.length}
-                                    </span>
-                                </div>
-                            </div>
+            <div className="min-h-screen md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 pb-8 md:pb-6">
+                <div className="max-w-full mx-auto">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
+                                {esMenuSeguimiento ? 'Seguimiento de Clientes' : 'Clientes'}
+                            </h1>
+                            <p className="text-xs md:text-sm text-gray-500 mt-0.5 leading-snug">
+                                {esMenuSeguimiento
+                                    ? 'Gestiona y da seguimiento a tu cartera de clientes ganados.'
+                                    : 'Cartera de clientes ganados.'}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto mt-2 sm:mt-0">
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".csv,text/csv"
+                                className="hidden"
+                                onChange={handleImportarClientes}
+                            />
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={importando}
+                                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
+                            >
+                                {importando ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+                                {importando ? 'Importando...' : 'Importar CSV'}
+                            </button>
+                            <button
+                                onClick={exportarClientesCsv}
+                                disabled={loading || !clientesFiltrados.length}
+                                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
+                            >
+                                <Upload className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                Exportar CSV
+                            </button>
                             <button
                                 onClick={() => setMostrarModalCrear(true)}
-                                className="sm:hidden flex items-center justify-center gap-1.5 px-3 h-9 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs font-medium shrink-0"
+                                className="hidden sm:flex w-full sm:w-auto justify-center items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs md:text-sm font-medium"
                             >
-                                <Plus className="w-4 h-4" />
-                                Crear
+                                <Plus className="w-4 h-4 md:w-5 md:h-5" />
+                                Crear Cliente
                             </button>
                         </div>
-                        <div className="hidden md:flex flex-wrap md:flex-wrap -mx-2 px-2 md:mx-0 md:px-0 gap-2 items-center w-full">
-                            <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden md:block" />
-                            <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
-                                {[
-                                    { value: 'mine', label: 'Mis clientes' },
-                                    { value: 'shared', label: 'Compartidos' },
-                                    { value: 'all', label: 'Todos visibles' },
-                                ].map(btn => (
-                                    <button
-                                        key={btn.value}
-                                        onClick={() => setFiltroVisibilidad(btn.value)}
-                                        className={`px-3 h-9 flex items-center justify-center rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtroVisibilidad === btn.value
-                                            ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
-                                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400 hover:text-slate-800'
-                                            }`}
-                                    >
-                                        {btn.label}
-                                    </button>
-                                ))}
-                            </div>
-                            <div className="w-px h-6 bg-slate-200 mx-1 shrink-0 hidden md:block"></div>
-                            <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
-                                <select
-                                    value={ordenFiltro}
-                                    onChange={(e) => setOrdenFiltro(e.target.value)}
-                                    className="px-3 h-9 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-(--theme-500) transition-all cursor-pointer"
-                                >
-                                    <option value="todos">Todos los clientes</option>
-                                    <option value="mayor_facturado">Mayor facturado</option>
-                                    <option value="mayor_valor">Mayor valor (Interés)</option>
-                                </select>
-                            </div>
-                            {(ordenFiltro !== 'todos' || busqueda || filtroVisibilidad !== 'mine') && (
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-2xl p-2.5 md:p-3 shadow-sm mb-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-3 md:gap-4 items-center">
+                            <div className="flex items-stretch gap-2 w-full">
+                                <div className="relative flex-1 h-9">
+                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar clientes..."
+                                        value={busqueda}
+                                        onChange={(e) => setBusqueda(e.target.value)}
+                                        className="w-full h-full pl-8 pr-14 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs"
+                                        title="Buscar por nombre, empresa, correo o teléfono"
+                                    />
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                                        <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                                            {clientesFiltrados.length}/{clientes.length}
+                                        </span>
+                                    </div>
+                                </div>
                                 <button
-                                    onClick={() => { setOrdenFiltro('todos'); setBusqueda(''); setFiltroVisibilidad('mine'); }}
-                                    className="shrink-0 flex items-center justify-center w-9 h-9 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
-                                    title="Limpiar filtros"
+                                    onClick={() => setMostrarModalCrear(true)}
+                                    className="sm:hidden flex items-center justify-center gap-1.5 px-3 h-9 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs font-medium shrink-0"
                                 >
-                                    ✕
+                                    <Plus className="w-4 h-4" />
+                                    Crear
                                 </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {loading ? (
-                    <div className="bg-white md:border md:border-slate-200 md:rounded-2xl md:shadow-sm overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full text-sm">
-                                <thead className="bg-slate-50/80 text-slate-400 uppercase">
-                                    <tr>
-                                        <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-20 animate-pulse"></div></th>
-                                        <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-24 animate-pulse"></div></th>
-                                        <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-20 animate-pulse"></div></th>
-                                        <th className="px-4 py-4 text-center"><div className="h-2.5 bg-slate-200/80 rounded-full w-16 mx-auto animate-pulse"></div></th>
-                                        <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-28 animate-pulse"></div></th>
-                                        <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-24 animate-pulse"></div></th>
-                                        <th className="px-4 py-4 text-center"><div className="h-2.5 bg-slate-200/80 rounded-full w-14 mx-auto animate-pulse"></div></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {[1, 2, 3, 4, 5].map((idx) => (
-                                        <tr key={idx}>
-                                            <td className="px-4 py-5 font-medium">
-                                                <div className="space-y-2">
-                                                    <div className="h-4 bg-slate-200/80 rounded-md w-32 animate-pulse"></div>
-                                                    <div className="h-3 bg-slate-100 rounded-md w-24 animate-pulse"></div>
-                                                    <div className="flex items-center gap-1 pt-0.5">
-                                                        {[1, 2, 3, 4, 5].map((s) => (
-                                                            <div key={s} className="h-2.5 w-2.5 rounded-full bg-amber-100 animate-pulse"></div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-5"><div className="h-4 bg-slate-100 rounded-md w-24 animate-pulse"></div></td>
-                                            <td className="px-4 py-5">
-                                                <div className="space-y-1.5">
-                                                    <div className="h-3.5 bg-slate-100 rounded-md w-28 animate-pulse"></div>
-                                                    <div className="h-3.5 bg-slate-100 rounded-md w-20 animate-pulse"></div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-5 text-center"><div className="h-5 bg-slate-200/80 rounded-full w-20 mx-auto animate-pulse"></div></td>
-                                            <td className="px-4 py-5"><div className="h-4 bg-slate-100 rounded-md w-36 animate-pulse"></div></td>
-                                            <td className="px-4 py-5"><div className="h-4 bg-slate-100 rounded-md w-24 animate-pulse"></div></td>
-                                            <td className="px-4 py-5 text-center">
-                                                <div className="flex justify-center gap-1.5">
-                                                    <div className="h-7 w-7 rounded-lg bg-slate-100 animate-pulse"></div>
-                                                    <div className="h-7 w-7 rounded-lg bg-slate-100 animate-pulse"></div>
-                                                </div>
-                                            </td>
-                                        </tr>
+                            </div>
+                            <div className="hidden md:flex flex-wrap md:flex-wrap -mx-2 px-2 md:mx-0 md:px-0 gap-2 items-center w-full">
+                                <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden md:block" />
+                                <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
+                                    {[
+                                        { value: 'mine', label: 'Mis clientes' },
+                                        { value: 'shared', label: 'Compartidos' },
+                                        { value: 'all', label: 'Todos visibles' },
+                                    ].map(btn => (
+                                        <button
+                                            key={btn.value}
+                                            onClick={() => setFiltroVisibilidad(btn.value)}
+                                            className={`px-3 h-9 flex items-center justify-center rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtroVisibilidad === btn.value
+                                                ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
+                                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400 hover:text-slate-800'
+                                                }`}
+                                        >
+                                            {btn.label}
+                                        </button>
                                     ))}
-                                </tbody>
-                            </table>
+                                </div>
+                                <div className="w-px h-6 bg-slate-200 mx-1 shrink-0 hidden md:block"></div>
+                                <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
+                                    <select
+                                        value={ordenFiltro}
+                                        onChange={(e) => setOrdenFiltro(e.target.value)}
+                                        className="px-3 h-9 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-(--theme-500) transition-all cursor-pointer"
+                                    >
+                                        <option value="todos">Todos los clientes</option>
+                                        <option value="mayor_facturado">Mayor facturado</option>
+                                        <option value="mayor_valor">Mayor valor (Interés)</option>
+                                    </select>
+                                </div>
+                                {(ordenFiltro !== 'todos' || busqueda || filtroVisibilidad !== 'mine') && (
+                                    <button
+                                        onClick={() => { setOrdenFiltro('todos'); setBusqueda(''); setFiltroVisibilidad('mine'); }}
+                                        className="shrink-0 flex items-center justify-center w-9 h-9 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
+                                        title="Limpiar filtros"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
-                ) : clientesFiltrados.length === 0 ? (
-                    <div className="bg-white md:rounded-2xl p-12 min-h-60 flex flex-col items-center justify-center text-center">
-                        <User className="w-12 h-12 text-slate-300 mb-4" />
-                        <p className="text-gray-500 font-medium">No se encontraron clientes.</p>
-                        <p className="text-gray-400 text-sm mt-1">Intenta con otra busqueda o ajusta los filtros.</p>
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        {(() => {
-                            const misPrivados = [];
-                            const misCompartidos = [];
-                            const deOtros = {};
 
-                            clientesFiltrados.forEach(cliente => {
-                                const isMine = cliente.esPropietario === true || isOwnerRecord(cliente);
-                                if (isMine) {
-                                    if (cliente.compartido) {
-                                        misCompartidos.push(cliente);
-                                    } else {
-                                        misPrivados.push(cliente);
-                                    }
-                                } else {
-                                    const ownerName = cliente.propietarioNombre || cliente.vendedor?.nombres || cliente.prospectorAsignadoNombre || 'Otro Usuario';
-                                    if (!deOtros[ownerName]) deOtros[ownerName] = [];
-                                    deOtros[ownerName].push(cliente);
-                                }
-                            });
-
-                            const renderRow = (cliente) => (<tr key={cliente._id || cliente.id} className="hover:bg-slate-50/70 transition-colors cursor-pointer" onClick={() => handleVerDetalles(cliente)}>
-                                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
-                                                <div className="flex flex-col">
-                                                    <p className="font-bold text-gray-900 leading-tight text-[11px] md:text-sm">
-                                                        {cliente.nombres} {cliente.apellidoPaterno}
-                                                    </p>
-                                                    <p className="text-[9px] md:text-[10px] text-slate-500 mt-0.5 max-w-[100px] md:max-w-none truncate">
-                                                        {cliente.empresa || 'Sin empresa'}
-                                                    </p>
-                                                    <div className="flex items-center gap-0.5 text-yellow-500 scale-[0.6] md:scale-75 origin-left mt-0.5">
-                                                        {[1, 2, 3, 4, 5].map((val) => (
-                                                            <Star key={val} className={`w-3.5 h-3.5 ${ (cliente.interes || 5) >= val ? 'fill-yellow-400' : 'fill-slate-100 text-slate-300'}`} />
-                                                        ))}
+                    {loading ? (
+                        <div className="bg-white md:border md:border-slate-200 md:rounded-2xl md:shadow-sm overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full text-sm">
+                                    <thead className="bg-slate-50/80 text-slate-400 uppercase">
+                                        <tr>
+                                            <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-20 animate-pulse"></div></th>
+                                            <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-24 animate-pulse"></div></th>
+                                            <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-20 animate-pulse"></div></th>
+                                            <th className="px-4 py-4 text-center"><div className="h-2.5 bg-slate-200/80 rounded-full w-16 mx-auto animate-pulse"></div></th>
+                                            <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-28 animate-pulse"></div></th>
+                                            <th className="px-4 py-4"><div className="h-2.5 bg-slate-200/80 rounded-full w-24 animate-pulse"></div></th>
+                                            <th className="px-4 py-4 text-center"><div className="h-2.5 bg-slate-200/80 rounded-full w-14 mx-auto animate-pulse"></div></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {[1, 2, 3, 4, 5].map((idx) => (
+                                            <tr key={idx}>
+                                                <td className="px-4 py-5 font-medium">
+                                                    <div className="space-y-2">
+                                                        <div className="h-4 bg-slate-200/80 rounded-md w-32 animate-pulse"></div>
+                                                        <div className="h-3 bg-slate-100 rounded-md w-24 animate-pulse"></div>
+                                                        <div className="flex items-center gap-1 pt-0.5">
+                                                            {[1, 2, 3, 4, 5].map((s) => (
+                                                                <div key={s} className="h-2.5 w-2.5 rounded-full bg-amber-100 animate-pulse"></div>
+                                                            ))}
+                                                        </div>
                                                     </div>
+                                                </td>
+                                                <td className="px-4 py-5"><div className="h-4 bg-slate-100 rounded-md w-24 animate-pulse"></div></td>
+                                                <td className="px-4 py-5">
+                                                    <div className="space-y-1.5">
+                                                        <div className="h-3.5 bg-slate-100 rounded-md w-28 animate-pulse"></div>
+                                                        <div className="h-3.5 bg-slate-100 rounded-md w-20 animate-pulse"></div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-5 text-center"><div className="h-5 bg-slate-200/80 rounded-full w-20 mx-auto animate-pulse"></div></td>
+                                                <td className="px-4 py-5"><div className="h-4 bg-slate-100 rounded-md w-36 animate-pulse"></div></td>
+                                                <td className="px-4 py-5"><div className="h-4 bg-slate-100 rounded-md w-24 animate-pulse"></div></td>
+                                                <td className="px-4 py-5 text-center">
+                                                    <div className="flex justify-center gap-1.5">
+                                                        <div className="h-7 w-7 rounded-lg bg-slate-100 animate-pulse"></div>
+                                                        <div className="h-7 w-7 rounded-lg bg-slate-100 animate-pulse"></div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    ) : clientesFiltrados.length === 0 ? (
+                        <div className="bg-white md:rounded-2xl p-12 min-h-60 flex flex-col items-center justify-center text-center">
+                            <User className="w-12 h-12 text-slate-300 mb-4" />
+                            <p className="text-gray-500 font-medium">No se encontraron clientes.</p>
+                            <p className="text-gray-400 text-sm mt-1">Intenta con otra busqueda o ajusta los filtros.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {(() => {
+                                const misPrivados = [];
+                                const misCompartidos = [];
+                                const deOtros = {};
+
+                                clientesFiltrados.forEach(cliente => {
+                                    const isMine = cliente.esPropietario === true || isOwnerRecord(cliente);
+                                    if (isMine) {
+                                        if (cliente.compartido) {
+                                            misCompartidos.push(cliente);
+                                        } else {
+                                            misPrivados.push(cliente);
+                                        }
+                                    } else {
+                                        const ownerName = cliente.propietarioNombre || cliente.vendedor?.nombres || cliente.prospectorAsignadoNombre || 'Otro Usuario';
+                                        if (!deOtros[ownerName]) deOtros[ownerName] = [];
+                                        deOtros[ownerName].push(cliente);
+                                    }
+                                });
+
+                                const renderRow = (cliente) => {
+                                    const id = cliente._id || cliente.id;
+                                    const isLastViewed = lastViewedId && id === lastViewedId;
+                                    return (<tr key={id} className={`transition-all cursor-pointer ${isLastViewed ? 'row-highlight-shimmer' : 'hover:bg-slate-50/70'}`} onClick={() => handleVerDetalles(cliente)}>
+                                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                                        <div className="flex flex-col">
+                                            <p className="font-bold text-gray-900 leading-tight text-[11px] md:text-sm">
+                                                {cliente.nombres} {cliente.apellidoPaterno}
+                                            </p>
+                                            <p className="text-[9px] md:text-[10px] text-slate-500 mt-0.5 max-w-[100px] md:max-w-none truncate">
+                                                {cliente.empresa || 'Sin empresa'}
+                                            </p>
+                                            <div className="flex items-center gap-0.5 text-yellow-500 scale-[0.6] md:scale-75 origin-left mt-0.5">
+                                                {[1, 2, 3, 4, 5].map((val) => (
+                                                    <Star key={val} className={`w-3.5 h-3.5 ${(cliente.interes || 5) >= val ? 'fill-yellow-400' : 'fill-slate-100 text-slate-300'}`} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                                        <div className="flex flex-col">
+                                            <span className="text-[11px] md:text-sm font-semibold text-gray-800">
+                                                {(cliente.totalFacturado || cliente.customMetricValue) ? `${cliente.customMetricLabel || 'MXN'} $${Number(cliente.totalFacturado || cliente.customMetricValue).toLocaleString('es-MX')}` : '—'}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                                        <div className="space-y-0.5">
+                                            {cliente.telefono ? (
+                                                <p className="flex items-center gap-1.5 text-gray-700 text-sm font-medium">
+                                                    <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                    {cliente.telefono}
+                                                </p>
+                                            ) : null}
+                                            {cliente.correo ? (
+                                                <p className="flex items-center gap-1.5 text-gray-500 text-sm">
+                                                    <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                    <span>{cliente.correo}</span>
+                                                </p>
+                                            ) : null}
+                                            {!cliente.telefono && !cliente.correo && (
+                                                <span className="text-xs text-slate-400 italic">Sin contacto</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
+                                        {(() => {
+                                            const etapaKey = cliente.etapaCliente || 'cliente_nuevo';
+                                            const colorCls = getEtapaColor(etapaKey);
+                                            const label = getEtapaLabel(etapaKey);
+                                            return (
+                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${colorCls}`}>
+                                                    {label}
+                                                </span>
+                                            );
+                                        })()}
+                                    </td>
+                                    <td className="px-2 md:px-4 py-2 md:py-3 max-w-[140px] md:max-w-[200px]">
+                                        {cliente.ultimaActTipo ? (
+                                            <div className="flex items-start gap-1.5">
+                                                <div className="mt-0.5 shrink-0">
+                                                    {cliente.ultimaActTipo === 'llamada' && <Phone className="w-3 h-3 text-(--theme-500)" />}
+                                                    {cliente.ultimaActTipo === 'whatsapp' && <MessageSquare className="w-3 h-3 text-green-500" />}
+                                                    {cliente.ultimaActTipo === 'correo' && <Mail className="w-3 h-3 text-purple-500" />}
+                                                    {cliente.ultimaActTipo === 'cita' && <Calendar className="w-3 h-3 text-(--theme-500)" />}
+                                                    {!['llamada', 'whatsapp', 'correo', 'cita'].includes(cliente.ultimaActTipo) && <Clock className="w-3 h-3 text-slate-400" />}
                                                 </div>
-                                            </td>
-                                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[11px] md:text-sm font-semibold text-gray-800">
-                                                        {(cliente.totalFacturado || cliente.customMetricValue) ? `${cliente.customMetricLabel || 'MXN'} $${Number(cliente.totalFacturado || cliente.customMetricValue).toLocaleString('es-MX')}` : '—'}
+                                                <p className="text-[11px] text-slate-600 leading-snug" title={cliente.ultimaActNotas || ''}>
+                                                    {cliente.ultimaActNotas
+                                                        ? (cliente.ultimaActNotas.length > 50 ? cliente.ultimaActNotas.slice(0, 50) + '…' : cliente.ultimaActNotas)
+                                                        : <span className="italic text-slate-400">{cliente.ultimaActTipo}</span>}
+                                                </p>
+                                            </div>
+                                        ) : cliente.fechaUltimaEtapa ? (
+                                            <div className="flex items-center gap-1.5">
+                                                <Plus className="w-3 h-3 text-emerald-500" />
+                                                <span className="text-[11px] text-slate-500">
+                                                    Ganado el {new Date(cliente.fechaUltimaEtapa).toLocaleDateString('es-MX')}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-slate-300 italic">Sin historial</span>
+                                        )}
+                                    </td>
+                                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                                        {cliente.proximaLlamada ? (() => {
+                                            const esVencido = new Date(cliente.proximaLlamada) < new Date();
+                                            return (
+                                                <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-emerald-00'}`}>
+                                                    <Phone className="w-3 h-3 shrink-0" />
+                                                    <span className="text-[10px] font-bold leading-tight uppercase tracking-tighter">
+                                                        {new Date(cliente.proximaLlamada).toLocaleString('es-MX', {
+                                                            day: 'numeric',
+                                                            month: 'short',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                        {esVencido && ' ⚠'}
                                                     </span>
                                                 </div>
-                                            </td>
-                                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
-                                                <div className="space-y-0.5">
-                                                    {cliente.telefono ? (
-                                                        <p className="flex items-center gap-1.5 text-gray-700 text-sm font-medium">
-                                                            <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                                                            {cliente.telefono}
-                                                        </p>
-                                                    ) : null}
-                                                    {cliente.correo ? (
-                                                        <p className="flex items-center gap-1.5 text-gray-500 text-sm">
-                                                            <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                                                            <span>{cliente.correo}</span>
-                                                        </p>
-                                                    ) : null}
-                                                    {!cliente.telefono && !cliente.correo && (
-                                                        <span className="text-xs text-slate-400 italic">Sin contacto</span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
-                                                {(() => {
-                                                    const etapaKey = cliente.etapaCliente || 'cliente_nuevo';
-                                                    const colorCls = getEtapaColor(etapaKey);
-                                                    const label = getEtapaLabel(etapaKey);
-                                                    return (
-                                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${colorCls}`}>
-                                                            {label}
-                                                        </span>
-                                                    );
-                                                })()}
-                                            </td>
-                                            <td className="px-2 md:px-4 py-2 md:py-3 max-w-[140px] md:max-w-[200px]">
-                                                {cliente.ultimaActTipo ? (
-                                                    <div className="flex items-start gap-1.5">
-                                                        <div className="mt-0.5 shrink-0">
-                                                            {cliente.ultimaActTipo === 'llamada' && <Phone className="w-3 h-3 text-(--theme-500)" />}
-                                                            {cliente.ultimaActTipo === 'whatsapp' && <MessageSquare className="w-3 h-3 text-green-500" />}
-                                                            {cliente.ultimaActTipo === 'correo' && <Mail className="w-3 h-3 text-purple-500" />}
-                                                            {cliente.ultimaActTipo === 'cita' && <Calendar className="w-3 h-3 text-(--theme-500)" />}
-                                                            {!['llamada', 'whatsapp', 'correo', 'cita'].includes(cliente.ultimaActTipo) && <Clock className="w-3 h-3 text-slate-400" />}
-                                                        </div>
-                                                        <p className="text-[11px] text-slate-600 leading-snug" title={cliente.ultimaActNotas || ''}>
-                                                            {cliente.ultimaActNotas
-                                                                ? (cliente.ultimaActNotas.length > 50 ? cliente.ultimaActNotas.slice(0, 50) + '…' : cliente.ultimaActNotas)
-                                                                : <span className="italic text-slate-400">{cliente.ultimaActTipo}</span>}
-                                                        </p>
-                                                    </div>
-                                                ) : cliente.fechaUltimaEtapa ? (
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Plus className="w-3 h-3 text-emerald-500" />
-                                                        <span className="text-[11px] text-slate-500">
-                                                            Ganado el {new Date(cliente.fechaUltimaEtapa).toLocaleDateString('es-MX')}
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-xs text-slate-300 italic">Sin historial</span>
-                                                )}
-                                            </td>
-                                            <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
-                                                {cliente.proximaLlamada ? (() => {
-                                                    const esVencido = new Date(cliente.proximaLlamada) < new Date();
-                                                    return (
-                                                        <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-emerald-00'}`}>
-                                                            <Phone className="w-3 h-3 shrink-0" />
-                                                            <span className="text-[10px] font-bold leading-tight uppercase tracking-tighter">
-                                                                {new Date(cliente.proximaLlamada).toLocaleString('es-MX', {
-                                                                    day: 'numeric',
-                                                                    month: 'short',
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit'
-                                                                })}
-                                                                {esVencido && ' ⚠'}
-                                                            </span>
-                                                        </div>
-                                                    );
-                                                })() : (
-                                                    <span className="text-xs text-slate-400 italic">Sin pendiente</span>
-                                                )}
-                                            </td>
-                                            <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
-                                                <div className="flex items-center justify-center gap-1.5 md:gap-3">
-                                                    {(cliente.esPropietario === true || isOwnerRecord(cliente)) && (
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleToggleCompartido(cliente, !cliente.compartido);
-                                                            }}
-                                                            className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${cliente.compartido ? 'text-emerald-700 bg-emerald-100 hover:bg-emerald-200 shadow-sm border-2 border-emerald-200' : 'text-gray-400 hover:text-(--theme-600) hover:bg-(--theme-50)'}`}
-                                                            title={cliente.compartido ? "Dejar de compartir" : "Compartir con el equipo"}
-                                                        >
-                                                            <Share2 className="w-4 h-4" />
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); abrirModalEditar(cliente); }}
-                                                        className="text-gray-400 hover:text-(--theme-600) transition-colors p-2 rounded-full hover:bg-(--theme-50)"
-                                                        title="Editar Cliente"
-                                                    >
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); setClienteAEliminar(cliente); }}
-                                                        className="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50"
-                                                        title="Eliminar Cliente"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>);
+                                            );
+                                        })() : (
+                                            <span className="text-xs text-slate-400 italic">Sin pendiente</span>
+                                        )}
+                                    </td>
+                                    <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
+                                        <div className="flex items-center justify-center gap-1.5 md:gap-3">
+                                            {(cliente.esPropietario === true || isOwnerRecord(cliente)) && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleToggleCompartido(cliente, !cliente.compartido);
+                                                    }}
+                                                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${cliente.compartido ? 'text-emerald-700 bg-emerald-100 hover:bg-emerald-200 shadow-sm border-2 border-emerald-200' : 'text-gray-400 hover:text-(--theme-600) hover:bg-(--theme-50)'}`}
+                                                    title={cliente.compartido ? "Dejar de compartir" : "Compartir con el equipo"}
+                                                >
+                                                    <Share2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); abrirModalEditar(cliente); }}
+                                                className="text-gray-400 hover:text-(--theme-600) transition-colors p-2 rounded-full hover:bg-(--theme-50)"
+                                                title="Editar Cliente"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setClienteAEliminar(cliente); }}
+                                                className="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50"
+                                                title="Eliminar Cliente"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>);
+                                };
 
-                            const renderGroup = (groupItems, title, colorClass) => {
-                                if (groupItems.length === 0) return null;
+                                const renderGroup = (groupItems, title, colorClass) => {
+                                    if (groupItems.length === 0) return null;
+                                    return (
+                                        <div key={title} className="bg-white md:border md:border-slate-200 md:rounded-2xl md:shadow-sm overflow-hidden mb-6 last:mb-0">
+                                            <div className={`px-4 py-3 border-b border-slate-100 ${colorClass}`}>
+                                                <h3 className="font-black text-xs uppercase tracking-wider">{title} ({groupItems.length})</h3>
+                                            </div>
+                                            <div className="overflow-x-auto">
+                                                <table className="min-w-full text-sm">
+                                                    <thead className="bg-slate-100/70 text-slate-500 uppercase">
+                                                        <tr>
+                                                            <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Cliente</th>
+                                                            <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Facturado</th>
+                                                            <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Contacto</th>
+                                                            <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[9px] md:text-xs uppercase tracking-wider">Etapa</th>
+                                                            <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs whitespace-nowrap">Última interacción</th>
+                                                            <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Recordatorio</th>
+                                                            <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[10px] md:text-xs">Acciones</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100">
+                                                        {groupItems.map(renderRow)}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    );
+                                };
+
                                 return (
-                                    <div key={title} className="bg-white md:border md:border-slate-200 md:rounded-2xl md:shadow-sm overflow-hidden mb-6 last:mb-0">
-                                        <div className={`px-4 py-3 border-b border-slate-100 ${colorClass}`}>
-                                            <h3 className="font-black text-xs uppercase tracking-wider">{title} ({groupItems.length})</h3>
-                                        </div>
-                                        <div className="overflow-x-auto">
-                                            <table className="min-w-full text-sm">
-                                                <thead className="bg-slate-100/70 text-slate-500 uppercase">
-                                                    <tr>
-                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Cliente</th>
-                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Facturado</th>
-                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Contacto</th>
-                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[9px] md:text-xs uppercase tracking-wider">Etapa</th>
-                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs whitespace-nowrap">Última interacción</th>
-                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Recordatorio</th>
-                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[10px] md:text-xs">Acciones</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100">
-                                                    {groupItems.map(renderRow)}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
+                                    <>
+                                        {renderGroup(misPrivados, "Mi Lista (Privados)", "bg-slate-50 text-slate-700")}
+                                        {renderGroup(misCompartidos, "Mis Clientes Compartidos", "bg-emerald-50 text-emerald-800")}
+                                        {Object.entries(deOtros).map(([owner, list]) =>
+                                            renderGroup(list, `Compartidos por ${owner}`, "bg-indigo-50 text-indigo-800")
+                                        )}
+                                    </>
                                 );
-                            };
-
-                            return (
-                                <>
-                                    {renderGroup(misPrivados, "Mi Lista (Privados)", "bg-slate-50 text-slate-700")}
-                                    {renderGroup(misCompartidos, "Mis Clientes Compartidos", "bg-emerald-50 text-emerald-800")}
-                                    {Object.entries(deOtros).map(([owner, list]) => 
-                                        renderGroup(list, `Compartidos por ${owner}`, "bg-indigo-50 text-indigo-800")
-                                    )}
-                                </>
-                            );
-                        })()}
-                    </div>
-                )}
+                            })()}
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-        {renderModales()}
+            {renderModales()}
         </>
     );
 };

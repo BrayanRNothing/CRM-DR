@@ -624,37 +624,46 @@ export default function VendedorAjustes() {
                                             Personaliza el color de acento principal del CRM en tu dispositivo.
                                         </p>
 
-                                        <div className="flex flex-wrap gap-4">
-                                            {THEMES.map((theme) => {
-                                                const isActive = currentThemeId === theme.id;
-                                                return (
-                                                    <button
-                                                        type="button"
-                                                        key={theme.id}
-                                                        onClick={() => setTheme(theme.id)}
-                                                        className={`group relative flex items-center gap-3 p-3 pr-5 rounded-2xl border-2 transition-all ${isActive ? 'bg-white border-(--theme-300) shadow-sm' : 'border-transparent hover:bg-white/50'}`}
-                                                    >
-                                                        {theme.swatch === 'gradient' ? (
-                                                            <div
-                                                                className={`w-8 h-8 rounded-full shadow-sm flex items-center justify-center transition-transform ${isActive ? 'scale-110 ring-2 ring-offset-2 ring-cyan-300' : 'group-hover:scale-110'}`}
-                                                                style={{ backgroundImage: theme.swatchGradient || 'linear-gradient(135deg, #34d399 0%, #22d3ee 50%, #4f46e5 100%)' }}
-                                                            >
-                                                                {isActive && <CheckCircle2 size={16} className="text-white" />}
-                                                            </div>
-                                                        ) : (
-                                                            <div
-                                                                className={`w-8 h-8 rounded-full shadow-sm flex items-center justify-center transition-transform ${isActive ? 'scale-110 ring-2 ring-offset-2' : 'group-hover:scale-110'}`}
-                                                                style={{ backgroundColor: theme.color, ringColor: theme.color }}
-                                                            >
-                                                                {isActive && <CheckCircle2 size={16} className="text-white" />}
-                                                            </div>
-                                                        )}
-                                                        <span className={`text-sm font-semibold ${isActive ? 'text-slate-900' : 'text-slate-600'}`}>
-                                                            {theme.label}
-                                                        </span>
-                                                    </button>
-                                                )
-                                            })}
+                                        <div className="space-y-8">
+                                            {['clasicos', 'desvanecidos', 'especiales'].map(category => (
+                                                <div key={category}>
+                                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">
+                                                        {category === 'clasicos' ? 'Colores Clásicos' : category === 'desvanecidos' ? 'Pasteles & Desvanecidos' : 'Ediciones Especiales'}
+                                                    </h3>
+                                                    <div className="flex flex-wrap gap-4">
+                                                        {THEMES.filter(t => t.category === category).map((theme) => {
+                                                            const isActive = currentThemeId === theme.id;
+                                                            return (
+                                                                <button
+                                                                    type="button"
+                                                                    key={theme.id}
+                                                                    onClick={() => setTheme(theme.id)}
+                                                                    className={`group relative flex items-center gap-3 p-3 pr-5 rounded-2xl border-2 transition-all ${isActive ? 'bg-white border-(--theme-300) shadow-sm' : 'border-transparent hover:bg-white/50'}`}
+                                                                >
+                                                                    {theme.swatch === 'gradient' ? (
+                                                                        <div
+                                                                            className={`w-8 h-8 rounded-full shadow-sm flex items-center justify-center transition-transform ${isActive ? 'scale-110 ring-2 ring-offset-2 ring-cyan-300' : 'group-hover:scale-110'}`}
+                                                                            style={{ backgroundImage: theme.swatchGradient || 'linear-gradient(135deg, #34d399 0%, #22d3ee 50%, #4f46e5 100%)' }}
+                                                                        >
+                                                                            {isActive && <CheckCircle2 size={16} className="text-white" />}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div
+                                                                            className={`w-8 h-8 rounded-full shadow-sm flex items-center justify-center transition-transform ${isActive ? 'scale-110 ring-2 ring-offset-2' : 'group-hover:scale-110'}`}
+                                                                            style={{ backgroundColor: theme.color, ringColor: theme.color }}
+                                                                        >
+                                                                            {isActive && <CheckCircle2 size={16} className="text-white" />}
+                                                                        </div>
+                                                                    )}
+                                                                    <span className={`text-sm font-semibold ${isActive ? 'text-slate-900' : 'text-slate-600'}`}>
+                                                                        {theme.label}
+                                                                    </span>
+                                                                </button>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 </section>

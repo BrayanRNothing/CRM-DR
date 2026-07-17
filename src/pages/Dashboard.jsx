@@ -625,7 +625,7 @@ const Dashboard = () => {
                             {
                                 etapa: 'Entrada',
                                 cantidad: totalEntrada,
-                                color: 'bg-(--theme-500)',
+                                color: 'bg-(--theme-600)',
                                 contadorHoy: vendedorData.periodos?.[periodo]?.prospectos ?? 0,
                                 labelContador: `recibidos ${periodoSuffix}`,
                                 cantidadExito: enContacto,
@@ -638,7 +638,7 @@ const Dashboard = () => {
                             {
                                 etapa: 'Contacto',
                                 cantidad: enContacto,
-                                color: 'bg-slate-500',
+                                color: 'bg-(--theme-500)',
                                 contadorHoy: vendedorData.periodos?.[periodo]?.llamadas ?? 0,
                                 labelContador: `esfuerzos ${periodoSuffix}`,
                                 cantidadExito: citas,
@@ -651,7 +651,7 @@ const Dashboard = () => {
                             {
                                 etapa: 'Citas',
                                 cantidad: citas,
-                                color: 'bg-slate-600',
+                                color: 'bg-(--theme-400)',
                                 contadorHoy: (vendedorData.periodos?.[periodo]?.reuniones ?? 0) + (closerData.metricas.reuniones.realizadasHoy || 0),
                                 labelContador: `citas ${periodoSuffix}`,
                                 cantidadExito: ganadas,

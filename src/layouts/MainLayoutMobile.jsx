@@ -14,7 +14,7 @@ const MainLayoutMobile = ({ menuItems, userInfo, diasGracia, planData }) => {
     return (
         <AnimatedGridBackground mode="light">
             <div className="h-dvh flex flex-col overflow-hidden relative font-sans">
-                
+
                 {/* ── Top Header ── */}
                 <header className="px-5 pt-safe bg-white/70 backdrop-blur-xl border-b border-white/40 sticky top-0 z-50">
                     <div className="flex items-center justify-between h-12">
@@ -27,7 +27,7 @@ const MainLayoutMobile = ({ menuItems, userInfo, diasGracia, planData }) => {
                                 <span className="text-[8px] font-bold text-(--theme-500) uppercase tracking-widest mt-0.5">{userInfo?.rol || 'Workspace'}</span>
                             </div>
                         </div>
-                        
+
                         <div className="flex items-center">
                             <span className="text-[10px] font-black text-slate-700 leading-none">{userInfo?.nombre || 'User'}</span>
                         </div>
@@ -35,7 +35,7 @@ const MainLayoutMobile = ({ menuItems, userInfo, diasGracia, planData }) => {
                 </header>
 
                 {/* ── Main Content Area ── */}
-                <main className={`flex-1 overflow-y-auto pb-[90px] relative scrollbar-hide ${!isDashboard ? 'bg-white' : ''}`}>
+                <main id="main-scroll-container" className={`flex-1 overflow-y-auto pb-[90px] relative scrollbar-hide ${!isDashboard ? 'bg-white' : ''}`}>
                     {diasGracia === -1 ? (
                         <div className="min-h-full flex flex-col items-center justify-center p-6 text-center bg-white">
                             <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4 border border-red-200">
@@ -95,7 +95,7 @@ const MainLayoutMobile = ({ menuItems, userInfo, diasGracia, planData }) => {
                             >
                                 💳 Renovar
                             </button>
-                            <button 
+                            <button
                                 onClick={() => { localStorage.clear(); sessionStorage.clear(); window.location.href = '/'; }}
                                 className="mt-4 text-slate-500 font-bold"
                             >
@@ -139,20 +139,18 @@ const MainLayoutMobile = ({ menuItems, userInfo, diasGracia, planData }) => {
                                 >
                                     <motion.div
                                         animate={isActive ? { scale: 1.1, y: -2 } : { scale: 1, y: 0 }}
-                                        className={`p-1.5 transition-all duration-300 shrink-0 ${
-                                            isActive 
-                                            ? 'text-(--theme-500)' 
-                                            : 'text-slate-400 hover:text-slate-600'
-                                        }`}
+                                        className={`p-1.5 transition-all duration-300 shrink-0 ${isActive
+                                                ? 'text-(--theme-500)'
+                                                : 'text-slate-400 hover:text-slate-600'
+                                            }`}
                                     >
                                         {item.icon}
                                     </motion.div>
-                                    <span className={`text-[8.5px] font-bold uppercase tracking-tight text-center leading-tight w-full truncate px-0.5 ${
-                                        isActive ? 'text-(--theme-600)' : 'text-slate-400'
-                                    }`}>
+                                    <span className={`text-[8.5px] font-bold uppercase tracking-tight text-center leading-tight w-full truncate px-0.5 ${isActive ? 'text-(--theme-600)' : 'text-slate-400'
+                                        }`}>
                                         {item.name}
                                     </span>
-                                    
+
 
                                 </Link>
                             );
