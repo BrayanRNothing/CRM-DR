@@ -853,9 +853,9 @@ const KanbanClientes = ({
     const totalClientes = clientes.length;
 
     return (
-        <div className={`rounded-2xl overflow-hidden transition-colors duration-300`}>
+        <div className={`flex flex-col h-full rounded-2xl overflow-hidden transition-colors duration-300`}>
             {/* ── Toolbar ── */}
-            <div className="flex items-center gap-2 flex-wrap mb-3">
+            <div className="flex items-center gap-2 flex-wrap mb-3 shrink-0">
                 {/* Stats pill */}
                 <div className="flex items-center gap-2 text-xs text-slate-500 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
                     <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -939,7 +939,7 @@ const KanbanClientes = ({
             )}
 
             {/* ── Board ── */}
-            <div className={`rounded-2xl p-3 transition-colors duration-300 ${theme.bg} h-[calc(100vh-180px)] min-h-[400px] flex flex-col`}>
+            <div className={`rounded-2xl p-3 transition-colors duration-300 flex-1 min-h-0 flex flex-col ${theme.bg}`}>
                 {visibleColumns.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center flex-1">
                         <EyeOff className="w-10 h-10 text-slate-400 mb-3 opacity-50" />

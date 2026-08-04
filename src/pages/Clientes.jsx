@@ -921,9 +921,9 @@ const Clientes = () => {
 
     return (
         <>
-            <div className="min-h-screen md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 pb-8 md:pb-6">
-                <div className="max-w-full mx-auto">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className={`md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 pb-8 md:pb-6 flex flex-col ${vistaKanban ? 'h-[calc(100vh-5rem)] overflow-hidden' : 'min-h-screen'}`}>
+                <div className={`max-w-full mx-auto flex flex-col ${vistaKanban ? 'h-full flex-1' : ''}`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shrink-0">
                         <div>
                             <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
                                 {esMenuSeguimiento ? 'Seguimiento de Clientes' : 'Clientes'}
@@ -1128,31 +1128,33 @@ const Clientes = () => {
                             <p className="text-gray-400 text-sm mt-1">Intenta con otra busqueda o ajusta los filtros.</p>
                         </div>
                     ) : vistaKanban ? (
-                        <KanbanClientes
-                            clientes={clientesFiltrados}
-                            onVerDetalles={handleVerDetalles}
-                            abrirModalEditar={abrirModalEditar}
-                            setClienteAEliminar={setClienteAEliminar}
-                            handleToggleCompartido={handleToggleCompartido}
-                            isOwnerRecord={isOwnerRecord}
-                            onEtapaChange={async (clienteId, nuevaEtapa) => {
-                                try {
-                                    await axios.put(
-                                        `${API_URL}/api/vendedor/prospectos/${clienteId}`,
-                                        { etapaCliente: nuevaEtapa },
-                                        { headers: getAuthHeaders() }
-                                    );
-                                    setClientes(prev => prev.map(c =>
-                                        String(c.id || c._id) === String(clienteId)
-                                            ? { ...c, etapaCliente: nuevaEtapa }
-                                            : c
-                                    ));
-                                } catch (err) {
-                                    console.error('Error al cambiar etapa kanban:', err);
-                                    toast.error('No se pudo actualizar la etapa');
-                                }
-                            }}
-                        />
+                        <div className="flex-1 min-h-0 flex flex-col">
+                            <KanbanClientes
+                                clientes={clientesFiltrados}
+                                onVerDetalles={handleVerDetalles}
+                                abrirModalEditar={abrirModalEditar}
+                                setClienteAEliminar={setClienteAEliminar}
+                                handleToggleCompartido={handleToggleCompartido}
+                                isOwnerRecord={isOwnerRecord}
+                                onEtapaChange={async (clienteId, nuevaEtapa) => {
+                                    try {
+                                        await axios.put(
+                                            `${API_URL}/api/vendedor/prospectos/${clienteId}`,
+                                            { etapaCliente: nuevaEtapa },
+                                            { headers: getAuthHeaders() }
+                                        );
+                                        setClientes(prev => prev.map(c =>
+                                            String(c.id || c._id) === String(clienteId)
+                                                ? { ...c, etapaCliente: nuevaEtapa }
+                                                : c
+                                        ));
+                                    } catch (err) {
+                                        console.error('Error al cambiar etapa kanban:', err);
+                                        toast.error('No se pudo actualizar la etapa');
+                                    }
+                                }}
+                            />
+                        </div>
                     ) : (
                         <div className="space-y-6">
                             {(() => {
