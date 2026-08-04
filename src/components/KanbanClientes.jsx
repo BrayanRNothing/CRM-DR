@@ -950,7 +950,7 @@ const KanbanClientes = ({
                         </button>
                     </div>
                 ) : (
-                    <div className="flex gap-3 overflow-x-auto pb-2 flex-1 min-h-0 custom-scrollbar"
+                    <div className="flex gap-3 overflow-x-auto pb-2 flex-1 min-h-0 custom-scrollbar items-stretch h-full"
                         onDragOver={e => e.preventDefault()}
                         onDrop={e => {
                             const colId = e.dataTransfer.getData('colId');
