@@ -200,18 +200,15 @@ const MainLayout = () => {
                 />
 
                 {/* Contenido flotante - Estilo Contenedor Blanco */}
-                <main
+                <motion.main
+                    layoutId="main-app-container"
+                    transition={{ layout: { duration: 0.55, ease: [0.16, 1, 0.3, 1] } }}
                     className="flex-1 bg-white/80 backdrop-blur-md border border-white/40 rounded-3xl overflow-hidden transition-all duration-300 relative premium-reflejo"
                     style={{ display: 'flex', flexDirection: 'column' }}
                 >
                     {/* Skeleton mientras verificamos el plan — evita peticiones prematuras */}
                     {checkingPlan ? (
-                        <div className="flex-1 flex items-center justify-center">
-                            <div className="flex flex-col items-center gap-3 opacity-40">
-                                <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-                                <span className="text-xs font-semibold text-slate-500 tracking-wide">Cargando...</span>
-                            </div>
-                        </div>
+                        <div className="flex-1"></div>
                     ) : diasGracia === -1 ? (
                         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white/95 backdrop-blur-xl z-50">
                             <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6 shadow-sm border border-red-200">
@@ -287,19 +284,13 @@ const MainLayout = () => {
                             )}
 
                             <div id="main-scroll-container" className={`flex-1 flex flex-col scrollbar-hide ${isAjustesRoute || isDashboard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-                                <Suspense fallback={
-                                    <div className="flex items-center justify-center h-full p-8">
-                                        <div className="w-full max-w-4xl">
-                                            <SkeletonLoader variant="dashboard" />
-                                        </div>
-                                    </div>
-                                }>
+                                <Suspense fallback={<div className="flex-1 h-full"></div>}>
                                     <AnimatedOutlet context={{ planData, plan_activo: planData?.plan_activo }} />
                                 </Suspense>
                             </div>
                         </>
                     )}
-                </main>
+                </motion.main>
             </div>
         </AnimatedGridBackground>
     );

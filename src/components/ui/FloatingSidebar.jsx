@@ -60,7 +60,9 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
 
     const borderClass = isDark ? 'border-gray-800' : 'border-gray-100';
     return (
-        <aside
+        <motion.aside
+            layoutId="app-sidebar"
+            transition={{ layout: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }}
             className={`flex flex-col border rounded-2xl transition-all duration-300 premium-reflejo ${containerClasses} ${isCollapsed ? 'w-20' : 'w-64'
                 }`}
         >
@@ -130,15 +132,28 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                 {/* Navigation */}
                 <nav className="flex-1 p-3 flex flex-col overflow-y-auto scrollbar-hide">
                     {/* Regular items */}
-                    <div className="space-y-1">
+                    <motion.div 
+                        className="space-y-1"
+                        initial="hidden"
+                        animate="show"
+                        variants={{
+                            hidden: { opacity: 0 },
+                            show: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } }
+                        }}
+                    >
                         {menuItems.filter(i => !i.isBottom).map((item, index) => {
+                            const itemVariant = {
+                                hidden: { opacity: 0, x: -15 },
+                                show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+                            };
+
                             if (item.isSpacer) {
                                 return isCollapsed ? (
-                                    <div key={`sp-${index}`} className="h-3" />
+                                    <motion.div variants={itemVariant} key={`sp-${index}`} className="h-3" />
                                 ) : (
-                                    <div key={`sp-${index}`} className={`my-2 pt-2 border-t ${borderClass}`}>
+                                    <motion.div variants={itemVariant} key={`sp-${index}`} className={`my-2 pt-2 border-t ${borderClass}`}>
                                         <p className="px-3 text-[10px] font-bold uppercase tracking-[0.16em] opacity-50">Módulos de Vendedor</p>
-                                    </div>
+                                    </motion.div>
                                 );
                             }
 
@@ -148,7 +163,7 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                             if (item.isAccordion) {
                                 const isOpen = openAccordions[item.name];
                                 return (
-                                    <div key={index} className="relative group/accordion">
+                                    <motion.div variants={itemVariant} key={index} className="relative group/accordion">
                                         <button
                                             onClick={() => {
                                                 if (isCollapsed) {
@@ -233,11 +248,12 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                                                 })}
                                             </div>
                                         )}
-                                    </div>
+                                    </motion.div>
                                 );
                             }
                             return (
-                                <Link key={index} to={item.path}
+                                <motion.div variants={itemVariant} key={index}>
+                                <Link to={item.path}
                                     className={`relative flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-colors z-0 ${isActive ? activeTextClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                     title={isCollapsed ? item.name : ''}
                                 >
@@ -251,23 +267,37 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                                     <div className="shrink-0">{item.icon}</div>
                                     {!isCollapsed && <span className="font-medium truncate">{item.name}</span>}
                                 </Link>
+                                </motion.div>
                             );
                         })}
-                    </div>
+                    </motion.div>
 
                     {/* Spacer pushes Ajustes to bottom */}
                     <div className="flex-1" />
 
                     {/* Bottom items (Ajustes) */}
-                    <div className={`space-y-1 pt-2 mt-2 border-t ${borderClass}`}>
+                    <motion.div 
+                        className={`space-y-1 pt-2 mt-2 border-t ${borderClass}`}
+                        initial="hidden"
+                        animate="show"
+                        variants={{
+                            hidden: { opacity: 0 },
+                            show: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.4 } }
+                        }}
+                    >
                         {menuItems.filter(i => i.isBottom).map((item, index) => {
+                            const itemVariant = {
+                                hidden: { opacity: 0, x: -15 },
+                                show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+                            };
+
                             const isActive = item.path && location.pathname === item.path;
                             const hasActiveChild = item.children?.some(child => location.pathname === child.path);
 
                             if (item.isAccordion) {
                                 const isOpen = openAccordions[item.name];
                                 return (
-                                    <div key={`bot-${index}`} className="relative group/accordion">
+                                    <motion.div variants={itemVariant} key={`bot-${index}`} className="relative group/accordion">
                                         <button
                                             onClick={() => {
                                                 if (isCollapsed) {
@@ -351,11 +381,12 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                                                 })}
                                             </div>
                                         )}
-                                    </div>
+                                    </motion.div>
                                 );
                             }
                             return (
-                                <Link key={`bot-${index}`} to={item.path}
+                                <motion.div variants={itemVariant} key={`bot-${index}`}>
+                                <Link to={item.path}
                                     className={`relative flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-colors z-0 ${isActive ? activeTextClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                     title={isCollapsed ? item.name : ''}
                                 >
@@ -369,13 +400,13 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                                     <div className="shrink-0">{item.icon}</div>
                                     {!isCollapsed && <span className="font-medium truncate">{item.name}</span>}
                                 </Link>
+                                </motion.div>
                             );
                         })}
-                    </div>
+                    </motion.div>
                 </nav>
             </div>
-
-        </aside>
+        </motion.aside>
     );
 };
 
