@@ -921,7 +921,7 @@ const Clientes = () => {
 
     return (
         <>
-            <div className={`md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 pb-8 md:pb-6 flex flex-col w-full ${vistaKanban ? 'h-[calc(100vh-5rem)] overflow-hidden' : 'min-h-screen'}`}>
+            <div className={`md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 flex flex-col w-full ${vistaKanban ? 'flex-1 h-full min-h-0 overflow-hidden pb-4 md:pb-4' : 'min-h-screen pb-8 md:pb-6'}`}>
                 <div className={`max-w-[1600px] w-full mx-auto flex flex-col ${vistaKanban ? 'h-full flex-1' : ''}`}>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shrink-0">
                         <div>

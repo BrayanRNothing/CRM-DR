@@ -498,7 +498,7 @@ const KanbanColumn = ({
 
             {/* Cards */}
             <div
-                className="flex flex-col gap-2 p-2.5 overflow-y-auto flex-1 min-h-0 h-0 custom-scrollbar"
+                className="flex flex-col gap-2 p-2.5 overflow-y-auto flex-1 min-h-0 custom-scrollbar"
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
