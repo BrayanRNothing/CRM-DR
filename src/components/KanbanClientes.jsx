@@ -269,7 +269,7 @@ const ClienteCard = ({ cliente, cardSize, fields, colorId, isDragging, onVerDeta
    HEADER EDITABLE DE COLUMNA
 ═══════════════════════════════════════════════════════════════ */
 
-const ColumnHeader = ({ column, count, onUpdate, onDelete, canDelete, themeIsDark, sortBy, onSortChange }) => {
+const ColumnHeader = ({ column, count, onUpdate, onDelete, canDelete, themeIsDark, sortBy, onSortChange, setDragEnabled }) => {
     const [editingLabel, setEditingLabel] = useState(false);
     const [label, setLabel] = useState(column.label);
     const [showPalette, setShowPalette] = useState(false);
@@ -311,7 +311,13 @@ const ColumnHeader = ({ column, count, onUpdate, onDelete, canDelete, themeIsDar
             <div className={`rounded-xl overflow-visible ${c.header}`}>
                 <div className="flex items-center gap-1.5 px-3 py-2.5">
                     {/* Drag handle for column */}
-                    <GripVertical className="w-3.5 h-3.5 text-white/50 cursor-grab shrink-0" />
+                    <div 
+                        onMouseEnter={() => setDragEnabled?.(true)}
+                        onMouseLeave={() => setDragEnabled?.(false)}
+                        className="cursor-grab active:cursor-grabbing p-1 -ml-1 rounded opacity-60 hover:opacity-100 hover:bg-white/10 transition-colors"
+                    >
+                        <GripVertical className="w-3.5 h-3.5 text-white shrink-0" />
+                    </div>
 
                     {/* Label editable */}
                     <div className="flex-1 min-w-0">
@@ -444,6 +450,7 @@ const KanbanColumn = ({
     colWidth,
 }) => {
     const [dragOver, setDragOver] = useState(false);
+    const [dragEnabled, setDragEnabled] = useState(false);
     const colRef = useRef(null);
     const c = getColor(column.colorId);
     const theme = getTheme(prefs.themeId);
@@ -473,7 +480,7 @@ const KanbanColumn = ({
     return (
         <div
             ref={colRef}
-            draggable
+            draggable={dragEnabled}
             onDragStart={handleColDragStart}
             onDragOver={e => { e.preventDefault(); onColDragOver(column.id); handleDragOver(e); }}
             onDrop={handleDrop}
@@ -494,6 +501,7 @@ const KanbanColumn = ({
                 themeIsDark={themeIsDark}
                 sortBy={column.sortBy || prefs.sortBy}
                 onSortChange={onSortChange}
+                setDragEnabled={setDragEnabled}
             />
 
             {/* Cards */}
@@ -517,7 +525,11 @@ const KanbanColumn = ({
                         <div
                             key={id}
                             draggable
-                            onDragStart={e => { e.dataTransfer.setData('clienteId', id); setDragging(id); }}
+                            onDragStart={e => { 
+                                e.stopPropagation();
+                                e.dataTransfer.setData('clienteId', id); 
+                                setDragging(id); 
+                            }}
                             onDragEnd={() => setDragging(null)}
                         >
                             <ClienteCard
