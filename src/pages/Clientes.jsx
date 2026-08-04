@@ -1128,33 +1128,31 @@ const Clientes = () => {
                             <p className="text-gray-400 text-sm mt-1">Intenta con otra busqueda o ajusta los filtros.</p>
                         </div>
                     ) : vistaKanban ? (
-                        <div className="flex-1 min-h-0 flex flex-col">
-                            <KanbanClientes
-                                clientes={clientesFiltrados}
-                                onVerDetalles={handleVerDetalles}
-                                abrirModalEditar={abrirModalEditar}
-                                setClienteAEliminar={setClienteAEliminar}
-                                handleToggleCompartido={handleToggleCompartido}
-                                isOwnerRecord={isOwnerRecord}
-                                onEtapaChange={async (clienteId, nuevaEtapa) => {
-                                    try {
-                                        await axios.put(
-                                            `${API_URL}/api/vendedor/prospectos/${clienteId}`,
-                                            { etapaCliente: nuevaEtapa },
-                                            { headers: getAuthHeaders() }
-                                        );
-                                        setClientes(prev => prev.map(c =>
-                                            String(c.id || c._id) === String(clienteId)
-                                                ? { ...c, etapaCliente: nuevaEtapa }
-                                                : c
-                                        ));
-                                    } catch (err) {
-                                        console.error('Error al cambiar etapa kanban:', err);
-                                        toast.error('No se pudo actualizar la etapa');
-                                    }
-                                }}
-                            />
-                        </div>
+                        <KanbanClientes
+                            clientes={clientesFiltrados}
+                            onVerDetalles={handleVerDetalles}
+                            abrirModalEditar={abrirModalEditar}
+                            setClienteAEliminar={setClienteAEliminar}
+                            handleToggleCompartido={handleToggleCompartido}
+                            isOwnerRecord={isOwnerRecord}
+                            onEtapaChange={async (clienteId, nuevaEtapa) => {
+                                try {
+                                    await axios.put(
+                                        `${API_URL}/api/vendedor/prospectos/${clienteId}`,
+                                        { etapaCliente: nuevaEtapa },
+                                        { headers: getAuthHeaders() }
+                                    );
+                                    setClientes(prev => prev.map(c =>
+                                        String(c.id || c._id) === String(clienteId)
+                                            ? { ...c, etapaCliente: nuevaEtapa }
+                                            : c
+                                    ));
+                                } catch (err) {
+                                    console.error('Error al cambiar etapa kanban:', err);
+                                    toast.error('No se pudo actualizar la etapa');
+                                }
+                            }}
+                        />
                     ) : (
                         <div className="space-y-6">
                             {(() => {
