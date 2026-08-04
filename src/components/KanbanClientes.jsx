@@ -939,9 +939,9 @@ const KanbanClientes = ({
             )}
 
             {/* ── Board ── */}
-            <div className={`rounded-2xl p-3 transition-colors duration-300 flex-1 min-h-0 flex flex-col ${theme.bg}`}>
+            <div className={`rounded-2xl p-3 transition-colors duration-300 flex-1 min-h-0 relative ${theme.bg}`}>
                 {visibleColumns.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center flex-1">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                         <EyeOff className="w-10 h-10 text-slate-400 mb-3 opacity-50" />
                         <p className="text-slate-400 font-semibold text-sm">Todas las columnas están vacías</p>
                         <button onClick={() => setPrefs(p => ({ ...p, hideEmpty: false }))}
@@ -950,7 +950,7 @@ const KanbanClientes = ({
                         </button>
                     </div>
                 ) : (
-                    <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 flex-1 min-h-0 h-full custom-scrollbar items-stretch"
+                    <div className="absolute inset-x-3 inset-y-3 flex gap-3 overflow-x-auto overflow-y-hidden pb-1 custom-scrollbar items-stretch"
                         onDragOver={e => e.preventDefault()}
                         onDrop={e => {
                             const colId = e.dataTransfer.getData('colId');
