@@ -700,7 +700,7 @@ const Dashboard = () => {
 
                                     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full">
                                         <div className="flex items-center gap-3 mb-6 shrink-0">
-                                            <div className="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 shadow-xs">
+                                            <div className="w-10 h-10 bg-(--theme-50) rounded-2xl flex items-center justify-center text-(--theme-600) shadow-xs">
                                                 <Zap className="w-5 h-5" />
                                             </div>
                                             <div>
@@ -710,7 +710,7 @@ const Dashboard = () => {
                                         </div>
 
                                         <div className="flex-1 flex flex-col gap-3 min-h-0">
-                                            <motion.button layoutId="panel-kpis" onClick={() => setHealthTab('kpis')} className="flex-1 justify-center bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl p-4 flex flex-col text-left transition-colors cursor-pointer w-full group relative overflow-hidden">
+                                            <motion.button layoutId="panel-kpis" onClick={() => setHealthTab('kpis')} className="flex-1 justify-center bg-gray-50/50 hover:bg-(--theme-50) border border-gray-100 hover:border-(--theme-300) rounded-xl p-4 flex flex-col text-left transition-all cursor-pointer w-full group relative overflow-hidden">
                                                 <div className="flex items-start justify-between w-full mb-3 relative z-10">
                                                     <h4 className="text-sm font-black text-gray-800 uppercase tracking-widest">Métricas</h4>
                                                     <div className="flex flex-col items-center transition-transform group-hover:translate-x-1 relative">
@@ -737,7 +737,7 @@ const Dashboard = () => {
                                                 <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                                             </motion.button>
 
-                                            <motion.button layoutId="panel-tareas" onClick={() => setHealthTab('tareas')} className="flex-1 justify-center bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl p-4 flex flex-col text-left transition-colors cursor-pointer w-full group relative overflow-hidden">
+                                            <motion.button layoutId="panel-tareas" onClick={() => setHealthTab('tareas')} className="flex-1 justify-center bg-gray-50/50 hover:bg-(--theme-50) border border-gray-100 hover:border-(--theme-300) rounded-xl p-4 flex flex-col text-left transition-all cursor-pointer w-full group relative overflow-hidden">
                                                 <div className="flex items-start justify-between w-full mb-3 relative z-10">
                                                     <h4 className="text-sm font-black text-gray-800 uppercase tracking-widest">Tareas</h4>
                                                     <div className="flex flex-col items-center transition-transform group-hover:translate-x-1 relative">
@@ -764,7 +764,7 @@ const Dashboard = () => {
                                                 <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                                             </motion.button>
 
-                                            <button onClick={() => navigate('/vendedor/prospectos')} className="flex-1 justify-center bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl p-4 flex flex-col text-left transition-colors cursor-pointer w-full group relative overflow-hidden">
+                                            <button onClick={() => navigate('/vendedor/prospectos')} className="flex-1 justify-center bg-gray-50/50 hover:bg-(--theme-50) border border-gray-100 hover:border-(--theme-300) rounded-xl p-4 flex flex-col text-left transition-all cursor-pointer w-full group relative overflow-hidden">
                                                 <div className="flex items-start justify-between w-full mb-3 relative z-10">
                                                     <h4 className="text-sm font-black text-gray-800 uppercase tracking-widest">Prospectos</h4>
                                                     <div className="flex flex-col items-center transition-transform group-hover:translate-x-1 relative">
