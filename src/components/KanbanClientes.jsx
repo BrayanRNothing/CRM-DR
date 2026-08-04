@@ -853,7 +853,7 @@ const KanbanClientes = ({
     const totalClientes = clientes.length;
 
     return (
-        <div className={`flex flex-col h-full rounded-2xl overflow-hidden transition-colors duration-300`}>
+        <div className={`flex flex-col h-full w-full rounded-2xl overflow-hidden transition-colors duration-300`}>
             {/* ── Toolbar ── */}
             <div className="flex items-center gap-2 flex-wrap mb-3 shrink-0">
                 {/* Stats pill */}
