@@ -853,7 +853,7 @@ const KanbanClientes = ({
     const totalClientes = clientes.length;
 
     return (
-        <div className={`flex flex-col h-full w-full rounded-2xl overflow-hidden transition-colors duration-300`}>
+        <div className={`flex flex-col flex-1 min-h-0 w-full rounded-2xl overflow-hidden transition-colors duration-300`}>
             {/* ── Toolbar ── */}
             <div className="flex items-center gap-2 flex-wrap mb-3 shrink-0">
                 {/* Stats pill */}
@@ -939,7 +939,7 @@ const KanbanClientes = ({
             )}
 
             {/* ── Board ── */}
-            <div className={`rounded-2xl p-3 transition-colors duration-300 flex-1 min-h-0 relative ${theme.bg}`}>
+            <div className={`rounded-2xl transition-colors duration-300 flex-1 min-h-0 relative ${theme.bg}`}>
                 {visibleColumns.length === 0 ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                         <EyeOff className="w-10 h-10 text-slate-400 mb-3 opacity-50" />
@@ -950,7 +950,7 @@ const KanbanClientes = ({
                         </button>
                     </div>
                 ) : (
-                    <div className="absolute inset-x-3 inset-y-3 flex gap-3 overflow-x-auto overflow-y-hidden pb-1 custom-scrollbar items-stretch"
+                    <div className="absolute inset-0 p-3 flex gap-3 overflow-x-auto overflow-y-hidden custom-scrollbar items-stretch"
                         onDragOver={e => e.preventDefault()}
                         onDrop={e => {
                             const colId = e.dataTransfer.getData('colId');
