@@ -1,6 +1,7 @@
-import React, { useMemo, useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar, Filter, Star, Mail, MessageSquare, Clock, Share2, Edit2, Bell } from 'lucide-react';
+import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar, Filter, Star, Mail, MessageSquare, Clock, Share2, Edit2, Bell, LayoutList, Kanban } from 'lucide-react';
+import KanbanClientes from '../components/KanbanClientes';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { getToken } from '../utils/authUtils';
@@ -59,6 +60,7 @@ const Clientes = () => {
     const [importando, setImportando] = useState(false);
     const [ordenFiltro, setOrdenFiltro] = useState('todos');
     const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine'); // mine | shared | all
+    const [vistaKanban, setVistaKanban] = useState(false);
     const fileInputRef = useRef(null);
     const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
     const [creandoCliente, setCreandoCliente] = useState(false);
@@ -940,6 +942,33 @@ const Clientes = () => {
                                 className="hidden"
                                 onChange={handleImportarClientes}
                             />
+                            {/* Toggle Vista Lista / Kanban */}
+                            <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+                                <button
+                                    onClick={() => setVistaKanban(false)}
+                                    title="Vista lista"
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                                        !vistaKanban
+                                            ? 'bg-white text-slate-800 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                                >
+                                    <LayoutList className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Lista</span>
+                                </button>
+                                <button
+                                    onClick={() => setVistaKanban(true)}
+                                    title="Vista kanban"
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                                        vistaKanban
+                                            ? 'bg-white text-slate-800 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                                >
+                                    <Kanban className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Kanban</span>
+                                </button>
+                            </div>
                             <button
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={importando}
@@ -1096,6 +1125,32 @@ const Clientes = () => {
                             <p className="text-gray-500 font-medium">No se encontraron clientes.</p>
                             <p className="text-gray-400 text-sm mt-1">Intenta con otra busqueda o ajusta los filtros.</p>
                         </div>
+                    ) : vistaKanban ? (
+                        <KanbanClientes
+                            clientes={clientesFiltrados}
+                            onVerDetalles={handleVerDetalles}
+                            abrirModalEditar={abrirModalEditar}
+                            setClienteAEliminar={setClienteAEliminar}
+                            handleToggleCompartido={handleToggleCompartido}
+                            isOwnerRecord={isOwnerRecord}
+                            onEtapaChange={async (clienteId, nuevaEtapa) => {
+                                try {
+                                    await axios.put(
+                                        `${API_URL}/api/vendedor/prospectos/${clienteId}`,
+                                        { etapaCliente: nuevaEtapa },
+                                        { headers: getAuthHeaders() }
+                                    );
+                                    setClientes(prev => prev.map(c =>
+                                        String(c.id || c._id) === String(clienteId)
+                                            ? { ...c, etapaCliente: nuevaEtapa }
+                                            : c
+                                    ));
+                                } catch (err) {
+                                    console.error('Error al cambiar etapa kanban:', err);
+                                    toast.error('No se pudo actualizar la etapa');
+                                }
+                            }}
+                        />
                     ) : (
                         <div className="space-y-6">
                             {(() => {
