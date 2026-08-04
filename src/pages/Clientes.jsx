@@ -969,22 +969,28 @@ const Clientes = () => {
                                     <span className="hidden sm:inline">Kanban</span>
                                 </button>
                             </div>
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={importando}
-                                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
-                            >
-                                {importando ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />}
-                                {importando ? 'Importando...' : 'Importar CSV'}
-                            </button>
-                            <button
-                                onClick={exportarClientesCsv}
-                                disabled={loading || !clientesFiltrados.length}
-                                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
-                            >
-                                <Upload className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                                Exportar CSV
-                            </button>
+                            {!vistaKanban ? (
+                                <>
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={importando}
+                                        className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
+                                    >
+                                        {importando ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+                                        {importando ? 'Importando...' : 'Importar CSV'}
+                                    </button>
+                                    <button
+                                        onClick={exportarClientesCsv}
+                                        disabled={loading || !clientesFiltrados.length}
+                                        className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
+                                    >
+                                        <Upload className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                        Exportar CSV
+                                    </button>
+                                </>
+                            ) : (
+                                <div id="kanban-toolbar-portal-target" className="flex items-center gap-2 flex-wrap" />
+                            )}
                             <button
                                 onClick={() => setMostrarModalCrear(true)}
                                 className="hidden sm:flex w-full sm:w-auto justify-center items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs md:text-sm font-medium"

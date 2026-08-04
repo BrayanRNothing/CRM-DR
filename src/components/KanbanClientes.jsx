@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
     Plus, X, Settings2, GripVertical, Phone, Mail, Star,
     MessageSquare, Clock, Edit2, Trash2, Share2, Check,
@@ -788,6 +789,11 @@ const KanbanClientes = ({
     const [showSettings, setShowSettings] = useState(false);
     const [newLabel, setNewLabel] = useState('');
     const [newColor, setNewColor] = useState('blue');
+    const [portalNode, setPortalNode] = useState(null);
+
+    useEffect(() => {
+        setPortalNode(document.getElementById('kanban-toolbar-portal-target'));
+    }, []);
 
     /* ── Persistencia ── */
     useEffect(() => { localStorage.setItem(STORAGE_COLS_KEY, JSON.stringify(columns)); }, [columns]);
@@ -864,37 +870,45 @@ const KanbanClientes = ({
 
     const totalClientes = clientes.length;
 
+    const toolbarContent = (
+        <>
+            {/* Stats pill */}
+            <div className="flex items-center gap-2 text-xs text-slate-500 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="font-bold text-slate-700">{totalClientes}</span> clientes
+                <span className="text-slate-300">·</span>
+                <span>{visibleColumns.length}/{columns.length} columnas</span>
+            </div>
+
+            {/* Nueva columna */}
+            <button onClick={() => setShowAdd(v => !v)}
+                className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border shadow-sm transition-all
+                    ${showAdd ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400 hover:text-blue-600'}`}>
+                <Plus className="w-3.5 h-3.5" /> Nueva columna
+            </button>
+
+            {/* Configurar */}
+            <button onClick={() => setShowSettings(v => !v)}
+                className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border shadow-sm transition-all
+                    ${showSettings ? 'bg-violet-600 text-white border-violet-600' : 'bg-white border-slate-200 text-slate-700 hover:border-violet-400 hover:text-violet-600'}`}>
+                <Settings2 className="w-3.5 h-3.5" /> Personalizar
+            </button>
+
+            {/* Info pill */}
+            <p className="text-[11px] text-slate-400 hidden xl:flex items-center gap-1 ml-auto">
+                <GripVertical className="w-3.5 h-3.5" /> Arrastra tarjetas para reorganizar
+            </p>
+        </>
+    );
+
     return (
         <div className={`flex flex-col flex-1 min-h-0 w-full rounded-2xl overflow-hidden transition-colors duration-300`}>
             {/* ── Toolbar ── */}
-            <div className="flex items-center gap-2 flex-wrap mb-3 shrink-0">
-                {/* Stats pill */}
-                <div className="flex items-center gap-2 text-xs text-slate-500 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="font-bold text-slate-700">{totalClientes}</span> clientes
-                    <span className="text-slate-300">·</span>
-                    <span>{visibleColumns.length}/{columns.length} columnas</span>
+            {portalNode ? createPortal(toolbarContent, portalNode) : (
+                <div className="flex items-center gap-2 flex-wrap mb-3 shrink-0">
+                    {toolbarContent}
                 </div>
-
-                {/* Nueva columna */}
-                <button onClick={() => setShowAdd(v => !v)}
-                    className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border shadow-sm transition-all
-                        ${showAdd ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400 hover:text-blue-600'}`}>
-                    <Plus className="w-3.5 h-3.5" /> Nueva columna
-                </button>
-
-                {/* Configurar */}
-                <button onClick={() => setShowSettings(v => !v)}
-                    className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border shadow-sm transition-all
-                        ${showSettings ? 'bg-violet-600 text-white border-violet-600' : 'bg-white border-slate-200 text-slate-700 hover:border-violet-400 hover:text-violet-600'}`}>
-                    <Settings2 className="w-3.5 h-3.5" /> Personalizar
-                </button>
-
-                {/* Info pill */}
-                <p className="text-[11px] text-slate-400 hidden lg:flex items-center gap-1 ml-auto">
-                    <GripVertical className="w-3.5 h-3.5" /> Arrastra tarjetas o columnas para reorganizar
-                </p>
-            </div>
+            )}
 
             {/* ── Panel añadir columna ── */}
             {showAdd && (
