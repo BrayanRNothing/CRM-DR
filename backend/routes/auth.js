@@ -9,10 +9,10 @@ const rateLimit = require('express-rate-limit');
 
 const ROLES_PERMITIDOS = ['vendedor'];
 
-// Rate Limiter para el login: Máximo 5 intentos por IP en 15 minutos
+// Rate Limiter para el login: Máximo 1000 intentos por IP en 15 minutos (aumentado temporalmente para pruebas)
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 5, // Limita cada IP a 5 peticiones por ventana de tiempo
+    max: 1000, // Limita cada IP a 1000 peticiones por ventana de tiempo
     message: { mensaje: 'Demasiados intentos de inicio de sesión. Por favor, inténtelo de nuevo después de 15 minutos.' },
     standardHeaders: true, // Retorna rate limit info en los headers `RateLimit-*`
     legacyHeaders: false, // Deshabilita los headers `X-RateLimit-*`
