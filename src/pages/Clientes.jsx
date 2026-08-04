@@ -995,78 +995,80 @@ const Clientes = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white border border-slate-200 rounded-2xl p-2.5 md:p-3 shadow-sm mb-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-3 md:gap-4 items-center">
-                            <div className="flex items-stretch gap-2 w-full">
-                                <div className="relative flex-1 h-9">
-                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="Buscar clientes..."
-                                        value={busqueda}
-                                        onChange={(e) => setBusqueda(e.target.value)}
-                                        className="w-full h-full pl-8 pr-14 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs"
-                                        title="Buscar por nombre, empresa, correo o teléfono"
-                                    />
-                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
-                                        <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
-                                            {clientesFiltrados.length}/{clientes.length}
-                                        </span>
+                    {!vistaKanban && (
+                        <div className="bg-white border border-slate-200 rounded-2xl p-2.5 md:p-3 shadow-sm mb-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-3 md:gap-4 items-center">
+                                <div className="flex items-stretch gap-2 w-full">
+                                    <div className="relative flex-1 h-9">
+                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar clientes..."
+                                            value={busqueda}
+                                            onChange={(e) => setBusqueda(e.target.value)}
+                                            className="w-full h-full pl-8 pr-14 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs"
+                                            title="Buscar por nombre, empresa, correo o teléfono"
+                                        />
+                                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                                            <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                                                {clientesFiltrados.length}/{clientes.length}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                                <button
-                                    onClick={() => setMostrarModalCrear(true)}
-                                    className="sm:hidden flex items-center justify-center gap-1.5 px-3 h-9 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs font-medium shrink-0"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    Crear
-                                </button>
-                            </div>
-                            <div className="hidden md:flex flex-wrap md:flex-wrap -mx-2 px-2 md:mx-0 md:px-0 gap-2 items-center w-full">
-                                <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden md:block" />
-                                <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
-                                    {[
-                                        { value: 'mine', label: 'Mis clientes' },
-                                        { value: 'shared', label: 'Compartidos' },
-                                        { value: 'all', label: 'Todos visibles' },
-                                    ].map(btn => (
-                                        <button
-                                            key={btn.value}
-                                            onClick={() => setFiltroVisibilidad(btn.value)}
-                                            className={`px-3 h-9 flex items-center justify-center rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtroVisibilidad === btn.value
-                                                ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
-                                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400 hover:text-slate-800'
-                                                }`}
-                                        >
-                                            {btn.label}
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="w-px h-6 bg-slate-200 mx-1 shrink-0 hidden md:block"></div>
-                                <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
-                                    <select
-                                        value={ordenFiltro}
-                                        onChange={(e) => setOrdenFiltro(e.target.value)}
-                                        className="px-3 h-9 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-(--theme-500) transition-all cursor-pointer"
-                                    >
-                                        <option value="todos">Todos los clientes</option>
-                                        <option value="mayor_valor">Valor del cliente</option>
-                                        <option value="mayor_facturado">Facturado</option>
-                                        <option value="en_proceso">En oportunidad de venta</option>
-                                    </select>
-                                </div>
-                                {(ordenFiltro !== 'todos' || busqueda || filtroVisibilidad !== 'mine') && (
                                     <button
-                                        onClick={() => { setOrdenFiltro('todos'); setBusqueda(''); setFiltroVisibilidad('mine'); }}
-                                        className="shrink-0 flex items-center justify-center w-9 h-9 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
-                                        title="Limpiar filtros"
+                                        onClick={() => setMostrarModalCrear(true)}
+                                        className="sm:hidden flex items-center justify-center gap-1.5 px-3 h-9 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs font-medium shrink-0"
                                     >
-                                        ✕
+                                        <Plus className="w-4 h-4" />
+                                        Crear
                                     </button>
-                                )}
+                                </div>
+                                <div className="hidden md:flex flex-wrap md:flex-wrap -mx-2 px-2 md:mx-0 md:px-0 gap-2 items-center w-full">
+                                    <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden md:block" />
+                                    <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
+                                        {[
+                                            { value: 'mine', label: 'Mis clientes' },
+                                            { value: 'shared', label: 'Compartidos' },
+                                            { value: 'all', label: 'Todos visibles' },
+                                        ].map(btn => (
+                                            <button
+                                                key={btn.value}
+                                                onClick={() => setFiltroVisibilidad(btn.value)}
+                                                className={`px-3 h-9 flex items-center justify-center rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtroVisibilidad === btn.value
+                                                    ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
+                                                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400 hover:text-slate-800'
+                                                    }`}
+                                            >
+                                                {btn.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="w-px h-6 bg-slate-200 mx-1 shrink-0 hidden md:block"></div>
+                                    <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
+                                        <select
+                                            value={ordenFiltro}
+                                            onChange={(e) => setOrdenFiltro(e.target.value)}
+                                            className="px-3 h-9 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-(--theme-500) transition-all cursor-pointer"
+                                        >
+                                            <option value="todos">Todos los clientes</option>
+                                            <option value="mayor_valor">Valor del cliente</option>
+                                            <option value="mayor_facturado">Facturado</option>
+                                            <option value="en_proceso">En oportunidad de venta</option>
+                                        </select>
+                                    </div>
+                                    {(ordenFiltro !== 'todos' || busqueda || filtroVisibilidad !== 'mine') && (
+                                        <button
+                                            onClick={() => { setOrdenFiltro('todos'); setBusqueda(''); setFiltroVisibilidad('mine'); }}
+                                            className="shrink-0 flex items-center justify-center w-9 h-9 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
+                                            title="Limpiar filtros"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
 
                     {loading ? (
                         <div className="bg-white md:border md:border-slate-200 md:rounded-2xl md:shadow-sm overflow-hidden">
