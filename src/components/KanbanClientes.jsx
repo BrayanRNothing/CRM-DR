@@ -479,7 +479,7 @@ const KanbanColumn = ({
             onDrop={handleDrop}
             onDragLeave={handleDragLeave}
             style={{ minWidth: colWidth, maxWidth: colWidth, flexShrink: 0 }}
-            className={`flex flex-col rounded-2xl transition-all duration-200 overflow-visible
+            className={`flex flex-col rounded-2xl transition-all duration-200 overflow-hidden h-full
                 ${theme.colBg}
                 ${dragOver ? 'ring-2 ring-blue-400 ring-offset-1 scale-[1.01]' : ''}
                 ${wipOver ? 'ring-2 ring-red-400/60' : ''}`}
@@ -498,8 +498,7 @@ const KanbanColumn = ({
 
             {/* Cards */}
             <div
-                className="flex flex-col gap-2 p-2.5 overflow-y-auto flex-1"
-                style={{ maxHeight: 'calc(100vh - 310px)', minHeight: '60px' }}
+                className="flex flex-col gap-2 p-2.5 overflow-y-auto flex-1 min-h-0 custom-scrollbar"
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -940,9 +939,9 @@ const KanbanClientes = ({
             )}
 
             {/* ── Board ── */}
-            <div className={`rounded-2xl p-3 transition-colors duration-300 ${theme.bg}`}>
+            <div className={`rounded-2xl p-3 transition-colors duration-300 ${theme.bg} h-[calc(100vh-180px)] min-h-[400px] flex flex-col`}>
                 {visibleColumns.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="flex flex-col items-center justify-center py-16 text-center flex-1">
                         <EyeOff className="w-10 h-10 text-slate-400 mb-3 opacity-50" />
                         <p className="text-slate-400 font-semibold text-sm">Todas las columnas están vacías</p>
                         <button onClick={() => setPrefs(p => ({ ...p, hideEmpty: false }))}
@@ -951,8 +950,7 @@ const KanbanClientes = ({
                         </button>
                     </div>
                 ) : (
-                    <div className="flex gap-3 overflow-x-auto pb-3"
-                        style={{ minHeight: '200px' }}
+                    <div className="flex gap-3 overflow-x-auto pb-2 flex-1 min-h-0 custom-scrollbar"
                         onDragOver={e => e.preventDefault()}
                         onDrop={e => {
                             const colId = e.dataTransfer.getData('colId');
