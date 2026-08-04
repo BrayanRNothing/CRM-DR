@@ -144,7 +144,7 @@ const ClienteCard = ({ cliente, cardSize, fields, colorId, isDragging, onVerDeta
 
     return (
         <div
-            className={`group relative bg-white rounded-xl border border-slate-200/80 border-l-[3px] ${c.card}
+            className={`group relative bg-white rounded-xl border border-slate-200/80
                 shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer select-none
                 ${isDragging ? 'opacity-30 scale-95 rotate-1 shadow-none' : 'hover:-translate-y-0.5'}
                 ${isCompact ? 'p-2' : isDetailed ? 'p-4' : 'p-3'}`}
