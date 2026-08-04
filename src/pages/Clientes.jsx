@@ -1136,20 +1136,22 @@ const Clientes = () => {
                             handleToggleCompartido={handleToggleCompartido}
                             isOwnerRecord={isOwnerRecord}
                             onEtapaChange={async (clienteId, nuevaEtapa) => {
+                                // Optimistic Update para eliminar el delay visual
+                                const oldClientes = [...clientes];
+                                setClientes(prev => prev.map(c =>
+                                    String(c.id || c._id) === String(clienteId)
+                                        ? { ...c, etapaCliente: nuevaEtapa }
+                                        : c
+                                ));
                                 try {
                                     await axios.put(
                                         `${API_URL}/api/vendedor/prospectos/${clienteId}`,
                                         { etapaCliente: nuevaEtapa },
                                         { headers: getAuthHeaders() }
                                     );
-                                    setClientes(prev => prev.map(c =>
-                                        String(c.id || c._id) === String(clienteId)
-                                            ? { ...c, etapaCliente: nuevaEtapa }
-                                            : c
-                                    ));
                                 } catch (err) {
-                                    console.error('Error al cambiar etapa kanban:', err);
-                                    toast.error('No se pudo actualizar la etapa');
+                                    setClientes(oldClientes); // Rollback
+                                    toast.error('Error al cambiar etapa');
                                 }
                             }}
                         />
