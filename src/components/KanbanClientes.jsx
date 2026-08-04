@@ -792,7 +792,7 @@ const KanbanClientes = ({
         const map = {};
         columns.forEach(c => { map[c.id] = []; });
         clientes.forEach(cl => {
-            const col = getClienteCol(cl);
+            const col = getClientCol(cl);
             if (map[col] !== undefined) map[col].push(cl);
             else if (map[columns[0]?.id]) map[columns[0].id].push(cl);
         });
