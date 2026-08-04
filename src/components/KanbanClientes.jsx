@@ -479,7 +479,7 @@ const KanbanColumn = ({
             onDrop={handleDrop}
             onDragLeave={handleDragLeave}
             style={{ minWidth: colWidth, maxWidth: colWidth, flexShrink: 0 }}
-            className={`flex flex-col rounded-2xl transition-all duration-200 overflow-hidden
+            className={`flex flex-col rounded-2xl transition-all duration-200 overflow-hidden h-full
                 ${theme.colBg}
                 ${dragOver ? 'ring-2 ring-blue-400 ring-offset-1 scale-[1.01]' : ''}
                 ${wipOver ? 'ring-2 ring-red-400/60' : ''}`}
@@ -498,7 +498,7 @@ const KanbanColumn = ({
 
             {/* Cards */}
             <div
-                className="flex flex-col gap-2 p-2.5 overflow-y-auto flex-1 min-h-0 custom-scrollbar"
+                className="flex flex-col gap-2 p-2.5 overflow-y-auto flex-1 min-h-0 h-0 custom-scrollbar"
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -950,7 +950,7 @@ const KanbanClientes = ({
                         </button>
                     </div>
                 ) : (
-                    <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 flex-1 min-h-0 custom-scrollbar items-stretch"
+                    <div className="flex gap-3 overflow-x-auto overflow-y-hidden pb-2 flex-1 min-h-0 h-full custom-scrollbar items-stretch"
                         onDragOver={e => e.preventDefault()}
                         onDrop={e => {
                             const colId = e.dataTransfer.getData('colId');
