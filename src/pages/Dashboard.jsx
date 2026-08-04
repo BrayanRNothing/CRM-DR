@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, UserPlus, Calendar, TrendingUp, RefreshCw, Clock, CheckCircle2, Target, MessageSquare, ExternalLink, Users, Award, DollarSign, AlertTriangle, TrendingDown, Zap, Bell, ArrowRightLeft, PercentCircle, BarChart3, Search, FileText, Video, Globe, XCircle, Plus, Pencil, Trash2, Activity, ChevronRight, LogIn, LogOut, History, MousePointer2 } from 'lucide-react';
+import { Phone, UserPlus, Calendar, TrendingUp, RefreshCw, Clock, CheckCircle2, Target, MessageSquare, ExternalLink, Users, Award, DollarSign, AlertTriangle, TrendingDown, Zap, Bell, ArrowRightLeft, PercentCircle, BarChart3, Search, FileText, Video, Globe, XCircle, Plus, Pencil, Trash2, Activity, ChevronRight, ChevronLeft, LogIn, LogOut, History, MousePointer2 } from 'lucide-react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import FunnelVisual from '../components/FunnelVisual';
 
 import API_URL from '../config/api';
@@ -126,6 +126,9 @@ const getAuthHeaders = () => ({ 'x-auth-token': getToken() || '' });
 
 const Dashboard = () => {
     const { width } = useWindowSize();
+    const location = useLocation();
+    const navigate = useNavigate();
+    const fromLogin = location.state?.fromLogin;
     // loading y backgroundLoading los provee useApiCache (ver más abajo)
 
     const [vendedorData, setVendedorData] = useState(null);
@@ -165,7 +168,6 @@ const Dashboard = () => {
     const [showTaskModal, setShowTaskModal] = useState(false);
     const [editingTask, setEditingTask] = useState(null);
     const [newTask, setNewTask] = useState({ titulo: '', descripcion: '', prioridad: 'media' });
-    const navigate = useNavigate();
 
     const sanitizeCloserData = (rawData) => {
         if (!rawData) return INITIAL_CLOSER_DATA;
@@ -245,7 +247,6 @@ const Dashboard = () => {
         }
     };
 
-    // ✅ CACHÉ: Dashboard principal con stale-while-revalidate (TTL 60s)
     const {
         data: dashboardRaw,
         loading: loadingDashboard,
@@ -260,7 +261,6 @@ const Dashboard = () => {
         { ttl: 60, staleWhileRevalidate: true }
     );
 
-    // ✅ CACHÉ: Dashboard closer con stale-while-revalidate (TTL 60s)
     const {
         data: closerRaw,
         loading: loadingCloser,
@@ -275,7 +275,6 @@ const Dashboard = () => {
         { ttl: 60, staleWhileRevalidate: true }
     );
 
-    // Sincronizar datos del caché con los estados existentes
     useEffect(() => {
         if (dashboardRaw) setVendedorData(dashboardRaw);
     }, [dashboardRaw]);
@@ -347,7 +346,6 @@ const Dashboard = () => {
             if (!silent) setLoadingReuniones(false);
 
             try {
-                // 1. Obtener prospectos con recordatorio, clientes ganados, y recordatorios de la base de tareas
                 const [resProspectos, resClientes, resTareas] = await Promise.allSettled([
                     axios.get(`${API_URL}/api/vendedor/prospectos`, { headers: getAuthHeaders() }),
                     axios.get(`${API_URL}/api/vendedor/clientes-ganados`, { headers: getAuthHeaders() }),
@@ -370,7 +368,6 @@ const Dashboard = () => {
 
                 if (resClientes.status === 'fulfilled') {
                     const clientesConRec = (resClientes.value.data || []).filter(c => !!c.proximaLlamada && (c.nombres || c.nombre));
-                    // Marcamos que son clientes ganados para identificarlos
                     clientesConRec.forEach(c => {
                         const key = getItemKey(c, ['proximaLlamada', 'nombres', 'apellidoPaterno', 'telefono']);
                         if (!pendientesVistos.has(key)) {
@@ -380,17 +377,13 @@ const Dashboard = () => {
                     });
                 }
 
-                // Cargar también las "Tareas" que son "Recordatorio de llamada"
                 if (resTareas.status === 'fulfilled') {
-                    // Solo consideramos tareas huérfanas si aún tienen el nombre del cliente (clienteNombre válido). Si clienteNombre es null, el cliente fue borrado
                     const tareasRecordatorios = (resTareas.value.data || []).filter(t => t.titulo === 'Recordatorio de llamada' && t.estado === 'pendiente' && t.clienteNombre);
 
                     tareasRecordatorios.forEach(t => {
-                        // Verificamos si ese cliente ya tiene un recordatorio cargado en la lista (para no duplicar)
                         const key = getItemKey(t, ['cliente', 'fechaLimite', 'titulo']);
                         if (!pendientesVistos.has(key) && !todosLosPendientes.find(existing => (existing.id || existing._id) === t.cliente)) {
                             pendientesVistos.add(key);
-                            // Construir un objeto simulando ser un prospecto/cliente para unificar formato
                             todosLosPendientes.push({
                                 id: t.cliente,
                                 nombres: t.clienteNombre,
@@ -444,7 +437,7 @@ const Dashboard = () => {
             setEditingTask(null);
             setNewTask({ titulo: '', descripcion: '', prioridad: 'media' });
             cargarListas(true);
-            socket.emit('prospectos_actualizados'); // Notificar cambios al equipo
+            socket.emit('prospectos_actualizados');
         } catch (error) {
             console.error('Error al guardar tarea:', error);
         } finally {
@@ -466,26 +459,19 @@ const Dashboard = () => {
     const toggleTaskStatus = async (task) => {
         try {
             const nuevoEstado = task.estado === 'completada' ? 'pendiente' : 'completada';
-
-            // UI Optimista: Actualizamos visualmente al instante
             setTeamTasks(prev => prev.map(t =>
                 (t.id === task.id || t._id === task._id)
                     ? { ...t, estado: nuevoEstado }
                     : t
             ));
-
-            // Notificamos al servidor
             await axios.put(`${API_URL}/api/tareas/${task.id || task._id}`, { estado: nuevoEstado }, { headers: getAuthHeaders() });
-
-            // Retrasamos la recarga real para dejar ver la animación de color y el movimiento layout
             setTimeout(() => {
                 cargarListas(true);
                 socket.emit('prospectos_actualizados');
             }, 800);
-
         } catch (error) {
             console.error('Error al cambiar estado de tarea:', error);
-            cargarListas(true); // revertir en caso de error
+            cargarListas(true);
         }
     };
 
@@ -512,15 +498,26 @@ const Dashboard = () => {
         };
     }, []);
 
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: { staggerChildren: 0.15, delayChildren: 0.1 }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
+    };
+
+    const bottomVariants = {
+        hidden: { opacity: 0, y: 20 },
+        show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: 0.3 } }
+    };
+
     if (loading || !vendedorData || !closerData) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <RefreshCw className="w-12 h-12 text-(--theme-500) animate-spin mx-auto mb-4" />
-                    <p className="text-gray-600">Cargando dashboard unificado...</p>
-                </div>
-            </div>
-        );
+        return <div className="h-full flex-1"></div>;
     }
 
     if (width < 1024) {
@@ -537,7 +534,6 @@ const Dashboard = () => {
         );
     }
 
-
     const mP = vendedorData.periodos?.[periodo] || EMPTY_PERIODO;
     const periodoSuffix = PERIODOS.find(p => p.key === periodo)?.suffix || 'hoy';
     const formatMoney = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
@@ -547,8 +543,6 @@ const Dashboard = () => {
     const prospectosActivos = vendedorData.embudo.prospectos_activos !== undefined ? vendedorData.embudo.prospectos_activos : totalEntrada;
     const enContacto = vendedorData.embudo.en_contacto || 0;
     const sinContactar = Math.max(0, totalEntrada - enContacto);
-    // Para negociación usamos reuniones agendadas o realizadas, dependiendo de qué se prefiera mostrar en el funnel.
-    // Reuniones agendadas es más representativo de la etapa de citas.
     const citas = vendedorData.embudo.reunion_agendada || 0;
     const negociacion = vendedorData.embudo.reunion_realizada || 0;
     const ganadas = vendedorData.embudo.venta_ganada || 0;
@@ -557,12 +551,6 @@ const Dashboard = () => {
     const tasaContacto = totalEntrada > 0 ? clampPercent((enContacto / totalEntrada) * 100) : 0;
     const tasaAgendamiento = enContacto > 0 ? clampPercent((citas / enContacto) * 100) : 0;
     const tasaCierre = citas > 0 ? clampPercent((ganadas / citas) * 100) : 0;
-
-    const etapasDebiles = [
-        { etapa: 'Contacto Inicial → Llamadas', tasa: tasaContacto },
-        { etapa: 'Llamadas → Citas', tasa: tasaAgendamiento },
-        { etapa: 'Citas → Venta', tasa: tasaCierre }
-    ].filter(item => item.tasa < 30);
 
     const analisisFuentesCombinado = {};
     const mergeFuentes = (fuentesData) => {
@@ -580,25 +568,15 @@ const Dashboard = () => {
     mergeFuentes(vendedorData?.analisisFuentes);
     mergeFuentes(closerData?.analisisFuentes);
 
-    const cardsResumen = [
-        { title: 'Prospectos activos', value: formatNumber.format(prospectosActivos), icon: '👥', color: 'blue', subtext: `${mP.prospectos || 0} recibidos ${periodoSuffix}` },
-        { title: 'En contacto', value: formatNumber.format(enContacto), icon: '📞', color: 'green', subtext: `${sinContactar} todavía sin tocar` },
-        { title: 'En negociación', value: formatNumber.format(negociacion), icon: '🤝', color: 'purple', subtext: `${closerData.metricas.reuniones.realizadasHoy || 0} citas realizadas hoy` },
-        { title: 'Ventas ganadas', value: formatNumber.format(ganadas), icon: '🏆', color: 'yellow', subtext: `${formatPercent(tasaGlobal)} de conversión global` }
-    ];
-
-    const panelesActividad = [
-        { label: 'Llamadas hoy', value: mP.llamadas || 0, detail: `+${mP.llamadas || 0} esfuerzos en ${periodoSuffix}` },
-        { label: 'Mensajes hoy', value: mP.mensajes || 0, detail: 'Seguimientos, WhatsApp o correos enviados' },
-        { label: 'Reuniones hoy', value: (mP.reuniones || 0) + (closerData.metricas.reuniones.realizadasHoy || 0), detail: `Pendientes: ${closerData.metricas.reuniones.pendientes || 0}` },
-        { label: 'Ventas del mes', value: formatMoney.format(closerData.metricas.ventas.montoMes || 0), detail: `${closerData.metricas.ventas.mes || 0} cierres este mes` }
-    ];
-
     return (
-        <div className="h-full flex flex-col gap-3 p-3 xl:overflow-hidden bg-gray-50/50 scrollbar-hide">
-
-            <div className="shrink-0 flex flex-col">
-                <div className="flex items-center justify-between mb-1.5 px-1">
+        <motion.div
+            className="h-full flex flex-col gap-3 p-3 xl:overflow-hidden bg-gray-50/50 scrollbar-hide"
+            initial={fromLogin ? "hidden" : "show"}
+            animate="show"
+            variants={containerVariants}
+        >
+            <motion.div variants={itemVariants} className="shrink-0 flex flex-col">
+                <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-1.5">
                         <TrendingUp className="w-4 h-4 text-(--theme-600)" />
                         <span className="text-sm font-bold text-gray-700 uppercase tracking-widest">Resumen de Ventas</span>
@@ -619,272 +597,311 @@ const Dashboard = () => {
                         ))}
                     </div>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm w-full">
-                    <FunnelVisual
-                        stages={[
-                            {
-                                etapa: 'Entrada',
-                                cantidad: totalEntrada,
-                                color: 'bg-(--theme-600)',
-                                contadorHoy: vendedorData.periodos?.[periodo]?.prospectos ?? 0,
-                                labelContador: `recibidos ${periodoSuffix}`,
-                                cantidadExito: enContacto,
-                                cantidadPerdida: sinContactar,
-                                porcentajeExito: formatPercent(tasaContacto),
-                                porcentajePerdida: formatPercent(100 - tasaContacto),
-                                labelExito: 'Contactados',
-                                labelPerdida: 'Sin contactar'
-                            },
-                            {
-                                etapa: 'Contacto',
-                                cantidad: enContacto,
-                                color: 'bg-(--theme-500)',
-                                contadorHoy: vendedorData.periodos?.[periodo]?.llamadas ?? 0,
-                                labelContador: `esfuerzos ${periodoSuffix}`,
-                                cantidadExito: citas,
-                                cantidadPerdida: Math.max(0, enContacto - citas),
-                                porcentajeExito: formatPercent(tasaAgendamiento),
-                                porcentajePerdida: formatPercent(100 - tasaAgendamiento),
-                                labelExito: 'Con cita',
-                                labelPerdida: 'Sin cita'
-                            },
-                            {
-                                etapa: 'Citas',
-                                cantidad: citas,
-                                color: 'bg-(--theme-400)',
-                                contadorHoy: (vendedorData.periodos?.[periodo]?.reuniones ?? 0) + (closerData.metricas.reuniones.realizadasHoy || 0),
-                                labelContador: `citas ${periodoSuffix}`,
-                                cantidadExito: ganadas,
-                                cantidadPerdida: Math.max(0, citas - ganadas),
-                                porcentajeExito: formatPercent(tasaCierre),
-                                labelExito: 'Con cierre',
-                                labelPerdida: 'Sin cierre'
-                            },
-                            {
-                                etapa: 'Cierre',
-                                cantidad: ganadas,
-                                color: 'bg-green-500',
-                                contadorHoy: closerData.metricas.ventas.ventasHoy || 0,
-                                labelContador: `ganadas ${periodoSuffix}`,
-                                cantidadExito: ganadas,
-                                porcentajeExito: formatPercent(citas > 0 ? (ganadas / citas) * 100 : 0),
-                                labelExito: 'Tasa de cierre'
-                            }
-                        ]}
-                        type="vendedor"
-                    />
-                </div>
-            </div>
+            </motion.div>
 
-            <div className="flex-1 flex flex-col xl:flex-row gap-4 min-h-0 overflow-y-auto xl:overflow-hidden pr-0.5 scrollbar-hide">
+            <motion.div variants={itemVariants} className="shrink-0">
+                <FunnelVisual
+                    fromLogin={fromLogin}
+                    stages={[
+                        {
+                            etapa: 'Entrada',
+                            cantidad: totalEntrada,
+                            color: 'bg-(--theme-600)',
+                            contadorHoy: vendedorData.periodos?.[periodo]?.prospectos ?? 0,
+                            labelContador: `recibidos ${periodoSuffix}`,
+                            cantidadExito: enContacto,
+                            cantidadPerdida: sinContactar,
+                            porcentajeExito: formatPercent(tasaContacto),
+                            porcentajePerdida: formatPercent(100 - tasaContacto),
+                            labelExito: 'Contactados',
+                            labelPerdida: 'Sin contactar'
+                        },
+                        {
+                            etapa: 'Contacto',
+                            cantidad: enContacto,
+                            color: 'bg-(--theme-500)',
+                            contadorHoy: vendedorData.periodos?.[periodo]?.llamadas ?? 0,
+                            labelContador: `esfuerzos ${periodoSuffix}`,
+                            cantidadExito: citas,
+                            cantidadPerdida: Math.max(0, enContacto - citas),
+                            porcentajeExito: formatPercent(tasaAgendamiento),
+                            porcentajePerdida: formatPercent(100 - tasaAgendamiento),
+                            labelExito: 'Con cita',
+                            labelPerdida: 'Sin cita'
+                        },
+                        {
+                            etapa: 'Citas',
+                            cantidad: citas,
+                            color: 'bg-(--theme-400)',
+                            contadorHoy: (vendedorData.periodos?.[periodo]?.reuniones ?? 0) + (closerData.metricas.reuniones.realizadasHoy || 0),
+                            labelContador: `citas ${periodoSuffix}`,
+                            cantidadExito: ganadas,
+                            cantidadPerdida: Math.max(0, citas - ganadas),
+                            porcentajeExito: formatPercent(tasaCierre),
+                            labelExito: 'Con cierre',
+                            labelPerdida: 'Sin cierre'
+                        },
+                        {
+                            etapa: 'Cierre',
+                            cantidad: ganadas,
+                            color: 'bg-green-500',
+                            contadorHoy: closerData.metricas.ventas.ventasHoy || 0,
+                            labelContador: `ganadas ${periodoSuffix}`,
+                            cantidadExito: ganadas,
+                            porcentajeExito: formatPercent(citas > 0 ? (ganadas / citas) * 100 : 0),
+                            labelExito: 'Tasa de cierre'
+                        }
+                    ]}
+                    type="vendedor"
+                />
+            </motion.div>
 
-                <div className="flex-1 flex flex-col min-w-0">
-                    <div className="shrink-0 relative z-20">
-                        <div className="flex items-end gap-2.5 overflow-x-auto pb-px -mb-px pt-2 -mt-2 pr-2 -mr-2" style={{ scrollbarWidth: 'none' }}>
-                            {[
-                                { key: 'resumen', label: 'Resumen', Icon: TrendingUp },
-                                { key: 'kpis', label: 'Métricas', Icon: BarChart3 },
-                                { key: 'tareas', label: 'Tareas', Icon: Bell, badge: teamTasks.filter(t => t.estado !== 'completada').length }
-                            ].map(tab => (
-                                <button
-                                    key={tab.key}
-                                    onClick={() => setHealthTab(tab.key)}
-                                    className={`relative px-3.5 py-2 text-xs font-extrabold transition-all border whitespace-nowrap flex items-center gap-1.5 ${healthTab === tab.key
-                                        ? 'bg-white text-(--theme-700) border-gray-200 border-b-white rounded-t-xl rounded-b-none -mb-px z-20'
-                                        : 'bg-white text-gray-500 border-gray-200 rounded-xl shadow-sm mb-1 hover:-translate-y-0.5 hover:bg-gray-50 hover:text-gray-700'
-                                        }`}
-                                >
-                                    <tab.Icon className="w-3.5 h-3.5" />
-                                    <span>{tab.label}</span>
-                                    {tab.badge > 0 && (
-                                        <span className="bg-rose-500 text-white text-[9px] font-black px-1 min-w-[16px] h-[16px] rounded-full flex items-center justify-center shadow-sm ml-0.5">
-                                            {tab.badge}
-                                        </span>
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+            <motion.div variants={bottomVariants} className="flex-1 flex flex-col xl:flex-row gap-4 min-h-0 overflow-y-auto xl:overflow-hidden pr-0.5 scrollbar-hide">
+                <div className="flex-1 min-h-0 bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col relative overflow-hidden">
 
-                    <div className={`flex-1 min-h-0 relative z-10 bg-white border border-gray-200 rounded-xl p-3 shadow-sm flex flex-col ${healthTab === 'resumen' ? 'rounded-tl-none' : ''}`}>
-                        <div className="flex-1 min-h-0 overflow-y-auto xl:pr-1 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+
+
+                    <div className="flex-1 min-h-0 overflow-y-auto xl:pr-1 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+                        <AnimatePresence mode="wait">
                             {healthTab === 'resumen' && (
-                                <div className="h-full flex flex-col gap-4 animate-in fade-in duration-500">
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0 pb-1">
+                                <motion.div key="resumen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.2 } }} className="h-full flex flex-col gap-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0 pb-1">
 
-                                        {/* Atajos Rápidos */}
-                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full">
-                                            <div className="flex items-center gap-3 mb-6 shrink-0">
-                                                <div className="w-10 h-10 bg-(--theme-50) rounded-2xl flex items-center justify-center text-(--theme-600) shadow-xs">
-                                                    <Activity className="w-5 h-5" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-800">Atajos Rápidos</h3>
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Acciones frecuentes</p>
-                                                </div>
+                                    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full">
+                                        <div className="flex items-center gap-3 mb-6 shrink-0">
+                                            <div className="w-10 h-10 bg-(--theme-50) rounded-2xl flex items-center justify-center text-(--theme-600) shadow-xs">
+                                                <Activity className="w-5 h-5" />
                                             </div>
-
-                                            <div className="grid grid-cols-2 gap-3 flex-1">
-                                                <button onClick={() => navigate('/vendedor/prospectos')} className="group flex flex-col items-center justify-center gap-2 bg-gray-50/50 border border-gray-100 rounded-xl p-4 hover:border-(--theme-300) hover:bg-(--theme-50) transition-all">
-                                                    <UserPlus className="w-6 h-6 text-gray-400 group-hover:text-(--theme-600) transition-colors" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 group-hover:text-(--theme-700)">Prospectos</span>
-                                                </button>
-                                                <button onClick={() => navigate('/vendedor/calendario')} className="group flex flex-col items-center justify-center gap-2 bg-gray-50/50 border border-gray-100 rounded-xl p-4 hover:border-indigo-300 hover:bg-indigo-50 transition-all">
-                                                    <Calendar className="w-6 h-6 text-gray-400 group-hover:text-indigo-600 transition-colors" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 group-hover:text-indigo-700">Mi Agenda</span>
-                                                </button>
-                                                <button onClick={() => setHealthTab('tareas')} className="group flex flex-col items-center justify-center gap-2 bg-gray-50/50 border border-gray-100 rounded-xl p-4 hover:border-rose-300 hover:bg-rose-50 transition-all">
-                                                    <Bell className="w-6 h-6 text-gray-400 group-hover:text-rose-600 transition-colors" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 group-hover:text-rose-700">Tareas</span>
-                                                </button>
-                                                <button onClick={() => setHealthTab('kpis')} className="group flex flex-col items-center justify-center gap-2 bg-gray-50/50 border border-gray-100 rounded-xl p-4 hover:border-emerald-300 hover:bg-emerald-50 transition-all">
-                                                    <TrendingUp className="w-6 h-6 text-gray-400 group-hover:text-emerald-600 transition-colors" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-600 group-hover:text-emerald-700">Métricas</span>
-                                                </button>
+                                            <div>
+                                                <h3 className="text-sm font-black uppercase tracking-widest text-gray-800">Atajos Rápidos</h3>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Acciones frecuentes</p>
                                             </div>
                                         </div>
 
-                                        {/* Estado General */}
-                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full">
-                                            <div className="flex items-center gap-3 mb-6 shrink-0">
-                                                <div className="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 shadow-xs">
-                                                    <Zap className="w-5 h-5" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-800">Estado General</h3>
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Vistazo rápido de tu embudo</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex-1 flex flex-col justify-center space-y-4">
-                                                <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 flex items-center justify-between">
-                                                    <div>
-                                                        <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest">Ingresos del Mes</p>
-                                                        <h4 className="text-2xl font-black text-emerald-700">{formatMoney.format(closerData.metricas.ventas.montoMes || 0)}</h4>
-                                                    </div>
-                                                    <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
-                                                        <DollarSign className="w-5 h-5" />
-                                                    </div>
-                                                </div>
-
-                                                <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-4 flex items-center justify-between">
-                                                    <div>
-                                                        <p className="text-[10px] text-rose-600 font-black uppercase tracking-widest">Leads Estancados</p>
-                                                        <h4 className="text-2xl font-black text-rose-700">{closerData?.eficiencia?.leadsEstancados || 0}</h4>
-                                                    </div>
-                                                    <div className="w-10 h-10 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center">
-                                                        <AlertTriangle className="w-5 h-5" />
-                                                    </div>
-                                                </div>
-
-                                                <div className="bg-(--theme-50) border border-(--theme-100) rounded-xl p-4 flex items-center justify-between">
-                                                    <div>
-                                                        <p className="text-[10px] text-(--theme-600) font-black uppercase tracking-widest">Prospectos Totales</p>
-                                                        <h4 className="text-2xl font-black text-(--theme-700)">{prospectosActivos}</h4>
-                                                    </div>
-                                                    <div className="w-10 h-10 bg-(--theme-100) text-(--theme-600) rounded-full flex items-center justify-center">
-                                                        <Users className="w-5 h-5" />
-                                                    </div>
-                                                </div>
-                                            </div>
+                                        <div className="grid grid-cols-2 gap-3 flex-1">
+                                            <button onClick={() => navigate('/vendedor/prospectos')} className="group flex flex-col items-center justify-center gap-2 bg-gray-50/50 border border-gray-100 rounded-xl p-4 hover:border-(--theme-300) hover:bg-(--theme-50) transition-all">
+                                                <UserPlus className="w-6 h-6 text-gray-400 group-hover:text-(--theme-600) transition-colors" />
+                                                <span className="text-xs font-black uppercase tracking-widest text-gray-600 group-hover:text-(--theme-700)">Prospectos</span>
+                                            </button>
+                                            <button onClick={() => navigate('/vendedor/calendario')} className="group flex flex-col items-center justify-center gap-2 bg-gray-50/50 border border-gray-100 rounded-xl p-4 hover:border-indigo-300 hover:bg-indigo-50 transition-all">
+                                                <Calendar className="w-6 h-6 text-gray-400 group-hover:text-indigo-600 transition-colors" />
+                                                <span className="text-xs font-black uppercase tracking-widest text-gray-600 group-hover:text-indigo-700">Mi Agenda</span>
+                                            </button>
+                                            <button onClick={() => setHealthTab('tareas')} className="group flex flex-col items-center justify-center gap-2 bg-gray-50/50 border border-gray-100 rounded-xl p-4 hover:border-rose-300 hover:bg-rose-50 transition-all">
+                                                <Bell className="w-6 h-6 text-gray-400 group-hover:text-rose-600 transition-colors" />
+                                                <span className="text-xs font-black uppercase tracking-widest text-gray-600 group-hover:text-rose-700">Tareas</span>
+                                            </button>
+                                            <button onClick={() => setHealthTab('kpis')} className="group flex flex-col items-center justify-center gap-2 bg-gray-50/50 border border-gray-100 rounded-xl p-4 hover:border-emerald-300 hover:bg-emerald-50 transition-all">
+                                                <TrendingUp className="w-6 h-6 text-gray-400 group-hover:text-emerald-600 transition-colors" />
+                                                <span className="text-xs font-black uppercase tracking-widest text-gray-600 group-hover:text-emerald-700">Métricas</span>
+                                            </button>
                                         </div>
-
                                     </div>
+
+                                    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full">
+                                        <div className="flex items-center gap-3 mb-6 shrink-0">
+                                            <div className="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 shadow-xs">
+                                                <Zap className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-black uppercase tracking-widest text-gray-800">Centro de Control</h3>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Módulos principales del sistema</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-1 flex flex-col gap-3 min-h-0">
+                                            <motion.button layoutId="panel-kpis" onClick={() => setHealthTab('kpis')} className="flex-1 justify-center bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl p-4 flex flex-col text-left transition-colors cursor-pointer w-full group relative overflow-hidden">
+                                                <div className="flex items-start justify-between w-full mb-3 relative z-10">
+                                                    <h4 className="text-sm font-black text-gray-800 uppercase tracking-widest">Métricas</h4>
+                                                    <div className="flex flex-col items-center transition-transform group-hover:translate-x-1 relative">
+                                                        <div className="w-8 h-8 bg-gray-50 text-gray-500 rounded-full flex items-center justify-center group-hover:bg-white group-hover:text-gray-800 transition-all shadow-xs border border-gray-100">
+                                                            <BarChart3 className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex items-center text-gray-300 group-hover:text-gray-500 transition-colors -space-x-1.5 absolute -bottom-3">
+                                                            <ChevronRight className="w-3 h-3" />
+                                                            <ChevronRight className="w-3 h-3" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4 relative z-10">
+                                                    <div>
+                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Ingresos</p>
+                                                        <p className="text-sm font-black text-gray-700">{formatMoney.format(closerData.metricas.ventas.montoMes || 0)}</p>
+                                                    </div>
+                                                    <div className="w-px h-6 bg-gray-200/50" />
+                                                    <div>
+                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Conversión</p>
+                                                        <p className="text-sm font-black text-gray-700">{formatPercent(citas > 0 ? (ganadas / citas) * 100 : 0)}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                                            </motion.button>
+
+                                            <motion.button layoutId="panel-tareas" onClick={() => setHealthTab('tareas')} className="flex-1 justify-center bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl p-4 flex flex-col text-left transition-colors cursor-pointer w-full group relative overflow-hidden">
+                                                <div className="flex items-start justify-between w-full mb-3 relative z-10">
+                                                    <h4 className="text-sm font-black text-gray-800 uppercase tracking-widest">Tareas</h4>
+                                                    <div className="flex flex-col items-center transition-transform group-hover:translate-x-1 relative">
+                                                        <div className="w-8 h-8 bg-gray-50 text-gray-500 rounded-full flex items-center justify-center group-hover:bg-white group-hover:text-gray-800 transition-all shadow-xs border border-gray-100">
+                                                            <Bell className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex items-center text-gray-300 group-hover:text-gray-500 transition-colors -space-x-1.5 absolute -bottom-3">
+                                                            <ChevronRight className="w-3 h-3" />
+                                                            <ChevronRight className="w-3 h-3" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4 relative z-10">
+                                                    <div>
+                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Pendientes</p>
+                                                        <p className="text-sm font-black text-gray-700">{teamTasks.filter(t => t.estado !== 'completada').length}</p>
+                                                    </div>
+                                                    <div className="w-px h-6 bg-gray-200/50" />
+                                                    <div>
+                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Estancados</p>
+                                                        <p className="text-sm font-black text-gray-700">{closerData?.eficiencia?.leadsEstancados || 0}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                                            </motion.button>
+
+                                            <button onClick={() => navigate('/vendedor/prospectos')} className="flex-1 justify-center bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl p-4 flex flex-col text-left transition-colors cursor-pointer w-full group relative overflow-hidden">
+                                                <div className="flex items-start justify-between w-full mb-3 relative z-10">
+                                                    <h4 className="text-sm font-black text-gray-800 uppercase tracking-widest">Prospectos</h4>
+                                                    <div className="flex flex-col items-center transition-transform group-hover:translate-x-1 relative">
+                                                        <div className="w-8 h-8 bg-gray-50 text-gray-500 rounded-full flex items-center justify-center group-hover:bg-white group-hover:text-gray-800 transition-all shadow-xs border border-gray-100">
+                                                            <Users className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="flex items-center text-gray-300 group-hover:text-gray-500 transition-colors -space-x-1.5 absolute -bottom-3">
+                                                            <ChevronRight className="w-3 h-3" />
+                                                            <ChevronRight className="w-3 h-3" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4 relative z-10">
+                                                    <div>
+                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Totales</p>
+                                                        <p className="text-sm font-black text-gray-700">{prospectosActivos}</p>
+                                                    </div>
+                                                    <div className="w-px h-6 bg-gray-200/50" />
+                                                    <div>
+                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Contactados</p>
+                                                        <p className="text-sm font-black text-gray-700">{enContacto}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                                            </button>
+                                        </div>
+                                    </div>
+
                                 </div>
-                            )}
+                            </motion.div>
+                        )}
 
-                            {healthTab === 'kpis' && (
-                                <div className="flex flex-col lg:flex-row gap-4 h-full min-h-0">
-                                    {/* Izquierda: KPIs Básicos (Cards normales) */}
-                                    <div className="w-full lg:w-[45%] xl:w-[40%] flex flex-col gap-3 shrink-0 lg:h-full lg:overflow-y-auto custom-scrollbar pr-1">
-                                        <div className="grid grid-cols-2 gap-3 auto-rows-fr">
-                                            <MetricKPICard
-                                                title="Prospectos Totales"
-                                                value={prospectosActivos}
-                                                format="number"
-                                                icon={<Users className="w-5 h-5" />}
-                                                detail={`Histórico de leads`}
-                                                color="blue"
-                                            />
-                                            <MetricKPICard
-                                                title="En Contacto"
-                                                value={enContacto}
-                                                format="number"
-                                                icon={<Phone className="w-5 h-5" />}
-                                                detail="Leads contactados"
-                                                color="indigo"
-                                            />
-                                            <MetricKPICard
-                                                title="Clientes (Ganadas)"
-                                                value={ganadas}
-                                                format="number"
-                                                icon={<CheckCircle2 className="w-5 h-5" />}
-                                                detail={`Cierres exitosos`}
-                                                color="emerald"
-                                            />
-                                            <MetricKPICard
-                                                title="Ventas del Mes"
-                                                value={closerData.metricas.ventas.montoMes || 0}
-                                                format="money"
-                                                compact={true}
-                                                icon={<DollarSign className="w-5 h-5" />}
-                                                detail={`${closerData.metricas.ventas.mes || 0} cierres este mes`}
-                                                color="emerald"
-                                            />
-                                            <MetricKPICard
-                                                title="Conversión Global"
-                                                value={tasaGlobal}
-                                                format="percent"
-                                                icon={<Target className="w-5 h-5" />}
-                                                detail="Porcentaje de éxito"
-                                                thresholds={{ good: 15, okay: 8 }}
-                                            />
-                                            <MetricKPICard
-                                                title="Leads Estancados"
-                                                value={closerData?.eficiencia?.leadsEstancados || 0}
-                                                format="number"
-                                                icon={<AlertTriangle className="w-5 h-5" />}
-                                                detail=">7 días sin actividad"
-                                                color="rose"
-                                            />
+                        {healthTab === 'kpis' && (
+                            <motion.div layoutId="panel-kpis" className="flex flex-col h-full bg-white relative z-20 rounded-xl overflow-hidden">
+                                {/* Back Header */}
+                                <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100 shrink-0">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                            <BarChart3 className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-sm font-black text-gray-800 uppercase tracking-widest">Métricas y Análisis</h2>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Desempeño del mes</p>
                                         </div>
                                     </div>
+                                    <button onClick={() => setHealthTab('resumen')} className="p-2 bg-gray-50 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 shadow-sm">
+                                        <ChevronLeft className="w-4 h-4" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Volver al Resumen</span>
+                                    </button>
+                                </div>
+                                <div className="flex flex-col gap-6 flex-1 min-h-0 overflow-y-auto scrollbar-hide pr-1">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 shrink-0">
+                                        <MetricKPICard
+                                            title="Prospectos Totales"
+                                            value={prospectosActivos}
+                                            format="number"
+                                            icon={<Users className="w-5 h-5" />}
+                                            detail={`Histórico de leads`}
+                                            color="blue"
+                                        />
+                                        <MetricKPICard
+                                            title="En Contacto"
+                                            value={enContacto}
+                                            format="number"
+                                            icon={<Phone className="w-5 h-5" />}
+                                            detail="Leads contactados"
+                                            color="indigo"
+                                        />
+                                        <MetricKPICard
+                                            title="Clientes (Ganadas)"
+                                            value={ganadas}
+                                            format="number"
+                                            icon={<CheckCircle2 className="w-5 h-5" />}
+                                            detail={`Cierres exitosos`}
+                                            color="emerald"
+                                        />
+                                        <MetricKPICard
+                                            title="Ventas del Mes"
+                                            value={closerData.metricas.ventas.montoMes || 0}
+                                            format="money"
+                                            compact={true}
+                                            icon={<DollarSign className="w-5 h-5" />}
+                                            detail={`${closerData.metricas.ventas.mes || 0} cierres este mes`}
+                                            color="emerald"
+                                        />
+                                        <MetricKPICard
+                                            title="Conversión Global"
+                                            value={tasaGlobal}
+                                            format="percent"
+                                            icon={<Target className="w-5 h-5" />}
+                                            detail="Porcentaje de éxito"
+                                            thresholds={{ good: 15, okay: 8 }}
+                                        />
+                                        <MetricKPICard
+                                            title="Leads Estancados"
+                                            value={closerData?.eficiencia?.leadsEstancados || 0}
+                                            format="number"
+                                            icon={<AlertTriangle className="w-5 h-5" />}
+                                            detail=">7 días sin actividad"
+                                            color="rose"
+                                        />
+                                    </div>
 
-                                    {/* Derecha: Listas con Altura Máxima */}
-                                    <div className="w-full lg:flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 h-full min-h-0">
-                                        {/* Distribución por Fuente */}
-                                        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col h-full min-h-0">
-                                            <div className="flex items-center justify-between mb-4 shrink-0">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full min-h-0 relative overflow-hidden group">
+                                            <div className="absolute inset-0 bg-linear-to-br from-indigo-50/30 to-transparent pointer-events-none" />
+                                            <div className="flex items-center justify-between mb-5 shrink-0 relative z-10">
                                                 <div>
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Origen de leads</p>
-                                                    <h3 className="text-sm font-black text-gray-800 leading-tight">Por Fuente</h3>
+                                                    <h3 className="text-sm font-black text-gray-800 tracking-wide">Origen de leads</h3>
+                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500 mt-0.5">Por Fuente</p>
                                                 </div>
-                                                <div className="w-7 h-7 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-500">
-                                                    <Globe className="w-3.5 h-3.5" />
+                                                <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-500 shadow-sm group-hover:scale-110 transition-transform">
+                                                    <Globe className="w-4 h-4" />
                                                 </div>
                                             </div>
 
                                             {Object.keys(analisisFuentesCombinado).length === 0 ? (
                                                 <div className="flex-1 flex flex-col items-center justify-center opacity-30">
-                                                    <Globe className="w-6 h-6 text-gray-300 mb-1" />
-                                                    <p className="text-[9px] uppercase font-black tracking-widest text-gray-400">Sin datos</p>
+                                                    <Globe className="w-8 h-8 text-gray-300 mb-2" />
+                                                    <p className="text-[10px] uppercase font-black tracking-widest text-gray-400">Sin datos</p>
                                                 </div>
                                             ) : (() => {
                                                 const entries = Object.entries(analisisFuentesCombinado).sort((a, b) => b[1].count - a[1].count);
                                                 const maxCount = entries[0]?.[1]?.count || 1;
                                                 return (
-                                                    <div className="flex-1 overflow-y-auto space-y-2.5 scrollbar-hide">
+                                                    <div className="flex-1 overflow-y-auto space-y-3.5 scrollbar-hide relative z-10">
                                                         {entries.map(([fuente, data]) => {
                                                             const count = data.count;
                                                             const pct = Math.round((count / maxCount) * 100);
                                                             return (
-                                                                <div key={fuente}>
-                                                                    <div className="flex items-center justify-between mb-0.5">
-                                                                        <span className="text-[11px] font-bold text-gray-700 truncate pr-2">{fuente}</span>
-                                                                        <span className="text-[11px] font-black text-indigo-600 shrink-0">{count}</span>
+                                                                <div key={fuente} className="group/item">
+                                                                    <div className="flex items-center justify-between mb-1.5">
+                                                                        <span className="text-xs font-bold text-gray-700 truncate pr-2 group-hover/item:text-indigo-700 transition-colors">{fuente}</span>
+                                                                        <span className="text-xs font-black text-indigo-600 shrink-0 bg-indigo-50 px-2 py-0.5 rounded-full">{count}</span>
                                                                     </div>
-                                                                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                                                        <div className="h-full bg-indigo-400 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                                                                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                                        <div className="h-full bg-indigo-500 rounded-full transition-all duration-1000 ease-out" style={{ width: `${pct}%` }} />
                                                                     </div>
                                                                 </div>
                                                             );
@@ -894,38 +911,38 @@ const Dashboard = () => {
                                             })()}
                                         </div>
 
-                                        {/* Análisis de Pérdidas (Motivos) */}
-                                        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col h-full min-h-0">
-                                            <div className="flex items-center justify-between mb-4 shrink-0">
+                                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full min-h-0 relative overflow-hidden group">
+                                            <div className="absolute inset-0 bg-linear-to-br from-rose-50/30 to-transparent pointer-events-none" />
+                                            <div className="flex items-center justify-between mb-5 shrink-0 relative z-10">
                                                 <div>
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Por qué se pierden</p>
-                                                    <h3 className="text-sm font-black text-gray-800 leading-tight">Descarte</h3>
+                                                    <h3 className="text-sm font-black text-gray-800 tracking-wide">Por qué se pierden</h3>
+                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-rose-500 mt-0.5">Motivos de Descarte</p>
                                                 </div>
-                                                <div className="w-7 h-7 bg-rose-50 rounded-lg flex items-center justify-center text-rose-500">
-                                                    <XCircle className="w-3.5 h-3.5" />
+                                                <div className="w-8 h-8 bg-rose-50 rounded-lg flex items-center justify-center text-rose-500 shadow-sm group-hover:scale-110 transition-transform">
+                                                    <XCircle className="w-4 h-4" />
                                                 </div>
                                             </div>
 
                                             {Object.keys(closerData.analisisPerdidasPremium).length === 0 ? (
                                                 <div className="flex-1 flex flex-col items-center justify-center opacity-30">
-                                                    <XCircle className="w-6 h-6 text-gray-300 mb-1" />
-                                                    <p className="text-[9px] uppercase font-black tracking-widest text-gray-400">Sin datos</p>
+                                                    <XCircle className="w-8 h-8 text-gray-300 mb-2" />
+                                                    <p className="text-[10px] uppercase font-black tracking-widest text-gray-400">Sin datos</p>
                                                 </div>
                                             ) : (() => {
                                                 const entries = Object.entries(closerData.analisisPerdidasPremium).sort((a, b) => b[1] - a[1]);
                                                 const maxCount = entries[0]?.[1] || 1;
                                                 return (
-                                                    <div className="flex-1 overflow-y-auto space-y-2.5 scrollbar-hide">
+                                                    <div className="flex-1 overflow-y-auto space-y-3.5 scrollbar-hide relative z-10">
                                                         {entries.map(([motivo, count]) => {
                                                             const pct = Math.round((count / maxCount) * 100);
                                                             return (
-                                                                <div key={motivo}>
-                                                                    <div className="flex items-center justify-between mb-0.5">
-                                                                        <span className="text-[11px] font-bold text-gray-700 truncate pr-2">{motivo}</span>
-                                                                        <span className="text-[11px] font-black text-rose-500 shrink-0">{count}</span>
+                                                                <div key={motivo} className="group/item">
+                                                                    <div className="flex items-center justify-between mb-1.5">
+                                                                        <span className="text-xs font-bold text-gray-700 truncate pr-2 group-hover/item:text-rose-700 transition-colors">{motivo}</span>
+                                                                        <span className="text-xs font-black text-rose-600 shrink-0 bg-rose-50 px-2 py-0.5 rounded-full">{count}</span>
                                                                     </div>
-                                                                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                                                        <div className="h-full bg-rose-400 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                                                                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                                        <div className="h-full bg-rose-500 rounded-full transition-all duration-1000 ease-out" style={{ width: `${pct}%` }} />
                                                                     </div>
                                                                 </div>
                                                             );
@@ -935,222 +952,239 @@ const Dashboard = () => {
                                             })()}
                                         </div>
                                     </div>
-
                                 </div>
-                            )}
+                            </motion.div>
+                        )}
 
-                            {healthTab === 'tareas' && (
-                                <div className="flex flex-col h-full min-h-0">
-                                    <div className="flex items-center justify-between mb-4 shrink-0">
-                                        <div className="flex items-center gap-2">
-                                            <Bell className="w-4 h-4 text-gray-400" />
-                                            <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">Gestión de Tareas</span>
+                        {healthTab === 'tareas' && (
+                            <motion.div layoutId="panel-tareas" className="flex flex-col h-full bg-white relative z-20 rounded-xl overflow-hidden">
+                                {/* Back Header */}
+                                <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100 shrink-0">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                                            <Bell className="w-4 h-4" />
                                         </div>
-                                        <button
-                                            onClick={() => {
-                                                setEditingTask(null);
-                                                setNewTask({ titulo: '', descripcion: '', prioridad: 'media' });
-                                                setShowTaskModal(true);
-                                            }}
-                                            className="px-3 py-1.5 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded-lg shadow-sm shadow-(--theme-500)/20 transition-all flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest"
-                                        >
-                                            <Plus className="w-3.5 h-3.5" />
-                                            NUEVA TAREA
-                                        </button>
-                                    </div>
-
-                                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                                        {teamTasks.length === 0 ? (
-                                            <div className="flex flex-col items-center justify-center py-16 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
-                                                <Bell className="w-6 h-6 text-gray-300 mb-2" />
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tu equipo está al día</p>
-                                            </div>
-                                        ) : (
-                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                                                <AnimatePresence>
-                                                    {teamTasks.map((t) => (
-                                                        <motion.div
-                                                            layout
-                                                            initial={{ opacity: 0, y: 10 }}
-                                                            animate={{ opacity: 1, y: 0 }}
-                                                            exit={{ opacity: 0, scale: 0.95 }}
-                                                            transition={{ layout: { type: "spring", bounce: 0.2, duration: 0.8 } }}
-                                                            key={t.id || t._id}
-                                                            className={`group relative p-3 rounded-xl border transition-all ${t.estado === 'completada' ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-(--theme-300)'}`}
-                                                        >
-                                                            <div className="flex items-start gap-3">
-                                                                <button
-                                                                    onClick={() => toggleTaskStatus(t)}
-                                                                    className={`mt-0.5 w-4 h-4 rounded-md border-2 flex items-center justify-center transition-colors shrink-0 ${t.estado === 'completada' ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-(--theme-500)'}`}
-                                                                >
-                                                                    {t.estado === 'completada' && <CheckCircle2 className="w-2.5 h-2.5" />}
-                                                                </button>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="flex items-start justify-between gap-2 mb-1">
-                                                                        <h4 className={`text-sm font-bold leading-tight ${t.estado === 'completada' ? 'line-through text-gray-400' : 'text-gray-800'}`}>{t.titulo}</h4>
-                                                                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md uppercase border shrink-0 ${t.prioridad === 'alta' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                                                                            t.prioridad === 'media' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                                                                'bg-blue-50 text-blue-600 border-blue-100'
-                                                                            }`}>
-                                                                            {t.prioridad}
-                                                                        </span>
-                                                                    </div>
-                                                                    {t.descripcion && <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{t.descripcion}</p>}
-
-                                                                    <div className="flex items-center gap-3 mt-2">
-                                                                        <span className="text-[11px] font-bold text-gray-400 flex items-center gap-1">
-                                                                            <Users className="w-3.5 h-3.5 text-gray-300" />
-                                                                            {t.vendedorNombre?.split(' ')[0] || 'Usuario'}
-                                                                        </span>
-                                                                        {t.fechaLimite && (
-                                                                            <span className={`text-[11px] font-bold flex items-center gap-1 ${new Date(t.fechaLimite) < new Date() && t.estado !== 'completada' ? 'text-rose-500' : 'text-gray-400'}`}>
-                                                                                <Calendar className="w-3.5 h-3.5 opacity-70" />
-                                                                                {new Date(t.fechaLimite).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setEditingTask(t);
-                                                                            setNewTask({ titulo: t.titulo, descripcion: t.descripcion, prioridad: t.prioridad, fechaLimite: t.fechaLimite });
-                                                                            setShowTaskModal(true);
-                                                                        }}
-                                                                        className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-(--theme-600) transition-colors"
-                                                                    >
-                                                                        <Pencil className="w-3.5 h-3.5" />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => handleDeleteTask(t.id || t._id)}
-                                                                        className="p-1.5 hover:bg-rose-50 rounded-lg text-gray-400 hover:text-rose-600 transition-colors"
-                                                                    >
-                                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </motion.div>
-                                                    ))}
-                                                </AnimatePresence>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-
-                            {healthTab === 'acciones' && (
-                                <div className="h-full flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                    <div className="flex items-center justify-between mb-4 px-1">
                                         <div>
-                                            <h3 className="text-xs font-black uppercase tracking-widest text-gray-800">Acciones Realizadas</h3>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Historial de actividad reciente</p>
+                                            <h2 className="text-sm font-black text-gray-800 uppercase tracking-widest">Gestión de Tareas</h2>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Leads Estancados y Seguimiento</p>
                                         </div>
-                                        <button
-                                            onClick={fetchActividades}
-                                            disabled={loadingActividades}
-                                            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400"
-                                        >
-                                            <RefreshCw className={`w-3.5 h-3.5 ${loadingActividades ? 'animate-spin' : ''}`} />
-                                        </button>
                                     </div>
+                                    <button onClick={() => setHealthTab('resumen')} className="p-2 bg-gray-50 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 shadow-sm">
+                                        <ChevronLeft className="w-4 h-4" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Volver al Resumen</span>
+                                    </button>
+                                </div>
+                                
+                                <div className="flex items-center justify-between mb-4 shrink-0">
+                                    <div className="flex items-center gap-2 opacity-0 hidden">
+                                        <Bell className="w-4 h-4 text-gray-400" />
+                                        <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">Gestión de Tareas</span>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setEditingTask(null);
+                                            setNewTask({ titulo: '', descripcion: '', prioridad: 'media' });
+                                            setShowTaskModal(true);
+                                        }}
+                                        className="px-3 py-1.5 bg-(--theme-600) hover:bg-(--theme-700) text-white rounded-lg shadow-sm shadow-(--theme-500)/20 transition-all flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest"
+                                    >
+                                        <Plus className="w-3.5 h-3.5" />
+                                        NUEVA TAREA
+                                    </button>
+                                </div>
 
-                                    {loadingActividades ? (
-                                        <div className="flex-1 flex items-center justify-center py-20">
-                                            <RefreshCw className="w-8 h-8 text-(--theme-200) animate-spin" />
-                                        </div>
-                                    ) : actividades.length === 0 ? (
-                                        <div className="flex-1 flex flex-col items-center justify-center py-20 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-100">
-                                            <History className="w-10 h-10 text-gray-200 mb-3" />
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sin actividad registrada</p>
+                                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                                    {teamTasks.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-16 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                                            <Bell className="w-6 h-6 text-gray-300 mb-2" />
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tu equipo está al día</p>
                                         </div>
                                     ) : (
-                                        <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 scrollbar-hide">
-                                            {actividades.map((act, idx) => {
-                                                const IconMap = {
-                                                    login: LogIn,
-                                                    registro: UserPlus,
-                                                    equipo: Users,
-                                                    llamada: Phone,
-                                                    whatsapp: MessageSquare,
-                                                    cita: Calendar,
-                                                    mensaje: FileText,
-                                                    correo: Globe,
-                                                    prospecto: UserPlus
-                                                };
-                                                const ColorMap = {
-                                                    login: 'text-emerald-500 bg-emerald-50 border-emerald-100',
-                                                    registro: 'text-indigo-500 bg-indigo-50 border-indigo-100',
-                                                    equipo: 'text-amber-500 bg-amber-50 border-amber-100',
-                                                    llamada: 'text-blue-500 bg-blue-50 border-blue-100',
-                                                    whatsapp: 'text-green-500 bg-green-50 border-green-100',
-                                                    cita: 'text-purple-500 bg-purple-50 border-purple-100',
-                                                    mensaje: 'text-slate-500 bg-slate-50 border-slate-100',
-                                                    correo: 'text-rose-500 bg-rose-50 border-rose-100',
-                                                    prospecto: 'text-cyan-500 bg-cyan-50 border-cyan-100'
-                                                };
-                                                const ActionIcon = IconMap[act.tipo] || Activity;
-                                                const colors = ColorMap[act.tipo] || 'text-gray-500 bg-gray-50 border-gray-100';
-
-                                                return (
-                                                    <div key={act.id || idx} className="group relative flex gap-3 p-3 bg-white border border-gray-100 rounded-xl hover:border-gray-200 hover:shadow-xs transition-all duration-300">
-                                                        <div className={`shrink-0 w-9 h-9 rounded-xl border flex items-center justify-center ${colors.split(' ').slice(0, 3).join(' ')} shadow-xs`}>
-                                                            <ActionIcon className="w-4 h-4" />
-                                                        </div>
-
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center justify-between gap-2">
-                                                                <p className="text-[11px] font-black text-gray-800 uppercase tracking-tight truncate">
-                                                                    {act.vendedor?.nombre || 'Sistema'}
-                                                                </p>
-                                                                <span className="text-[9px] font-bold text-gray-400 whitespace-nowrap bg-gray-50 px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
-                                                                    {new Date(act.fecha || act.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
-                                                                </span>
-                                                            </div>
-                                                            <h4 className="text-[10px] font-bold text-gray-500 mt-0.5 line-clamp-1 uppercase tracking-tight">
-                                                                {act.descripcion}
-                                                            </h4>
-                                                            {act.cliente && (
-                                                                <div className="mt-1.5 flex items-center gap-1.5 px-2 py-1 bg-gray-50/50 rounded-lg border border-gray-100/50 w-fit">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-(--theme-400)"></div>
-                                                                    <p className="text-[9px] font-black text-(--theme-600) uppercase tracking-widest truncate max-w-[150px]">
-                                                                        {act.cliente.nombres} {act.cliente.apellidoPaterno}
-                                                                        {act.cliente.empresa && <span className="ml-1 opacity-50 font-bold">({act.cliente.empresa})</span>}
-                                                                    </p>
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                            <AnimatePresence>
+                                                {teamTasks.map((t) => (
+                                                    <motion.div
+                                                        layout
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, scale: 0.95 }}
+                                                        transition={{ layout: { type: "spring", bounce: 0.2, duration: 0.8 } }}
+                                                        key={t.id || t._id}
+                                                        className={`group relative p-3 rounded-xl border transition-all ${t.estado === 'completada' ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-200 shadow-sm hover:border-(--theme-300)'}`}
+                                                    >
+                                                        <div className="flex items-start gap-3">
+                                                            <button
+                                                                onClick={() => toggleTaskStatus(t)}
+                                                                className={`mt-0.5 w-4 h-4 rounded-md border-2 flex items-center justify-center transition-colors shrink-0 ${t.estado === 'completada' ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-(--theme-500)'}`}
+                                                            >
+                                                                {t.estado === 'completada' && <CheckCircle2 className="w-2.5 h-2.5" />}
+                                                            </button>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-start justify-between gap-2 mb-1">
+                                                                    <h4 className={`text-sm font-bold leading-tight ${t.estado === 'completada' ? 'line-through text-gray-400' : 'text-gray-800'}`}>{t.titulo}</h4>
+                                                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md uppercase border shrink-0 ${t.prioridad === 'alta' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                                                        t.prioridad === 'media' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                                                            'bg-blue-50 text-blue-600 border-blue-100'
+                                                                        }`}>
+                                                                        {t.prioridad}
+                                                                    </span>
                                                                 </div>
-                                                            )}
-                                                        </div>
+                                                                {t.descripcion && <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{t.descripcion}</p>}
 
-                                                        {/* Línea decorativa para el feed */}
-                                                        {idx < actividades.length - 1 && (
-                                                            <div className="absolute left-[29.5px] top-[48px] bottom-[-20px] w-px bg-linear-to-b from-gray-100 to-transparent z-0"></div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
+                                                                <div className="flex items-center gap-3 mt-2">
+                                                                    <span className="text-[11px] font-bold text-gray-400 flex items-center gap-1">
+                                                                        <Users className="w-3.5 h-3.5 text-gray-300" />
+                                                                        {t.vendedorNombre?.split(' ')[0] || 'Usuario'}
+                                                                    </span>
+                                                                    {t.fechaLimite && (
+                                                                        <span className={`text-[11px] font-bold flex items-center gap-1 ${new Date(t.fechaLimite) < new Date() && t.estado !== 'completada' ? 'text-rose-500' : 'text-gray-400'}`}>
+                                                                            <Calendar className="w-3.5 h-3.5 opacity-70" />
+                                                                            {new Date(t.fechaLimite).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setEditingTask(t);
+                                                                        setNewTask({ titulo: t.titulo, descripcion: t.descripcion, prioridad: t.prioridad, fechaLimite: t.fechaLimite });
+                                                                        setShowTaskModal(true);
+                                                                    }}
+                                                                    className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-(--theme-600) transition-colors"
+                                                                >
+                                                                    <Pencil className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteTask(t.id || t._id)}
+                                                                    className="p-1.5 hover:bg-rose-50 rounded-lg text-gray-400 hover:text-rose-600 transition-colors"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+                                                ))}
+                                            </AnimatePresence>
                                         </div>
                                     )}
                                 </div>
-                            )}
+                            </motion.div>
+                        )}
 
-                            {healthTab === 'proximamente' && (
-                                <div className="h-full flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in-95 duration-500">
-                                    <div className="w-16 h-16 bg-(--theme-50) rounded-2xl flex items-center justify-center mb-6 shadow-xs border border-(--theme-100)">
-                                        <Zap className="w-8 h-8 text-(--theme-500)" />
+
+                        {healthTab === 'acciones' && (
+                            <div className="h-full flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                <div className="flex items-center justify-between mb-4 px-1">
+                                    <div>
+                                        <h3 className="text-xs font-black uppercase tracking-widest text-gray-800">Acciones Realizadas</h3>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Historial de actividad reciente</p>
                                     </div>
-                                    <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-3">CRM en Desarrollo</h3>
-                                    <p className="text-xs text-gray-400 font-bold leading-relaxed max-w-xs uppercase tracking-tight">
-                                        Este CRM está en desarrollo continuo. Si tienes ideas para nuevas funciones o necesitas ayuda, no dudes en contactarnos.
-                                    </p>
-                                    <div className="mt-8 flex gap-3">
-                                        <div className="px-4 py-2 bg-white border border-gray-100 rounded-xl shadow-xs text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                            Feedback v2.0
-                                        </div>
+                                    <button
+                                        onClick={fetchActividades}
+                                        disabled={loadingActividades}
+                                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400"
+                                    >
+                                        <RefreshCw className={`w-3.5 h-3.5 ${loadingActividades ? 'animate-spin' : ''}`} />
+                                    </button>
+                                </div>
+
+                                {loadingActividades ? (
+                                    <div className="flex-1 flex items-center justify-center py-20">
+                                        <RefreshCw className="w-8 h-8 text-(--theme-200) animate-spin" />
+                                    </div>
+                                ) : actividades.length === 0 ? (
+                                    <div className="flex-1 flex flex-col items-center justify-center py-20 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-100">
+                                        <History className="w-10 h-10 text-gray-200 mb-3" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sin actividad registrada</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex-1 overflow-y-auto pr-1 space-y-2.5 scrollbar-hide">
+                                        {actividades.map((act, idx) => {
+                                            const IconMap = {
+                                                login: LogIn,
+                                                registro: UserPlus,
+                                                equipo: Users,
+                                                llamada: Phone,
+                                                whatsapp: MessageSquare,
+                                                cita: Calendar,
+                                                mensaje: FileText,
+                                                correo: Globe,
+                                                prospecto: UserPlus
+                                            };
+                                            const ColorMap = {
+                                                login: 'text-emerald-500 bg-emerald-50 border-emerald-100',
+                                                registro: 'text-indigo-500 bg-indigo-50 border-indigo-100',
+                                                equipo: 'text-amber-500 bg-amber-50 border-amber-100',
+                                                llamada: 'text-blue-500 bg-blue-50 border-blue-100',
+                                                whatsapp: 'text-green-500 bg-green-50 border-green-100',
+                                                cita: 'text-purple-500 bg-purple-50 border-purple-100',
+                                                mensaje: 'text-slate-500 bg-slate-50 border-slate-100',
+                                                correo: 'text-rose-500 bg-rose-50 border-rose-100',
+                                                prospecto: 'text-cyan-500 bg-cyan-50 border-cyan-100'
+                                            };
+                                            const ActionIcon = IconMap[act.tipo] || Activity;
+                                            const colors = ColorMap[act.tipo] || 'text-gray-500 bg-gray-50 border-gray-100';
+
+                                            return (
+                                                <div key={act.id || idx} className="group relative flex gap-3 p-3 bg-white border border-gray-100 rounded-xl hover:border-gray-200 hover:shadow-xs transition-all duration-300">
+                                                    <div className={`shrink-0 w-9 h-9 rounded-xl border flex items-center justify-center ${colors.split(' ').slice(0, 3).join(' ')} shadow-xs`}>
+                                                        <ActionIcon className="w-4 h-4" />
+                                                    </div>
+
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <p className="text-[11px] font-black text-gray-800 uppercase tracking-tight truncate">
+                                                                {act.vendedor?.nombre || 'Sistema'}
+                                                            </p>
+                                                            <span className="text-[9px] font-bold text-gray-400 whitespace-nowrap bg-gray-50 px-1.5 py-0.5 rounded-md uppercase tracking-tighter">
+                                                                {new Date(act.fecha || act.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
+                                                        </div>
+                                                        <h4 className="text-[10px] font-bold text-gray-500 mt-0.5 line-clamp-1 uppercase tracking-tight">
+                                                            {act.descripcion}
+                                                        </h4>
+                                                        {act.cliente && (
+                                                            <div className="mt-1.5 flex items-center gap-1.5 px-2 py-1 bg-gray-50/50 rounded-lg border border-gray-100/50 w-fit">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-(--theme-400)"></div>
+                                                                <p className="text-[9px] font-black text-(--theme-600) uppercase tracking-widest truncate max-w-[150px]">
+                                                                    {act.cliente.nombres} {act.cliente.apellidoPaterno}
+                                                                    {act.cliente.empresa && <span className="ml-1 opacity-50 font-bold">({act.cliente.empresa})</span>}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Línea decorativa para el feed */}
+                                                    {idx < actividades.length - 1 && (
+                                                        <div className="absolute left-[29.5px] top-[48px] bottom-[-20px] w-px bg-linear-to-b from-gray-100 to-transparent z-0"></div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {healthTab === 'proximamente' && (
+                            <div className="h-full flex flex-col items-center justify-center p-8 text-center animate-in fade-in zoom-in-95 duration-500">
+                                <div className="w-16 h-16 bg-(--theme-50) rounded-2xl flex items-center justify-center mb-6 shadow-xs border border-(--theme-100)">
+                                    <Zap className="w-8 h-8 text-(--theme-500)" />
+                                </div>
+                                <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-3">CRM en Desarrollo</h3>
+                                <p className="text-xs text-gray-400 font-bold leading-relaxed max-w-xs uppercase tracking-tight">
+                                    Este CRM está en desarrollo continuo. Si tienes ideas para nuevas funciones o necesitas ayuda, no dudes en contactarnos.
+                                </p>
+                                <div className="mt-8 flex gap-3">
+                                    <div className="px-4 py-2 bg-white border border-gray-100 rounded-xl shadow-xs text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                        Feedback v2.0
                                     </div>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
+                        </AnimatePresence>
                     </div>
                 </div>
 
@@ -1291,7 +1325,7 @@ const Dashboard = () => {
                     </div>
 
                 </div>
-            </div>
+            </motion.div>
             {/* Modal de Tarea - Movido al final para evitar problemas de stacking context */}
             {showTaskModal && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
@@ -1371,7 +1405,7 @@ const Dashboard = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </motion.div>
     );
 };
 

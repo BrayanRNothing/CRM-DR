@@ -1,18 +1,18 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
-const MetricKPICard = ({ 
-    title, 
-    value, 
-    format = 'number', 
-    icon, 
-    detail, 
-    trend, 
+const MetricKPICard = ({
+    title,
+    value,
+    format = 'number',
+    icon,
+    detail,
+    trend,
     color = 'blue',
     thresholds = { good: 50, okay: 30 },
     compact = false
 }) => {
-    
+
     const getStatusColor = (val) => {
         if (format !== 'percent') return `bg-${color}-50 text-${color}-600 border-${color}-100`;
         const num = parseFloat(val);
@@ -25,9 +25,9 @@ const MetricKPICard = ({
 
     const formattedValue = () => {
         if (format === 'percent') return `${value.toFixed(1)}%`;
-        
+
         const numValue = Number(value) || 0;
-        
+
         if (format === 'money') {
             if (compact && numValue >= 1000) {
                 // En es-MX notation: compact da resultados como "24 mil"
@@ -35,7 +35,7 @@ const MetricKPICard = ({
             }
             return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(numValue);
         }
-        
+
         if (compact && numValue >= 1000) {
             return new Intl.NumberFormat('es-MX', { notation: 'compact', compactDisplay: 'short', maximumFractionDigits: 1 }).format(numValue);
         }
@@ -57,7 +57,7 @@ const MetricKPICard = ({
                 <div className={`p-2.5 rounded-xl ${statusClasses.split(' ')[0]} ${statusClasses.split(' ')[1]} transition-colors shrink-0`}>
                     {React.cloneElement(icon, { className: 'w-5 h-5' })}
                 </div>
-                
+
                 {/* Content Section */}
                 <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest truncate mb-0.5">{title}</p>
@@ -77,9 +77,9 @@ const MetricKPICard = ({
             {/* Progress bar as a thin base line */}
             {format === 'percent' && (
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-50 overflow-hidden">
-                    <div 
-                        className={`h-full transition-all duration-700 ${statusClasses.split(' ')[1].replace('text', 'bg')}`} 
-                        style={{ width: `${Math.min(value, 100)}%` }} 
+                    <div
+                        className={`h-full transition-all duration-700 ${statusClasses.split(' ')[1].replace('text', 'bg')}`}
+                        style={{ width: `${Math.min(value, 100)}%` }}
                     />
                 </div>
             )}

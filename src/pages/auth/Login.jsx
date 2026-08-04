@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowDown, Layout, Check } from 'lucide-react';
 import { getUser, saveUser, saveToken } from '../../utils/authUtils';
 import API_URL from '../../config/api';
@@ -160,6 +160,14 @@ const Login = () => {
   const [focusedField, setFocusedField] = useState(null);
   const [rememberMe, setRememberMe] = useState(false);
   const [showDemoModal, setShowDemoModal] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  const [isAnimatingOut, setIsAnimatingOut] = useState(false); // navbar/footer slide out
+  const [contentFading, setContentFading] = useState(false);   // content inside boxes fades
+  const [morphing, setMorphing] = useState(false);             // fixed overlay boxes animate
+  const [heroRect, setHeroRect] = useState(null);
+  const [cardRect, setCardRect] = useState(null);
+  const heroRef = useRef(null);
+  const cardRef = useRef(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -170,11 +178,28 @@ const Login = () => {
       setShowDemoModal(true);
     }
     const user = getUser();
-    if (user) {
-      // Todos los usuarios van al dashboard de vendedor
-      navigate('/vendedor');
-    }
+    if (user) { navigate('/vendedor'); }
   }, [navigate]);
+
+  const doMorphAndNavigate = () => {
+    const hRect = heroRef.current?.getBoundingClientRect();
+    const cRect = cardRef.current?.getBoundingClientRect();
+    if (!hRect || !cRect) { navigate('/vendedor'); return; }
+
+    // Phase 1: fade out content inside boxes (175ms)
+    setContentFading(true);
+
+    setTimeout(() => {
+      // Phase 2: capture rects, start morph overlay + push navbar/footer simultaneously
+      setHeroRect(hRect);
+      setCardRect(cRect);
+      setMorphing(true);
+      setIsAnimatingOut(true); // navbar/footer pushed out in sync with morph
+
+      // Allow morph to finish (0.6s animation) before routing
+      setTimeout(() => { navigate('/vendedor', { state: { fromLogin: true } }); }, 700);
+    }, 175);
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -191,14 +216,11 @@ const Login = () => {
         const userData = data.usuario || data.user;
         saveUser(userData, rememberMe);
         if (data.token) saveToken(data.token, rememberMe);
-        if (userData.id) {
-          socket.emit('user_connected', userData.id);
-        }
-        if (userData.equipo_id) {
-          socket.emit('join_team', userData.equipo_id);
-        }
-        // Todos los usuarios van al dashboard de vendedor
-        navigate('/vendedor');
+        if (userData.id) { socket.emit('user_connected', userData.id); }
+        if (userData.equipo_id) { socket.emit('join_team', userData.equipo_id); }
+        setLoginSuccess(true);
+        // Show green success button briefly, then kick off morph sequence
+        setTimeout(() => { doMorphAndNavigate(); }, 800);
       } else {
         setError(data.mensaje || data.message || 'Credenciales incorrectas');
       }
@@ -229,7 +251,8 @@ const Login = () => {
           socket.emit('join_team', userData.equipo_id);
         }
         setShowDemoModal(false);
-        navigate('/vendedor');
+        setLoginSuccess(true);
+        setTimeout(() => { doMorphAndNavigate(); }, 800);
       } else {
         setError(data.mensaje || data.message || 'Error al crear cuenta demo');
         setShowDemoModal(false);
@@ -260,7 +283,11 @@ const Login = () => {
       <div className="min-h-screen w-full flex flex-col p-2.5 gap-2.5 overflow-x-hidden relative font-sans">
 
         {/* ────── TOP: NAVBAR (Full Width) ────── */}
-        <div className="w-full shrink-0 z-30">
+        <motion.div
+          animate={isAnimatingOut ? { y: '-110%' } : { y: 0 }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          className="w-full shrink-0 z-[10000] relative"
+        >
           <div className="flex items-center justify-between gap-6 px-8 py-4 bg-white/80 backdrop-blur-md border border-white/40 rounded-2xl shadow-sm relative overflow-hidden">
             <div className="absolute inset-0 bg-linear-to-r from-transparent via-(--theme-500)/5 to-transparent opacity-50 pointer-events-none" />
 
@@ -313,13 +340,34 @@ const Login = () => {
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* ────── MIDDLE: CONTENT SPLIT (Hero + Login) ────── */}
         <div className="h-[82vh] flex flex-col lg:flex-row gap-2.5 shrink-0">
 
           {/* Left Hero Content */}
-          <div className="flex-1 flex flex-col justify-between text-left p-8 md:p-12 bg-white border border-white/30 rounded-3xl premium-reflejo overflow-hidden relative min-h-[600px]">
+          <motion.div
+            ref={heroRef}
+            className="flex-1 flex flex-col justify-between text-left p-8 md:p-12 border rounded-3xl premium-reflejo overflow-hidden relative min-h-[600px] z-10"
+            initial={{ 
+              backgroundColor: 'rgba(255,255,255,1)',
+              borderColor: 'rgba(255,255,255,0.3)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0)'
+            }}
+            animate={{ 
+              backgroundColor: morphing ? 'rgba(255,255,255,0)' : 'rgba(255,255,255,1)',
+              borderColor: morphing ? 'rgba(255,255,255,0)' : 'rgba(255,255,255,0.3)',
+              boxShadow: morphing ? 'none' : '0 4px 20px rgba(0,0,0,0)'
+            }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
+            <motion.div 
+              className="absolute inset-0 p-8 md:p-12 flex flex-col justify-between"
+              initial={{ opacity: 1 }}
+              animate={{ opacity: (contentFading || morphing) ? 0 : 1 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              style={{ pointerEvents: (contentFading || morphing) ? 'none' : 'auto' }}
+            >
             <FloatingIcons />
             <div className="absolute inset-0 bg-linear-to-br from-transparent via-(--theme-500)/5 to-transparent opacity-30 pointer-events-none" />
 
@@ -349,16 +397,35 @@ const Login = () => {
                 </div>
               ))}
             </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
           {/* Right Login Card */}
           <div className="w-full lg:w-[480px] shrink-0 relative flex h-full">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-(--theme-500)/10 blur-[100px] rounded-full pointer-events-none" />
 
             <motion.div
-              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
-              className="w-full h-full bg-white/95 backdrop-blur-2xl border border-white/80 rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden relative z-10"
+              ref={cardRef}
+              className="w-full h-full border rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden relative z-10"
+              initial={{ 
+                backgroundColor: 'rgba(255,255,255,1)',
+                borderColor: 'rgba(200,200,200,0.6)',
+                boxShadow: '0 20px 60px -15px rgba(0,0,0,0.1)'
+              }}
+              animate={{ 
+                backgroundColor: morphing ? 'rgba(255,255,255,0)' : 'rgba(255,255,255,1)',
+                borderColor: morphing ? 'rgba(200,200,200,0)' : 'rgba(200,200,200,0.6)',
+                boxShadow: morphing ? 'none' : '0 20px 60px -15px rgba(0,0,0,0.1)'
+              }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
             >
+              <motion.div 
+                className="absolute inset-0 flex flex-col"
+                initial={{ opacity: 1 }}
+                animate={{ opacity: (contentFading || morphing) ? 0 : 1 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+                style={{ pointerEvents: (contentFading || morphing) ? 'none' : 'auto' }}
+              >
               <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at center, black 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
               <div className="flex-1 flex flex-col justify-center px-10 sm:px-14 py-8 relative z-10">
@@ -422,15 +489,19 @@ const Login = () => {
                       whileHover={{ scale: 1.01, translateY: -2 }} whileTap={{ scale: 0.98 }}
                       className="w-full py-4 rounded-xl font-black text-xs uppercase tracking-widest text-white flex items-center justify-center gap-3 transition-all relative overflow-hidden group shadow-lg"
                       style={{
-                        background: loading ? 'var(--theme-300)' : 'linear-gradient(to right, var(--theme-500), var(--theme-600))',
-                        boxShadow: loading ? 'none' : '0 15px 30px -10px var(--theme-500)60',
+                        background: loading ? 'var(--theme-300)' : loginSuccess ? '#22c55e' : 'linear-gradient(to right, var(--theme-500), var(--theme-600))',
+                        boxShadow: loading || loginSuccess ? 'none' : '0 15px 30px -10px var(--theme-500)60',
                       }}
                     >
-                      {!loading && <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />}
+                      {!loading && !loginSuccess && <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />}
                       {loading ? (
                         <div className="flex items-center gap-2 relative z-10">
                           <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                           Validando...
+                        </div>
+                      ) : loginSuccess ? (
+                        <div className="flex items-center gap-2 relative z-10 text-white">
+                          <Check size={18} /> ¡Éxito!
                         </div>
                       ) : (
                         <span className="relative z-10 flex items-center gap-2">Ingresar <ArrowRight size={16} /></span>
@@ -448,12 +519,17 @@ const Login = () => {
                 */}
                 <p className="text-[8px] text-slate-300 uppercase tracking-[0.2em] font-bold mt-2">Versión Beta</p>
               </div>
+              </motion.div>
             </motion.div>
           </div>
         </div>
 
         {/* ────── BOTTOM: COMING SOON SECTION (Full Width) ────── */}
-        <div className="w-full h-screen shrink-0 bg-white border border-white/40 rounded-3xl shadow-sm overflow-hidden relative z-20 flex flex-col items-center justify-center text-center p-8">
+        <motion.div
+          animate={isAnimatingOut ? { y: 200, opacity: 0 } : { y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          className="w-full h-screen shrink-0 bg-white border border-white/40 rounded-3xl shadow-sm overflow-hidden relative z-[10000] flex flex-col items-center justify-center text-center p-8"
+        >
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at center, black 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
 
           <motion.div
@@ -478,7 +554,7 @@ const Login = () => {
               <div className="w-1.5 h-1.5 rounded-full bg-(--theme-100)" />
             </div>
           </motion.div>
-        </div>
+        </motion.div>
 
       </div>
 
@@ -528,6 +604,116 @@ const Login = () => {
             </motion.div>
           </div>
         )}
+      </AnimatePresence>
+
+      {/* ────── MORPH OVERLAY: cajas que se expanden empujando navbar/footer ────── */}
+      <AnimatePresence>
+        {morphing && heroRect && cardRect && (() => {
+          const PAD = 16; // Matches p-4 in MainLayout (1rem = 16px)
+          const GAP = 16; // Matches gap-4 in MainLayout
+          const SIDEBAR_W = 80; // Matches w-20 in FloatingSidebar (5rem = 80px)
+          const screenW = window.innerWidth;
+          const screenH = window.innerHeight;
+
+          // Final targets: full height, final widths — this is the dashboard shape
+          const sidebarTarget = {
+            left: PAD,
+            top: PAD,
+            width: SIDEBAR_W,
+            height: screenH - PAD * 2,
+            borderRadius: '16px', // rounded-2xl
+            backgroundColor: '#ffffff', // bg-white
+            border: '1px solid #e5e7eb', // border-gray-200
+            boxShadow: 'none',
+          };
+          
+          const mainTarget = {
+            left: PAD + SIDEBAR_W + GAP,
+            top: PAD,
+            width: screenW - PAD - SIDEBAR_W - GAP - PAD,
+            height: screenH - PAD * 2,
+            borderRadius: '24px', // rounded-3xl
+            backgroundColor: 'rgba(255,255,255,0.8)', // bg-white/80
+            border: '1px solid rgba(255,255,255,0.4)', // border-white/40
+            backdropFilter: 'blur(12px)', // backdrop-blur-md
+            boxShadow: 'none',
+          };
+
+          return (
+            <>
+              {/* Full screen backdrop so the grid/bg doesn't show through */}
+              <motion.div
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  backgroundColor: '#cbd5e1', // matches AnimatedGridBackground light mode bgColor
+                  zIndex: 0,
+                  pointerEvents: 'none',
+                }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.15 }}
+              />
+
+              {/* Hero box → sidebar */}
+              <motion.div
+                style={{
+                  position: 'fixed',
+                  left: heroRect.left,
+                  top: heroRect.top,
+                  width: heroRect.width,
+                  height: heroRect.height,
+                  borderRadius: '24px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid rgba(200,200,200,0.3)',
+                  zIndex: 5,
+                  pointerEvents: 'none',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+                }}
+                animate={{
+                  left: sidebarTarget.left,
+                  top: sidebarTarget.top,
+                  width: sidebarTarget.width,
+                  height: sidebarTarget.height,
+                  borderRadius: sidebarTarget.borderRadius,
+                  backgroundColor: sidebarTarget.backgroundColor,
+                  border: sidebarTarget.border,
+                  boxShadow: sidebarTarget.boxShadow,
+                }}
+                transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+              />
+
+              {/* Card box → main content */}
+              <motion.div
+                style={{
+                  position: 'fixed',
+                  left: cardRect.left,
+                  top: cardRect.top,
+                  width: cardRect.width,
+                  height: cardRect.height,
+                  borderRadius: '24px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid rgba(200,200,200,0.4)',
+                  zIndex: 9999,
+                  pointerEvents: 'none',
+                  boxShadow: '0 20px 60px -15px rgba(0,0,0,0.08)',
+                }}
+                animate={{
+                  left: mainTarget.left,
+                  top: mainTarget.top,
+                  width: mainTarget.width,
+                  height: mainTarget.height,
+                  borderRadius: mainTarget.borderRadius,
+                  backgroundColor: mainTarget.backgroundColor,
+                  border: mainTarget.border,
+                  boxShadow: mainTarget.boxShadow,
+                  backdropFilter: mainTarget.backdropFilter,
+                }}
+                transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+              />
+            </>
+          );
+        })()}
       </AnimatePresence>
     </AnimatedGridBackground>
   );

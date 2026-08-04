@@ -1,7 +1,8 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { ArrowRight, TrendingUp, CheckCircle2, XCircle } from 'lucide-react';
 
-const FunnelVisual = ({ stages }) => {
+const FunnelVisual = ({ stages, fromLogin = false }) => {
     const formatPercent = (value) => {
         if (value === null || value === undefined || value === '') return '0%';
         const numeric = Number(value);
@@ -35,8 +36,41 @@ const FunnelVisual = ({ stages }) => {
         return colorMap[color] || 'from-gray-400 to-gray-600';
     };
 
+    // Animacion de entrada premium: solo al venir del login
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        show: { 
+            opacity: 1, 
+            transition: { staggerChildren: 0.30, delayChildren: 0.1 } 
+        }
+    };
+
+    const itemVariants = fromLogin ? {
+        hidden: { 
+            opacity: 0, 
+            scale: 0.85, 
+            y: 12,
+            filter: 'blur(6px)'
+        },
+        show: { 
+            opacity: 1, 
+            scale: 1, 
+            y: 0,
+            filter: 'blur(0px)',
+            transition: { duration: 0.37, ease: [0.16, 1, 0.3, 1] } 
+        }
+    } : {
+        hidden: { opacity: 1 },
+        show: { opacity: 1 }
+    };
+
     return (
-        <div className="flex items-stretch gap-2 w-full">
+        <motion.div 
+            className="flex items-stretch gap-2 w-full"
+            variants={containerVariants}
+            initial={fromLogin ? "hidden" : "show"}
+            animate="show"
+        >
             {stages.map((stage, index) => {
                 const isLast = index === stages.length - 1;
                 const gradientClass = getGradientClasses(stage.color);
@@ -44,7 +78,7 @@ const FunnelVisual = ({ stages }) => {
                 return (
                     <React.Fragment key={index}>
                         {/* Card Principal - Ancho y Alto Igual */}
-                        <div className={`bg-linear-to-br ${gradientClass} rounded-lg p-2.5 shadow-md hover:shadow-lg transition-all duration-300 relative overflow-hidden group flex-1 h-48`}>
+                        <motion.div variants={itemVariants} className={`bg-linear-to-br ${gradientClass} rounded-lg p-2.5 shadow-md hover:shadow-lg transition-all duration-300 relative overflow-hidden group flex-1 h-48`}>
                             {/* Fondo decorativo */}
                             <div className="absolute right-0 top-0 h-full w-1/3 bg-white/5 skew-x-12 transform origin-top-right group-hover:scale-110 transition-transform duration-500"></div>
 
@@ -119,7 +153,7 @@ const FunnelVisual = ({ stages }) => {
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </motion.div>
 
                         {/* Conector Visual (Flecha Derecha) */}
                         {!isLast && (
@@ -130,7 +164,7 @@ const FunnelVisual = ({ stages }) => {
                     </React.Fragment>
                 );
             })}
-        </div>
+        </motion.div>
     );
 };
 
