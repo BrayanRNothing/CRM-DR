@@ -632,8 +632,8 @@ const Dashboard = () => {
                                 cantidadPerdida: sinContactar,
                                 porcentajeExito: formatPercent(tasaContacto),
                                 porcentajePerdida: formatPercent(100 - tasaContacto),
-                                labelExito: 'a contacto',
-                                labelPerdida: 'sin tocar'
+                                labelExito: 'Contactados',
+                                labelPerdida: 'Sin contactar'
                             },
                             {
                                 etapa: 'Contacto',
@@ -645,8 +645,8 @@ const Dashboard = () => {
                                 cantidadPerdida: Math.max(0, enContacto - citas),
                                 porcentajeExito: formatPercent(tasaAgendamiento),
                                 porcentajePerdida: formatPercent(100 - tasaAgendamiento),
-                                labelExito: 'a cita',
-                                labelPerdida: 'estancados'
+                                labelExito: 'Con cita',
+                                labelPerdida: 'Sin cita'
                             },
                             {
                                 etapa: 'Citas',
@@ -657,8 +657,8 @@ const Dashboard = () => {
                                 cantidadExito: ganadas,
                                 cantidadPerdida: Math.max(0, citas - ganadas),
                                 porcentajeExito: formatPercent(tasaCierre),
-                                labelExito: 'a venta',
-                                labelPerdida: 'pausados'
+                                labelExito: 'Con cierre',
+                                labelPerdida: 'Sin cierre'
                             },
                             {
                                 etapa: 'Cierre',
@@ -667,8 +667,8 @@ const Dashboard = () => {
                                 contadorHoy: closerData.metricas.ventas.ventasHoy || 0,
                                 labelContador: `ganadas ${periodoSuffix}`,
                                 cantidadExito: ganadas,
-                                porcentajeExito: 100,
-                                labelExito: 'éxito'
+                                porcentajeExito: formatPercent(citas > 0 ? (ganadas / citas) * 100 : 0),
+                                labelExito: 'Tasa de cierre'
                             }
                         ]}
                         type="vendedor"

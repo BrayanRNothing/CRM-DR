@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { motion } from 'framer-motion';
 import Avatar from './Avatar';
 
 const SIDEBAR_HINT_KEY = 'crm_sidebar_hint_seen';
@@ -50,6 +51,8 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
     const activeClasses = isDark
         ? 'bg-(--theme-600) text-white shadow-lg shadow-(--theme-600)/30'
         : 'bg-(--theme-500) text-white shadow-lg shadow-(--theme-500)/30';
+
+    const activeTextClasses = 'text-white';
 
     const inactiveClasses = isDark
         ? 'text-gray-400'
@@ -157,9 +160,16 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                                                     toggleAccordion(item.name);
                                                 }
                                             }}
-                                            className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-all ${hasActiveChild && isCollapsed ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                            className={`relative w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-colors z-0 ${hasActiveChild && isCollapsed ? activeTextClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                             title={isCollapsed ? item.name : ''}
                                         >
+                                            {hasActiveChild && isCollapsed && (
+                                                <motion.div
+                                                    layoutId="sidebar-active-indicator"
+                                                    className={`absolute inset-0 rounded-xl -z-10 ${isDark ? 'bg-(--theme-600) shadow-lg shadow-(--theme-600)/30' : 'bg-(--theme-500) shadow-lg shadow-(--theme-500)/30'}`}
+                                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                                />
+                                            )}
                                             <div className="shrink-0">{item.icon}</div>
                                             {!isCollapsed && (
                                                 <>
@@ -181,8 +191,15 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                                                             const isChildActive = location.pathname === child.path;
                                                             return (
                                                                 <Link key={childIndex} to={child.path}
-                                                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${isChildActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                                                    className={`relative flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm z-0 ${isChildActive ? activeTextClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                                                 >
+                                                                    {isChildActive && (
+                                                                        <motion.div
+                                                                            layoutId="sidebar-active-indicator"
+                                                                            className={`absolute inset-0 rounded-lg -z-10 ${isDark ? 'bg-(--theme-600) shadow-lg shadow-(--theme-600)/30' : 'bg-(--theme-500) shadow-lg shadow-(--theme-500)/30'}`}
+                                                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                                                        />
+                                                                    )}
                                                                     <div className="shrink-0">{child.icon}</div>
                                                                     <span className="font-medium truncate">{child.name}</span>
                                                                 </Link>
@@ -200,8 +217,15 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                                                     const isChildActive = location.pathname === child.path;
                                                     return (
                                                         <Link key={childIndex} to={child.path}
-                                                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${isChildActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                                            className={`relative flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm z-0 ${isChildActive ? activeTextClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                                         >
+                                                            {isChildActive && (
+                                                                <motion.div
+                                                                    layoutId="sidebar-active-indicator"
+                                                                    className={`absolute inset-0 rounded-lg -z-10 ${isDark ? 'bg-(--theme-600) shadow-lg shadow-(--theme-600)/30' : 'bg-(--theme-500) shadow-lg shadow-(--theme-500)/30'}`}
+                                                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                                                />
+                                                            )}
                                                             <div className="shrink-0">{child.icon}</div>
                                                             <span className="font-medium truncate">{child.name}</span>
                                                         </Link>
@@ -214,9 +238,16 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                             }
                             return (
                                 <Link key={index} to={item.path}
-                                    className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-all ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                    className={`relative flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-colors z-0 ${isActive ? activeTextClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                     title={isCollapsed ? item.name : ''}
                                 >
+                                    {isActive && (
+                                        <motion.div
+                                            layoutId="sidebar-active-indicator"
+                                            className={`absolute inset-0 rounded-xl -z-10 ${isDark ? 'bg-(--theme-600) shadow-lg shadow-(--theme-600)/30' : 'bg-(--theme-500) shadow-lg shadow-(--theme-500)/30'}`}
+                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                        />
+                                    )}
                                     <div className="shrink-0">{item.icon}</div>
                                     {!isCollapsed && <span className="font-medium truncate">{item.name}</span>}
                                 </Link>
@@ -248,9 +279,16 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                                                     toggleAccordion(item.name);
                                                 }
                                             }}
-                                            className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-all ${hasActiveChild && isCollapsed ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                            className={`relative w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-colors z-0 ${hasActiveChild && isCollapsed ? activeTextClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                             title={isCollapsed ? item.name : ''}
                                         >
+                                            {hasActiveChild && isCollapsed && (
+                                                <motion.div
+                                                    layoutId="sidebar-active-indicator"
+                                                    className={`absolute inset-0 rounded-xl -z-10 ${isDark ? 'bg-(--theme-600) shadow-lg shadow-(--theme-600)/30' : 'bg-(--theme-500) shadow-lg shadow-(--theme-500)/30'}`}
+                                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                                />
+                                            )}
                                             <div className="shrink-0">{item.icon}</div>
                                             {!isCollapsed && (
                                                 <>
@@ -272,8 +310,15 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                                                             const isChildActive = location.pathname === child.path;
                                                             return (
                                                                 <Link key={childIndex} to={child.path}
-                                                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${isChildActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                                                    className={`relative flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm z-0 ${isChildActive ? activeTextClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                                                 >
+                                                                    {isChildActive && (
+                                                                        <motion.div
+                                                                            layoutId="sidebar-active-indicator"
+                                                                            className={`absolute inset-0 rounded-lg -z-10 ${isDark ? 'bg-(--theme-600) shadow-lg shadow-(--theme-600)/30' : 'bg-(--theme-500) shadow-lg shadow-(--theme-500)/30'}`}
+                                                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                                                        />
+                                                                    )}
                                                                     <div className="shrink-0">{child.icon}</div>
                                                                     <span className="font-medium truncate">{child.name}</span>
                                                                 </Link>
@@ -290,8 +335,15 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                                                     const isChildActive = location.pathname === child.path;
                                                     return (
                                                         <Link key={childIndex} to={child.path}
-                                                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${isChildActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                                            className={`relative flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm z-0 ${isChildActive ? activeTextClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                                         >
+                                                            {isChildActive && (
+                                                                <motion.div
+                                                                    layoutId="sidebar-active-indicator"
+                                                                    className={`absolute inset-0 rounded-lg -z-10 ${isDark ? 'bg-(--theme-600) shadow-lg shadow-(--theme-600)/30' : 'bg-(--theme-500) shadow-lg shadow-(--theme-500)/30'}`}
+                                                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                                                />
+                                                            )}
                                                             <div className="shrink-0">{child.icon}</div>
                                                             <span className="font-medium truncate">{child.name}</span>
                                                         </Link>
@@ -304,9 +356,16 @@ const FloatingSidebar = ({ menuItems, userInfo, title = 'solomycrm', subtitle = 
                             }
                             return (
                                 <Link key={`bot-${index}`} to={item.path}
-                                    className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-all ${isActive ? activeClasses : `${inactiveClasses} ${hoverClasses}`}`}
+                                    className={`relative flex items-center ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-3 rounded-xl transition-colors z-0 ${isActive ? activeTextClasses : `${inactiveClasses} ${hoverClasses}`}`}
                                     title={isCollapsed ? item.name : ''}
                                 >
+                                    {isActive && (
+                                        <motion.div
+                                            layoutId="sidebar-active-indicator"
+                                            className={`absolute inset-0 rounded-xl -z-10 ${isDark ? 'bg-(--theme-600) shadow-lg shadow-(--theme-600)/30' : 'bg-(--theme-500) shadow-lg shadow-(--theme-500)/30'}`}
+                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                        />
+                                    )}
                                     <div className="shrink-0">{item.icon}</div>
                                     {!isCollapsed && <span className="font-medium truncate">{item.name}</span>}
                                 </Link>

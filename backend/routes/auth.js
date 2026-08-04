@@ -25,9 +25,9 @@ router.post('/login', loginLimiter, async (req, res) => {
     try {
         console.log('--- INICIO INTENTO DE LOGIN ---');
         console.log('Body recibido (sin contraseña):', { ...req.body, contraseña: '***' });
-        
+
         // El frontend envía { usuario, contraseña } pero el input puede ser un email
-        const identificador = req.body.usuario || req.body.email; 
+        const identificador = req.body.usuario || req.body.email;
         const { contraseña } = req.body;
 
         if (!identificador || !contraseña) {
@@ -36,11 +36,11 @@ router.post('/login', loginLimiter, async (req, res) => {
         }
 
         console.log(`🔑 Intento de login para: "${identificador}"`);
-        
+
         // Búsqueda en Postgres por usuario (LOWER) o email (LOWER)
         const query = 'SELECT * FROM usuarios WHERE LOWER(usuario) = LOWER(?) OR LOWER(email) = LOWER(?)';
         const row = await db.prepare(query).get(identificador.trim(), identificador.trim());
-        
+
         if (!row) {
             console.log(`❌ Login fallido: Usuario/Email no encontrado: "${identificador}"`);
             return res.status(400).json({ mensaje: 'Credenciales inválidas' });
@@ -156,7 +156,7 @@ router.post('/register', async (req, res) => {
         const newUser = await db.prepare('SELECT id, usuario, nombre, rol, email, "equipo_id" FROM usuarios WHERE id = ?').get(nuevoUserId);
 
         console.log(`✅ Usuario registrado con éxito: ${newUser.usuario} (equipo_id: ${newUser.equipo_id})`);
-        
+
         // Registrar actividad de registro
         try {
             await db.prepare('INSERT INTO actividades (tipo, vendedor, descripcion, resultado) VALUES (?, ?, ?, ?)')
@@ -240,13 +240,13 @@ router.post('/demo-login', async (req, res) => {
                 INSERT INTO actividades (tipo, vendedor, cliente, fecha, descripcion, resultado, notas, "googleMeetLink")
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `).run(
-                'cita', 
-                userId, 
-                primerClienteId, 
-                d.toISOString(), 
-                'Reunión de Demostración CRM', 
-                'pendiente', 
-                '¡Pruébame! Haz clic en "Unirse" para ver cómo funcionan las videollamadas con 1 clic.', 
+                'cita',
+                userId,
+                primerClienteId,
+                d.toISOString(),
+                'Reunión de Demostración CRM',
+                'pendiente',
+                '¡Pruébame! Haz clic en "Unirse" para ver cómo funcionan las videollamadas con 1 clic.',
                 'https://meet.google.com/ebw-jddj-tuh'
             );
         }
@@ -285,7 +285,7 @@ router.post('/demo-login', async (req, res) => {
 router.get('/me', auth, async (req, res) => {
     try {
         const user = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo, "equipo_id", plan_activo, plan_vencimiento, plan, stripe_customer_id FROM usuarios WHERE id = ?').get(req.usuario.id);
-        
+
         if (user && user.equipo_id) {
             const equipo = await db.prepare('SELECT owner_id FROM equipos WHERE id = ?').get(user.equipo_id);
             if (equipo && equipo.owner_id !== user.id) {
@@ -299,7 +299,7 @@ router.get('/me', auth, async (req, res) => {
                 }
             }
         }
-        
+
         res.json(user);
     } catch (error) {
         console.error('Error en auth/me:', error);
@@ -528,7 +528,7 @@ router.post('/suspend-subscription', async (req, res) => {
             await db.prepare('UPDATE usuarios SET plan_activo = FALSE, plan_vencimiento = ? WHERE id = ?')
                 .run(graciaHasta.toISOString(), usuario.id);
             accion = `Periodo de gracia iniciado (hasta ${graciaHasta.toDateString()})`;
-            
+
             // Enviar correo indicando problema / cancelación / gracia
             if (usuario.email) {
                 try {
@@ -712,7 +712,7 @@ router.post('/renew-subscription', async (req, res) => {
         try {
             await db.prepare('INSERT INTO actividades (tipo, vendedor, descripcion, resultado) VALUES (?, ?, ?, ?)')
                 .run('registro', usuario.id, `Renovación de suscripción exitosa (${usuario.plan})`, 'exitoso');
-        } catch (actError) {}
+        } catch (actError) { }
 
         // Enviar correo de renovación
         try {

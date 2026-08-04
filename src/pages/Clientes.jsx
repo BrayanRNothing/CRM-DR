@@ -858,7 +858,7 @@ const Clientes = () => {
     };
 
     const clientesFiltrados = useMemo(() => {
-        const filtrados = clientes.filter((cliente) => {
+        let filtrados = clientes.filter((cliente) => {
             const matchBusqueda =
                 busqueda === '' ||
                 (cliente.nombres || '').toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -870,14 +870,27 @@ const Clientes = () => {
             return matchBusqueda;
         });
 
+        if (ordenFiltro === 'en_proceso') {
+            filtrados = filtrados.filter(p => {
+                let sections = [];
+                if (typeof p.customSections === 'string') {
+                    try { sections = JSON.parse(p.customSections); } catch(e) {}
+                } else if (Array.isArray(p.customSections)) {
+                    sections = p.customSections;
+                }
+                // Check if they have the opportunities module created
+                return sections.some(s => s.tipo === 'opportunities');
+            });
+        }
+
         return filtrados.sort((a, b) => {
             if (ordenFiltro === 'mayor_facturado') {
                 const facturadoA = Number(a.totalFacturado) || Number(a.customMetricValue) || 0;
                 const facturadoB = Number(b.totalFacturado) || Number(b.customMetricValue) || 0;
                 if (facturadoA !== facturadoB) return facturadoB - facturadoA;
             } else if (ordenFiltro === 'mayor_valor') {
-                const interesA = a.interes || 0;
-                const interesB = b.interes || 0;
+                const interesA = a.interes ?? 5;
+                const interesB = b.interes ?? 5;
                 if (interesA !== interesB) return interesB - interesA;
             }
             return 0; // fallback a creación (como vienen)
@@ -1008,8 +1021,9 @@ const Clientes = () => {
                                         className="px-3 h-9 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-(--theme-500) transition-all cursor-pointer"
                                     >
                                         <option value="todos">Todos los clientes</option>
-                                        <option value="mayor_facturado">Mayor facturado</option>
-                                        <option value="mayor_valor">Mayor valor (Interés)</option>
+                                        <option value="mayor_valor">Valor del cliente</option>
+                                        <option value="mayor_facturado">Facturado</option>
+                                        <option value="en_proceso">En oportunidad de venta</option>
                                     </select>
                                 </div>
                                 {(ordenFiltro !== 'todos' || busqueda || filtroVisibilidad !== 'mine') && (
@@ -1108,138 +1122,138 @@ const Clientes = () => {
                                     const id = cliente._id || cliente.id;
                                     const isLastViewed = lastViewedId && id === lastViewedId;
                                     return (<tr key={id} className={`transition-all cursor-pointer ${isLastViewed ? 'row-highlight-shimmer' : 'hover:bg-slate-50/70'}`} onClick={() => handleVerDetalles(cliente)}>
-                                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
-                                        <div className="flex flex-col">
-                                            <p className="font-bold text-gray-900 leading-tight text-[11px] md:text-sm">
-                                                {cliente.nombres} {cliente.apellidoPaterno}
-                                            </p>
-                                            <p className="text-[9px] md:text-[10px] text-slate-500 mt-0.5 max-w-[100px] md:max-w-none truncate">
-                                                {cliente.empresa || 'Sin empresa'}
-                                            </p>
-                                            <div className="flex items-center gap-0.5 text-yellow-500 scale-[0.6] md:scale-75 origin-left mt-0.5">
-                                                {[1, 2, 3, 4, 5].map((val) => (
-                                                    <Star key={val} className={`w-3.5 h-3.5 ${(cliente.interes || 5) >= val ? 'fill-yellow-400' : 'fill-slate-100 text-slate-300'}`} />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
-                                        <div className="flex flex-col">
-                                            <span className="text-[11px] md:text-sm font-semibold text-gray-800">
-                                                {(cliente.totalFacturado || cliente.customMetricValue) ? `${cliente.customMetricLabel || 'MXN'} $${Number(cliente.totalFacturado || cliente.customMetricValue).toLocaleString('es-MX')}` : '—'}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
-                                        <div className="space-y-0.5">
-                                            {cliente.telefono ? (
-                                                <p className="flex items-center gap-1.5 text-gray-700 text-sm font-medium">
-                                                    <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                                                    {cliente.telefono}
+                                        <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                                            <div className="flex flex-col">
+                                                <p className="font-bold text-gray-900 leading-tight text-[11px] md:text-sm">
+                                                    {cliente.nombres} {cliente.apellidoPaterno}
                                                 </p>
-                                            ) : null}
-                                            {cliente.correo ? (
-                                                <p className="flex items-center gap-1.5 text-gray-500 text-sm">
-                                                    <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                                                    <span>{cliente.correo}</span>
+                                                <p className="text-[9px] md:text-[10px] text-slate-500 mt-0.5 max-w-[100px] md:max-w-none truncate">
+                                                    {cliente.empresa || 'Sin empresa'}
                                                 </p>
-                                            ) : null}
-                                            {!cliente.telefono && !cliente.correo && (
-                                                <span className="text-xs text-slate-400 italic">Sin contacto</span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
-                                        {(() => {
-                                            const etapaKey = cliente.etapaCliente || 'cliente_nuevo';
-                                            const colorCls = getEtapaColor(etapaKey);
-                                            const label = getEtapaLabel(etapaKey);
-                                            return (
-                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${colorCls}`}>
-                                                    {label}
-                                                </span>
-                                            );
-                                        })()}
-                                    </td>
-                                    <td className="px-2 md:px-4 py-2 md:py-3 max-w-[140px] md:max-w-[200px]">
-                                        {cliente.ultimaActTipo ? (
-                                            <div className="flex items-start gap-1.5">
-                                                <div className="mt-0.5 shrink-0">
-                                                    {cliente.ultimaActTipo === 'llamada' && <Phone className="w-3 h-3 text-(--theme-500)" />}
-                                                    {cliente.ultimaActTipo === 'whatsapp' && <MessageSquare className="w-3 h-3 text-green-500" />}
-                                                    {cliente.ultimaActTipo === 'correo' && <Mail className="w-3 h-3 text-purple-500" />}
-                                                    {cliente.ultimaActTipo === 'cita' && <Calendar className="w-3 h-3 text-(--theme-500)" />}
-                                                    {!['llamada', 'whatsapp', 'correo', 'cita'].includes(cliente.ultimaActTipo) && <Clock className="w-3 h-3 text-slate-400" />}
+                                                <div className="flex items-center gap-0.5 text-yellow-500 scale-[0.6] md:scale-75 origin-left mt-0.5">
+                                                    {[1, 2, 3, 4, 5].map((val) => (
+                                                        <Star key={val} className={`w-3.5 h-3.5 ${(cliente.interes || 5) >= val ? 'fill-yellow-400' : 'fill-slate-100 text-slate-300'}`} />
+                                                    ))}
                                                 </div>
-                                                <p className="text-[11px] text-slate-600 leading-snug" title={cliente.ultimaActNotas || ''}>
-                                                    {cliente.ultimaActNotas
-                                                        ? (cliente.ultimaActNotas.length > 50 ? cliente.ultimaActNotas.slice(0, 50) + '…' : cliente.ultimaActNotas)
-                                                        : <span className="italic text-slate-400">{cliente.ultimaActTipo}</span>}
-                                                </p>
                                             </div>
-                                        ) : cliente.fechaUltimaEtapa ? (
-                                            <div className="flex items-center gap-1.5">
-                                                <Plus className="w-3 h-3 text-emerald-500" />
-                                                <span className="text-[11px] text-slate-500">
-                                                    Ganado el {new Date(cliente.fechaUltimaEtapa).toLocaleDateString('es-MX')}
+                                        </td>
+                                        <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                                            <div className="flex flex-col">
+                                                <span className="text-[11px] md:text-sm font-semibold text-gray-800">
+                                                    {(cliente.totalFacturado || cliente.customMetricValue) ? `${cliente.customMetricLabel || 'MXN'} $${Number(cliente.totalFacturado || cliente.customMetricValue).toLocaleString('es-MX')}` : '—'}
                                                 </span>
                                             </div>
-                                        ) : (
-                                            <span className="text-xs text-slate-300 italic">Sin historial</span>
-                                        )}
-                                    </td>
-                                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
-                                        {cliente.proximaLlamada ? (() => {
-                                            const esVencido = new Date(cliente.proximaLlamada) < new Date();
-                                            return (
-                                                <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-emerald-00'}`}>
-                                                    <Phone className="w-3 h-3 shrink-0" />
-                                                    <span className="text-[10px] font-bold leading-tight uppercase tracking-tighter">
-                                                        {new Date(cliente.proximaLlamada).toLocaleString('es-MX', {
-                                                            day: 'numeric',
-                                                            month: 'short',
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
-                                                        })}
-                                                        {esVencido && ' ⚠'}
+                                        </td>
+                                        <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                                            <div className="space-y-0.5">
+                                                {cliente.telefono ? (
+                                                    <p className="flex items-center gap-1.5 text-gray-700 text-sm font-medium">
+                                                        <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                        {cliente.telefono}
+                                                    </p>
+                                                ) : null}
+                                                {cliente.correo ? (
+                                                    <p className="flex items-center gap-1.5 text-gray-500 text-sm">
+                                                        <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                        <span>{cliente.correo}</span>
+                                                    </p>
+                                                ) : null}
+                                                {!cliente.telefono && !cliente.correo && (
+                                                    <span className="text-xs text-slate-400 italic">Sin contacto</span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
+                                            {(() => {
+                                                const etapaKey = cliente.etapaCliente || 'cliente_nuevo';
+                                                const colorCls = getEtapaColor(etapaKey);
+                                                const label = getEtapaLabel(etapaKey);
+                                                return (
+                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${colorCls}`}>
+                                                        {label}
+                                                    </span>
+                                                );
+                                            })()}
+                                        </td>
+                                        <td className="px-2 md:px-4 py-2 md:py-3 max-w-[140px] md:max-w-[200px]">
+                                            {cliente.ultimaActTipo ? (
+                                                <div className="flex items-start gap-1.5">
+                                                    <div className="mt-0.5 shrink-0">
+                                                        {cliente.ultimaActTipo === 'llamada' && <Phone className="w-3 h-3 text-(--theme-500)" />}
+                                                        {cliente.ultimaActTipo === 'whatsapp' && <MessageSquare className="w-3 h-3 text-green-500" />}
+                                                        {cliente.ultimaActTipo === 'correo' && <Mail className="w-3 h-3 text-purple-500" />}
+                                                        {cliente.ultimaActTipo === 'cita' && <Calendar className="w-3 h-3 text-(--theme-500)" />}
+                                                        {!['llamada', 'whatsapp', 'correo', 'cita'].includes(cliente.ultimaActTipo) && <Clock className="w-3 h-3 text-slate-400" />}
+                                                    </div>
+                                                    <p className="text-[11px] text-slate-600 leading-snug" title={cliente.ultimaActNotas || ''}>
+                                                        {cliente.ultimaActNotas
+                                                            ? (cliente.ultimaActNotas.length > 50 ? cliente.ultimaActNotas.slice(0, 50) + '…' : cliente.ultimaActNotas)
+                                                            : <span className="italic text-slate-400">{cliente.ultimaActTipo}</span>}
+                                                    </p>
+                                                </div>
+                                            ) : cliente.fechaUltimaEtapa ? (
+                                                <div className="flex items-center gap-1.5">
+                                                    <Plus className="w-3 h-3 text-emerald-500" />
+                                                    <span className="text-[11px] text-slate-500">
+                                                        Ganado el {new Date(cliente.fechaUltimaEtapa).toLocaleDateString('es-MX')}
                                                     </span>
                                                 </div>
-                                            );
-                                        })() : (
-                                            <span className="text-xs text-slate-400 italic">Sin pendiente</span>
-                                        )}
-                                    </td>
-                                    <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
-                                        <div className="flex items-center justify-center gap-1.5 md:gap-3">
-                                            {(cliente.esPropietario === true || isOwnerRecord(cliente)) && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleToggleCompartido(cliente, !cliente.compartido);
-                                                    }}
-                                                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${cliente.compartido ? 'text-emerald-700 bg-emerald-100 hover:bg-emerald-200 shadow-sm border-2 border-emerald-200' : 'text-gray-400 hover:text-(--theme-600) hover:bg-(--theme-50)'}`}
-                                                    title={cliente.compartido ? "Dejar de compartir" : "Compartir con el equipo"}
-                                                >
-                                                    <Share2 className="w-4 h-4" />
-                                                </button>
+                                            ) : (
+                                                <span className="text-xs text-slate-300 italic">Sin historial</span>
                                             )}
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); abrirModalEditar(cliente); }}
-                                                className="text-gray-400 hover:text-(--theme-600) transition-colors p-2 rounded-full hover:bg-(--theme-50)"
-                                                title="Editar Cliente"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); setClienteAEliminar(cliente); }}
-                                                className="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50"
-                                                title="Eliminar Cliente"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>);
+                                        </td>
+                                        <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                                            {cliente.proximaLlamada ? (() => {
+                                                const esVencido = new Date(cliente.proximaLlamada) < new Date();
+                                                return (
+                                                    <div className={`flex items-center gap-1.5 ${esVencido ? 'text-red-600' : 'text-emerald-00'}`}>
+                                                        <Phone className="w-3 h-3 shrink-0" />
+                                                        <span className="text-[10px] font-bold leading-tight uppercase tracking-tighter">
+                                                            {new Date(cliente.proximaLlamada).toLocaleString('es-MX', {
+                                                                day: 'numeric',
+                                                                month: 'short',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                            {esVencido && ' ⚠'}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })() : (
+                                                <span className="text-xs text-slate-400 italic">Sin pendiente</span>
+                                            )}
+                                        </td>
+                                        <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
+                                            <div className="flex items-center justify-center gap-1.5 md:gap-3">
+                                                {(cliente.esPropietario === true || isOwnerRecord(cliente)) && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleToggleCompartido(cliente, !cliente.compartido);
+                                                        }}
+                                                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${cliente.compartido ? 'text-emerald-700 bg-emerald-100 hover:bg-emerald-200 shadow-sm border-2 border-emerald-200' : 'text-gray-400 hover:text-(--theme-600) hover:bg-(--theme-50)'}`}
+                                                        title={cliente.compartido ? "Dejar de compartir" : "Compartir con el equipo"}
+                                                    >
+                                                        <Share2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); abrirModalEditar(cliente); }}
+                                                    className="text-gray-400 hover:text-(--theme-600) transition-colors p-2 rounded-full hover:bg-(--theme-50)"
+                                                    title="Editar Cliente"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setClienteAEliminar(cliente); }}
+                                                    className="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50"
+                                                    title="Eliminar Cliente"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>);
                                 };
 
                                 const renderGroup = (groupItems, title, colorClass) => {

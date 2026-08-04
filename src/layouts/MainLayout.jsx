@@ -1,13 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, Suspense } from 'react';
+import { Outlet, useLocation, useOutlet } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedGridBackground from '../components/ui/AnimatedGridBackground';
 import FloatingSidebar from '../components/ui/FloatingSidebar';
+import SkeletonLoader from '../components/ui/SkeletonLoader';
 import { getUser, getToken } from '../utils/authUtils';
 import logosolomycrm from '../assets/logosolomycrm.png';
 import useWindowSize from '../hooks/useWindowSize';
 import MainLayoutMobile from './MainLayoutMobile';
 import GracePeriodBanner from '../components/ui/GracePeriodBanner';
 import API_URL from '../config/api';
+
+const AnimatedOutlet = ({ context }) => {
+    const location = useLocation();
+    const element = useOutlet(context);
+
+    return (
+        <AnimatePresence mode="wait">
+            <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 10, filter: 'blur(2px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, y: -10, filter: 'blur(2px)' }}
+                transition={{ duration: 0.2, ease: 'easeInOut' }}
+                className="flex-1 flex flex-col min-h-0 w-full"
+            >
+                {element}
+            </motion.div>
+        </AnimatePresence>
+    );
+};
 
 const MainLayout = () => {
     const { width } = useWindowSize();
@@ -264,8 +286,16 @@ const MainLayout = () => {
                                 <GracePeriodBanner diasRestantes={diasGracia} />
                             )}
 
-                            <div id="main-scroll-container" className={`flex-1 scrollbar-hide ${isAjustesRoute || isDashboard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-                                <Outlet context={{ planData, plan_activo: planData?.plan_activo }} />
+                            <div id="main-scroll-container" className={`flex-1 flex flex-col scrollbar-hide ${isAjustesRoute || isDashboard ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+                                <Suspense fallback={
+                                    <div className="flex items-center justify-center h-full p-8">
+                                        <div className="w-full max-w-4xl">
+                                            <SkeletonLoader variant="dashboard" />
+                                        </div>
+                                    </div>
+                                }>
+                                    <AnimatedOutlet context={{ planData, plan_activo: planData?.plan_activo }} />
+                                </Suspense>
                             </div>
                         </>
                     )}

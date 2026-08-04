@@ -12,6 +12,8 @@ import SkeletonLoader from './components/ui/SkeletonLoader.jsx';
 import React, { Suspense, lazy, useEffect } from 'react';
 import useThemeStore, { THEMES } from './store/themeStore.js';
 import ScrollToTop from './components/ScrollToTop.jsx';
+import Login from './pages/auth/Login.jsx';
+import MainLayout from './layouts/MainLayout.jsx';
 
 const lazyWithRetry = (importer) =>
   lazy(async () => {
@@ -30,7 +32,6 @@ const lazyWithRetry = (importer) =>
     }
   });
 
-const Login = lazyWithRetry(() => import('./pages/auth/Login.jsx'));
 const Register = lazyWithRetry(() => import('./pages/auth/Register.jsx'));
 const Ajustes = lazyWithRetry(() => import('./pages/Ajustes.jsx'));
 const TerminosCondiciones = lazyWithRetry(() => import('./pages/TerminosCondiciones.jsx'));
@@ -41,7 +42,6 @@ const NotFound = lazyWithRetry(() => import('./pages/NotFound.jsx'));
 // Legacy pages was removed
 
 // Core Pages
-const MainLayout = lazyWithRetry(() => import('./layouts/MainLayout.jsx'));
 const Dashboard = lazyWithRetry(() => import('./pages/Dashboard.jsx'));
 const Calendario = lazyWithRetry(() => import('./pages/Calendario.jsx'));
 const Seguimiento = lazyWithRetry(() => import('./pages/Seguimiento.jsx'));

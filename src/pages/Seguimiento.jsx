@@ -461,13 +461,17 @@ const Seguimiento = () => {
             );
         }
 
-        if (ordenFiltro === 'en_proceso') {
-            filtrados = filtrados.filter(p => !['perdido', 'venta_ganada'].includes(p.etapaEmbudo));
-        }
-
         return filtrados;
     }, [prospectos, busquedaProspecto, ordenFiltro]).sort((a, b) => {
-        if (ordenFiltro === 'mayor_valor') {
+        if (ordenFiltro === 'mayor_valor_estimado' || ordenFiltro === 'mayor_facturado') {
+            const facturadoA = Number(a.customMetricValue) || Number(a.totalFacturado) || 0;
+            const facturadoB = Number(b.customMetricValue) || Number(b.totalFacturado) || 0;
+            if (facturadoA !== facturadoB) return facturadoB - facturadoA;
+        } else if (ordenFiltro === 'reciente') {
+            const dateA = new Date(a.createdAt || a.fechaCreacion || 0).getTime();
+            const dateB = new Date(b.createdAt || b.fechaCreacion || 0).getTime();
+            return dateB - dateA;
+        } else if (ordenFiltro === 'mayor_valor') {
             const interesA = a.interes || 0;
             const interesB = b.interes || 0;
             if (interesA !== interesB) return interesB - interesA;
@@ -1399,7 +1403,8 @@ const Seguimiento = () => {
                                     className="px-3 h-9 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-(--theme-500) transition-all cursor-pointer"
                                 >
                                     <option value="todos">Todos los prospectos</option>
-                                    <option value="en_proceso">En oportunidad de ventas</option>
+                                    <option value="mayor_valor_estimado">Valor del prospecto/estimado</option>
+                                    <option value="reciente">Agregado recientemente</option>
                                     <option value="mayor_valor">Mayor valor (Interés)</option>
                                 </select>
                             </div>
