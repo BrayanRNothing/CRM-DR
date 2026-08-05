@@ -23,7 +23,7 @@ const COLUMN_COLORS = [
     { id: 'rose',    hex: '#e11d48', header: 'bg-rose-600',    badge: 'bg-rose-100 text-rose-700',      card: 'border-l-rose-400',    dot: 'bg-rose-500',    ring: 'ring-rose-400' },
     { id: 'cyan',    hex: '#0891b2', header: 'bg-cyan-600',    badge: 'bg-cyan-100 text-cyan-700',      card: 'border-l-cyan-400',    dot: 'bg-cyan-500',    ring: 'ring-cyan-400' },
     { id: 'orange',  hex: '#ea580c', header: 'bg-orange-500',  badge: 'bg-orange-100 text-orange-700',  card: 'border-l-orange-400',  dot: 'bg-orange-500',  ring: 'ring-orange-400' },
-    { id: 'white',   hex: '#ffffff', header: 'bg-white border-b border-slate-200', badge: 'bg-slate-100 text-slate-700', card: 'border-l-slate-200', dot: 'bg-slate-200', ring: 'ring-slate-200' },
+    { id: 'white',   hex: '#ffffff', header: 'bg-white border-2 border-slate-200', badge: 'bg-slate-100 text-slate-700', card: 'border-l-slate-200', dot: 'bg-slate-200', ring: 'ring-slate-200' },
     { id: 'teal',    hex: '#0d9488', header: 'bg-teal-600',    badge: 'bg-teal-100 text-teal-700',      card: 'border-l-teal-400',    dot: 'bg-teal-500',    ring: 'ring-teal-400' },
 ];
 
