@@ -163,7 +163,17 @@ const Seguimiento = () => {
     const [busquedaProspecto, setBusquedaProspecto] = useState('');
     const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine'); // mine | shared | all
     const [ordenFiltro, setOrdenFiltro] = useState('todos'); // 'todos', 'en_proceso', 'mayor_valor'
-    const [vistaKanban, setVistaKanban] = useState(false);
+    const [vistaKanban, setVistaKanban] = useState(() => {
+        try {
+            const saved = localStorage.getItem('crm_vistaKanban_prospectos');
+            if (saved !== null) return JSON.parse(saved);
+        } catch (e) {}
+        return false;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('crm_vistaKanban_prospectos', JSON.stringify(vistaKanban));
+    }, [vistaKanban]);
     const [modalCrearAbierto, setModalCrearAbierto] = useState(false);
     const [loadingCrear, setLoadingCrear] = useState(false);
     const [mostrarAvanzado, setMostrarAvanzado] = useState(false);
@@ -679,11 +689,19 @@ const Seguimiento = () => {
 
 
     const handleEtapaChange = async (prospectoId, nuevaEtapa) => {
+        // Optimistic Update para evitar recarga de vista
+        const oldProspectos = [...prospectos];
+        setProspectos(prev => prev.map(p =>
+            String(p.id || p._id) === String(prospectoId)
+                ? { ...p, etapaEmbudo: nuevaEtapa }
+                : p
+        ));
+
         try {
             await axios.put(`${API_URL}/api/${rolePath}/prospectos/${prospectoId}/editar`, { etapaEmbudo: nuevaEtapa }, { headers: getAuthHeaders() });
             invalidarCacheLocal();
-            cargarDatos(false);
         } catch (error) {
+            setProspectos(oldProspectos); // Rollback
             toast.error(error.response?.data?.msg || 'Error al actualizar la etapa');
         }
     };
