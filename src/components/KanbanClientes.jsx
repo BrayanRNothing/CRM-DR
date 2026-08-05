@@ -272,16 +272,15 @@ const ColumnHeader = ({ column, count, totalValue, onUpdate, onDelete, canDelete
     const textColor = themeIsDark ? 'text-slate-200' : 'text-slate-800';
 
     return (
-        <div className="p-2.5 pb-0">
-            <div className={`rounded-xl overflow-visible ${c.header}`}>
+        <div className={`rounded-xl overflow-visible shadow-sm ${c.header}`}>
                 <div className="flex items-center gap-1.5 px-3 py-2.5">
                     {/* Drag handle for column */}
                     <div 
                         onMouseEnter={() => setDragEnabled?.(true)}
                         onMouseLeave={() => setDragEnabled?.(false)}
-                        className="cursor-grab active:cursor-grabbing p-1 -ml-1 rounded opacity-60 hover:opacity-100 hover:bg-white/10 transition-colors"
+                        className={`cursor-grab active:cursor-grabbing p-1 -ml-1 rounded opacity-60 hover:opacity-100 transition-colors ${isWhite ? 'hover:bg-slate-100' : 'hover:bg-white/20'}`}
                     >
-                        <GripVertical className="w-3.5 h-3.5 text-white shrink-0" />
+                        <GripVertical className={`w-3.5 h-3.5 shrink-0 ${isWhite ? 'text-slate-400' : 'text-white'}`} />
                     </div>
 
                     {/* Label editable */}
@@ -397,7 +396,6 @@ const ColumnHeader = ({ column, count, totalValue, onUpdate, onDelete, canDelete
                     </div>
                 )}
             </div>
-        </div>
     );
 };
 
@@ -461,10 +459,8 @@ const KanbanColumn = ({
             onDrop={handleDrop}
             onDragLeave={handleDragLeave}
             style={{ minWidth: colWidth, maxWidth: colWidth, flexShrink: 0 }}
-            className={`flex flex-col rounded-2xl transition-all duration-200 overflow-hidden h-full
-                ${theme.colBg}
-                ${dragOver ? 'ring-2 ring-blue-400 ring-offset-1 scale-[1.01]' : ''}
-                ${wipOver ? 'ring-2 ring-red-400/60' : ''}`}
+            className={`flex flex-col gap-3 transition-all duration-200 h-full
+                ${dragOver ? 'scale-[1.01]' : ''}`}
         >
             {/* Header editable */}
             <ColumnHeader
@@ -480,12 +476,9 @@ const KanbanColumn = ({
                 setDragEnabled={setDragEnabled}
             />
 
-            {/* Separador visual */}
-            <div className={`h-[1px] mx-2.5 mt-2 shrink-0 ${themeIsDark ? 'bg-slate-600/50' : 'bg-slate-200'}`} />
-
             {/* Cards */}
             <div
-                className="flex flex-col gap-2 p-2.5 overflow-y-auto flex-1 min-h-0 scrollbar-hide"
+                className={`flex flex-col gap-2 p-2.5 overflow-y-auto flex-1 min-h-0 scrollbar-hide rounded-xl ${theme.colBg} ${dragOver ? 'ring-2 ring-blue-400 ring-offset-1' : ''} ${wipOver ? 'ring-2 ring-red-400/60' : ''}`}
                 onDragEnter={handleDragEnter}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
