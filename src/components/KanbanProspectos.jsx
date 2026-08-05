@@ -481,6 +481,9 @@ const KanbanColumn = ({
                 setDragEnabled={setDragEnabled}
             />
 
+            {/* Separador visual */}
+            <div className={`h-[1px] mx-2.5 mt-2 shrink-0 ${themeIsDark ? 'bg-slate-600/50' : 'bg-slate-200'}`} />
+
             {/* Cards */}
             <div
                 className="flex flex-col gap-2 p-2.5 overflow-y-auto flex-1 min-h-0 scrollbar-hide"
