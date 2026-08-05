@@ -1049,7 +1049,7 @@ const Clientes = () => {
         <>
             <div className={`md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 flex flex-col w-full ${vistaKanban ? 'flex-1 h-full min-h-0 overflow-hidden pb-4 md:pb-4' : 'min-h-screen pb-8 md:pb-6'}`}>
                 <div className={`max-w-[1600px] w-full mx-auto flex flex-col ${vistaKanban ? 'h-full flex-1' : ''}`}>
-                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6 shrink-0">
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-3 shrink-0">
                         <div className="shrink-0">
                             <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
                                 {esMenuSeguimiento ? 'Seguimiento de Clientes' : 'Clientes'}

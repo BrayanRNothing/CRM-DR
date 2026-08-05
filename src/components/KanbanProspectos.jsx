@@ -89,17 +89,17 @@ const DEFAULT_PREFS = {
     },
 };
 
-const STORAGE_COLS_KEY  = 'kanban_clientes_cols_v3';
-const STORAGE_PREFS_KEY = 'kanban_clientes_prefs_v3';
+const STORAGE_COLS_KEY  = 'kanban_prospectos_cols_v1';
+const STORAGE_PREFS_KEY = 'kanban_prospectos_prefs_v1';
 
 const getColor   = (id) => COLUMN_COLORS.find(c => c.id === id) || COLUMN_COLORS[0];
 const getTheme   = (id) => BOARD_THEMES.find(t => t.id === id) || BOARD_THEMES[0];
 const getWidth   = (id) => COL_WIDTHS.find(w => w.id === id) || COL_WIDTHS[1];
-const getClientCol = (c) => c.etapaCliente || 'cliente_nuevo';
+const getClientCol = (c) => c.etapaEmbudo || 'prospecto_nuevo';
 
 const formatMoney = (c) => {
     const v = Number(c.totalFacturado || c.customMetricValue) || 0;
-    if (!v) return '$0';
+    if (!v) return '$-';
     return `$${v.toLocaleString('es-MX')}`;
 };
 
@@ -121,9 +121,6 @@ const sortClients = (list, sortBy) => {
 
 const ClienteCard = ({ cliente, cardSize, fields, colorId, isDragging, onVerDetalles, onEditar, onEliminar, onCompartir, isOwner }) => {
     const isDark = false; // could be passed from theme
-    const DOT_COLORS = ['bg-rose-500', 'bg-emerald-500', 'bg-amber-400', 'bg-slate-400'];
-    const charCode = String(cliente._id || cliente.id || 'a').charCodeAt(0) + (cliente.nombres?.length || 0);
-    const dotColor = DOT_COLORS[charCode % DOT_COLORS.length];
 
     const nombre = `${cliente.nombres || ''} ${cliente.apellidoPaterno || ''}`.trim() || 'Sin nombre';
     const money  = formatMoney(cliente);
@@ -133,10 +130,14 @@ const ClienteCard = ({ cliente, cardSize, fields, colorId, isDragging, onVerDeta
     const isDetailed = cardSize === 'detailed';
 
     const ETAPA_LABELS = {
-        cliente_nuevo: 'Cliente nuevo', en_seguimiento: 'En seguimiento',
+        prospecto_nuevo: 'Prospecto nuevo', en_seguimiento: 'En seguimiento',
         oportunidad_activa: 'Oportunidad activa', reunion_con_cliente: 'Reunión con cliente',
         inactivo: 'Inactivo',
     };
+
+    const DOT_COLORS = ['bg-rose-500', 'bg-emerald-500', 'bg-amber-400', 'bg-slate-400'];
+    const charCode = String(cliente._id || cliente.id || 'a').charCodeAt(0) + (cliente.nombres?.length || 0);
+    const dotColor = DOT_COLORS[charCode % DOT_COLORS.length];
 
     return (
         <div
@@ -177,7 +178,7 @@ const ClienteCard = ({ cliente, cardSize, fields, colorId, isDragging, onVerDeta
 
             {/* Campos de contacto */}
             {!isCompact && (
-                <div className={`${isDetailed ? 'mt-3 space-y-1.5' : 'mt-2 space-y-1'}`}>
+                <div className={`${isDetailed ? 'mt-3 space-y-1.5' : 'mt-2 space-y-1'} pr-4`}>
                     {fields.phone && cliente.telefono && (
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-600">
                             <Phone className="w-3 h-3 text-slate-400 shrink-0" />
@@ -279,9 +280,9 @@ const ColumnHeader = ({ column, count, totalValue, onUpdate, onDelete, canDelete
                     <div 
                         onMouseEnter={() => setDragEnabled?.(true)}
                         onMouseLeave={() => setDragEnabled?.(false)}
-                        className="cursor-grab active:cursor-grabbing p-1 -ml-1 rounded opacity-60 hover:opacity-100 hover:bg-white/10 transition-colors"
+                        className={`cursor-grab active:cursor-grabbing p-1 -ml-1 rounded opacity-60 hover:opacity-100 transition-colors ${isWhite ? 'hover:bg-slate-100' : 'hover:bg-white/20'}`}
                     >
-                        <GripVertical className="w-3.5 h-3.5 text-white shrink-0" />
+                        <GripVertical className={`w-3.5 h-3.5 shrink-0 ${isWhite ? 'text-slate-400' : 'text-white'}`} />
                     </div>
 
                     {/* Label editable */}
@@ -406,7 +407,7 @@ const ColumnHeader = ({ column, count, totalValue, onUpdate, onDelete, canDelete
 ═══════════════════════════════════════════════════════════════ */
 
 const KanbanColumn = ({
-    column, clients, prefs, themeIsDark,
+    column, prospectos, prefs, themeIsDark,
     onVerDetalles, onEditar, onEliminar, onCompartir, isOwnerRecord,
     onUpdate, onDelete, canDelete, onDrop, dragging, setDragging,
     onColDragStart, onColDragOver, onColDrop, onSortChange,
@@ -417,7 +418,7 @@ const KanbanColumn = ({
     const colRef = useRef(null);
     const c = getColor(column.colorId);
     const theme = getTheme(prefs.themeId);
-    const sorted = sortClients(clients, column.sortBy || prefs.sortBy);
+    const sorted = sortClients(prospectos, column.sortBy || prefs.sortBy);
 
     // Column drag (reorder)
     const handleColDragStart = (e) => {
@@ -441,15 +442,15 @@ const KanbanColumn = ({
     const handleDrop = (e) => {
         e.preventDefault(); e.stopPropagation();
         setDragOver(false);
-        const clienteId = e.dataTransfer.getData('clienteId');
+        const prospectoId = e.dataTransfer.getData('prospectoId');
         const colId = e.dataTransfer.getData('colId');
-        if (clienteId) onDrop(clienteId, column.id);
+        if (prospectoId) onDrop(prospectoId, column.id);
         if (colId && colId !== column.id) onColDrop(colId, column.id);
     };
 
-    const wipOver = column.wipLimit > 0 && clients.length > column.wipLimit;
+    const wipOver = column.wipLimit > 0 && prospectos.length > column.wipLimit;
     const textMuted = themeIsDark ? 'text-slate-400' : 'text-slate-400';
-    const columnTotalValue = clients.reduce((acc, c) => acc + (Number(c.totalFacturado || c.customMetricValue) || 0), 0);
+    const columnTotalValue = prospectos.reduce((acc, c) => acc + (Number(c.totalFacturado || c.customMetricValue) || 0), 0);
 
     return (
         <div
@@ -469,7 +470,7 @@ const KanbanColumn = ({
             {/* Header editable */}
             <ColumnHeader
                 column={column}
-                count={clients.length}
+                count={prospectos.length}
                 totalValue={columnTotalValue}
                 onUpdate={onUpdate}
                 onDelete={onDelete}
@@ -513,7 +514,7 @@ const KanbanColumn = ({
                                     onDragStart={e => { 
                                         e.stopPropagation();
                                         e.dataTransfer.effectAllowed = 'move';
-                                        e.dataTransfer.setData('clienteId', id); 
+                                        e.dataTransfer.setData('prospectoId', id); 
                                         setDragging(id); 
                                     }}
                                     onDragEnd={() => setDragging(null)}
@@ -636,11 +637,11 @@ const SettingsPanel = ({ prefs, onPrefsChange, columns, onColumnsReset, onClose 
    COMPONENTE PRINCIPAL
 ═══════════════════════════════════════════════════════════════ */
 
-const KanbanClientes = ({
-    clientes,
+const KanbanProspectos = ({
+    prospectos = [],
     onVerDetalles,
     abrirModalEditar,
-    setClienteAEliminar,
+    setProspectoAEliminar,
     handleToggleCompartido,
     isOwnerRecord,
     onEtapaChange,
@@ -656,7 +657,7 @@ const KanbanClientes = ({
         return DEFAULT_PREFS;
     });
 
-    const [dragging, setDragging] = useState(null);       // clienteId being dragged
+    const [dragging, setDragging] = useState(null);       // prospectoId being dragged
     const [draggingCol, setDraggingCol] = useState(null); // colId being dragged
     const [showSettings, setShowSettings] = useState(false);
     const [isAddingColumn, setIsAddingColumn] = useState(false);
@@ -664,7 +665,13 @@ const KanbanClientes = ({
     const scrollContainerRef = useRef(null);
 
     useEffect(() => {
-        setPortalNode(document.getElementById('kanban-toolbar-portal-target'));
+        // Retry until the portal div renders (handles AnimatePresence delay in parent)
+        const tryFind = (attempts = 0) => {
+            const node = document.getElementById('kanban-prospectos-toolbar');
+            if (node) { setPortalNode(node); return; }
+            if (attempts < 15) setTimeout(() => tryFind(attempts + 1), 80);
+        };
+        tryFind();
     }, []);
 
     /* ── Scroll Horizontal con Rueda ── */
@@ -738,17 +745,17 @@ const KanbanClientes = ({
     const colWidthPx = getWidth(prefs.colWidth).px;
     const themeIsDark = ['dark','indigo','ocean','forest','sunset'].includes(prefs.themeId);
 
-    /* ── Agrupamiento de clientes ── */
+    /* ── Agrupamiento de prospectos ── */
     const grouped = useMemo(() => {
         const map = {};
         columns.forEach(c => { map[c.id] = []; });
-        clientes.forEach(cl => {
+        prospectos.forEach(cl => {
             const col = getClientCol(cl);
             if (map[col] !== undefined) map[col].push(cl);
             else if (map[columns[0]?.id]) map[columns[0].id].push(cl);
         });
         return map;
-    }, [clientes, columns]);
+    }, [prospectos, columns]);
 
     /* ── Column CRUD ── */
     const updateColumn = useCallback((updated) =>
@@ -791,9 +798,9 @@ const KanbanClientes = ({
     }, []);
 
     /* ── Drag: cards ── */
-    const handleCardDrop = async (clienteId, colId) => {
+    const handleCardDrop = async (prospectoId, colId) => {
         setDragging(null);
-        if (onEtapaChange) await onEtapaChange(clienteId, colId);
+        if (onEtapaChange) await onEtapaChange(prospectoId, colId);
     };
 
     /* ── Drag: columns reorder ── */
@@ -818,7 +825,7 @@ const KanbanClientes = ({
         ? columns.filter(c => (grouped[c.id]?.length ?? 0) > 0)
         : columns;
 
-    const totalClientes = clientes.length;
+    const totalProspectos = prospectos.length;
 
     const toolbarContent = (
         <>
@@ -891,12 +898,12 @@ const KanbanClientes = ({
                             <KanbanColumn
                                 key={col.id}
                                 column={col}
-                                clients={grouped[col.id] || []}
+                                prospectos={grouped[col.id] || []}
                                 prefs={prefs}
                                 themeIsDark={themeIsDark}
                                 onVerDetalles={onVerDetalles}
                                 onEditar={abrirModalEditar}
-                                onEliminar={setClienteAEliminar}
+                                onEliminar={setProspectoAEliminar}
                                 onCompartir={handleToggleCompartido}
                                 isOwnerRecord={isOwnerRecord}
                                 onUpdate={updateColumn}
@@ -919,4 +926,4 @@ const KanbanClientes = ({
     );
 };
 
-export default KanbanClientes;
+export default KanbanProspectos;
