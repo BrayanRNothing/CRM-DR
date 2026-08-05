@@ -284,8 +284,8 @@ router.get('/:id', auth, esSuperUser, async (req, res) => {
 router.post('/', auth, esSuperUser, async (req, res) => {
     try {
         const { nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, vendedorAsignado, etapaEmbudo, fuente } = req.body;
-        if (!nombres || !telefono || !correo) {
-            return res.status(400).json({ mensaje: 'Complete los campos requeridos' });
+        if (!nombres) {
+            return res.status(400).json({ mensaje: 'El nombre es obligatorio' });
         }
         const rol = String(req.usuario.rol || '').toLowerCase();
         const usuarioId = parseInt(req.usuario.id);
@@ -309,8 +309,8 @@ router.post('/', auth, esSuperUser, async (req, res) => {
             nombres,
             apellidoPaterno || '',
             apellidoMaterno || '',
-            telefono,
-            correo,
+            telefono || '',
+            correo || '',
             empresa || '',
             estadoCliente,
             etapa,

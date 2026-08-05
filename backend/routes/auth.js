@@ -208,19 +208,19 @@ router.post('/demo-login', async (req, res) => {
         // Asignar equipo al usuario
         await db.prepare('UPDATE usuarios SET "equipo_id" = ? WHERE id = ?').run(equipoId, userId);
 
-        // Crear 5 prospectos/clientes de ejemplo
+        // Crear 5 clientes de ejemplo
         const prospects = [
-            { n: 'Carlos', aP: 'Gómez', aM: 'Pérez', t: '5551112222', c: 'carlos@ejemplo.com', emp: 'Tech Solutions', est: 'proceso', eta: 'prospecto_nuevo' },
-            { n: 'María', aP: 'López', aM: 'Díaz', t: '5553334444', c: 'maria@ejemplo.com', emp: 'Innovación SA', est: 'proceso', eta: 'en_contacto' },
-            { n: 'Ana', aP: 'Martínez', aM: 'Ruiz', t: '5555556666', c: 'ana@ejemplo.com', emp: 'Consultoría Plus', est: 'proceso', eta: 'reunion_agendada' },
-            { n: 'Roberto', aP: 'Sánchez', aM: '', t: '5557778888', c: 'roberto@ejemplo.com', emp: 'Servicios XYZ', est: 'ganado', eta: 'venta_ganada' },
-            { n: 'Laura', aP: 'Torres', aM: 'Vega', t: '5559990000', c: 'laura@ejemplo.com', emp: 'Comercializadora Global', est: 'proceso', eta: 'en_negociacion' }
+            { n: 'Carlos', aP: 'Gómez', aM: 'Pérez', t: '5551112222', c: 'carlos@ejemplo.com', emp: 'Tech Solutions', est: 'proceso', eta: 'cliente_nuevo' },
+            { n: 'María', aP: 'López', aM: 'Díaz', t: '5553334444', c: 'maria@ejemplo.com', emp: 'Innovación SA', est: 'proceso', eta: 'en_seguimiento' },
+            { n: 'Ana', aP: 'Martínez', aM: 'Ruiz', t: '5555556666', c: 'ana@ejemplo.com', emp: 'Consultoría Plus', est: 'proceso', eta: 'reunion_con_cliente' },
+            { n: 'Roberto', aP: 'Sánchez', aM: '', t: '5557778888', c: 'roberto@ejemplo.com', emp: 'Servicios XYZ', est: 'ganado', eta: 'oportunidad_activa' },
+            { n: 'Laura', aP: 'Torres', aM: 'Vega', t: '5559990000', c: 'laura@ejemplo.com', emp: 'Comercializadora Global', est: 'proceso', eta: 'oportunidad_activa' }
         ];
 
         const insertClient = await db.prepare(`
             INSERT INTO clientes 
-            (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaEmbudo, vendedorAsignado, prospectorAsignado, "equipo_id", "propietarioId") 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaCliente, tipo, vendedorAsignado, prospectorAsignado, "equipo_id", "propietarioId") 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'cliente', ?, ?, ?, ?)
         `);
 
         let primerClienteId = null;

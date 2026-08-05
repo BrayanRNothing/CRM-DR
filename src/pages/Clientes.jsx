@@ -1,6 +1,8 @@
-import React, { useMemo, useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar, Filter, Star, Mail, MessageSquare, Clock, Share2, Edit2, Bell } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar, Filter, Star, Mail, MessageSquare, Clock, Share2, Edit2, Bell, LayoutList, Kanban, UserPlus, Building2, Globe, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
+import KanbanClientes from '../components/KanbanClientes';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { getToken } from '../utils/authUtils';
@@ -59,14 +61,21 @@ const Clientes = () => {
     const [importando, setImportando] = useState(false);
     const [ordenFiltro, setOrdenFiltro] = useState('todos');
     const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine'); // mine | shared | all
+    const [vistaKanban, setVistaKanban] = useState(false);
     const fileInputRef = useRef(null);
     const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
     const [creandoCliente, setCreandoCliente] = useState(false);
+    const [mostrarAvanzado, setMostrarAvanzado] = useState(false);
     const [formCliente, setFormCliente] = useState({
-        nombreCompleto: '',
-        telefono: '',
+        nombres: '',
+        apellidoPaterno: '',
+        apellidoMaterno: '',
+        telefonos: [''],
         correo: '',
         empresa: '',
+        sitioWeb: '',
+        ubicacion: '',
+        notas: '',
         fuente: ''
     });
 
@@ -83,6 +92,22 @@ const Clientes = () => {
     const [loadingEditar, setLoadingEditar] = useState(false);
     const [scrollPosition, setScrollPosition] = useState(0);
     const [lastViewedId, setLastViewedId] = useState(null);
+
+    // Evitar scroll de fondo al abrir modales
+    useEffect(() => {
+        const algunModalAbierto = mostrarModalCrear || modalEditarAbierto || !!prospectoSeleccionado;
+        const container = document.getElementById('main-scroll-container');
+        if (container) {
+            if (algunModalAbierto) {
+                container.style.setProperty('overflow', 'hidden', 'important');
+            } else {
+                container.style.removeProperty('overflow');
+            }
+        }
+        return () => {
+            if (container) container.style.removeProperty('overflow');
+        };
+    }, [mostrarModalCrear, modalEditarAbierto, prospectoSeleccionado]);
 
     const getAuthHeaders = () => ({
         'x-auth-token': getToken() || ''
@@ -300,7 +325,7 @@ const Clientes = () => {
         <>
             {/* Modal Editar Cliente - Rediseño Moderno */}
             {modalEditarAbierto && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 transition-all duration-300 backdrop-blur-sm">
+                <div className="fixed inset-0 bg-slate-900/20 flex items-center justify-center z-50 p-4 transition-all duration-300 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col max-h-[82vh] overflow-hidden animate-in fade-in zoom-in duration-300">
                         {/* Header */}
                         <div className="px-6 py-4 bg-linear-to-r from-(--theme-50) to-white border-b border-slate-100 flex justify-between items-center">
@@ -475,94 +500,189 @@ const Clientes = () => {
                 </div>
             )}
 
-            {/* Modal crear cliente */}
+            {/* Modal Crear Cliente - Diseño Compacto y Elegante */}
             {mostrarModalCrear && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl p-6 shadow-xl max-w-xl w-full mx-4 border border-slate-200">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900">Crear Cliente</h2>
-                            <button
-                                onClick={() => setMostrarModalCrear(false)}
-                                className="text-slate-400 hover:text-slate-600"
+                <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full flex flex-col max-h-[85vh] overflow-hidden animate-in fade-in zoom-in duration-300">
+                        
+                        {/* Header Compacto */}
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+                            <div>
+                                <h2 className="text-xl font-black text-gray-900 tracking-tight">Nuevo Cliente</h2>
+                                <p className="text-xs text-slate-500 font-medium mt-0.5">Registra la información básica</p>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    setMostrarModalCrear(false);
+                                    setMostrarAvanzado(false);
+                                    setFormCliente({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '', fuente: '' });
+                                }} 
+                                className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full transition-all text-slate-400 hover:text-slate-600"
                             >
-                                <X className="w-6 h-6" />
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre completo *</label>
-                                <input
-                                    type="text"
-                                    value={formCliente.nombreCompleto}
-                                    onChange={(e) => setFormCliente({ ...formCliente, nombreCompleto: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                                    placeholder="Juan Pérez López"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Teléfono *</label>
-                                <input
-                                    type="tel"
-                                    value={formCliente.telefono}
-                                    onChange={(e) => setFormCliente({ ...formCliente, telefono: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                                    placeholder="555-123-4567"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Correo *</label>
-                                <input
-                                    type="email"
-                                    value={formCliente.correo}
-                                    onChange={(e) => setFormCliente({ ...formCliente, correo: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                                    placeholder="juan@empresa.com"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Empresa</label>
-                                <input
-                                    type="text"
-                                    value={formCliente.empresa}
-                                    onChange={(e) => setFormCliente({ ...formCliente, empresa: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500)"
-                                    placeholder="Mi Empresa S.A."
-                                />
-                            </div>
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Origen / Fuente</label>
-                                <SourcePicker
-                                    selectedSource={formCliente.fuente}
-                                    onChange={(val) => setFormCliente({ ...formCliente, fuente: val })}
-                                />
+                        {/* Contenido del Formulario */}
+                        <div className="p-6 overflow-y-auto scrollbar-hide">
+                            <div className="space-y-5">
+                                {/* Información Básica */}
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-[11px] font-black text-slate-700 mb-1.5 uppercase tracking-wider">Nombre del Cliente *</label>
+                                        <div className="relative group">
+                                            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
+                                            <input
+                                                type="text"
+                                                value={formCliente.nombres}
+                                                onChange={(e) => setFormCliente((f) => ({ ...f, nombres: e.target.value }))}
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-10 pr-3 py-2.5 text-sm focus:ring-4 focus:ring-(--theme-500)/10 focus:border-(--theme-500) focus:bg-white transition-all outline-none font-semibold text-gray-900"
+                                                placeholder="Ej: Juan Pérez"
+                                                autoFocus
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div>
+                                            <label className="block text-[11px] font-black text-slate-700 mb-1.5 uppercase tracking-wider">Teléfono</label>
+                                            <div className="relative group">
+                                                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
+                                                <input
+                                                    type="tel"
+                                                    value={formCliente.telefonos[0] || ''}
+                                                    onChange={(e) => setFormCliente((f) => { const t = [...f.telefonos]; t[0] = e.target.value; return { ...f, telefonos: t }; })}
+                                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-10 pr-3 py-2.5 text-sm focus:ring-4 focus:ring-(--theme-500)/10 focus:border-(--theme-500) focus:bg-white transition-all outline-none font-medium text-gray-900"
+                                                    placeholder="55 1234 5678"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[11px] font-black text-slate-700 mb-1.5 uppercase tracking-wider">Correo</label>
+                                            <div className="relative group">
+                                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
+                                                <input
+                                                    type="email"
+                                                    value={formCliente.correo}
+                                                    onChange={(e) => setFormCliente((f) => ({ ...f, correo: e.target.value }))}
+                                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-10 pr-3 py-2.5 text-sm focus:ring-4 focus:ring-(--theme-500)/10 focus:border-(--theme-500) focus:bg-white transition-all outline-none font-medium text-gray-900"
+                                                    placeholder="juan@ejemplo.com"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Separador y Botón Toggle Avanzado */}
+                                <div className="relative py-2">
+                                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                                        <div className="w-full border-t border-slate-200"></div>
+                                    </div>
+                                    <div className="relative flex justify-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => setMostrarAvanzado(!mostrarAvanzado)}
+                                            className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-500 hover:text-(--theme-600) transition-colors bg-white px-3"
+                                        >
+                                            {mostrarAvanzado ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                            {mostrarAvanzado ? 'Ocultar extras' : 'Mostrar extras'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Opciones Avanzadas */}
+                                <AnimatePresence>
+                                    {mostrarAvanzado && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="space-y-4 pb-2">
+                                                
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Apellido Paterno</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formCliente.apellidoPaterno}
+                                                            onChange={(e) => setFormCliente((f) => ({ ...f, apellidoPaterno: e.target.value }))}
+                                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-none"
+                                                            placeholder="Opcional"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Apellido Materno</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formCliente.apellidoMaterno}
+                                                            onChange={(e) => setFormCliente((f) => ({ ...f, apellidoMaterno: e.target.value }))}
+                                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-none"
+                                                            placeholder="Opcional"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Empresa</label>
+                                                        <div className="relative group">
+                                                            <Building2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
+                                                            <input
+                                                                type="text"
+                                                                value={formCliente.empresa}
+                                                                onChange={(e) => setFormCliente((f) => ({ ...f, empresa: e.target.value }))}
+                                                                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-xs focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-none"
+                                                                placeholder="Empresa S.A."
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Notas iniciales</label>
+                                                    <textarea
+                                                        rows={2}
+                                                        value={formCliente.notas}
+                                                        onChange={(e) => setFormCliente((f) => ({ ...f, notas: e.target.value }))}
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-none resize-none"
+                                                        placeholder="Agrega algún detalle rápido..."
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Origen</label>
+                                                    <SourcePicker 
+                                                        selectedSource={formCliente.fuente} 
+                                                        onChange={(val) => setFormCliente(f => ({ ...f, fuente: val }))} 
+                                                    />
+                                                </div>
+
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </div>
 
-                        <div className="flex gap-3 justify-end">
+                        {/* Footer Compacto */}
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex gap-3">
                             <button
-                                onClick={() => setMostrarModalCrear(false)}
-                                disabled={creandoCliente}
-                                className="px-6 py-2 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-colors"
+                                onClick={() => {
+                                    setMostrarModalCrear(false);
+                                    setMostrarAvanzado(false);
+                                    setFormCliente({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '', fuente: '' });
+                                }}
+                                className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-slate-100 hover:text-slate-800 transition-all shadow-sm"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleCrearCliente}
                                 disabled={creandoCliente}
-                                className="px-6 py-2 rounded-lg bg-(--theme-600) text-white font-semibold hover:bg-(--theme-700) transition-colors disabled:opacity-50 flex items-center gap-2"
+                                className="flex-2 px-4 py-2.5 bg-linear-to-r from-(--theme-600) to-(--theme-500) text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-(--theme-500)/30 flex items-center justify-center gap-2"
                             >
-                                {creandoCliente ? (
-                                    <>
-                                        <RefreshCw className="w-4 h-4 animate-spin" />
-                                        Creando...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Plus className="w-4 h-4" />
-                                        Crear Cliente
-                                    </>
-                                )}
+                                {creandoCliente ? 'Creando...' : 'Crear Cliente'}
                             </button>
                         </div>
                     </div>
@@ -810,48 +930,56 @@ const Clientes = () => {
     };
 
     const handleCrearCliente = async () => {
-        if (!formCliente.nombreCompleto || !formCliente.telefono || !formCliente.correo) {
-            alert('Complete los campos requeridos: nombre completo, teléfono y correo.');
+        const telefonosLimpios = formCliente.telefonos.filter(t => t.trim());
+        const telPrincipal = telefonosLimpios[0] || '';
+
+        if (!formCliente.nombres) {
+            toast.error('El nombre es obligatorio.');
             return;
         }
 
-        const partesNombre = formCliente.nombreCompleto.trim().split(/\s+/).filter(Boolean);
-        const nombres = partesNombre[0] || '';
-        const restoApellidos = partesNombre.slice(1);
-        const apellidoPaterno = restoApellidos[0] || '';
-        const apellidoMaterno = restoApellidos.slice(1).join(' ');
-
         setCreandoCliente(true);
         try {
+            const payload = {
+                nombres: formCliente.nombres,
+                apellidoPaterno: formCliente.apellidoPaterno,
+                apellidoMaterno: formCliente.apellidoMaterno,
+                telefono: telPrincipal,
+                telefono2: telefonosLimpios.slice(1).join(', ') || '',
+                correo: formCliente.correo,
+                empresa: formCliente.empresa,
+                sitioWeb: formCliente.sitioWeb,
+                ubicacion: formCliente.ubicacion,
+                notas: formCliente.notas,
+                estado: 'ganado',
+                etapaEmbudo: 'venta_ganada',
+                fuente: formCliente.fuente,
+                origen: formCliente.fuente
+            };
+
             await axios.post(
                 `${API_URL}/api/clientes`,
-                {
-                    nombres,
-                    apellidoPaterno,
-                    apellidoMaterno,
-                    telefono: formCliente.telefono,
-                    correo: formCliente.correo,
-                    empresa: formCliente.empresa,
-                    estado: 'ganado',
-                    etapaEmbudo: 'venta_ganada',
-                    fuente: formCliente.fuente,
-                    origen: formCliente.fuente
-                },
+                payload,
                 { headers: getAuthHeaders() }
             );
             await cargarClientes();
             setMostrarModalCrear(false);
             setFormCliente({
-                nombreCompleto: '',
-                telefono: '',
+                nombres: '',
+                apellidoPaterno: '',
+                apellidoMaterno: '',
+                telefonos: [''],
                 correo: '',
                 empresa: '',
+                sitioWeb: '',
+                ubicacion: '',
+                notas: '',
                 fuente: ''
             });
-            alert('Cliente creado exitosamente.');
+            toast.success('Cliente creado exitosamente.');
         } catch (error) {
             console.error('Error al crear cliente:', error);
-            alert(error.response?.data?.mensaje || 'No se pudo crear el cliente.');
+            toast.error(error.response?.data?.mensaje || 'No se pudo crear el cliente.');
         } finally {
             setCreandoCliente(false);
         }
@@ -919,10 +1047,10 @@ const Clientes = () => {
 
     return (
         <>
-            <div className="min-h-screen md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 pb-8 md:pb-6">
-                <div className="max-w-full mx-auto">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                        <div>
+            <div className={`md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 flex flex-col w-full ${vistaKanban ? 'flex-1 h-full min-h-0 overflow-hidden pb-4 md:pb-4' : 'min-h-screen pb-8 md:pb-6'}`}>
+                <div className={`max-w-[1600px] w-full mx-auto flex flex-col ${vistaKanban ? 'h-full flex-1' : ''}`}>
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6 shrink-0">
+                        <div className="shrink-0">
                             <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
                                 {esMenuSeguimiento ? 'Seguimiento de Clientes' : 'Clientes'}
                             </h1>
@@ -932,7 +1060,7 @@ const Clientes = () => {
                                     : 'Cartera de clientes ganados.'}
                             </p>
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto mt-2 sm:mt-0">
+                        <div className="flex items-center justify-start md:justify-end gap-2 flex-wrap w-full mt-2 xl:mt-0">
                             <input
                                 ref={fileInputRef}
                                 type="file"
@@ -940,22 +1068,127 @@ const Clientes = () => {
                                 className="hidden"
                                 onChange={handleImportarClientes}
                             />
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={importando}
-                                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
-                            >
-                                {importando ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />}
-                                {importando ? 'Importando...' : 'Importar CSV'}
-                            </button>
-                            <button
-                                onClick={exportarClientesCsv}
-                                disabled={loading || !clientesFiltrados.length}
-                                className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
-                            >
-                                <Upload className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                                Exportar CSV
-                            </button>
+
+                            {/* Search and Filters (Compact) */}
+                            {!vistaKanban && (
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    <div className="relative w-32 sm:w-48 h-9">
+                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar clientes..."
+                                            value={busqueda}
+                                            onChange={(e) => setBusqueda(e.target.value)}
+                                            className="w-full h-full pl-8 pr-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs transition-shadow"
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center bg-white border border-slate-200 rounded-lg h-9 px-1 shadow-sm shrink-0">
+                                        <Filter className="w-3.5 h-3.5 text-slate-400 ml-1.5" />
+                                        <select
+                                            value={filtroVisibilidad}
+                                            onChange={(e) => setFiltroVisibilidad(e.target.value)}
+                                            className="h-full bg-transparent border-0 text-[11px] font-semibold text-slate-600 focus:ring-0 cursor-pointer outline-none w-24"
+                                        >
+                                            <option value="mine">Mis clientes</option>
+                                            <option value="shared">Compartidos</option>
+                                            <option value="all">Todos visibles</option>
+                                        </select>
+                                        
+                                        <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
+                                        
+                                        <select
+                                            value={ordenFiltro}
+                                            onChange={(e) => setOrdenFiltro(e.target.value)}
+                                            className="h-full bg-transparent border-0 text-[11px] font-semibold text-slate-600 focus:ring-0 cursor-pointer outline-none w-[100px]"
+                                        >
+                                            <option value="todos">Ordenar por...</option>
+                                            <option value="mayor_valor">Mayor valor</option>
+                                            <option value="mayor_facturado">Facturado</option>
+                                            <option value="en_proceso">Oportunidad</option>
+                                        </select>
+
+                                        {(ordenFiltro !== 'todos' || busqueda || filtroVisibilidad !== 'mine') && (
+                                            <button
+                                                onClick={() => { setOrdenFiltro('todos'); setBusqueda(''); setFiltroVisibilidad('mine'); }}
+                                                className="ml-1 flex items-center justify-center w-6 h-6 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                                                title="Limpiar filtros"
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Toggle Vista Lista / Kanban */}
+                            <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200 shrink-0">
+                                <button
+                                    onClick={() => setVistaKanban(false)}
+                                    title="Vista lista"
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                                        !vistaKanban
+                                            ? 'bg-white text-slate-800 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                                >
+                                    <LayoutList className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Lista</span>
+                                </button>
+                                <button
+                                    onClick={() => setVistaKanban(true)}
+                                    title="Vista kanban"
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                                        vistaKanban
+                                            ? 'bg-white text-slate-800 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                                >
+                                    <Kanban className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Kanban</span>
+                                </button>
+                            </div>
+                            <AnimatePresence mode="wait">
+                                {!vistaKanban ? (
+                                    <motion.div
+                                        key="lista-btns"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.25 }}
+                                        className="flex items-center gap-2 flex-wrap sm:flex-nowrap"
+                                    >
+                                        <button
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={importando}
+                                            className="flex-1 sm:flex-none sm:w-[115px] justify-center flex items-center gap-1.5 px-2 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-[11px] md:text-xs font-medium shadow-sm shrink-0"
+                                        >
+                                            {importando ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                                            <span className="hidden sm:inline">{importando ? 'Importando' : 'Importar'}</span>
+                                            <span className="sm:hidden">Importar</span>
+                                        </button>
+                                        <button
+                                            onClick={exportarClientesCsv}
+                                            disabled={loading || !clientesFiltrados.length}
+                                            className="flex-1 sm:flex-none sm:w-[115px] justify-center flex items-center gap-1.5 px-2 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors text-[11px] md:text-xs font-medium shadow-sm shrink-0"
+                                        >
+                                            <Upload className="w-3.5 h-3.5" />
+                                            <span className="hidden sm:inline">Exportar</span>
+                                            <span className="sm:hidden">Exportar</span>
+                                        </button>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        key="kanban-btns"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.25 }}
+                                        id="kanban-toolbar-portal-target"
+                                        className="flex items-center gap-2 flex-wrap shrink-0 sm:min-w-[238px] min-h-[32px] md:min-h-[34px]"
+                                    />
+                                )}
+                            </AnimatePresence>
                             <button
                                 onClick={() => setMostrarModalCrear(true)}
                                 className="hidden sm:flex w-full sm:w-auto justify-center items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs md:text-sm font-medium"
@@ -963,79 +1196,6 @@ const Clientes = () => {
                                 <Plus className="w-4 h-4 md:w-5 md:h-5" />
                                 Crear Cliente
                             </button>
-                        </div>
-                    </div>
-
-                    <div className="bg-white border border-slate-200 rounded-2xl p-2.5 md:p-3 shadow-sm mb-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-3 md:gap-4 items-center">
-                            <div className="flex items-stretch gap-2 w-full">
-                                <div className="relative flex-1 h-9">
-                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="Buscar clientes..."
-                                        value={busqueda}
-                                        onChange={(e) => setBusqueda(e.target.value)}
-                                        className="w-full h-full pl-8 pr-14 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs"
-                                        title="Buscar por nombre, empresa, correo o teléfono"
-                                    />
-                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
-                                        <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
-                                            {clientesFiltrados.length}/{clientes.length}
-                                        </span>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setMostrarModalCrear(true)}
-                                    className="sm:hidden flex items-center justify-center gap-1.5 px-3 h-9 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs font-medium shrink-0"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    Crear
-                                </button>
-                            </div>
-                            <div className="hidden md:flex flex-wrap md:flex-wrap -mx-2 px-2 md:mx-0 md:px-0 gap-2 items-center w-full">
-                                <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden md:block" />
-                                <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
-                                    {[
-                                        { value: 'mine', label: 'Mis clientes' },
-                                        { value: 'shared', label: 'Compartidos' },
-                                        { value: 'all', label: 'Todos visibles' },
-                                    ].map(btn => (
-                                        <button
-                                            key={btn.value}
-                                            onClick={() => setFiltroVisibilidad(btn.value)}
-                                            className={`px-3 h-9 flex items-center justify-center rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtroVisibilidad === btn.value
-                                                ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
-                                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400 hover:text-slate-800'
-                                                }`}
-                                        >
-                                            {btn.label}
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="w-px h-6 bg-slate-200 mx-1 shrink-0 hidden md:block"></div>
-                                <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
-                                    <select
-                                        value={ordenFiltro}
-                                        onChange={(e) => setOrdenFiltro(e.target.value)}
-                                        className="px-3 h-9 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-(--theme-500) transition-all cursor-pointer"
-                                    >
-                                        <option value="todos">Todos los clientes</option>
-                                        <option value="mayor_valor">Valor del cliente</option>
-                                        <option value="mayor_facturado">Facturado</option>
-                                        <option value="en_proceso">En oportunidad de venta</option>
-                                    </select>
-                                </div>
-                                {(ordenFiltro !== 'todos' || busqueda || filtroVisibilidad !== 'mine') && (
-                                    <button
-                                        onClick={() => { setOrdenFiltro('todos'); setBusqueda(''); setFiltroVisibilidad('mine'); }}
-                                        className="shrink-0 flex items-center justify-center w-9 h-9 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
-                                        title="Limpiar filtros"
-                                    >
-                                        ✕
-                                    </button>
-                                )}
-                            </div>
                         </div>
                     </div>
 
@@ -1090,15 +1250,68 @@ const Clientes = () => {
                                 </table>
                             </div>
                         </div>
-                    ) : clientesFiltrados.length === 0 ? (
-                        <div className="bg-white md:rounded-2xl p-12 min-h-60 flex flex-col items-center justify-center text-center">
-                            <User className="w-12 h-12 text-slate-300 mb-4" />
-                            <p className="text-gray-500 font-medium">No se encontraron clientes.</p>
-                            <p className="text-gray-400 text-sm mt-1">Intenta con otra busqueda o ajusta los filtros.</p>
-                        </div>
                     ) : (
-                        <div className="space-y-6">
-                            {(() => {
+                        <AnimatePresence mode="wait">
+                            {vistaKanban ? (
+                                <motion.div
+                                    key="kanban"
+                                    initial={{ opacity: 0, y: 15 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -15 }}
+                                    transition={{ duration: 0.25, ease: "easeOut" }}
+                                    className="flex flex-col flex-1 h-full min-h-0 w-full"
+                                >
+                                    <KanbanClientes
+                            clientes={clientesFiltrados}
+                            onVerDetalles={handleVerDetalles}
+                            abrirModalEditar={abrirModalEditar}
+                            setClienteAEliminar={setClienteAEliminar}
+                            handleToggleCompartido={handleToggleCompartido}
+                            isOwnerRecord={isOwnerRecord}
+                            onEtapaChange={async (clienteId, nuevaEtapa) => {
+                                // Optimistic Update para eliminar el delay visual
+                                const oldClientes = [...clientes];
+                                setClientes(prev => prev.map(c =>
+                                    String(c.id || c._id) === String(clienteId)
+                                        ? { ...c, etapaCliente: nuevaEtapa }
+                                        : c
+                                ));
+                                try {
+                                    await axios.put(
+                                        `${API_URL}/api/vendedor/prospectos/${clienteId}`,
+                                        { etapaCliente: nuevaEtapa },
+                                        { headers: getAuthHeaders() }
+                                    );
+                                } catch (err) {
+                                    setClientes(oldClientes); // Rollback
+                                    toast.error('Error al cambiar etapa');
+                                }
+                            }}
+                        />
+                                </motion.div>
+                            ) : clientesFiltrados.length === 0 ? (
+                                <motion.div
+                                    key="lista_vacia"
+                                    initial={{ opacity: 0, y: 15 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -15 }}
+                                    transition={{ duration: 0.25, ease: "easeOut" }}
+                                    className="bg-white md:rounded-2xl p-12 min-h-60 flex flex-col items-center justify-center text-center"
+                                >
+                                    <User className="w-12 h-12 text-slate-300 mb-4" />
+                                    <p className="text-gray-500 font-medium">No se encontraron clientes.</p>
+                                    <p className="text-gray-400 text-sm mt-1">Intenta con otra busqueda o ajusta los filtros.</p>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="lista"
+                                    initial={{ opacity: 0, y: 15 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -15 }}
+                                    transition={{ duration: 0.25, ease: "easeOut" }}
+                                    className="space-y-6"
+                                >
+                                    {(() => {
                                 const misPrivados = [];
                                 const misCompartidos = [];
                                 const deOtros = {};
@@ -1295,7 +1508,9 @@ const Clientes = () => {
                                     </>
                                 );
                             })()}
-                        </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     )}
                 </div>
             </div>
