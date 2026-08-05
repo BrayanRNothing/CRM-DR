@@ -32,13 +32,16 @@ import {
     AlertCircle,
     FileText,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    LayoutList,
+    Kanban
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { getToken } from '../utils/authUtils';
 import HistorialInteracciones from '../components/HistorialInteracciones';
 import ProspectoDetalle from '../components/ProspectoDetalle';
+import KanbanProspectos from '../components/KanbanProspectos';
 import TimeWheelPicker from '../components/TimeWheelPicker';
 
 import API_URL from '../config/api';
@@ -160,6 +163,7 @@ const Seguimiento = () => {
     const [busquedaProspecto, setBusquedaProspecto] = useState('');
     const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine'); // mine | shared | all
     const [ordenFiltro, setOrdenFiltro] = useState('todos'); // 'todos', 'en_proceso', 'mayor_valor'
+    const [vistaKanban, setVistaKanban] = useState(false);
     const [modalCrearAbierto, setModalCrearAbierto] = useState(false);
     const [loadingCrear, setLoadingCrear] = useState(false);
     const [mostrarAvanzado, setMostrarAvanzado] = useState(false);
@@ -674,7 +678,16 @@ const Seguimiento = () => {
     };
 
 
-    
+    const handleEtapaChange = async (prospectoId, nuevaEtapa) => {
+        try {
+            await axios.put(`${API_URL}/api/${rolePath}/prospectos/${prospectoId}/editar`, { etapaEmbudo: nuevaEtapa }, { headers: getAuthHeaders() });
+            invalidarCacheLocal();
+            cargarDatos(false);
+        } catch (error) {
+            toast.error(error.response?.data?.msg || 'Error al actualizar la etapa');
+        }
+    };
+
     // Shared Modals Render Function
     const renderModales = () => (
         <>
@@ -1294,35 +1307,140 @@ const Seguimiento = () => {
     }
 // VISTA PRINCIPAL (LISTA DE PROSPECTOS)
     return (
-        <div className="min-h-screen md:p-6 bg-white md:bg-slate-50 -m-4 md:m-0 p-4 pb-8 md:pb-6">
-            <div className="max-w-full mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
+        <div className={`md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 flex flex-col w-full ${vistaKanban ? 'flex-1 h-full min-h-0 overflow-hidden pb-4 md:pb-4' : 'min-h-screen pb-8 md:pb-6'}`}>
+            <div className={`max-w-[1600px] w-full mx-auto flex flex-col ${vistaKanban ? 'h-full flex-1' : 'space-y-6'}`}>
+                {/* Header and Controls */}
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-3 shrink-0">
+                    <div className="shrink-0">
                         <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">Prospectos</h1>
                         <p className="text-xs md:text-sm text-gray-500 mt-0.5 leading-snug">
                             Cartera de prospectos
                         </p>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto mt-2 sm:mt-0">
-                        <button
-                            onClick={() => setIsImportModalAbierto(true)}
-                            disabled={importando}
-                            className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
-                            title="Importar prospectos desde CSV"
-                        >
-                            {importando ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />}
-                            {importando ? 'Importando...' : 'Importar CSV'}
-                        </button>
-                        <button
-                            onClick={handleExportCsv}
-                            disabled={loading || !prospectosFiltrados.length}
-                            className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors text-[11px] md:text-sm font-medium"
-                            title="Exportar lista actual a CSV"
-                        >
-                            <Upload className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                            Exportar CSV
-                        </button>
+                    <div className="flex items-center justify-start md:justify-end gap-2 flex-wrap w-full mt-2 xl:mt-0">
+                        
+                        {/* Search and Filters */}
+                        {!vistaKanban && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                <div className="relative w-32 sm:w-48 h-9">
+                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar prospecto..."
+                                        value={busquedaProspecto}
+                                        onChange={(e) => setBusquedaProspecto(e.target.value)}
+                                        className="w-full h-full pl-8 pr-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs transition-shadow"
+                                    />
+                                </div>
+
+                                <div className="flex items-center bg-white border border-slate-200 rounded-lg h-9 px-1 shadow-sm shrink-0">
+                                    <Filter className="w-3.5 h-3.5 text-slate-400 ml-1.5" />
+                                    <select
+                                        value={filtroVisibilidad}
+                                        onChange={(e) => setFiltroVisibilidad(e.target.value)}
+                                        className="h-full bg-transparent border-0 text-[11px] font-semibold text-slate-600 focus:ring-0 cursor-pointer outline-none w-24"
+                                    >
+                                        <option value="mine">Mis prospectos</option>
+                                        <option value="shared">Compartidos</option>
+                                        <option value="all">Todos visibles</option>
+                                    </select>
+                                    
+                                    <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
+                                    
+                                    <select
+                                        value={ordenFiltro}
+                                        onChange={(e) => setOrdenFiltro(e.target.value)}
+                                        className="h-full bg-transparent border-0 text-[11px] font-semibold text-slate-600 focus:ring-0 cursor-pointer outline-none w-[100px]"
+                                    >
+                                        <option value="todos">Ordenar por...</option>
+                                        <option value="mayor_valor_estimado">Valor estimado</option>
+                                        <option value="reciente">Reciente</option>
+                                        <option value="mayor_valor">Interés</option>
+                                    </select>
+
+                                    {(ordenFiltro !== 'todos' || busquedaProspecto || filtroVisibilidad !== 'mine') && (
+                                        <button
+                                            onClick={() => { setOrdenFiltro('todos'); setBusquedaProspecto(''); setFiltroVisibilidad('mine'); }}
+                                            className="ml-1 flex items-center justify-center w-6 h-6 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                                            title="Limpiar filtros"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Toggle Vista Lista / Kanban */}
+                        <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200 shrink-0">
+                            <button
+                                onClick={() => setVistaKanban(false)}
+                                title="Vista lista"
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                                    !vistaKanban
+                                        ? 'bg-white text-slate-800 shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                            >
+                                <LayoutList className="w-4 h-4" />
+                                <span className="hidden sm:inline">Lista</span>
+                            </button>
+                            <button
+                                onClick={() => setVistaKanban(true)}
+                                title="Vista kanban"
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                                    vistaKanban
+                                        ? 'bg-white text-slate-800 shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                            >
+                                <Kanban className="w-4 h-4" />
+                                <span className="hidden sm:inline">Kanban</span>
+                            </button>
+                        </div>
+
+                        {/* Botones de acción principal y Portal Kanban */}
+                        <AnimatePresence mode="wait">
+                            {!vistaKanban ? (
+                                <motion.div
+                                    key="lista-btns"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.25 }}
+                                    className="flex items-center gap-2 flex-wrap sm:flex-nowrap"
+                                >
+                                    <button
+                                        onClick={() => setIsImportModalAbierto(true)}
+                                        disabled={importando}
+                                        className="flex-1 sm:flex-none sm:w-[115px] justify-center flex items-center gap-1.5 px-2 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-[11px] md:text-xs font-medium shadow-sm shrink-0"
+                                    >
+                                        {importando ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                                        <span className="hidden sm:inline">{importando ? 'Importando' : 'Importar'}</span>
+                                        <span className="sm:hidden">Importar</span>
+                                    </button>
+                                    <button
+                                        onClick={handleExportCsv}
+                                        disabled={loading || !prospectosFiltrados.length}
+                                        className="flex-1 sm:flex-none sm:w-[115px] justify-center flex items-center gap-1.5 px-2 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors text-[11px] md:text-xs font-medium shadow-sm shrink-0"
+                                    >
+                                        <Upload className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">Exportar</span>
+                                        <span className="sm:hidden">Exportar</span>
+                                    </button>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="kanban-btns"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.25 }}
+                                    id="kanban-prospectos-toolbar"
+                                    className="flex items-center gap-2 flex-wrap shrink-0 sm:min-w-[238px] min-h-[32px] md:min-h-[34px]"
+                                />
+                            )}
+                        </AnimatePresence>
                         <button
                             onClick={() => setModalCrearAbierto(true)}
                             className="hidden sm:flex w-full sm:w-auto justify-center items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs md:text-sm font-medium"
@@ -1330,84 +1448,6 @@ const Seguimiento = () => {
                             <UserPlus className="w-4 h-4 md:w-5 md:h-5" />
                             Crear prospecto
                         </button>
-                    </div>
-                </div>
-
-                {/* Buscador + Filtros 30/70 */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-2.5 md:p-3 shadow-sm md:mt-0">
-                    <div className="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-3 md:gap-4 items-center">
-                        {/* 30% Búsqueda + Crear (Móvil) */}
-                        <div className="flex items-stretch gap-2 w-full">
-                            <div className="relative flex-1 h-9">
-                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Buscar prospectos..."
-                                value={busquedaProspecto}
-                                onChange={(e) => setBusquedaProspecto(e.target.value)}
-                                className="w-full h-full pl-8 pr-14 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs"
-                                title="Buscar por nombre, empresa, correo o teléfono"
-                            />
-                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
-                                <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">
-                                    {prospectosFiltrados.length}/{prospectos.length}
-                                </span>
-                            </div>
-                            </div>
-                            <button
-                                onClick={() => setModalCrearAbierto(true)}
-                                className="sm:hidden flex items-center justify-center gap-1.5 px-3 h-9 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs font-medium shrink-0"
-                            >
-                                <UserPlus className="w-4 h-4" />
-                                Crear
-                            </button>
-                        </div>
-                        {/* 70% Filtros */}
-                        <div className="hidden md:flex flex-wrap md:flex-wrap -mx-2 px-2 md:mx-0 md:px-0 gap-2 items-center w-full">
-                            <Filter className="w-4 h-4 text-slate-400 shrink-0 hidden md:block" />
-                            {/* Filtros rápidos por contacto */}
-                            <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
-                                {[
-                                    { value: 'mine', label: 'Mis prospectos' },
-                                    { value: 'shared', label: 'Compartidos' },
-                                    { value: 'all', label: 'Todos visibles' },
-                                ].map(btn => (
-                                    <button
-                                        key={btn.value}
-                                        onClick={() => setFiltroVisibilidad(btn.value)}
-                                        className={`px-3 h-9 flex items-center justify-center rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${filtroVisibilidad === btn.value
-                                            ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
-                                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-400 hover:text-slate-800'
-                                            }`}
-                                    >
-                                        {btn.label}
-                                    </button>
-                                ))}
-                            </div>
-                            <div className="w-px h-6 bg-slate-200 mx-1 shrink-0 hidden md:block"></div>
-                            <div className="flex flex-nowrap md:flex-wrap gap-1.5 shrink-0">
-                                <select
-                                    value={ordenFiltro}
-                                    onChange={(e) => setOrdenFiltro(e.target.value)}
-                                    className="px-3 h-9 rounded-lg text-xs font-medium border border-slate-200 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-(--theme-500) transition-all cursor-pointer"
-                                >
-                                    <option value="todos">Todos los prospectos</option>
-                                    <option value="mayor_valor_estimado">Valor del prospecto/estimado</option>
-                                    <option value="reciente">Agregado recientemente</option>
-                                    <option value="mayor_valor">Mayor valor (Interés)</option>
-                                </select>
-                            </div>
-                            {/* Reset filtros */}
-                            {(ordenFiltro !== 'todos' || busquedaProspecto || filtroVisibilidad !== 'mine') && (
-                                <button
-                                    onClick={() => { setOrdenFiltro('todos'); setBusquedaProspecto(''); setFiltroVisibilidad('mine'); }}
-                                    className="shrink-0 flex items-center justify-center w-9 h-9 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-colors"
-                                    title="Limpiar filtros"
-                                >
-                                    ✕
-                                </button>
-                            )}
-                        </div>
                     </div>
                 </div>
 
@@ -1464,13 +1504,36 @@ const Seguimiento = () => {
                         </div>
                     </div>
                 ) : prospectosFiltrados.length === 0 ? (
-                    <div className="bg-white md:rounded-2xl p-12 min-h-60 flex flex-col items-center justify-center text-center">
-                        <User className="w-12 h-12 text-slate-300 mb-4" />
-                        <p className="text-gray-500 font-medium">No se encontraron prospectos.</p>
-                        <p className="text-gray-400 text-sm mt-1">Intenta con otra busqueda o crea uno nuevo.</p>
+                    <div className="bg-white md:border md:border-slate-200 rounded-2xl md:shadow-sm p-12 text-center text-gray-500">
+                        <div className="mx-auto w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                            <Search className="w-8 h-8 text-slate-300" />
+                        </div>
+                        <p className="text-lg font-medium text-slate-700">No se encontraron prospectos</p>
+                        <p className="text-sm text-slate-400 mt-1">Prueba ajustando los filtros o creando uno nuevo.</p>
                     </div>
                 ) : (
-                    <div className="space-y-6">
+                    <AnimatePresence mode="wait">
+                        {vistaKanban ? (
+                            <motion.div
+                                key="kanban"
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -15 }}
+                                transition={{ duration: 0.25, ease: "easeOut" }}
+                                className="flex flex-col flex-1 h-full min-h-0 w-full"
+                            >
+                                <KanbanProspectos
+                                    prospectos={prospectosFiltrados}
+                                    onVerDetalles={handleSeleccionarProspecto}
+                                    abrirModalEditar={abrirModalEditar}
+                                    setProspectoAEliminar={setProspectoAEliminar}
+                                    handleToggleCompartido={handleToggleCompartido}
+                                    isOwnerRecord={isOwnerRecord}
+                                    onEtapaChange={handleEtapaChange}
+                                />
+                            </motion.div>
+                        ) : (
+                    <div className="space-y-6 w-full">
                         {(() => {
                             const misPrivados = [];
                             const misCompartidos = [];
@@ -1690,6 +1753,8 @@ const Seguimiento = () => {
                             );
                         })()}
                     </div>
+                        )}
+                    </AnimatePresence>
                 )}
             </div>
             {renderModales()}
