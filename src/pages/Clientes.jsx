@@ -61,7 +61,17 @@ const Clientes = () => {
     const [importando, setImportando] = useState(false);
     const [ordenFiltro, setOrdenFiltro] = useState('todos');
     const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine'); // mine | shared | all
-    const [vistaKanban, setVistaKanban] = useState(false);
+    const [vistaKanban, setVistaKanban] = useState(() => {
+        try {
+            const saved = localStorage.getItem('crm_vistaKanban_clientes');
+            if (saved !== null) return JSON.parse(saved);
+        } catch (e) {}
+        return false;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('crm_vistaKanban_clientes', JSON.stringify(vistaKanban));
+    }, [vistaKanban]);
     const fileInputRef = useRef(null);
     const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
     const [creandoCliente, setCreandoCliente] = useState(false);
