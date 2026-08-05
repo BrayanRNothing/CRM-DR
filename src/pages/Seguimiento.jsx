@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Phone,
     MessageSquare,
@@ -29,7 +30,9 @@ import {
     Globe,
     Trash2,
     AlertCircle,
-    FileText
+    FileText,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -159,6 +162,7 @@ const Seguimiento = () => {
     const [ordenFiltro, setOrdenFiltro] = useState('todos'); // 'todos', 'en_proceso', 'mayor_valor'
     const [modalCrearAbierto, setModalCrearAbierto] = useState(false);
     const [loadingCrear, setLoadingCrear] = useState(false);
+    const [mostrarAvanzado, setMostrarAvanzado] = useState(false);
     const [formCrear, setFormCrear] = useState({
         nombres: '',
         apellidoPaterno: '',
@@ -194,6 +198,22 @@ const Seguimiento = () => {
     const [importando, setImportando] = useState(false);
     const [importResult, setImportResult] = useState(null);
     const fileInputRef = useRef(null);
+
+    // Evitar scroll de fondo al abrir modales
+    useEffect(() => {
+        const algunModalAbierto = modalCrearAbierto || modalEditarAbierto || modalPasarClienteAbierto || modalDescartarAbierto || isImportModalAbierto || prospectoAEliminar;
+        const container = document.getElementById('main-scroll-container');
+        if (container) {
+            if (algunModalAbierto) {
+                container.style.setProperty('overflow', 'hidden', 'important');
+            } else {
+                container.style.removeProperty('overflow');
+            }
+        }
+        return () => {
+            if (container) container.style.removeProperty('overflow');
+        };
+    }, [modalCrearAbierto, modalEditarAbierto, modalPasarClienteAbierto, modalDescartarAbierto, isImportModalAbierto, prospectoAEliminar]);
 
     // Estado para el acordeón de acciones de cierre
         // Estado para editar etapa inline en la vista detallada
@@ -557,10 +577,17 @@ const Seguimiento = () => {
     };
 
     const handleCrearProspecto = async () => {
+        const telefonosLimpios = formCrear.telefonos.filter(t => t.trim());
+        const telPrincipal = telefonosLimpios[0] || '';
+
+        if (!formCrear.nombres) {
+            toast.error('El nombre es obligatorio.');
+            return;
+        }
+
         setLoadingCrear(true);
         try {
-            const telefonosLimpios = formCrear.telefonos.filter(t => t.trim());
-            const payload = { ...formCrear, telefono: telefonosLimpios[0] || '', telefono2: telefonosLimpios.slice(1).join(', ') || '' };
+            const payload = { ...formCrear, telefono: telPrincipal, telefono2: telefonosLimpios.slice(1).join(', ') || '' };
             delete payload.telefonos;
             await axios.post(`${API_URL}/api/${rolePath}/crear-prospecto`, payload, {
                 headers: getAuthHeaders()
@@ -651,227 +678,189 @@ const Seguimiento = () => {
     // Shared Modals Render Function
     const renderModales = () => (
         <>
-            {/* Modal Crear Prospecto - Rediseño Premium */}
+            {/* Modal Crear Prospecto - Diseño Compacto y Elegante */}
             {modalCrearAbierto && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col max-h-[85vh] overflow-hidden animate-in fade-in zoom-in duration-300">
-                        {/* Header Moderno con Gradiente */}
-                        <div className="px-6 py-5 bg-linear-to-r from-(--theme-50) to-white border-b border-slate-100 flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-(--theme-100) rounded-2xl flex items-center justify-center shadow-inner">
-                                    <UserPlus className="w-6 h-6 text-(--theme-600)" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-black text-gray-900 tracking-tight">Nuevo Prospecto</h2>
-                                    <p className="text-xs text-slate-500 font-medium">Ingresa los datos para iniciar el seguimiento</p>
-                                </div>
+                <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full flex flex-col max-h-[85vh] overflow-hidden animate-in fade-in zoom-in duration-300">
+                        
+                        {/* Header Compacto */}
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+                            <div>
+                                <h2 className="text-xl font-black text-gray-900 tracking-tight">Nuevo Prospecto</h2>
+                                <p className="text-xs text-slate-500 font-medium mt-0.5">Registra la información básica</p>
                             </div>
                             <button 
                                 onClick={() => {
                                     setModalCrearAbierto(false);
+                                    setMostrarAvanzado(false);
                                     setFormCrear({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '', fuente: '' });
                                 }} 
-                                className="p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-400 hover:text-slate-600"
+                                className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full transition-all text-slate-400 hover:text-slate-600"
                             >
-                                <X className="w-6 h-6" />
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
 
                         {/* Contenido del Formulario */}
-                        <div className="p-8 space-y-8 overflow-y-auto scrollbar-hide">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                
-                                {/* Columna 1: Identidad */}
-                                <div className="space-y-5">
-                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                        <div className="w-1 h-3 bg-(--theme-500) rounded-full"></div>
-                                        Identidad
-                                    </h3>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wider">Nombres *</label>
+                        <div className="p-6 overflow-y-auto scrollbar-hide">
+                            <div className="space-y-5">
+                                {/* Información Básica */}
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-[11px] font-black text-slate-700 mb-1.5 uppercase tracking-wider">Nombre del Prospecto *</label>
+                                        <div className="relative group">
+                                            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
                                             <input
                                                 type="text"
                                                 value={formCrear.nombres}
                                                 onChange={(e) => setFormCrear((f) => ({ ...f, nombres: e.target.value }))}
-                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
-                                                placeholder="Juan"
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-10 pr-3 py-2.5 text-sm focus:ring-4 focus:ring-(--theme-500)/10 focus:border-(--theme-500) focus:bg-white transition-all outline-none font-semibold text-gray-900"
+                                                placeholder="Ej: Ana Martínez"
+                                                autoFocus
                                             />
                                         </div>
-                                        <div className="grid grid-cols-1 gap-4">
-                                            <div>
-                                                <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wider">Apellido Paterno</label>
-                                                <input
-                                                    type="text"
-                                                    value={formCrear.apellidoPaterno}
-                                                    onChange={(e) => setFormCrear((f) => ({ ...f, apellidoPaterno: e.target.value }))}
-                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
-                                                    placeholder="García"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wider">Apellido Materno</label>
-                                                <input
-                                                    type="text"
-                                                    value={formCrear.apellidoMaterno}
-                                                    onChange={(e) => setFormCrear((f) => ({ ...f, apellidoMaterno: e.target.value }))}
-                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
-                                                    placeholder="López"
-                                                />
-                                            </div>
-                                        </div>
                                     </div>
-                                </div>
-
-                                {/* Columna 2: Contacto */}
-                                <div className="space-y-5">
-                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                        <div className="w-1 h-3 bg-indigo-500 rounded-full"></div>
-                                        Contacto
-                                    </h3>
-                                    <div className="space-y-4">
+                                    <div className="grid grid-cols-1 gap-4">
                                         <div>
-                                            <div className="flex items-center justify-between mb-1.5">
-                                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Teléfonos *</label>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setFormCrear((f) => ({ ...f, telefonos: [...f.telefonos, ''] }))}
-                                                    className="text-[10px] text-(--theme-600) hover:text-(--theme-700) font-black uppercase tracking-tighter"
-                                                >
-                                                    + Añadir otro
-                                                </button>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {formCrear.telefonos.map((tel, idx) => (
-                                                    <div key={idx} className="relative group">
-                                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-(--theme-500) transition-colors" />
-                                                        <input
-                                                            type="tel"
-                                                            value={tel}
-                                                            onChange={(e) => setFormCrear((f) => { const t = [...f.telefonos]; t[idx] = e.target.value; return { ...f, telefonos: t }; })}
-                                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-10 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
-                                                            placeholder="55 1234 5678"
-                                                        />
-                                                        {formCrear.telefonos.length > 1 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setFormCrear((f) => ({ ...f, telefonos: f.telefonos.filter((_, i) => i !== idx) }))}
-                                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-red-300 hover:text-red-500 transition-colors"
-                                                            >
-                                                                <X className="w-4 h-4" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                ))}
+                                            <label className="block text-[11px] font-black text-slate-700 mb-1.5 uppercase tracking-wider">Teléfono</label>
+                                            <div className="relative group">
+                                                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
+                                                <input
+                                                    type="tel"
+                                                    value={formCrear.telefonos[0] || ''}
+                                                    onChange={(e) => setFormCrear((f) => { const t = [...f.telefonos]; t[0] = e.target.value; return { ...f, telefonos: t }; })}
+                                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-10 pr-3 py-2.5 text-sm focus:ring-4 focus:ring-(--theme-500)/10 focus:border-(--theme-500) focus:bg-white transition-all outline-none font-medium text-gray-900"
+                                                    placeholder="55 1234 5678"
+                                                />
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wider">Correo Electrónico</label>
+                                            <label className="block text-[11px] font-black text-slate-700 mb-1.5 uppercase tracking-wider">Correo</label>
                                             <div className="relative group">
-                                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-(--theme-500) transition-colors" />
+                                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
                                                 <input
                                                     type="email"
                                                     value={formCrear.correo}
                                                     onChange={(e) => setFormCrear((f) => ({ ...f, correo: e.target.value }))}
-                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
-                                                    placeholder="ejemplo@correo.com"
+                                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-10 pr-3 py-2.5 text-sm focus:ring-4 focus:ring-(--theme-500)/10 focus:border-(--theme-500) focus:bg-white transition-all outline-none font-medium text-gray-900"
+                                                    placeholder="ana@ejemplo.com"
                                                 />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Columna 3: Empresa y Lugar */}
-                                <div className="space-y-5">
-                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                        <div className="w-1 h-3 bg-emerald-500 rounded-full"></div>
-                                        Empresa & Sitio
-                                    </h3>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wider">Nombre de Empresa</label>
-                                            <div className="relative group">
-                                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-(--theme-500) transition-colors" />
-                                                <input
-                                                    type="text"
-                                                    value={formCrear.empresa}
-                                                    onChange={(e) => setFormCrear((f) => ({ ...f, empresa: e.target.value }))}
-                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
-                                                    placeholder="Empresa S.A."
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wider">Sitio Web</label>
-                                            <div className="relative group">
-                                                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-(--theme-500) transition-colors" />
-                                                <input
-                                                    type="url"
-                                                    value={formCrear.sitioWeb}
-                                                    onChange={(e) => setFormCrear((f) => ({ ...f, sitioWeb: e.target.value }))}
-                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
-                                                    placeholder="https://google.com"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black text-slate-500 mb-1.5 uppercase tracking-wider">Ubicación</label>
-                                            <div className="relative group">
-                                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-(--theme-500) transition-colors" />
-                                                <input
-                                                    type="text"
-                                                    value={formCrear.ubicacion}
-                                                    onChange={(e) => setFormCrear((f) => ({ ...f, ubicacion: e.target.value }))}
-                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 py-3 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium"
-                                                    placeholder="CDMX, México"
-                                                />
-                                            </div>
-                                        </div>
+                                {/* Separador y Botón Toggle Avanzado */}
+                                <div className="relative py-2">
+                                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                                        <div className="w-full border-t border-slate-200"></div>
+                                    </div>
+                                    <div className="relative flex justify-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => setMostrarAvanzado(!mostrarAvanzado)}
+                                            className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-500 hover:text-(--theme-600) transition-colors bg-white px-3"
+                                        >
+                                            {mostrarAvanzado ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                            {mostrarAvanzado ? 'Ocultar extras' : 'Mostrar extras'}
+                                        </button>
                                     </div>
                                 </div>
 
-                                <div className="md:col-span-3 space-y-4 pt-4 border-t border-slate-100">
-                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                        <div className="w-1 h-3 bg-indigo-500 rounded-full"></div>
-                                        Notas & Contexto Inicial
-                                    </h3>
-                                    <textarea
-                                        rows={2}
-                                        value={formCrear.notas}
-                                        onChange={(e) => setFormCrear((f) => ({ ...f, notas: e.target.value }))}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-(--theme-500) focus:bg-white transition-all outline-none font-medium resize-none mb-2"
-                                        placeholder="Escribe aquí cualquier detalle relevante sobre el prospecto antes de crearlo..."
-                                    />
+                                {/* Opciones Avanzadas */}
+                                <AnimatePresence>
+                                    {mostrarAvanzado && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="space-y-4 pb-2">
+                                                
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Apellido Paterno</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formCrear.apellidoPaterno}
+                                                            onChange={(e) => setFormCrear((f) => ({ ...f, apellidoPaterno: e.target.value }))}
+                                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-none"
+                                                            placeholder="Opcional"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Apellido Materno</label>
+                                                        <input
+                                                            type="text"
+                                                            value={formCrear.apellidoMaterno}
+                                                            onChange={(e) => setFormCrear((f) => ({ ...f, apellidoMaterno: e.target.value }))}
+                                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-none"
+                                                            placeholder="Opcional"
+                                                        />
+                                                    </div>
+                                                </div>
 
-                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 pt-2">
-                                        <div className="w-1 h-3 bg-indigo-500 rounded-full"></div>
-                                        Fuente del Prospecto
-                                    </h3>
-                                    <SourcePicker 
-                                        selectedSource={formCrear.fuente} 
-                                        onChange={(val) => setFormCrear(f => ({ ...f, fuente: val }))} 
-                                    />
-                                </div>
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Empresa</label>
+                                                        <div className="relative group">
+                                                            <Building2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
+                                                            <input
+                                                                type="text"
+                                                                value={formCrear.empresa}
+                                                                onChange={(e) => setFormCrear((f) => ({ ...f, empresa: e.target.value }))}
+                                                                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-xs focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-none"
+                                                                placeholder="Empresa S.A."
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Notas iniciales</label>
+                                                    <textarea
+                                                        rows={2}
+                                                        value={formCrear.notas}
+                                                        onChange={(e) => setFormCrear((f) => ({ ...f, notas: e.target.value }))}
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-none resize-none"
+                                                        placeholder="Agrega algún detalle rápido..."
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Origen</label>
+                                                    <SourcePicker 
+                                                        selectedSource={formCrear.fuente} 
+                                                        onChange={(val) => setFormCrear(f => ({ ...f, fuente: val }))} 
+                                                    />
+                                                </div>
+
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </div>
 
-                        {/* Footer con Botones Premium */}
-                        <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex gap-4">
+                        {/* Footer Compacto */}
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex gap-3">
                             <button
                                 onClick={() => {
                                     setModalCrearAbierto(false);
+                                    setMostrarAvanzado(false);
                                     setFormCrear({ nombres: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '', fuente: '' });
                                 }}
-                                className="flex-1 px-6 py-3.5 bg-white border border-slate-200 text-slate-500 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 hover:text-slate-700 transition-all shadow-sm"
+                                className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-slate-100 hover:text-slate-800 transition-all shadow-sm"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleCrearProspecto}
                                 disabled={loadingCrear}
-                                className="flex-2 px-6 py-3.5 bg-linear-to-r from-(--theme-600) to-(--theme-700) text-white rounded-xl text-xs font-black uppercase tracking-widest hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-(--theme-500)/25"
+                                className="flex-2 px-4 py-2.5 bg-linear-to-r from-(--theme-600) to-(--theme-500) text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-(--theme-500)/30 flex items-center justify-center gap-2"
                             >
-                                {loadingCrear ? 'Procesando...' : 'Confirmar y Crear Prospecto'}
+                                {loadingCrear ? 'Creando...' : 'Crear Prospecto'}
                             </button>
                         </div>
                     </div>
@@ -879,7 +868,7 @@ const Seguimiento = () => {
             )}
             {/* Modal Editar Prospecto - Rediseño Moderno */}
             {modalEditarAbierto && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 transition-all duration-300">
+                <div className="fixed inset-0 bg-slate-900/20 flex items-center justify-center z-50 p-4 transition-all duration-300">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col max-h-[82vh] overflow-hidden animate-fadeIn">
                         {/* Header */}
                         <div className="px-6 py-4 bg-linear-to-r from-(--theme-50) to-white border-b border-slate-100 flex justify-between items-center">
@@ -1113,7 +1102,7 @@ const Seguimiento = () => {
 
             {/* Modal Descartar Prospecto - Rediseño Premium */}
             {modalDescartarAbierto && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in duration-300">
                         <div className="w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center mb-6 mx-auto">
                             <Trash2 className="w-8 h-8 text-rose-600" />
@@ -1187,7 +1176,7 @@ const Seguimiento = () => {
 
             {/* Modal Eliminar Prospecto */}
             {prospectoAEliminar && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-lg max-w-sm w-full">
                         <div className="p-4 border-b border-red-100 bg-red-50 flex items-start gap-3">
                             <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
@@ -1221,7 +1210,7 @@ const Seguimiento = () => {
 
             {/* Modal Importar CSV */}
             {isImportModalAbierto && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-lg max-w-md w-full">
                         <div className="p-4 border-b border-slate-100 flex justify-between items-center">
                             <h2 className="text-lg font-bold text-gray-900">Importar Prospectos desde CSV</h2>

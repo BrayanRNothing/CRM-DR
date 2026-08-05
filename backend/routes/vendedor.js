@@ -2265,8 +2265,8 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
 router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
     try {
         const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas } = req.body;
-        if (!nombres || !telefono) {
-            return res.status(400).json({ msg: 'Nombres y teléfono son requeridos' });
+        if (!nombres) {
+            return res.status(400).json({ msg: 'El nombre es obligatorio' });
         }
 
         const closerId = parseInt(req.usuario.id);
@@ -2279,10 +2279,10 @@ router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prospecto_nuevo', ?, ?)
         `);
         const result = await stmt.run(
-            nombres.trim(),
+            (nombres || '').trim(),
             (apellidoPaterno || '').trim(),
             (apellidoMaterno || '').trim(),
-            String(telefono).trim(),
+            String(telefono || '').trim(),
             String(telefono2 || '').trim(),
             String(correo || '').trim().toLowerCase(),
             (empresa || '').trim(),
@@ -3346,8 +3346,8 @@ router.get('/clientes-ganados', [auth, esVendedor], async (req, res) => {
 router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
     try {
         const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas } = req.body;
-        if (!nombres || !telefono) {
-            return res.status(400).json({ msg: 'Nombres y teléfono son requeridos' });
+        if (!nombres) {
+            return res.status(400).json({ msg: 'El nombre es obligatorio' });
         }
 
         const closerId = parseInt(req.usuario.id);
@@ -3360,10 +3360,10 @@ router.post('/crear-prospecto', [auth, esVendedor], async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prospecto_nuevo', ?, ?)
         `);
         const result = await stmt.run(
-            nombres.trim(),
+            (nombres || '').trim(),
             (apellidoPaterno || '').trim(),
             (apellidoMaterno || '').trim(),
-            String(telefono).trim(),
+            String(telefono || '').trim(),
             String(telefono2 || '').trim(),
             String(correo || '').trim().toLowerCase(),
             (empresa || '').trim(),

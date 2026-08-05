@@ -318,11 +318,11 @@ const initDb = async () => {
   CREATE TABLE IF NOT EXISTS clientes (
     id SERIAL PRIMARY KEY,
     nombres TEXT NOT NULL,
-    apellidoPaterno TEXT NOT NULL,
+    apellidoPaterno TEXT,
     apellidoMaterno TEXT,
-    telefono TEXT NOT NULL,
+    telefono TEXT,
     telefono2 TEXT,
-    correo TEXT NOT NULL,
+    correo TEXT,
     empresa TEXT,
     estado TEXT DEFAULT 'proceso' CHECK(estado IN ('ganado','perdido','proceso')),
     etapaEmbudo TEXT DEFAULT 'prospecto_nuevo',
@@ -617,6 +617,21 @@ const initDb = async () => {
       console.log('✅ Migración: Tabla actividades actualizada (cliente nullable, tipo/resultado checks relajados)');
     } catch (e) {
       console.error('⚠️ Migración actividades falló:', e.message);
+    }
+
+    // Migración: solo nombres es obligatorio en clientes (quitar NOT NULL de apellidoPaterno, telefono, correo)
+    try {
+      await internalDb.query(`
+        ALTER TABLE clientes ALTER COLUMN "apellidoPaterno" DROP NOT NULL;
+        ALTER TABLE clientes ALTER COLUMN telefono DROP NOT NULL;
+        ALTER TABLE clientes ALTER COLUMN correo DROP NOT NULL;
+      `);
+      console.log('✅ Migración: apellidoPaterno, telefono, correo ahora son opcionales');
+    } catch (e) {
+      // Ignorar si ya son nullable
+      if (!e.message.includes('not found') && !e.message.includes('does not exist')) {
+        console.error('⚠️ Migración nullable clientes falló:', e.message);
+      }
     }
     
     // Asegurar que todos los usuarios tengan activo = 1 si es NULL

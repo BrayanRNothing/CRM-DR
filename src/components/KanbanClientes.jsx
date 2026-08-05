@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Plus, X, Settings2, GripVertical, Phone, Mail, Star,
     MessageSquare, Clock, Edit2, Trash2, Share2, Check,
@@ -460,11 +461,21 @@ const KanbanColumn = ({
     // Column drag (reorder)
     const handleColDragStart = (e) => {
         e.dataTransfer.setData('colId', column.id);
+        e.dataTransfer.effectAllowed = 'move';
         onColDragStart(column.id);
     };
 
     // Card drop
-    const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); };
+    const handleDragOver = (e) => { 
+        e.preventDefault(); 
+        e.stopPropagation(); 
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        setDragOver(true); 
+    };
+    const handleDragEnter = (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    };
     const handleDragLeave = (e) => { if (!colRef.current?.contains(e.relatedTarget)) setDragOver(false); };
     const handleDrop = (e) => {
         e.preventDefault(); e.stopPropagation();
@@ -483,7 +494,8 @@ const KanbanColumn = ({
             ref={colRef}
             draggable={dragEnabled}
             onDragStart={handleColDragStart}
-            onDragOver={e => { e.preventDefault(); onColDragOver(column.id); handleDragOver(e); }}
+            onDragEnter={e => { handleDragEnter(e); onColDragOver(column.id); }}
+            onDragOver={e => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; onColDragOver(column.id); handleDragOver(e); }}
             onDrop={handleDrop}
             onDragLeave={handleDragLeave}
             style={{ minWidth: colWidth, maxWidth: colWidth, flexShrink: 0 }}
@@ -508,50 +520,62 @@ const KanbanColumn = ({
             {/* Cards */}
             <div
                 className="flex flex-col gap-2 p-2.5 overflow-y-auto flex-1 min-h-0 scrollbar-hide"
+                onDragEnter={handleDragEnter}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
             >
                 {sorted.length === 0 ? (
-                    <div className={`flex flex-col items-center justify-center py-8 rounded-xl border-2 border-dashed transition-colors
+                    <div className={`flex flex-col items-center justify-center flex-1 min-h-[100px] h-full rounded-xl border-2 border-dashed transition-colors
                         ${dragOver ? 'border-blue-400 bg-blue-50/40' : themeIsDark ? 'border-slate-600' : 'border-slate-200'}`}>
-                        <div className={`w-7 h-7 rounded-full ${c.dot} opacity-20 mb-2`} />
-                        <p className={`text-[11px] italic ${textMuted}`}>
-                            {dragOver ? 'Suelta aquí' : 'Sin clientes'}
-                        </p>
+                        {dragOver && (
+                            <p className={`text-[11px] italic ${textMuted}`}>
+                                Soltar aquí
+                            </p>
+                        )}
                     </div>
-                ) : sorted.map(cliente => {
-                    const id = String(cliente._id || cliente.id);
-                    return (
-                        <div
-                            key={id}
-                            draggable
-                            onDragStart={e => { 
-                                e.stopPropagation();
-                                e.dataTransfer.setData('clienteId', id); 
-                                setDragging(id); 
-                            }}
-                            onDragEnd={() => setDragging(null)}
-                        >
-                            <ClienteCard
-                                cliente={cliente}
-                                cardSize={prefs.cardSize}
-                                fields={prefs.fields}
-                                colorId={column.colorId}
-                                isDragging={dragging === id}
-                                onVerDetalles={onVerDetalles}
-                                onEditar={onEditar}
-                                onEliminar={onEliminar}
-                                onCompartir={onCompartir}
-                                isOwner={cliente.esPropietario === true || isOwnerRecord(cliente)}
-                            />
-                        </div>
-                    );
-                })}
+                ) : (
+                    <AnimatePresence>
+                        {sorted.map(cliente => {
+                            const id = String(cliente._id || cliente.id);
+                            return (
+                                <motion.div
+                                    key={id}
+                                    layoutId={`card-${id}`}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                                    draggable
+                                    onDragStart={e => { 
+                                        e.stopPropagation();
+                                        e.dataTransfer.effectAllowed = 'move';
+                                        e.dataTransfer.setData('clienteId', id); 
+                                        setDragging(id); 
+                                    }}
+                                    onDragEnd={() => setDragging(null)}
+                                >
+                                    <ClienteCard
+                                        cliente={cliente}
+                                        cardSize={prefs.cardSize}
+                                        fields={prefs.fields}
+                                        colorId={column.colorId}
+                                        isDragging={dragging === id}
+                                        onVerDetalles={onVerDetalles}
+                                        onEditar={onEditar}
+                                        onEliminar={onEliminar}
+                                        onCompartir={onCompartir}
+                                        isOwner={cliente.esPropietario === true || isOwnerRecord(cliente)}
+                                    />
+                                </motion.div>
+                            );
+                        })}
+                    </AnimatePresence>
+                )}
 
                 {/* Drop zone when dragging */}
-                {dragging && (
-                    <div className={`h-16 rounded-xl border-2 border-dashed transition-colors flex items-center justify-center
+                {dragging && sorted.length > 0 && (
+                    <div className={`h-16 shrink-0 rounded-xl border-2 border-dashed transition-colors flex items-center justify-center
                         ${dragOver ? 'border-blue-400 bg-blue-50/30' : themeIsDark ? 'border-slate-600/40' : 'border-slate-200/60'}`}>
                         <p className={`text-[10px] ${textMuted}`}>Soltar aquí</p>
                     </div>
@@ -566,20 +590,12 @@ const KanbanColumn = ({
 ═══════════════════════════════════════════════════════════════ */
 
 const SettingsPanel = ({ prefs, onPrefsChange, columns, onColumnsReset, onClose }) => {
-    const [tab, setTab] = useState('cards');
-
     const toggleField = (fieldId) => {
         onPrefsChange({ ...prefs, fields: { ...prefs.fields, [fieldId]: !prefs.fields[fieldId] } });
     };
 
-    const tabs = [
-        { id: 'cards',   label: 'Tarjetas',   icon: LayoutGrid  },
-        { id: 'board',   label: 'Tablero',     icon: Columns     },
-        { id: 'columns', label: 'Columnas',    icon: Sliders     },
-    ];
-
     return (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col w-full max-h-full">
             {/* Header panel */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
                 <div className="flex items-center gap-2">
@@ -591,28 +607,15 @@ const SettingsPanel = ({ prefs, onPrefsChange, columns, onColumnsReset, onClose 
                 </button>
             </div>
 
-            {/* Tabs */}
-            <div className="flex border-b border-slate-100">
-                {tabs.map(t => (
-                    <button key={t.id} onClick={() => setTab(t.id)}
-                        className={`flex items-center gap-1.5 flex-1 justify-center px-4 py-2.5 text-xs font-bold transition-colors border-b-2 ${tab === t.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
-                        <t.icon className="w-3.5 h-3.5" /> {t.label}
-                    </button>
-                ))}
-            </div>
-
-            <div className="p-4 space-y-5">
-                {/* ── TAB: TARJETAS ── */}
-                {tab === 'cards' && (
-                    <>
+            <div className="p-4 space-y-5 overflow-y-auto min-h-0 flex-1">
                         {/* Tamaño */}
                         <div>
                             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Tamaño de tarjeta</label>
                             <div className="flex gap-2">
                                 {CARD_SIZES.map(s => (
                                     <button key={s.id} onClick={() => onPrefsChange({ ...prefs, cardSize: s.id })}
-                                        className={`flex-1 flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl border-2 text-xs font-bold transition-all
-                                            ${prefs.cardSize === s.id ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                                        className={`flex-1 flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-bold transition-colors
+                                            ${prefs.cardSize === s.id ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                                         <s.icon className="w-4 h-4" /> {s.label}
                                     </button>
                                 ))}
@@ -627,35 +630,14 @@ const SettingsPanel = ({ prefs, onPrefsChange, columns, onColumnsReset, onClose 
                                     const active = prefs.fields[f.id];
                                     return (
                                         <button key={f.id} onClick={() => toggleField(f.id)}
-                                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold transition-all
-                                                ${active ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>
-                                            <f.icon className="w-3.5 h-3.5 shrink-0" />
+                                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors
+                                                ${active ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                                            <f.icon className="w-4 h-4 shrink-0" />
                                             <span className="truncate">{f.label}</span>
-                                            {active ? <Check className="w-3 h-3 ml-auto shrink-0" /> : <EyeOff className="w-3 h-3 ml-auto shrink-0 opacity-40" />}
+                                            {active ? <Check className="w-4 h-4 ml-auto shrink-0" /> : <EyeOff className="w-4 h-4 ml-auto shrink-0 opacity-40" />}
                                         </button>
                                     );
                                 })}
-                            </div>
-                        </div>
-                    </>
-                )}
-
-                {/* ── TAB: TABLERO ── */}
-                {tab === 'board' && (
-                    <>
-                        {/* Tema del board */}
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Tema del tablero</label>
-                            <div className="grid grid-cols-2 gap-2">
-                                {BOARD_THEMES.map(t => (
-                                    <button key={t.id} onClick={() => onPrefsChange({ ...prefs, themeId: t.id })}
-                                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all
-                                            ${prefs.themeId === t.id ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
-                                        <div className={`w-5 h-5 rounded-md ${t.bg} shrink-0`} />
-                                        {t.label}
-                                        {prefs.themeId === t.id && <Check className="w-3 h-3 ml-auto shrink-0" />}
-                                    </button>
-                                ))}
                             </div>
                         </div>
 
@@ -665,85 +647,13 @@ const SettingsPanel = ({ prefs, onPrefsChange, columns, onColumnsReset, onClose 
                             <div className="flex gap-2">
                                 {COL_WIDTHS.map(w => (
                                     <button key={w.id} onClick={() => onPrefsChange({ ...prefs, colWidth: w.id })}
-                                        className={`flex-1 px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all
-                                            ${prefs.colWidth === w.id ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                                        className={`flex-1 px-3 py-2.5 rounded-lg text-xs font-bold transition-colors
+                                            ${prefs.colWidth === w.id ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                                         {w.label}
                                     </button>
                                 ))}
                             </div>
                         </div>
-
-                        {/* Ordenamiento global */}
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Ordenamiento global (por defecto)</label>
-                            <div className="grid grid-cols-2 gap-1.5">
-                                {SORT_OPTIONS.map(s => (
-                                    <button key={s.id} onClick={() => onPrefsChange({ ...prefs, sortBy: s.id })}
-                                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold transition-all
-                                            ${prefs.sortBy === s.id ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>
-                                        <ArrowUpDown className="w-3 h-3 shrink-0" />
-                                        <span className="truncate">{s.label}</span>
-                                        {prefs.sortBy === s.id && <Check className="w-3 h-3 ml-auto shrink-0" />}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Opciones toggle */}
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Opciones</label>
-                            <button
-                                onClick={() => onPrefsChange({ ...prefs, hideEmpty: !prefs.hideEmpty })}
-                                className={`flex items-center gap-2 w-full px-3 py-2.5 rounded-xl border-2 text-xs font-bold transition-all
-                                    ${prefs.hideEmpty ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
-                                <EyeOff className="w-3.5 h-3.5" />
-                                Ocultar columnas vacías
-                                {prefs.hideEmpty && <Check className="w-3 h-3 ml-auto" />}
-                            </button>
-                        </div>
-                    </>
-                )}
-
-                {/* ── TAB: COLUMNAS ── */}
-                {tab === 'columns' && (
-                    <>
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
-                                Columnas activas <span className="text-slate-300 normal-case">— arrastra en el board para reordenar</span>
-                            </label>
-                            <div className="space-y-1.5">
-                                {columns.map(col => {
-                                    const c2 = getColor(col.colorId);
-                                    return (
-                                        <div key={col.id} className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-                                            <div className={`w-3 h-3 rounded-full shrink-0 ${c2.dot}`} />
-                                            <span className="text-xs font-semibold text-slate-700 flex-1 truncate">{col.label}</span>
-                                            {col.wipLimit > 0 && (
-                                                <span className="text-[10px] text-slate-400 font-mono bg-slate-200 px-1.5 rounded">WIP {col.wipLimit}</span>
-                                            )}
-                                            {col.sortBy && col.sortBy !== 'default' && (
-                                                <span className="text-[10px] text-blue-600 font-mono bg-blue-50 px-1.5 rounded">
-                                                    {SORT_OPTIONS.find(s => s.id === col.sortBy)?.label}
-                                                </span>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-slate-100 flex gap-2">
-                            <button onClick={onColumnsReset}
-                                className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl transition-colors">
-                                <RotateCcw className="w-3.5 h-3.5" /> Resetear columnas
-                            </button>
-                            <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                                <Info className="w-3 h-3 shrink-0" />
-                                <span>Los WIP limits se configuran en cada columna.</span>
-                            </div>
-                        </div>
-                    </>
-                )}
             </div>
 
             {/* Reset all */}
@@ -785,14 +695,75 @@ const KanbanClientes = ({
 
     const [dragging, setDragging] = useState(null);       // clienteId being dragged
     const [draggingCol, setDraggingCol] = useState(null); // colId being dragged
-    const [showAdd, setShowAdd] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
-    const [newLabel, setNewLabel] = useState('');
-    const [newColor, setNewColor] = useState('blue');
+    const [isAddingColumn, setIsAddingColumn] = useState(false);
     const [portalNode, setPortalNode] = useState(null);
+    const scrollContainerRef = useRef(null);
 
     useEffect(() => {
         setPortalNode(document.getElementById('kanban-toolbar-portal-target'));
+    }, []);
+
+    /* ── Scroll Horizontal con Rueda ── */
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        let targetScroll = container.scrollLeft;
+        let isAnimating = false;
+        let animationFrame = null;
+
+        const updateScroll = () => {
+            const diff = targetScroll - container.scrollLeft;
+            if (Math.abs(diff) < 1) {
+                container.scrollLeft = targetScroll;
+                isAnimating = false;
+                return;
+            }
+            container.scrollLeft += diff * 0.15; // Suavidad (15% por frame)
+            animationFrame = requestAnimationFrame(updateScroll);
+        };
+
+        const handleWheel = (e) => {
+            if (Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return; // Already scrolling horizontally
+
+            let target = e.target;
+            let canScrollY = false;
+
+            while (target && target !== container) {
+                const style = window.getComputedStyle(target);
+                const overflowY = style.overflowY;
+                if ((overflowY === 'auto' || overflowY === 'scroll') && target.scrollHeight > target.clientHeight) {
+                    canScrollY = true;
+                    break;
+                }
+                target = target.parentElement;
+            }
+
+            if (!canScrollY) {
+                e.preventDefault();
+                // Acumulamos el delta en targetScroll y animamos hacia allá
+                targetScroll = Math.max(0, Math.min(targetScroll + (e.deltaY * 1.5), container.scrollWidth - container.clientWidth));
+                if (!isAnimating) {
+                    isAnimating = true;
+                    animationFrame = requestAnimationFrame(updateScroll);
+                }
+            }
+        };
+
+        // Si el usuario hace scroll nativo (trackpad o barra), actualizamos el target para evitar saltos
+        const handleManualScroll = () => {
+            if (!isAnimating) targetScroll = container.scrollLeft;
+        };
+
+        container.addEventListener('wheel', handleWheel, { passive: false });
+        container.addEventListener('scroll', handleManualScroll);
+        
+        return () => {
+            container.removeEventListener('wheel', handleWheel);
+            container.removeEventListener('scroll', handleManualScroll);
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+        };
     }, []);
 
     /* ── Persistencia ── */
@@ -829,10 +800,26 @@ const KanbanClientes = ({
     }, []);
 
     const addColumn = () => {
-        const t = newLabel.trim();
-        if (!t) return;
-        setColumns(p => [...p, { id: `col_${Date.now()}`, label: t, colorId: newColor, wipLimit: 0 }]);
-        setNewLabel(''); setNewColor('blue'); setShowAdd(false);
+        if (isAddingColumn) return;
+        setIsAddingColumn(true);
+        
+        setColumns(p => {
+            const nextPosition = p.length + 1;
+            const randomColor = COLUMN_COLORS[Math.floor(Math.random() * COLUMN_COLORS.length)].id;
+            return [...p, { id: `col_${Date.now()}`, label: `Columna ${nextPosition}`, colorId: randomColor, wipLimit: 0 }];
+        });
+
+        // Esperar a que renderice la columna y hacer scroll suave
+        setTimeout(() => {
+            if (scrollContainerRef.current) {
+                scrollContainerRef.current.scrollTo({
+                    left: scrollContainerRef.current.scrollWidth,
+                    behavior: 'smooth'
+                });
+            }
+            // Rehabilitar el botón despues de la animación
+            setTimeout(() => setIsAddingColumn(false), 300);
+        }, 100);
     };
 
     /* ── Column sort ── */
@@ -872,32 +859,22 @@ const KanbanClientes = ({
 
     const toolbarContent = (
         <>
-            {/* Stats pill */}
-            <div className="flex items-center gap-2 text-xs text-slate-500 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="font-bold text-slate-700">{totalClientes}</span> clientes
-                <span className="text-slate-300">·</span>
-                <span>{visibleColumns.length}/{columns.length} columnas</span>
-            </div>
-
             {/* Nueva columna */}
-            <button onClick={() => setShowAdd(v => !v)}
-                className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border shadow-sm transition-all
-                    ${showAdd ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400 hover:text-blue-600'}`}>
-                <Plus className="w-3.5 h-3.5" /> Nueva columna
+            <button onClick={addColumn} disabled={isAddingColumn}
+                className={`flex-1 sm:flex-none sm:w-[115px] justify-center flex items-center gap-1.5 px-2 py-2 text-[11px] md:text-xs font-medium rounded-lg transition-colors shadow-sm shrink-0 bg-blue-600 text-white ${isAddingColumn ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}>
+                <Plus className="w-3.5 h-3.5" /> 
+                <span className="hidden sm:inline">Añadir Col.</span>
+                <span className="sm:hidden">Columna</span>
             </button>
 
             {/* Configurar */}
             <button onClick={() => setShowSettings(v => !v)}
-                className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border shadow-sm transition-all
-                    ${showSettings ? 'bg-violet-600 text-white border-violet-600' : 'bg-white border-slate-200 text-slate-700 hover:border-violet-400 hover:text-violet-600'}`}>
-                <Settings2 className="w-3.5 h-3.5" /> Personalizar
+                className={`flex-1 sm:flex-none sm:w-[115px] justify-center flex items-center gap-1.5 px-2 py-2 text-[11px] md:text-xs font-medium rounded-lg transition-colors shadow-sm shrink-0
+                    ${showSettings ? 'bg-violet-700 text-white' : 'bg-violet-600 text-white hover:bg-violet-700'}`}>
+                <Settings2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Personalizar</span>
+                <span className="sm:hidden">Ajustes</span>
             </button>
-
-            {/* Info pill */}
-            <p className="text-[11px] text-slate-400 hidden xl:flex items-center gap-1 ml-auto">
-                <GripVertical className="w-3.5 h-3.5" /> Arrastra tarjetas para reorganizar
-            </p>
         </>
     );
 
@@ -910,58 +887,23 @@ const KanbanClientes = ({
                 </div>
             )}
 
-            {/* ── Panel añadir columna ── */}
-            {showAdd && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="flex flex-wrap items-end gap-3">
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Nombre de la columna</label>
-                            <input
-                                value={newLabel}
-                                onChange={e => setNewLabel(e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Enter') addColumn(); if (e.key === 'Escape') setShowAdd(false); }}
-                                placeholder="Ej: Propuesta enviada"
-                                className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-400 outline-none w-60"
-                                autoFocus
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Color</label>
-                            <div className="flex gap-1.5 flex-wrap">
-                                {COLUMN_COLORS.map(col => (
-                                    <button key={col.id} onClick={() => setNewColor(col.id)}
-                                        className={`w-7 h-7 rounded-lg ${col.header} flex items-center justify-center hover:scale-110 transition-transform
-                                            ${newColor === col.id ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : ''}`}>
-                                        {newColor === col.id && <Check className="w-3.5 h-3.5 text-white" />}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="flex gap-2">
-                            <button onClick={addColumn} disabled={!newLabel.trim()}
-                                className="px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 disabled:opacity-40 transition-colors shadow-sm">
-                                Agregar
-                            </button>
-                            <button onClick={() => { setShowAdd(false); setNewLabel(''); }}
-                                className="px-5 py-2 bg-slate-100 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors">
-                                Cancelar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* ── Panel de configuración ── */}
-            {showSettings && (
-                <div className="mb-3">
-                    <SettingsPanel
-                        prefs={prefs}
-                        onPrefsChange={setPrefs}
-                        columns={columns}
-                        onColumnsReset={resetColumns}
-                        onClose={() => setShowSettings(false)}
-                    />
-                </div>
+            {showSettings && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-transparent animate-in fade-in duration-200"
+                    onClick={(e) => { if (e.target === e.currentTarget) setShowSettings(false); }}
+                >
+                    <div className="w-full max-w-xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+                        <SettingsPanel
+                            prefs={prefs}
+                            onPrefsChange={setPrefs}
+                            columns={columns}
+                            onColumnsReset={resetColumns}
+                            onClose={() => setShowSettings(false)}
+                        />
+                    </div>
+                </div>,
+                document.body
             )}
 
             {/* ── Board ── */}
@@ -976,8 +918,11 @@ const KanbanClientes = ({
                         </button>
                     </div>
                 ) : (
-                    <div className="absolute inset-0 p-3 flex gap-3 overflow-x-auto overflow-y-hidden custom-scrollbar items-stretch"
-                        onDragOver={e => e.preventDefault()}
+                    <div 
+                        ref={scrollContainerRef}
+                        className="absolute inset-0 p-3 flex gap-3 overflow-x-auto overflow-y-hidden custom-scrollbar items-stretch"
+                        onDragEnter={e => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; }}
+                        onDragOver={e => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; }}
                         onDrop={e => {
                             const colId = e.dataTransfer.getData('colId');
                             if (colId && colDragOverRef.current) handleColDrop(colId, colDragOverRef.current);
