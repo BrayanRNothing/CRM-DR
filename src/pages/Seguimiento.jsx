@@ -163,6 +163,7 @@ const Seguimiento = () => {
     const [busquedaProspecto, setBusquedaProspecto] = useState('');
     const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine'); // mine | shared | all
     const [ordenFiltro, setOrdenFiltro] = useState('todos'); // 'todos', 'en_proceso', 'mayor_valor'
+    const [globalTags, setGlobalTags] = useState([]);
     const [mostrarFiltros, setMostrarFiltros] = useState(false);
     const [vistaKanban, setVistaKanban] = useState(() => {
         try {
@@ -392,6 +393,20 @@ const Seguimiento = () => {
     useEffect(() => {
         const init = async () => {
             const data = await cargarDatos(false);
+            
+            // Fetch global tags to colorize tags in the table
+            try {
+                const token = getToken();
+                if (token) {
+                    const res = await axios.get(`${API_URL}/api/vendedor/etiquetas`, {
+                        headers: { 'x-auth-token': token }
+                    });
+                    setGlobalTags(res.data);
+                }
+            } catch (error) {
+                console.error('Error fetching global tags:', error);
+            }
+            
             // 1. Prioridad: Parámetro 'p' en la URL (para recargas F5 o enlaces directos)
             const urlId = searchParams.get('p');
             // 2. Fallback: location.state.selectedId (para navegación interna desde otra página)
@@ -1630,7 +1645,7 @@ const Seguimiento = () => {
                                             <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
                                                 <div className="flex flex-col">
                                                     <span className="text-[11px] md:text-sm font-semibold text-gray-800">
-                                                        {p.customMetricValue ? `${p.customMetricLabel || 'MXN'} $${Number(p.customMetricValue).toLocaleString('es-MX')}` : '—'}
+                                                        {p.customMetricValue ? `${p.customMetricLabel || 'MXN'} $${Number(p.customMetricValue).toLocaleString('es-MX')}` : 'No definido'}
                                                     </span>
                                                 </div>
                                             </td>
@@ -1664,25 +1679,56 @@ const Seguimiento = () => {
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="px-2 md:px-4 py-2 md:py-3 max-w-[140px] md:max-w-[200px]">
-                                                {p.ultimaActTipo ? (
-                                                    <div className="flex items-start gap-1.5">
-                                                        <div className="mt-0.5 shrink-0">
-                                                            {p.ultimaActTipo === 'llamada' && <Phone className="w-3 h-3 text-(--theme-500)" />}
-                                                            {p.ultimaActTipo === 'whatsapp' && <MessageSquare className="w-3 h-3 text-green-500" />}
-                                                            {p.ultimaActTipo === 'correo' && <Mail className="w-3 h-3 text-purple-500" />}
-                                                            {p.ultimaActTipo === 'cita' && <Calendar className="w-3 h-3 text-(--theme-500)" />}
-                                                            {!['llamada', 'whatsapp', 'correo', 'cita'].includes(p.ultimaActTipo) && <Clock className="w-3 h-3 text-slate-400" />}
+                                            <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
+                                                {(() => {
+                                                    let tags = [];
+                                                    try {
+                                                        if (typeof p.etiquetas === 'string') {
+                                                            tags = JSON.parse(p.etiquetas);
+                                                        } else if (Array.isArray(p.etiquetas)) {
+                                                            tags = p.etiquetas;
+                                                        }
+                                                    } catch (e) { tags = []; }
+                                                    
+                                                    if (!tags || tags.length === 0) {
+                                                        return <span className="text-xs text-slate-300 italic">Sin etiquetas</span>;
+                                                    }
+                                                    
+                                                    const visibleTags = tags.slice(0, 2);
+                                                    const remainingCount = tags.length - 2;
+                                                    
+                                                    return (
+                                                        <div className="flex items-center justify-center gap-1.5">
+                                                            {visibleTags.map((tag, i) => {
+                                                                const gTag = globalTags.find(t => t.nombre === tag);
+                                                                const color = gTag ? gTag.color : '#94a3b8';
+                                                                return (
+                                                                    <span 
+                                                                        key={i} 
+                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm truncate max-w-[100px]"
+                                                                        style={{ 
+                                                                            backgroundColor: `${color}15`, 
+                                                                            color: color, 
+                                                                            border: `1px solid ${color}40` 
+                                                                        }}
+                                                                        title={tag}
+                                                                    >
+                                                                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }}></span>
+                                                                        <span className="truncate leading-none pt-px">{tag}</span>
+                                                                    </span>
+                                                                );
+                                                            })}
+                                                            {remainingCount > 0 && (
+                                                                <span 
+                                                                    className="inline-flex items-center justify-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm cursor-help bg-slate-50 text-slate-500 border border-slate-200"
+                                                                    title={`Y ${remainingCount} etiqueta(s) más`}
+                                                                >
+                                                                    +{remainingCount}
+                                                                </span>
+                                                            )}
                                                         </div>
-                                                        <p className="text-[11px] text-slate-600 leading-snug" title={p.ultimaActNotas || ''}>
-                                                            {p.ultimaActNotas
-                                                                ? (p.ultimaActNotas.length > 50 ? p.ultimaActNotas.slice(0, 50) + '…' : p.ultimaActNotas)
-                                                                : <span className="italic text-slate-400">{getTipoLabel(p.ultimaActTipo)}</span>}
-                                                        </p>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-xs text-slate-300 italic">Sin interacciones</span>
-                                                )}
+                                                    );
+                                                })()}
                                             </td>
                                             <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
                                                  <div className="flex flex-col gap-1.5">
@@ -1782,7 +1828,7 @@ const Seguimiento = () => {
                                                         <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Valor estimado</th>
                                                         <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Contacto</th>
                                                         <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[9px] md:text-xs uppercase tracking-wider">Etapa</th>
-                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs whitespace-nowrap">Última interacción</th>
+                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[9px] md:text-xs uppercase tracking-wider whitespace-nowrap">Etiquetas</th>
                                                         <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Recordatorio</th>
                                                         <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[10px] md:text-xs">Acciones</th>
                                                     </tr>
