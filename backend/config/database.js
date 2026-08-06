@@ -121,7 +121,8 @@ const CAMEL_COLS = [
   'googleRefreshToken', 'googleAccessToken', 'googleTokenExpiry',
   'vendedorNombre', 'vendedorRol', 'closerNombre', 'propietarioNombre', 'sitioWeb', 'googleMeetLink',
   'customMetricLabel', 'customMetricValue', 'createdAt', 'tipoActividad',
-  'ultimaInteraccion', 'proximaLlamada', 'customSections', 'fuente', 'motivoPerdida'
+  'ultimaInteraccion', 'proximaLlamada', 'customSections', 'fuente', 'motivoPerdida',
+  'etapaCliente', 'kanbanColProspecto', 'kanbanColCliente'
 ];
 
 // Helper: convierte '?' a '$1', '$2', etc. para Postgres y añade comillas dobles a columnas camelCase
@@ -155,7 +156,8 @@ const pgMap = {
   vendedornombre: 'vendedorNombre', vendedorrol: 'vendedorRol', closernombre: 'closerNombre', propietarionombre: 'propietarioNombre',
   sitioweb: 'sitioWeb', googlemeetlink: 'googleMeetLink',
   custommetriclabel: 'customMetricLabel', custommetricvalue: 'customMetricValue',
-  customsections: 'customSections', fuente: 'fuente', motivoperdida: 'motivoPerdida'
+  customsections: 'customSections', fuente: 'fuente', motivoperdida: 'motivoPerdida',
+  etapacliente: 'etapaCliente', kanbancolprospecto: 'kanbanColProspecto', kanbancolcliente: 'kanbanColCliente'
 };
 
 const mapPgRow = (row) => {
