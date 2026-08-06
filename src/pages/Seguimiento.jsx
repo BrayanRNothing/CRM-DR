@@ -1543,14 +1543,6 @@ const Seguimiento = () => {
                             </table>
                         </div>
                     </div>
-                ) : prospectosFiltrados.length === 0 ? (
-                    <div className="bg-white md:border md:border-slate-200 rounded-2xl md:shadow-sm p-12 text-center text-gray-500">
-                        <div className="mx-auto w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
-                            <Search className="w-8 h-8 text-slate-300" />
-                        </div>
-                        <p className="text-lg font-medium text-slate-700">No se encontraron prospectos</p>
-                        <p className="text-sm text-slate-400 mt-1">Prueba ajustando los filtros o creando uno nuevo.</p>
-                    </div>
                 ) : (
                     <AnimatePresence mode="wait">
                         {vistaKanban ? (
@@ -1572,8 +1564,30 @@ const Seguimiento = () => {
                                     onEtapaChange={handleKanbanColChange}
                                 />
                             </motion.div>
+                        ) : prospectosFiltrados.length === 0 ? (
+                            <motion.div
+                                key="lista_vacia"
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -15 }}
+                                transition={{ duration: 0.25, ease: "easeOut" }}
+                                className="bg-white md:rounded-2xl p-12 min-h-60 flex flex-col items-center justify-center text-center"
+                            >
+                                <div className="mx-auto w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                                    <Search className="w-8 h-8 text-slate-300" />
+                                </div>
+                                <p className="text-lg font-medium text-slate-700">No se encontraron prospectos</p>
+                                <p className="text-sm text-slate-400 mt-1">Prueba ajustando los filtros o creando uno nuevo.</p>
+                            </motion.div>
                         ) : (
-                    <div className="space-y-6 w-full">
+                            <motion.div
+                                key="lista"
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -15 }}
+                                transition={{ duration: 0.25, ease: "easeOut" }}
+                                className="space-y-6 w-full"
+                            >
                         {(() => {
                             const misPrivados = [];
                             const misCompartidos = [];
@@ -1792,7 +1806,7 @@ const Seguimiento = () => {
                                 </>
                             );
                         })()}
-                    </div>
+                            </motion.div>
                         )}
                     </AnimatePresence>
                 )}
