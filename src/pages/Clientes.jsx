@@ -61,6 +61,7 @@ const Clientes = () => {
     const [importando, setImportando] = useState(false);
     const [ordenFiltro, setOrdenFiltro] = useState('todos');
     const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine'); // mine | shared | all
+    const [mostrarFiltros, setMostrarFiltros] = useState(false);
     const [vistaKanban, setVistaKanban] = useState(() => {
         try {
             const saved = localStorage.getItem('crm_vistaKanban_clientes');
@@ -1059,8 +1060,9 @@ const Clientes = () => {
         <>
             <div className={`md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 flex flex-col w-full ${vistaKanban ? 'flex-1 h-full min-h-0 overflow-hidden pb-4 md:pb-4' : 'min-h-screen pb-8 md:pb-6'}`}>
                 <div className={`max-w-[1600px] w-full mx-auto flex flex-col ${vistaKanban ? 'h-full flex-1' : ''}`}>
-                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-3 shrink-0">
-                        <div className="shrink-0">
+                    <div className="flex flex-col xl:flex-row xl:items-center gap-4 mb-3 shrink-0">
+                        {/* Title - Left Aligned */}
+                        <div className="shrink-0 xl:flex-1 min-w-0">
                             <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
                                 {esMenuSeguimiento ? 'Seguimiento de Clientes' : 'Clientes'}
                             </h1>
@@ -1070,7 +1072,131 @@ const Clientes = () => {
                                     : 'Cartera de clientes ganados.'}
                             </p>
                         </div>
-                        <div className="flex items-center justify-start md:justify-end gap-2 flex-wrap w-full mt-2 xl:mt-0">
+
+                        {/* Search and View Toggles - Centered */}
+                        <div className="flex items-center justify-start xl:justify-center gap-2 w-full xl:w-auto xl:flex-none">
+                                {/* Unified Search and Filters */}
+                                <div className="flex items-center bg-white border border-slate-200 rounded-lg h-9 shadow-sm shrink-0 w-full sm:w-[350px] overflow-visible relative">
+                                    <div className="flex items-center h-full bg-slate-50/50 border-r border-slate-200 shrink-0 relative">
+                                        <button
+                                            onClick={() => setMostrarFiltros(!mostrarFiltros)}
+                                            className="flex items-center justify-center w-9 h-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors focus:outline-none"
+                                            title="Filtros"
+                                        >
+                                            <Filter className="w-4 h-4" />
+                                            {(ordenFiltro !== 'todos' || filtroVisibilidad !== 'mine') && (
+                                                <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                                            )}
+                                        </button>
+
+                                        <AnimatePresence>
+                                            {mostrarFiltros && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 5 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: 5 }}
+                                                    transition={{ duration: 0.15 }}
+                                                    className="absolute top-full left-0 mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-xl z-50 overflow-hidden"
+                                                >
+                                                    <div className="p-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-slate-700">Filtros</span>
+                                                        {(ordenFiltro !== 'todos' || filtroVisibilidad !== 'mine') && (
+                                                            <button
+                                                                onClick={() => { setOrdenFiltro('todos'); setFiltroVisibilidad('mine'); }}
+                                                                className="text-[10px] font-semibold text-red-500 hover:text-red-700"
+                                                            >
+                                                                Limpiar
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="p-2 flex flex-col gap-2">
+                                                        <div className="flex flex-col gap-1">
+                                                            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-1">Visibilidad</label>
+                                                            <select
+                                                                value={filtroVisibilidad}
+                                                                onChange={(e) => setFiltroVisibilidad(e.target.value)}
+                                                                className="w-full h-8 bg-slate-50 border border-slate-200 rounded-md text-[11px] font-semibold text-slate-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 px-2 outline-none"
+                                                            >
+                                                                <option value="mine">Mis clientes</option>
+                                                                <option value="shared">Compartidos</option>
+                                                                <option value="all">Todos visibles</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="flex flex-col gap-1">
+                                                            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-1">Ordenar por</label>
+                                                            <select
+                                                                value={ordenFiltro}
+                                                                onChange={(e) => setOrdenFiltro(e.target.value)}
+                                                                className="w-full h-8 bg-slate-50 border border-slate-200 rounded-md text-[11px] font-semibold text-slate-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 px-2 outline-none"
+                                                            >
+                                                                <option value="todos">Defecto</option>
+                                                                <option value="mayor_valor">Mayor valor</option>
+                                                                <option value="mayor_facturado">Facturado</option>
+                                                                <option value="en_proceso">Oportunidad</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+
+                                        {busqueda && (
+                                            <button
+                                                onClick={() => setBusqueda('')}
+                                                className="absolute -right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-4 h-4 bg-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-300 rounded-full transition-colors z-10"
+                                                title="Limpiar búsqueda"
+                                            >
+                                                <span className="text-[10px] font-bold leading-none">✕</span>
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="relative flex-1 h-full min-w-[150px]">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar clientes..."
+                                            value={busqueda}
+                                            onChange={(e) => setBusqueda(e.target.value)}
+                                            className="w-full h-full pl-9 pr-3 bg-transparent outline-none text-[11px] font-medium text-slate-700 placeholder:text-slate-400 focus:bg-slate-50 transition-colors border-0 focus:ring-0"
+                                        />
+                                    </div>
+
+                                    <div 
+                                        className={`flex items-center justify-center h-full border-l border-slate-200 bg-slate-50/50 transition-all ${vistaKanban ? 'w-10' : 'w-10 opacity-0 pointer-events-none'}`} 
+                                        id="kanban-settings-portal-target"
+                                    ></div>
+                                </div>
+
+                            {/* Toggle Vista Lista / Kanban */}
+                            <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200 shrink-0 h-9">
+                                <button
+                                    onClick={() => setVistaKanban(false)}
+                                    title="Vista lista"
+                                    className={`flex items-center justify-center w-8 h-full rounded-md transition-all ${
+                                        !vistaKanban
+                                            ? 'bg-white text-slate-800 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                                >
+                                    <LayoutList className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => setVistaKanban(true)}
+                                    title="Vista kanban"
+                                    className={`flex items-center justify-center w-8 h-full rounded-md transition-all ${
+                                        vistaKanban
+                                            ? 'bg-white text-slate-800 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                                >
+                                    <Kanban className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Actions - Right Aligned */}
+                        <div className="flex items-center justify-start xl:justify-end gap-2 w-full xl:w-auto xl:flex-1 min-w-0 mt-2 xl:mt-0">
                             <input
                                 ref={fileInputRef}
                                 type="file"
@@ -1078,127 +1204,24 @@ const Clientes = () => {
                                 className="hidden"
                                 onChange={handleImportarClientes}
                             />
-
-                            {/* Search and Filters (Compact) */}
-                            {!vistaKanban && (
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                    <div className="relative w-32 sm:w-48 h-9">
-                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                                        <input
-                                            type="text"
-                                            placeholder="Buscar clientes..."
-                                            value={busqueda}
-                                            onChange={(e) => setBusqueda(e.target.value)}
-                                            className="w-full h-full pl-8 pr-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-(--theme-500) focus:border-(--theme-500) bg-white text-xs transition-shadow"
-                                        />
-                                    </div>
-
-                                    <div className="flex items-center bg-white border border-slate-200 rounded-lg h-9 px-1 shadow-sm shrink-0">
-                                        <Filter className="w-3.5 h-3.5 text-slate-400 ml-1.5" />
-                                        <select
-                                            value={filtroVisibilidad}
-                                            onChange={(e) => setFiltroVisibilidad(e.target.value)}
-                                            className="h-full bg-transparent border-0 text-[11px] font-semibold text-slate-600 focus:ring-0 cursor-pointer outline-none w-24"
-                                        >
-                                            <option value="mine">Mis clientes</option>
-                                            <option value="shared">Compartidos</option>
-                                            <option value="all">Todos visibles</option>
-                                        </select>
-                                        
-                                        <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
-                                        
-                                        <select
-                                            value={ordenFiltro}
-                                            onChange={(e) => setOrdenFiltro(e.target.value)}
-                                            className="h-full bg-transparent border-0 text-[11px] font-semibold text-slate-600 focus:ring-0 cursor-pointer outline-none w-[100px]"
-                                        >
-                                            <option value="todos">Ordenar por...</option>
-                                            <option value="mayor_valor">Mayor valor</option>
-                                            <option value="mayor_facturado">Facturado</option>
-                                            <option value="en_proceso">Oportunidad</option>
-                                        </select>
-
-                                        {(ordenFiltro !== 'todos' || busqueda || filtroVisibilidad !== 'mine') && (
-                                            <button
-                                                onClick={() => { setOrdenFiltro('todos'); setBusqueda(''); setFiltroVisibilidad('mine'); }}
-                                                className="ml-1 flex items-center justify-center w-6 h-6 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                                                title="Limpiar filtros"
-                                            >
-                                                ✕
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Toggle Vista Lista / Kanban */}
-                            <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200 shrink-0">
+                            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
                                 <button
-                                    onClick={() => setVistaKanban(false)}
-                                    title="Vista lista"
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                                        !vistaKanban
-                                            ? 'bg-white text-slate-800 shadow-sm'
-                                            : 'text-slate-500 hover:text-slate-700'
-                                    }`}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={importando}
+                                    className="flex items-center justify-center w-9 h-9 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm shrink-0"
+                                    title="Importar"
                                 >
-                                    <LayoutList className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Lista</span>
+                                    {importando ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                                 </button>
                                 <button
-                                    onClick={() => setVistaKanban(true)}
-                                    title="Vista kanban"
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                                        vistaKanban
-                                            ? 'bg-white text-slate-800 shadow-sm'
-                                            : 'text-slate-500 hover:text-slate-700'
-                                    }`}
+                                    onClick={exportarClientesCsv}
+                                    disabled={loading || !clientesFiltrados.length}
+                                    className="flex items-center justify-center w-9 h-9 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors shadow-sm shrink-0"
+                                    title="Exportar"
                                 >
-                                    <Kanban className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Kanban</span>
+                                    <Upload className="w-4 h-4" />
                                 </button>
                             </div>
-                            <AnimatePresence mode="wait">
-                                {!vistaKanban ? (
-                                    <motion.div
-                                        key="lista-btns"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.25 }}
-                                        className="flex items-center gap-2 flex-wrap sm:flex-nowrap"
-                                    >
-                                        <button
-                                            onClick={() => fileInputRef.current?.click()}
-                                            disabled={importando}
-                                            className="flex-1 sm:flex-none sm:w-[115px] justify-center flex items-center gap-1.5 px-2 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-[11px] md:text-xs font-medium shadow-sm shrink-0"
-                                        >
-                                            {importando ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                                            <span className="hidden sm:inline">{importando ? 'Importando' : 'Importar'}</span>
-                                            <span className="sm:hidden">Importar</span>
-                                        </button>
-                                        <button
-                                            onClick={exportarClientesCsv}
-                                            disabled={loading || !clientesFiltrados.length}
-                                            className="flex-1 sm:flex-none sm:w-[115px] justify-center flex items-center gap-1.5 px-2 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-colors text-[11px] md:text-xs font-medium shadow-sm shrink-0"
-                                        >
-                                            <Upload className="w-3.5 h-3.5" />
-                                            <span className="hidden sm:inline">Exportar</span>
-                                            <span className="sm:hidden">Exportar</span>
-                                        </button>
-                                    </motion.div>
-                                ) : (
-                                    <motion.div
-                                        key="kanban-btns"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.25 }}
-                                        id="kanban-toolbar-portal-target"
-                                        className="flex items-center gap-2 flex-wrap shrink-0 sm:min-w-[238px] min-h-[32px] md:min-h-[34px]"
-                                    />
-                                )}
-                            </AnimatePresence>
                             <button
                                 onClick={() => setMostrarModalCrear(true)}
                                 className="hidden sm:flex w-full sm:w-auto justify-center items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs md:text-sm font-medium"
@@ -1283,13 +1306,13 @@ const Clientes = () => {
                                 const oldClientes = [...clientes];
                                 setClientes(prev => prev.map(c =>
                                     String(c.id || c._id) === String(clienteId)
-                                        ? { ...c, etapaCliente: nuevaEtapa }
+                                        ? { ...c, kanbanColCliente: nuevaEtapa }
                                         : c
                                 ));
                                 try {
                                     await axios.put(
-                                        `${API_URL}/api/vendedor/prospectos/${clienteId}`,
-                                        { etapaCliente: nuevaEtapa },
+                                        `${API_URL}/api/vendedor/prospectos/${clienteId}/editar`,
+                                        { kanbanColCliente: nuevaEtapa },
                                         { headers: getAuthHeaders() }
                                     );
                                 } catch (err) {

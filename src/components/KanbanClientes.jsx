@@ -39,7 +39,6 @@ const BOARD_THEMES = [
 
 const CARD_SIZES = [
     { id: 'compact',  label: 'Compacta',  icon: Minimize2 },
-    { id: 'normal',   label: 'Normal',    icon: LayoutGrid },
     { id: 'detailed', label: 'Detallada', icon: Maximize2 },
 ];
 
@@ -49,16 +48,6 @@ const COL_WIDTHS = [
     { id: 'wide',   label: 'Ancha',    px: '340px' },
 ];
 
-const CARD_FIELDS = [
-    { id: 'company',      label: 'Empresa',          icon: Building2   },
-    { id: 'stars',        label: 'Estrellas',         icon: Star        },
-    { id: 'phone',        label: 'Teléfono',          icon: Phone       },
-    { id: 'email',        label: 'Correo',            icon: Mail        },
-    { id: 'money',        label: 'Facturado',         icon: Zap         },
-    { id: 'lastActivity', label: 'Última actividad',  icon: Clock       },
-    { id: 'reminder',     label: 'Recordatorio',      icon: Calendar    },
-    { id: 'etapa',        label: 'Etapa',             icon: AlignLeft   },
-];
 
 const SORT_OPTIONS = [
     { id: 'default',    label: 'Por defecto'      },
@@ -95,7 +84,7 @@ const STORAGE_PREFS_KEY = 'kanban_clientes_prefs_v3';
 const getColor   = (id) => COLUMN_COLORS.find(c => c.id === id) || COLUMN_COLORS[0];
 const getTheme   = (id) => BOARD_THEMES.find(t => t.id === id) || BOARD_THEMES[0];
 const getWidth   = (id) => COL_WIDTHS.find(w => w.id === id) || COL_WIDTHS[1];
-const getClientCol = (c) => c.etapaCliente || 'cliente_nuevo';
+const getClientCol = (c, defaultColId) => c.kanbanColCliente || defaultColId || 'cliente_nuevo';
 
 const formatMoney = (c) => {
     const v = Number(c.totalFacturado || c.customMetricValue) || 0;
@@ -146,8 +135,8 @@ const ClienteCard = ({ cliente, cardSize, fields, colorId, isDragging, onVerDeta
                 ${isCompact ? 'p-2' : isDetailed ? 'p-4' : 'p-3'}`}
             onClick={() => onVerDetalles(cliente)}
         >
-            {/* Color Dot at 90% width */}
-            <div className="absolute right-[10%] top-1/2 -translate-y-1/2 flex items-center justify-center">
+            {/* Color Dot */}
+            <div className={`absolute ${isDetailed ? 'top-5 right-4' : 'right-[10%] top-1/2 -translate-y-1/2'} flex items-center justify-center`}>
                 <div className={`w-2.5 h-2.5 rounded-full animate-dot-ping ${dotColor}`} />
             </div>
 
@@ -157,8 +146,8 @@ const ClienteCard = ({ cliente, cardSize, fields, colorId, isDragging, onVerDeta
                     <p className={`font-bold text-gray-900 leading-tight truncate ${isCompact ? 'text-xs' : 'text-sm'}`}>
                         {nombre}
                     </p>
-                    {fields.company && cliente.empresa && (
-                        <p className={`text-slate-500 truncate mt-0.5 ${isCompact ? 'text-[10px]' : 'text-[11px]'}`}>
+                    {isDetailed && cliente.empresa && (
+                        <p className={`text-slate-500 truncate mt-0.5 text-[11px]`}>
                             {cliente.empresa}
                         </p>
                     )}
@@ -166,65 +155,36 @@ const ClienteCard = ({ cliente, cardSize, fields, colorId, isDragging, onVerDeta
             </div>
 
             {/* Estrellas */}
-            {fields.stars && !isCompact && (
+            {isDetailed && (
                 <div className="flex items-center gap-0.5 mt-1.5">
                     {[1,2,3,4,5].map(v => (
-                        <Star key={v} className={`${isDetailed ? 'w-3 h-3' : 'w-2.5 h-2.5'} ${interes >= v ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-100'}`} />
+                        <Star key={v} className={`w-3 h-3 ${interes >= v ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-100'}`} />
                     ))}
-                    {isDetailed && <span className="text-[10px] text-slate-400 ml-1">{interes}/5</span>}
+                    <span className="text-[10px] text-slate-400 ml-1">{interes}/5</span>
                 </div>
             )}
 
-            {/* Campos de contacto */}
-            {!isCompact && (
-                <div className={`${isDetailed ? 'mt-3 space-y-1.5' : 'mt-2 space-y-1'}`}>
-                    {fields.phone && cliente.telefono && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-slate-600">
-                            <Phone className="w-3 h-3 text-slate-400 shrink-0" />
-                            <span className="truncate">{cliente.telefono}</span>
-                        </div>
-                    )}
-                    {fields.email && cliente.correo && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                            <Mail className="w-3 h-3 text-slate-400 shrink-0" />
-                            <span className="truncate">{cliente.correo}</span>
-                        </div>
-                    )}
-                    {fields.reminder && cliente.proximaLlamada && (
-                        <div className={`flex items-center gap-1.5 text-[11px] ${new Date(cliente.proximaLlamada) < new Date() ? 'text-red-600' : 'text-emerald-700'}`}>
-                            <Calendar className="w-3 h-3 shrink-0" />
-                            <span className="truncate">
-                                {new Date(cliente.proximaLlamada).toLocaleString('es-MX', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}
-                                {new Date(cliente.proximaLlamada) < new Date() && ' ⚠'}
-                            </span>
-                        </div>
-                    )}
-                    {fields.etapa && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                            <AlignLeft className="w-3 h-3 text-slate-400 shrink-0" />
-                            <span>{ETAPA_LABELS[cliente.etapaCliente] || 'Cliente nuevo'}</span>
-                        </div>
-                    )}
+            {/* Recordatorio */}
+            {isDetailed && cliente.proximaLlamada && (
+                <div className="mt-3 space-y-1.5">
+                    <div className={`flex items-center gap-1.5 text-[11px] ${new Date(cliente.proximaLlamada) < new Date() ? 'text-red-600' : 'text-emerald-700'}`}>
+                        <Calendar className="w-3 h-3 shrink-0" />
+                        <span className="truncate">
+                            {new Date(cliente.proximaLlamada).toLocaleString('es-MX', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}
+                            {new Date(cliente.proximaLlamada) < new Date() && ' ⚠'}
+                        </span>
+                    </div>
                 </div>
             )}
 
-            {/* Footer: money + last activity */}
-            {(fields.money || fields.lastActivity) && (
-                <div className={`flex items-center justify-between ${isCompact ? 'mt-1.5' : 'mt-2.5 pt-2 border-t border-slate-100'}`}>
-                    {fields.money && money ? (
-                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">{money}</span>
-                    ) : <span />}
-                    {fields.lastActivity && cliente.ultimaActTipo && (
-                        <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                            {cliente.ultimaActTipo === 'llamada' && <Phone className="w-2.5 h-2.5" />}
-                            {cliente.ultimaActTipo === 'whatsapp' && <MessageSquare className="w-2.5 h-2.5" />}
-                            {cliente.ultimaActTipo === 'correo' && <Mail className="w-2.5 h-2.5" />}
-                            {!['llamada','whatsapp','correo'].includes(cliente.ultimaActTipo) && <Clock className="w-2.5 h-2.5" />}
-                            <span className="capitalize hidden sm:inline">{cliente.ultimaActTipo}</span>
-                        </div>
-                    )}
-                </div>
-            )}
+            {/* Footer: money */}
+            <div className={`flex items-center justify-between ${isCompact ? 'mt-1.5' : 'mt-2.5 pt-1'}`}>
+                {money && money !== '$-' ? (
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">{money}</span>
+                ) : (
+                    <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100 border-dashed">$ No definido</span>
+                )}
+            </div>
 
             {/* Drag grip hint */}
             <GripVertical className="absolute bottom-2 right-2 w-3 h-3 text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -548,85 +508,7 @@ const KanbanColumn = ({
    PANEL DE CONFIGURACIÓN
 ═══════════════════════════════════════════════════════════════ */
 
-const SettingsPanel = ({ prefs, onPrefsChange, columns, onColumnsReset, onClose }) => {
-    const toggleField = (fieldId) => {
-        onPrefsChange({ ...prefs, fields: { ...prefs.fields, [fieldId]: !prefs.fields[fieldId] } });
-    };
 
-    return (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col w-full max-h-full">
-            {/* Header panel */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
-                <div className="flex items-center gap-2">
-                    <Settings2 className="w-4 h-4 text-slate-500" />
-                    <h3 className="text-sm font-black text-slate-800">Personalizar Kanban</h3>
-                </div>
-                <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 transition-colors">
-                    <X className="w-4 h-4" />
-                </button>
-            </div>
-
-            <div className="p-4 space-y-5 overflow-y-auto min-h-0 flex-1">
-                        {/* Tamaño */}
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Tamaño de tarjeta</label>
-                            <div className="flex gap-2">
-                                {CARD_SIZES.map(s => (
-                                    <button key={s.id} onClick={() => onPrefsChange({ ...prefs, cardSize: s.id })}
-                                        className={`flex-1 flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-bold transition-colors
-                                            ${prefs.cardSize === s.id ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                        <s.icon className="w-4 h-4" /> {s.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Campos visibles */}
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Campos visibles en tarjeta</label>
-                            <div className="grid grid-cols-2 gap-1.5">
-                                {CARD_FIELDS.map(f => {
-                                    const active = prefs.fields[f.id];
-                                    return (
-                                        <button key={f.id} onClick={() => toggleField(f.id)}
-                                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors
-                                                ${active ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                            <f.icon className="w-4 h-4 shrink-0" />
-                                            <span className="truncate">{f.label}</span>
-                                            {active ? <Check className="w-4 h-4 ml-auto shrink-0" /> : <EyeOff className="w-4 h-4 ml-auto shrink-0 opacity-40" />}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Ancho de columna */}
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Ancho de columnas</label>
-                            <div className="flex gap-2">
-                                {COL_WIDTHS.map(w => (
-                                    <button key={w.id} onClick={() => onPrefsChange({ ...prefs, colWidth: w.id })}
-                                        className={`flex-1 px-3 py-2.5 rounded-lg text-xs font-bold transition-colors
-                                            ${prefs.colWidth === w.id ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                        {w.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-            </div>
-
-            {/* Reset all */}
-            <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-                <p className="text-[11px] text-slate-400">Todos los cambios se guardan automáticamente.</p>
-                <button
-                    onClick={() => { onPrefsChange(DEFAULT_PREFS); onColumnsReset(); }}
-                    className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 hover:text-rose-600 transition-colors">
-                    <RotateCcw className="w-3 h-3" /> Todo por defecto
-                </button>
-            </div>
-        </div>
-    );
-};
 
 /* ═══════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
@@ -656,11 +538,14 @@ const KanbanClientes = ({
     const [draggingCol, setDraggingCol] = useState(null); // colId being dragged
     const [showSettings, setShowSettings] = useState(false);
     const [isAddingColumn, setIsAddingColumn] = useState(false);
+    
     const [portalNode, setPortalNode] = useState(null);
+    const [settingsPortalNode, setSettingsPortalNode] = useState(null);
     const scrollContainerRef = useRef(null);
 
     useEffect(() => {
         setPortalNode(document.getElementById('kanban-toolbar-portal-target'));
+        setSettingsPortalNode(document.getElementById('kanban-settings-portal-target'));
     }, []);
 
     /* ── Scroll Horizontal con Rueda ── */
@@ -738,10 +623,11 @@ const KanbanClientes = ({
     const grouped = useMemo(() => {
         const map = {};
         columns.forEach(c => { map[c.id] = []; });
+        const defaultColId = columns[0]?.id;
         clientes.forEach(cl => {
-            const col = getClientCol(cl);
+            const col = getClientCol(cl, defaultColId);
             if (map[col] !== undefined) map[col].push(cl);
-            else if (map[columns[0]?.id]) map[columns[0].id].push(cl);
+            else if (defaultColId && map[defaultColId]) map[defaultColId].push(cl);
         });
         return map;
     }, [clientes, columns]);
@@ -750,8 +636,15 @@ const KanbanClientes = ({
     const updateColumn = useCallback((updated) =>
         setColumns(p => p.map(c => c.id === updated.id ? updated : c)), []);
 
-    const deleteColumn = useCallback((id) =>
-        setColumns(p => p.filter(c => c.id !== id)), []);
+    const deleteColumn = useCallback((id) => {
+        const defaultColId = columns[0]?.id;
+        const hasItems = clientes.some(cl => getClientCol(cl, defaultColId) === id);
+        if (hasItems) {
+            alert('Por favor mueve los clientes a otra columna antes de eliminar esta.');
+            return;
+        }
+        setColumns(p => p.filter(c => c.id !== id));
+    }, [clientes, columns]);
 
     const resetColumns = useCallback(() => {
         setColumns(DEFAULT_COLUMNS);
@@ -816,50 +709,80 @@ const KanbanClientes = ({
 
     const totalClientes = clientes.length;
 
-    const toolbarContent = (
-        <>
-            {/* Nueva columna */}
-            <button onClick={addColumn} disabled={isAddingColumn}
-                className={`flex-1 sm:flex-none sm:w-[115px] justify-center flex items-center gap-1.5 px-2 py-2 text-[11px] md:text-xs font-medium rounded-lg transition-colors shadow-sm shrink-0 bg-blue-600 text-white ${isAddingColumn ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}>
-                <Plus className="w-3.5 h-3.5" /> 
-                <span className="hidden sm:inline">Añadir Col.</span>
-                <span className="sm:hidden">Columna</span>
+
+    const settingsDropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (settingsDropdownRef.current && !settingsDropdownRef.current.contains(e.target)) {
+                setShowSettings(false);
+            }
+        };
+        if (showSettings) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showSettings]);
+
+    const settingsButtonAndDropdown = (
+        <div className="relative w-full h-full" ref={settingsDropdownRef}>
+            <button onClick={() => setShowSettings(v => !v)}
+                className={`flex items-center justify-center w-full h-full transition-colors shrink-0 outline-none
+                    ${showSettings ? 'bg-slate-100 text-slate-800' : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}
+                title="Ajustes Kanban"
+            >
+                <Settings2 className="w-4 h-4" />
             </button>
 
-            {/* Configurar */}
-            <button onClick={() => setShowSettings(v => !v)}
-                className={`flex-1 sm:flex-none sm:w-[115px] justify-center flex items-center gap-1.5 px-2 py-2 text-[11px] md:text-xs font-medium rounded-lg transition-colors shadow-sm shrink-0
-                    ${showSettings ? 'bg-violet-700 text-white' : 'bg-violet-600 text-white hover:bg-violet-700'}`}>
-                <Settings2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Personalizar</span>
-                <span className="sm:hidden">Ajustes</span>
-            </button>
-        </>
+            <AnimatePresence>
+                {showSettings && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 5 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute top-full right-0 mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-xl z-50 overflow-hidden"
+                    >
+                        <div className="p-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-700">Ajustes Kanban</span>
+                        </div>
+                        <div className="p-2 flex flex-col gap-3">
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-1">Tamaño de tarjeta</label>
+                                <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-md">
+                                    {CARD_SIZES.map(s => (
+                                        <button key={s.id} onClick={() => setPrefs(p => ({ ...p, cardSize: s.id }))}
+                                            className={`flex flex-col items-center justify-center py-1.5 rounded text-[10px] font-bold transition-colors ${prefs.cardSize === s.id ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'}`}>
+                                            <s.icon className="w-3.5 h-3.5 mb-0.5" />
+                                            {s.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-1">Ancho de columna</label>
+                                <select
+                                    value={prefs.colWidth}
+                                    onChange={e => setPrefs(p => ({ ...p, colWidth: e.target.value }))}
+                                    className="w-full h-8 bg-slate-50 border border-slate-200 rounded-md text-[11px] font-semibold text-slate-700 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 px-2 outline-none cursor-pointer"
+                                >
+                                    {COL_WIDTHS.map(w => (
+                                        <option key={w.id} value={w.id}>{w.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
     );
 
     return (
         <div className={`flex flex-col flex-1 min-h-0 w-full rounded-2xl overflow-hidden transition-colors duration-300`}>
             {/* ── Toolbar ── */}
-            {portalNode && createPortal(toolbarContent, portalNode)}
-
-
-            {/* ── Panel de configuración ── */}
-            {showSettings && createPortal(
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-transparent animate-in fade-in duration-200"
-                    onClick={(e) => { if (e.target === e.currentTarget) setShowSettings(false); }}
-                >
-                    <div className="w-full max-w-xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
-                        <SettingsPanel
-                            prefs={prefs}
-                            onPrefsChange={setPrefs}
-                            columns={columns}
-                            onColumnsReset={resetColumns}
-                            onClose={() => setShowSettings(false)}
-                        />
-                    </div>
-                </div>,
-                document.body
-            )}
+            {settingsPortalNode && createPortal(settingsButtonAndDropdown, settingsPortalNode)}
 
             {/* ── Board ── */}
             <div className={`rounded-2xl transition-colors duration-300 flex-1 min-h-0 relative ${theme.bg}`}>
@@ -908,6 +831,38 @@ const KanbanClientes = ({
                                 colWidth={colWidthPx}
                             />
                         ))}
+                        
+                        {/* Phantom Column */}
+                        <div 
+                            onClick={isAddingColumn ? undefined : addColumn}
+                            style={{ minWidth: colWidthPx, maxWidth: colWidthPx }}
+                            className={`shrink-0 flex flex-col gap-3 transition-all duration-200 h-full group focus:outline-none
+                                ${isAddingColumn ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                            {/* Fake Header */}
+                            <div className={`rounded-xl border-2 border-dashed transition-colors
+                                ${themeIsDark ? 'border-slate-600/50 group-hover:border-blue-400 group-hover:bg-slate-800/30' : 'border-slate-300/70 group-hover:border-blue-400 group-hover:bg-blue-50/30'}`}>
+                                {/* Contenido invisible calcado de una cabecera real para forzar la altura exacta */}
+                                <div className="flex items-center gap-1.5 px-3 py-2.5 invisible">
+                                    <div className="p-1 -ml-1">
+                                        <GripVertical className="w-3.5 h-3.5 shrink-0" />
+                                    </div>
+                                    <div className="flex-1 min-w-0 flex flex-col">
+                                        <span className="font-bold text-xs">X</span>
+                                        <span className="text-[10px] font-medium mt-0.5">X</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Fake Body */}
+                            <div className={`flex-1 min-h-0 rounded-xl border-2 border-dashed transition-colors flex flex-col items-center justify-center
+                                ${themeIsDark ? 'border-slate-600/50 group-hover:border-blue-400 group-hover:bg-slate-800/30' : 'border-slate-300/70 group-hover:border-blue-400 group-hover:bg-blue-50/30'}`}>
+                                <div className={`flex flex-col items-center justify-center transition-colors opacity-50 group-hover:opacity-100 ${themeIsDark ? 'text-slate-500 group-hover:text-blue-400' : 'text-slate-400 group-hover:text-blue-500'}`}>
+                                    <Plus className="w-8 h-8 mb-2" />
+                                    <span className="text-sm font-bold">Añadir Columna</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

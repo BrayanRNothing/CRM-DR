@@ -584,6 +584,8 @@ const initDb = async () => {
       ['clientes',    'tipo',                "TEXT DEFAULT 'prospecto'"],
       // ── Pilar 3: Pipeline de Clientes ─────────────────────────────────
       ['clientes',    '"etapaCliente"',      "TEXT DEFAULT 'cliente_nuevo'"],
+      ['clientes',    '"kanbanColProspecto"',"TEXT"],
+      ['clientes',    '"kanbanColCliente"',  "TEXT"],
       ['actividades', '"equipo_id"',         'INTEGER'],
       // ── Stripe / Suscripción ──────────────────────────────────────────
       ['usuarios', 'stripe_customer_id',      'TEXT'],
@@ -782,6 +784,8 @@ const initDb = async () => {
       ['clientes', 'customSections TEXT'],
       ['clientes', 'fuente TEXT'],
       ['clientes', 'motivoPerdida TEXT'],
+      ['clientes', 'kanbanColProspecto TEXT'],
+      ['clientes', 'kanbanColCliente TEXT'],
       ['tareas', 'equipo_id INTEGER'],
     ];
     for (const [table, colDef] of colsMissingSqlite) {

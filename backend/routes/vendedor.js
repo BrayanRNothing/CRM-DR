@@ -1380,7 +1380,7 @@ router.patch('/prospectos/:id/compartir', auth, async (req, res) => {
 router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
     try {
         const prospectoId = parseInt(req.params.id);
-        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, ubicacion, notas, etapaEmbudo, sitioWeb, customMetricLabel, customMetricValue, fuente, etiquetas, etapaCliente } = req.body;
+        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, ubicacion, notas, etapaEmbudo, sitioWeb, customMetricLabel, customMetricValue, fuente, etiquetas, etapaCliente, kanbanColProspecto, kanbanColCliente } = req.body;
         const prospectorId = parseInt(req.usuario.id);
         const now = new Date().toISOString();
 
@@ -1424,6 +1424,14 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
         if (etapaCliente !== undefined) {
             updates.push('"etapaCliente" = ?');
             params.push(etapaCliente);
+        }
+        if (kanbanColProspecto !== undefined) {
+            updates.push('"kanbanColProspecto" = ?');
+            params.push(kanbanColProspecto);
+        }
+        if (kanbanColCliente !== undefined) {
+            updates.push('"kanbanColCliente" = ?');
+            params.push(kanbanColCliente);
         }
 
         // Manejo de cambio de etapa
@@ -2712,7 +2720,7 @@ router.post('/registrar-reunion', [auth, esVendedor], async (req, res) => {
 router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
     try {
         const prospectoId = parseInt(req.params.id);
-        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, etapaEmbudo, interes, proximaLlamada, customSections, fuente } = req.body;
+        const { nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, notas, etapaEmbudo, interes, proximaLlamada, customSections, fuente, kanbanColProspecto, kanbanColCliente } = req.body;
         const now = new Date().toISOString();
 
         const c = await db.prepare('SELECT * FROM clientes WHERE id = ?').get(prospectoId);
@@ -2742,6 +2750,8 @@ router.put('/prospectos/:id/editar', [auth, esVendedor], async (req, res) => {
             params.push(typeof customSections === 'string' ? customSections : JSON.stringify(customSections));
         }
         if (fuente !== undefined) { updates.push('fuente = ?'); params.push(fuente); }
+        if (kanbanColProspecto !== undefined) { updates.push('"kanbanColProspecto" = ?'); params.push(kanbanColProspecto); }
+        if (kanbanColCliente !== undefined) { updates.push('"kanbanColCliente" = ?'); params.push(kanbanColCliente); }
 
         // Manejo de cambio de etapa
         if (etapaEmbudo && etapaEmbudo !== c.etapaEmbudo) {
