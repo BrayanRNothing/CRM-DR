@@ -209,7 +209,7 @@ router.post('/demo-login', async (req, res) => {
         await db.prepare('UPDATE usuarios SET "equipo_id" = ? WHERE id = ?').run(equipoId, userId);
 
         // Crear 5 clientes de ejemplo
-        const prospects = [
+        const demoClientes = [
             { n: 'Carlos', aP: 'Gómez', aM: 'Pérez', t: '5551112222', c: 'carlos@ejemplo.com', emp: 'Tech Solutions', est: 'proceso', eta: 'cliente_nuevo' },
             { n: 'María', aP: 'López', aM: 'Díaz', t: '5553334444', c: 'maria@ejemplo.com', emp: 'Innovación SA', est: 'proceso', eta: 'en_seguimiento' },
             { n: 'Ana', aP: 'Martínez', aM: 'Ruiz', t: '5555556666', c: 'ana@ejemplo.com', emp: 'Consultoría Plus', est: 'proceso', eta: 'reunion_con_cliente' },
@@ -224,10 +224,33 @@ router.post('/demo-login', async (req, res) => {
         `);
 
         let primerClienteId = null;
-        for (const p of prospects) {
+        for (const p of demoClientes) {
             const clientRes = await insertClient.run(p.n, p.aP, p.aM, p.t, p.c, p.emp, p.est, p.eta, userId, userId, equipoId, userId);
             if (!primerClienteId) primerClienteId = clientRes.lastInsertRowid;
         }
+
+        // Crear 6 prospectos de ejemplo
+        const demoProspectos = [
+            { n: 'Diego', aP: 'Ramírez', aM: 'Silva', t: '5551231234', c: 'diego@ejemplo.com', emp: 'Constructora Norte', eta: 'prospecto_nuevo', interes: 4 },
+            { n: 'Sofía', aP: 'Castro', aM: 'Herrera', t: '5554564567', c: 'sofia@ejemplo.com', emp: 'Moda Express', eta: 'en_contacto', interes: 5 },
+            { n: 'Javier', aP: 'Morales', aM: 'Luna', t: '5557897890', c: 'javier@ejemplo.com', emp: 'Distribuidora Central', eta: 'reunion_agendada', interes: 3 },
+            { n: 'Valeria', aP: 'Flores', aM: 'Reyes', t: '5552342345', c: 'valeria@ejemplo.com', emp: 'Consultoría Premium', eta: 'reunion_realizada', interes: 5 },
+            { n: 'Miguel', aP: 'Ortiz', aM: 'Vargas', t: '5555675678', c: 'miguel@ejemplo.com', emp: 'Agencia Digital', eta: 'en_negociacion', interes: 4 },
+            { n: 'Fernanda', aP: 'Jiménez', aM: 'Cruz', t: '5558908901', c: 'fernanda@ejemplo.com', emp: 'Salud Total SA', eta: 'prospecto_nuevo', interes: 2 }
+        ];
+
+        const insertProspecto = await db.prepare(`
+            INSERT INTO clientes 
+            (nombres, apellidoPaterno, apellidoMaterno, telefono, correo, empresa, estado, etapaEmbudo, tipo, vendedorAsignado, prospectorAsignado, "equipo_id", "propietarioId", interes) 
+            VALUES (?, ?, ?, ?, ?, ?, 'proceso', ?, 'prospecto', ?, ?, ?, ?, ?)
+        `);
+
+        let primerProspectoId = null;
+        for (const p of demoProspectos) {
+            const res = await insertProspecto.run(p.n, p.aP, p.aM, p.t, p.c, p.emp, p.eta, userId, userId, equipoId, userId, p.interes);
+            if (!primerProspectoId) primerProspectoId = res.lastInsertRowid;
+        }
+
 
         // Crear una reunión de prueba hoy para el calendario
         if (primerClienteId) {
