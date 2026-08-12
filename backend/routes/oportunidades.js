@@ -37,9 +37,29 @@ router.get('/:clienteId', auth, async (req, res) => {
 // POST /api/oportunidades
 router.post('/', auth, async (req, res) => {
     try {
-        const { cliente_id, titulo, monto, etapa, notas, etapas_json } = req.body;
+        let { cliente_id, titulo, monto, etapa, notas, etapas_json, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, sitioWeb, ubicacion, fuente } = req.body;
         const vendedor_id = req.usuario.id;
         
+        if (!cliente_id) {
+            const clienteResult = await db.prepare(`
+                INSERT INTO clientes (nombres, apellidoPaterno, apellidoMaterno, telefono, telefono2, correo, empresa, sitioWeb, ubicacion, fuente, etapaEmbudo, vendedorAsignado, fechaRegistro, fechaUltimaEtapa)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prospecto_nuevo', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            `).run(
+                titulo || 'Prospecto',
+                apellidoPaterno || '',
+                apellidoMaterno || '',
+                telefono || '',
+                telefono2 || '',
+                correo || '',
+                empresa || '',
+                sitioWeb || '',
+                ubicacion || '',
+                fuente || '',
+                vendedor_id
+            );
+            cliente_id = clienteResult.lastInsertRowid;
+        }
+
         const result = await db.prepare(
             `INSERT INTO oportunidades (cliente_id, vendedor_id, titulo, monto, etapa, notas, etapas_json) 
              VALUES (?, ?, ?, ?, ?, ?, ?)`
