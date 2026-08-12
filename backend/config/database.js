@@ -560,6 +560,17 @@ const initDb = async () => {
              AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tareas' AND column_name='fechaCreacion') THEN
             ALTER TABLE tareas RENAME COLUMN fechacreacion TO "fechaCreacion";
           END IF;
+
+          -- oportunidades (rename old 'cliente' to 'cliente_id' if it exists)
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='oportunidades' AND column_name='cliente')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='oportunidades' AND column_name='cliente_id') THEN
+            ALTER TABLE oportunidades RENAME COLUMN cliente TO cliente_id;
+          END IF;
+          -- oportunidades (rename old 'vendedor' to 'vendedor_id' if it exists)
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='oportunidades' AND column_name='vendedor')
+             AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='oportunidades' AND column_name='vendedor_id') THEN
+            ALTER TABLE oportunidades RENAME COLUMN vendedor TO vendedor_id;
+          END IF;
         END $$;
       `);
       console.log('✅ Migración: renombrado de columnas a camelCase completado');
@@ -609,6 +620,14 @@ const initDb = async () => {
       ['usuarios', 'plan_vencimiento', 'TIMESTAMPTZ'],
       ['usuarios', 'max_usuarios', 'INTEGER DEFAULT 2'],
       ['usuarios', '"ultimaConexion"', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP'],
+      // ── Oportunidades ─────────────────────────────────────────────────
+      ['oportunidades', 'titulo', "TEXT DEFAULT 'Nueva Oportunidad'"],
+      ['oportunidades', 'monto', "DOUBLE PRECISION DEFAULT 0"],
+      ['oportunidades', 'etapa', "TEXT DEFAULT 'prospecto_nuevo'"],
+      ['oportunidades', 'notas', "TEXT"],
+      ['oportunidades', 'etapas_json', "TEXT DEFAULT '[]'"],
+      ['oportunidades', '"fechaCreacion"', "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP"],
+      ['oportunidades', '"fechaActualizacion"', "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP"],
     ];
     for (const [table, col, type] of colsMissingPg) {
       try {
