@@ -53,7 +53,12 @@ router.post('/', auth, async (req, res) => {
             etapas_json || '[]'
         );
         
-        const nuevaOportunidad = await db.prepare('SELECT * FROM oportunidades WHERE id = ?').get(result.lastInsertRowid);
+                const nuevaOportunidad = await db.prepare(`
+            SELECT o.*, c.nombres as cliente_nombres, c.empresa as cliente_empresa, c.etapaEmbudo as cliente_etapaEmbudo
+            FROM oportunidades o
+            LEFT JOIN clientes c ON o.cliente_id = c.id
+            WHERE o.id = ?
+        `).get(result.lastInsertRowid);
         res.json(nuevaOportunidad);
     } catch (error) {
         console.error('Error al crear oportunidad:', error);
@@ -78,7 +83,12 @@ router.put('/:id', auth, async (req, res) => {
              WHERE id = ?`
         ).run(titulo, monto, etapa, notas, etapas_json, id);
         
-        const oportunidad = await db.prepare('SELECT * FROM oportunidades WHERE id = ?').get(id);
+                const oportunidad = await db.prepare(`
+            SELECT o.*, c.nombres as cliente_nombres, c.empresa as cliente_empresa, c.etapaEmbudo as cliente_etapaEmbudo
+            FROM oportunidades o
+            LEFT JOIN clientes c ON o.cliente_id = c.id
+            WHERE o.id = ?
+        `).get(id);
         res.json(oportunidad);
     } catch (error) {
         console.error('Error al actualizar oportunidad:', error);
