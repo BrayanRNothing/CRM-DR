@@ -452,7 +452,10 @@ const initDb = async () => {
   if (isPostgres) {
     try {
       await internalDb.query(`
-        DO $$ BEGIN
+        DO $$ 
+        DECLARE 
+          r RECORD;
+        BEGIN
           -- usuarios
           IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='fechacreacion')
              AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='usuarios' AND column_name='fechaCreacion') THEN
@@ -571,6 +574,18 @@ const initDb = async () => {
              AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='oportunidades' AND column_name='vendedor_id') THEN
             ALTER TABLE oportunidades RENAME COLUMN vendedor TO vendedor_id;
           END IF;
+
+          -- Make all old columns nullable to avoid INSERT errors for unknown legacy columns
+          FOR r IN (
+              SELECT column_name 
+              FROM information_schema.columns 
+              WHERE table_name = 'oportunidades' 
+              AND column_name NOT IN ('id', 'cliente_id', 'vendedor_id')
+              AND is_nullable = 'NO'
+          ) 
+          LOOP
+              EXECUTE 'ALTER TABLE oportunidades ALTER COLUMN ' || quote_ident(r.column_name) || ' DROP NOT NULL';
+          END LOOP;
         END $$;
       `);
       console.log('✅ Migración: renombrado de columnas a camelCase completado');
