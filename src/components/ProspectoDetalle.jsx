@@ -15,6 +15,7 @@ import HistorialInteracciones from './HistorialInteracciones';
 import PlantillasMensajesModal from './PlantillasMensajesModal';
 import GestorEtiquetas from './GestorEtiquetas';
 import GmailIcon from '../assets/google-gmail-svgrepo-com.svg';
+import OportunidadesPanel from './OportunidadesPanel';
 
 const ETAPAS_EMBUDO = {
     'prospecto_nuevo': { label: 'Sin contacto', color: 'bg-red-100 text-red-600' },
@@ -1401,21 +1402,11 @@ export default function ProspectoDetalle({
                                     </div>
                                 ))}
 
-                                {/* Botón para agregar nueva sección */}
-                                <div className={`${customSections.length % 2 === 0 ? 'xl:col-span-2' : ''}`}>
-                                    <button
-                                        onClick={() => setModalNuevaSeccion(true)}
-                                        className="w-full group flex flex-col items-center justify-center gap-3 p-8 bg-slate-50 hover:bg-(--theme-50)/30 border-2 border-dashed border-slate-300 hover:border-(--theme-400) rounded-2xl transition-all duration-300 min-h-[140px] h-full"
-                                    >
-                                        <div className="w-12 h-12 flex items-center justify-center bg-white rounded-full shadow-sm text-slate-400 group-hover:text-(--theme-500) group-hover:scale-110 transition-all border border-slate-200">
-                                            <Plus className="w-6 h-6" />
-                                        </div>
-                                        <div className="text-center">
-                                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest group-hover:text-(--theme-600) transition-colors">Añadir Módulo</p>
-                                            <p className="text-[9px] text-slate-500 mt-1">Notas libres o Checklists</p>
-                                        </div>
-                                    </button>
-                                </div>
+                                {/* Componente de Oportunidades de Venta */}
+                                <OportunidadesPanel 
+                                    clienteId={pid} 
+                                    containerClassName="xl:col-span-2 mt-4" 
+                                />
                             </div>
                         </div>
                     </div>

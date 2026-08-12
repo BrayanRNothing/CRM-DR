@@ -1,0 +1,82 @@
+const express = require('express');
+const router = express.Router();
+const { db } = require('../config/database');
+const { auth } = require('../middleware/auth');
+
+// GET /api/oportunidades/:clienteId
+router.get('/:clienteId', auth, async (req, res) => {
+    try {
+        const clienteId = req.params.clienteId;
+        const oportunidades = await db.prepare('SELECT * FROM oportunidades WHERE cliente_id = ? ORDER BY id ASC').all(clienteId);
+        res.json(oportunidades);
+    } catch (error) {
+        console.error('Error al obtener oportunidades:', error);
+        res.status(500).json({ msg: 'Error al obtener oportunidades' });
+    }
+});
+
+// POST /api/oportunidades
+router.post('/', auth, async (req, res) => {
+    try {
+        const { cliente_id, titulo, monto, etapa, notas, etapas_json } = req.body;
+        const vendedor_id = req.usuario.id;
+        
+        const result = await db.prepare(
+            `INSERT INTO oportunidades (cliente_id, vendedor_id, titulo, monto, etapa, notas, etapas_json) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)`
+        ).run(
+            cliente_id, 
+            vendedor_id, 
+            titulo || 'Nueva Oportunidad', 
+            monto || 0, 
+            etapa || 'nueva', 
+            notas || '', 
+            etapas_json || '[]'
+        );
+        
+        const nuevaOportunidad = await db.prepare('SELECT * FROM oportunidades WHERE id = ?').get(result.lastInsertRowid);
+        res.json(nuevaOportunidad);
+    } catch (error) {
+        console.error('Error al crear oportunidad:', error);
+        res.status(500).json({ msg: 'Error al crear oportunidad' });
+    }
+});
+
+// PUT /api/oportunidades/:id
+router.put('/:id', auth, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { titulo, monto, etapa, notas, etapas_json } = req.body;
+        
+        await db.prepare(
+            `UPDATE oportunidades 
+             SET titulo = COALESCE(?, titulo), 
+                 monto = COALESCE(?, monto), 
+                 etapa = COALESCE(?, etapa), 
+                 notas = COALESCE(?, notas), 
+                 etapas_json = COALESCE(?, etapas_json), 
+                 "fechaActualizacion" = CURRENT_TIMESTAMP 
+             WHERE id = ?`
+        ).run(titulo, monto, etapa, notas, etapas_json, id);
+        
+        const oportunidad = await db.prepare('SELECT * FROM oportunidades WHERE id = ?').get(id);
+        res.json(oportunidad);
+    } catch (error) {
+        console.error('Error al actualizar oportunidad:', error);
+        res.status(500).json({ msg: 'Error al actualizar oportunidad' });
+    }
+});
+
+// DELETE /api/oportunidades/:id
+router.delete('/:id', auth, async (req, res) => {
+    try {
+        const id = req.params.id;
+        await db.prepare('DELETE FROM oportunidades WHERE id = ?').run(id);
+        res.json({ msg: 'Oportunidad eliminada' });
+    } catch (error) {
+        console.error('Error al eliminar oportunidad:', error);
+        res.status(500).json({ msg: 'Error al eliminar oportunidad' });
+    }
+});
+
+module.exports = router;

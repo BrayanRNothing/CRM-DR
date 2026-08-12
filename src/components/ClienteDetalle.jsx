@@ -17,6 +17,7 @@ import ModulosCliente from './ModulosCliente';
 import KpiRotativas from './KpiRotativas';
 import GmailIcon from '../assets/google-gmail-svgrepo-com.svg';
 import GestorEtiquetas from './GestorEtiquetas';
+import OportunidadesPanel from './OportunidadesPanel';
 
 const ETAPAS_CLIENTE = {
     'cliente_nuevo': { label: 'Cliente nuevo', color: 'bg-emerald-100 text-emerald-700' },
@@ -1224,7 +1225,6 @@ export default function ClienteDetalle({
                                 updateSeccion={updateSeccion}
                                 commitSecciones={commitSecciones}
                                 deleteSeccion={deleteSeccion}
-                                onAgregar={() => addSeccion('opportunities', 'Oportunidad')}
                                 clienteId={pid}
                                 rolePath={rolePath}
                                 handleGuardarSeccionesPersonalizadas={handleGuardarSeccionesPersonalizadas}
@@ -1363,8 +1363,16 @@ export default function ClienteDetalle({
                                         )}
                                     </div>
                                 </div>
-                            </ModulosCliente>
-                        </div>
+                                </ModulosCliente>
+                                {/* Componente de Oportunidades de Venta */}
+                                <div className="mt-4 col-span-1 xl:col-span-2">
+                                    <OportunidadesPanel 
+                                        clienteId={pid}
+                                        onOportunidadCerrada={handleOportunidadCerrada}
+                                        containerClassName=""
+                                    />
+                                </div>
+                            </div>
                     </div>
 
                     {/* ===================== COLUMNA DERECHA: HISTORIAL (Drawer en Mobile) ===================== */}
@@ -2093,18 +2101,6 @@ export default function ClienteDetalle({
                                 <div className="text-center">
                                     <p className="text-sm font-bold text-gray-800">Suscripciones</p>
                                     <p className="text-[10px] text-slate-400 mt-0.5">Servicios recurrentes</p>
-                                </div>
-                            </button>
-                            <button
-                                onClick={() => { addSeccion('opportunities', 'Oportunidades de Venta'); setModalNuevaSeccion(false); }}
-                                className="col-span-2 flex items-center justify-center gap-3 p-4 border-2 border-blue-100 hover:border-blue-400 hover:bg-blue-50 rounded-xl transition-all group"
-                            >
-                                <div className="p-2.5 bg-blue-50 group-hover:bg-white rounded-xl text-blue-600 transition-colors">
-                                    <Target className="w-6 h-6" />
-                                </div>
-                                <div className="text-left">
-                                    <p className="text-sm font-bold text-gray-800">Oportunidades de Venta</p>
-                                    <p className="text-[10px] text-slate-400 mt-0.5">Seguimiento de prospectos y cotizaciones</p>
                                 </div>
                             </button>
                             {/* Módulos genéricos */}

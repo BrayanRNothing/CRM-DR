@@ -915,23 +915,6 @@ export default function ModulosCliente({
                     </div>
                 </div>
             ))}
-
-            {showAddCard && (
-                <div className="xl:col-span-2">
-                    <button
-                        onClick={onAgregar}
-                        className="w-full group flex flex-col items-center justify-center gap-4 p-8 bg-slate-50 hover:bg-emerald-50/30 border-[3px] border-dashed border-slate-300 hover:border-emerald-400 rounded-2xl transition-all duration-300 min-h-[160px] h-full"
-                    >
-                        <div className="w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-sm text-slate-400 group-hover:text-emerald-500 group-hover:scale-110 transition-all border border-slate-100">
-                            <Plus className="w-7 h-7" />
-                        </div>
-                        <div className="text-center">
-                            <p className="text-xs font-black text-slate-500 uppercase tracking-widest group-hover:text-emerald-600 transition-colors">Añadir Oportunidad de Venta</p>
-                            <p className="text-[10px] text-slate-400 mt-1">Crea una nueva línea de tiempo para dar seguimiento a una venta</p>
-                        </div>
-                    </button>
-                </div>
-            )}
         </div>
     );
 }

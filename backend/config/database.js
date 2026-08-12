@@ -557,46 +557,46 @@ const initDb = async () => {
 
     // Agregar columnas que pueden faltar en DBs antiguas
     const colsMissingPg = [
-      ['usuarios',  '"googleRefreshToken"', 'TEXT'],
-      ['usuarios',  '"googleAccessToken"',  'TEXT'],
-      ['usuarios',  '"googleTokenExpiry"',  'DOUBLE PRECISION'],
-      ['clientes',  'ubicacion',            'TEXT'],
-      ['clientes',  '"sitioWeb"',           'TEXT'],
-      ['clientes',  'telefono2',            'TEXT'],
-      ['clientes',  '"proximaLlamada"',     'TIMESTAMPTZ'],
-      ['clientes',  'interes',              'TEXT'],
-      ['clientes',  'compartido',           'BOOLEAN DEFAULT FALSE'],
-      ['clientes',  '"propietarioId"',      'INTEGER'],
-      ['usuarios',  'activo',               'INTEGER DEFAULT 1'],
-      ['actividades', '"googleMeetLink"',   'TEXT'],
-      ['actividades', '"createdAt"',        'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP'],
-      ['clientes',    '"customMetricLabel"', 'TEXT'],
-      ['clientes',    '"customMetricValue"', 'TEXT'],
-      ['usuarios',    '"equipo_id"',         'INTEGER'],
-      ['clientes',    '"equipo_id"',         'INTEGER'],
-      ['actividades', '"equipo_id"',         'INTEGER'],
-      ['actividades', 'invitados',           'TEXT'],
-      ['tareas',      '"equipo_id"',         'INTEGER'],
-      ['equipos',     'icon',                'TEXT'],
-      ['clientes',    'etiquetas',           'TEXT'],
-      ['clientes',    '"customSections"',    'TEXT'],
-      ['clientes',    'fuente',              'TEXT'],
-      ['clientes',    '"motivoPerdida"',     'TEXT'],
+      ['usuarios', '"googleRefreshToken"', 'TEXT'],
+      ['usuarios', '"googleAccessToken"', 'TEXT'],
+      ['usuarios', '"googleTokenExpiry"', 'DOUBLE PRECISION'],
+      ['clientes', 'ubicacion', 'TEXT'],
+      ['clientes', '"sitioWeb"', 'TEXT'],
+      ['clientes', 'telefono2', 'TEXT'],
+      ['clientes', '"proximaLlamada"', 'TIMESTAMPTZ'],
+      ['clientes', 'interes', 'TEXT'],
+      ['clientes', 'compartido', 'BOOLEAN DEFAULT FALSE'],
+      ['clientes', '"propietarioId"', 'INTEGER'],
+      ['usuarios', 'activo', 'INTEGER DEFAULT 1'],
+      ['actividades', '"googleMeetLink"', 'TEXT'],
+      ['actividades', '"createdAt"', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP'],
+      ['clientes', '"customMetricLabel"', 'TEXT'],
+      ['clientes', '"customMetricValue"', 'TEXT'],
+      ['usuarios', '"equipo_id"', 'INTEGER'],
+      ['clientes', '"equipo_id"', 'INTEGER'],
+      ['actividades', '"equipo_id"', 'INTEGER'],
+      ['actividades', 'invitados', 'TEXT'],
+      ['tareas', '"equipo_id"', 'INTEGER'],
+      ['equipos', 'icon', 'TEXT'],
+      ['clientes', 'etiquetas', 'TEXT'],
+      ['clientes', '"customSections"', 'TEXT'],
+      ['clientes', 'fuente', 'TEXT'],
+      ['clientes', '"motivoPerdida"', 'TEXT'],
       // ── Pilar 1: Separador Vital (Tipo de Contacto) ───────────────────
-      ['clientes',    'tipo',                "TEXT DEFAULT 'prospecto'"],
+      ['clientes', 'tipo', "TEXT DEFAULT 'prospecto'"],
       // ── Pilar 3: Pipeline de Clientes ─────────────────────────────────
-      ['clientes',    '"etapaCliente"',      "TEXT DEFAULT 'cliente_nuevo'"],
-      ['clientes',    '"kanbanColProspecto"',"TEXT"],
-      ['clientes',    '"kanbanColCliente"',  "TEXT"],
-      ['actividades', '"equipo_id"',         'INTEGER'],
+      ['clientes', '"etapaCliente"', "TEXT DEFAULT 'cliente_nuevo'"],
+      ['clientes', '"kanbanColProspecto"', "TEXT"],
+      ['clientes', '"kanbanColCliente"', "TEXT"],
+      ['actividades', '"equipo_id"', 'INTEGER'],
       // ── Stripe / Suscripción ──────────────────────────────────────────
-      ['usuarios', 'stripe_customer_id',      'TEXT'],
-      ['usuarios', 'stripe_subscription_id',  'TEXT'],
-      ['usuarios', 'plan',                    "TEXT DEFAULT 'ninguno'"],
-      ['usuarios', 'plan_activo',             'BOOLEAN DEFAULT FALSE'],
-      ['usuarios', 'plan_vencimiento',        'TIMESTAMPTZ'],
-      ['usuarios', 'max_usuarios',            'INTEGER DEFAULT 2'],
-      ['usuarios', '"ultimaConexion"',        'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP'],
+      ['usuarios', 'stripe_customer_id', 'TEXT'],
+      ['usuarios', 'stripe_subscription_id', 'TEXT'],
+      ['usuarios', 'plan', "TEXT DEFAULT 'ninguno'"],
+      ['usuarios', 'plan_activo', 'BOOLEAN DEFAULT FALSE'],
+      ['usuarios', 'plan_vencimiento', 'TIMESTAMPTZ'],
+      ['usuarios', 'max_usuarios', 'INTEGER DEFAULT 2'],
+      ['usuarios', '"ultimaConexion"', 'TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP'],
     ];
     for (const [table, col, type] of colsMissingPg) {
       try {
@@ -637,7 +637,7 @@ const initDb = async () => {
         console.error('⚠️ Migración nullable clientes falló:', e.message);
       }
     }
-    
+
     // Asegurar que todos los usuarios tengan activo = 1 si es NULL
     try {
       await internalDb.query(`UPDATE usuarios SET activo = 1 WHERE activo IS NULL`);
@@ -857,7 +857,7 @@ const initDb = async () => {
       try { internalDb.exec('PRAGMA foreign_keys = ON'); } catch (_) { /* no-op */ }
       console.error('⚠️ SQLite: error migrando constraint de rol en usuarios:', e.message);
     }
-    
+
     try {
       internalDb.prepare(`UPDATE clientes SET etapaEmbudo = 'prospecto_nuevo' WHERE etapaEmbudo IS NULL`).run();
     } catch (e) { /* ignorar */ }
@@ -894,15 +894,15 @@ const initDb = async () => {
   // MIGRACIÓN POSTGRESQL PARA EL NUEVO ROL (vendedor)
   if (isPostgres) {
     try {
-        // Remover el constraint anterior y añadir el nuevo (con 'vendedor')
-        await internalDb.query(`
+      // Remover el constraint anterior y añadir el nuevo (con 'vendedor')
+      await internalDb.query(`
             ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_check;
             UPDATE usuarios SET rol = 'vendedor' WHERE rol IN ('prospector', 'closer', 'superuser');
             ALTER TABLE usuarios ADD CONSTRAINT usuarios_rol_check CHECK (rol IN ('vendedor', 'admin'));
         `);
-          console.log('✅ Migración: Constraint de rol actualizado en Postgres (admin/vendedor)');
-    } catch(e) {
-        console.error('⚠️ Migración: Error actualizando constraint de rol en Postgres:', e.message);
+      console.log('✅ Migración: Constraint de rol actualizado en Postgres (admin/vendedor)');
+    } catch (e) {
+      console.error('⚠️ Migración: Error actualizando constraint de rol en Postgres:', e.message);
     }
   }
 
