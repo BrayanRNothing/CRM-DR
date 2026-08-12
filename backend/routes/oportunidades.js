@@ -3,6 +3,25 @@ const router = express.Router();
 const { db } = require('../config/database');
 const { auth } = require('../middleware/auth');
 
+// GET /api/oportunidades/todas
+router.get('/todas', auth, async (req, res) => {
+    try {
+        const vendedor_id = req.usuario.id;
+        // Join with clientes to get the client name
+        const oportunidades = await db.prepare(`
+            SELECT o.*, c.nombres as cliente_nombres, c.empresa as cliente_empresa 
+            FROM oportunidades o
+            LEFT JOIN clientes c ON o.cliente_id = c.id
+            WHERE o.vendedor_id = ?
+            ORDER BY o.id DESC
+        `).all(vendedor_id);
+        res.json(oportunidades);
+    } catch (error) {
+        console.error('Error al obtener todas las oportunidades:', error);
+        res.status(500).json({ msg: 'Error al obtener oportunidades' });
+    }
+});
+
 // GET /api/oportunidades/:clienteId
 router.get('/:clienteId', auth, async (req, res) => {
     try {

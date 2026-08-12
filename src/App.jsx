@@ -46,6 +46,7 @@ const Dashboard = lazyWithRetry(() => import('./pages/Dashboard.jsx'));
 const Calendario = lazyWithRetry(() => import('./pages/Calendario.jsx'));
 const Seguimiento = lazyWithRetry(() => import('./pages/Seguimiento.jsx'));
 const Clientes = lazyWithRetry(() => import('./pages/Clientes.jsx'));
+const Oportunidades = lazyWithRetry(() => import('./pages/Oportunidades.jsx'));
 
 // Shared Components
 const Equipo = lazyWithRetry(() => import('./pages/Equipo.jsx'));
@@ -146,6 +147,7 @@ function App() {
             <Route path="calendario" element={<Calendario />} />
             <Route path="prospectos" element={<Seguimiento />} />
             <Route path="clientes" element={<Clientes />} />
+            <Route path="oportunidades" element={<Oportunidades />} />
             <Route path="equipo" element={<Equipo />} />
             <Route path="admin" element={<AdminPanel />} />
             <Route path="usuarios" element={<Navigate to="/vendedor/equipo" replace />} />
