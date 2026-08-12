@@ -51,7 +51,14 @@ const getEtapaLabel = (etapa) => ETAPAS_CLIENTE[etapa]?.label || (etapa || 'Opor
 const getEtapaColor = (etapa) => ETAPAS_CLIENTE[etapa]?.color || 'bg-emerald-100 text-emerald-700';
 
 const ETAPAS_PROSPECTO_LIST = ['prospecto_nuevo', 'en_contacto', 'reunion_agendada', 'reunion_realizada', 'en_negociacion', 'venta_ganada', 'perdido'];
-const esProspectoCheck = (etapa) => ETAPAS_PROSPECTO_LIST.includes(etapa);
+const esProspectoCheck = (oportunidad) => {
+    if (oportunidad.cliente_tipo) {
+        return oportunidad.cliente_tipo === 'prospecto';
+    }
+    const etapa = oportunidad.cliente_etapaEmbudo || oportunidad.cliente_etapaembudo;
+    if (!etapa) return false;
+    return ETAPAS_PROSPECTO_LIST.includes(String(etapa).toLowerCase().trim());
+};
 
 const Oportunidades = () => {
     const navigate = useNavigate();
@@ -275,7 +282,7 @@ const Oportunidades = () => {
             setProspectoSeleccionado(null);
             return;
         }
-        const esProspecto = esProspectoCheck(oportunidad.cliente_etapaEmbudo);
+        const esProspecto = esProspectoCheck(oportunidad);
         if (esProspecto) {
             navigate('/vendedor/prospectos', { state: { openClienteId: oportunidad.cliente_id } });
         } else {

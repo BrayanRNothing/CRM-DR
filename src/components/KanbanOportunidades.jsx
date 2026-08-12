@@ -12,8 +12,14 @@ import {
 
 
 const ETAPAS_PROSPECTO_LIST = ['prospecto_nuevo', 'en_contacto', 'reunion_agendada', 'reunion_realizada', 'en_negociacion', 'venta_ganada', 'perdido'];
-const esProspecto = (etapa) => ETAPAS_PROSPECTO_LIST.includes(etapa);
-
+const esProspecto = (oportunidad) => {
+    if (oportunidad.cliente_tipo) {
+        return oportunidad.cliente_tipo === 'prospecto';
+    }
+    const etapa = oportunidad.cliente_etapaEmbudo || oportunidad.cliente_etapaembudo;
+    if (!etapa) return false;
+    return ETAPAS_PROSPECTO_LIST.includes(String(etapa).toLowerCase().trim());
+};
 /* ═══════════════════════════════════════════════════════════════
    CONSTANTES & HELPERS
 ═══════════════════════════════════════════════════════════════ */
@@ -148,8 +154,8 @@ const OportunidadCard = ({ oportunidad, cardSize, fields, colorId, isDragging, o
                         {nombreCliente}
                     </p>
                     <div className="mt-1.5">
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${esProspecto(oportunidad.cliente_etapaEmbudo) ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                            {esProspecto(oportunidad.cliente_etapaEmbudo) ? 'PROSPECTO' : 'CLIENTE'}
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${esProspecto(oportunidad) ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                            {esProspecto(oportunidad) ? 'PROSPECTO' : 'CLIENTE'}
                         </span>
                     </div>
                 </div>
