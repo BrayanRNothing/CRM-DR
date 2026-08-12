@@ -267,23 +267,17 @@ const Oportunidades = () => {
         }
     }, [prospectoSeleccionado, scrollPosition]);
 
-    const handleVerDetalles = async (oportunidad) => {
-        if (oportunidad) {
-            const container = document.getElementById('main-scroll-container');
-            if (container) setScrollPosition(container.scrollTop);
-        } else if (prospectoSeleccionado) {
-            const id = prospectoSeleccionado.id || prospectoSeleccionado._id;
-            setLastViewedId(id);
-            setTimeout(() => setLastViewedId(null), 1500);
-        }
-        setProspectoSeleccionado(oportunidad);
-        setLlamadaFlow(null);
+    const handleVerDetalles = (oportunidad) => {
         if (!oportunidad) {
-            setTimeline([]);
-            setLoadingTimeline(false);
+            setProspectoSeleccionado(null);
             return;
         }
-        await cargarTimelineOportunidad(oportunidad);
+        const esProspecto = (oportunidad.cliente_etapaEmbudo || '').includes('prospecto');
+        if (esProspecto) {
+            navigate('/vendedor/prospectos', { state: { openClienteId: oportunidad.cliente_id } });
+        } else {
+            navigate('/vendedor/clientes', { state: { openClienteId: oportunidad.cliente_id } });
+        }
     };
 
     const abrirModalEditar = (p) => {
@@ -1042,26 +1036,6 @@ const Oportunidades = () => {
             return 0; // fallback a creación (como vienen)
         });
     }, [oportunidades, busqueda, ordenFiltro]);
-
-    // VISTA DETALLADA PREMIUM (Post-Venta)
-    if (prospectoSeleccionado) {
-        return (
-            <>
-                <OportunidadDetalle
-                    Oportunidad={prospectoSeleccionado}
-                    rolePath={'vendedor'}
-                    onVolver={() => handleVerDetalles(null)}
-                    onActualizado={async () => {
-                        const lista = await cargarOportunidades();
-                        const actualizado = lista.find(c => String(c.id || c._id) === String(prospectoSeleccionado.id || prospectoSeleccionado._id));
-                        if (actualizado) setProspectoSeleccionado(actualizado);
-                    }}
-                    abrirModalEditar={abrirModalEditar}
-                />
-                {renderModales()}
-            </>
-        );
-    }
 
     return (
         <>
