@@ -69,11 +69,12 @@ const SORT_OPTIONS = [
 ];
 
 const DEFAULT_COLUMNS = [
-    { id: 'oportunidad_nuevo',       label: 'Oportunidad nuevo',       colorId: 'emerald', wipLimit: 0 },
-    { id: 'en_progreso',      label: 'En seguimiento',      colorId: 'blue',    wipLimit: 0 },
-    { id: 'negociacion',  label: 'Oportunidad activa',  colorId: 'violet',  wipLimit: 0 },
-    { id: 'reunion_con_oportunidad', label: 'Reunión con oportunidad',  colorId: 'amber',   wipLimit: 0 },
-    { id: 'perdida',            label: 'Inactivo',            colorId: 'slate',   wipLimit: 0 },
+    { id: 'nueva',        label: 'Nueva Oportunidad',  colorId: 'emerald', wipLimit: 0 },
+    { id: 'calificacion', label: 'Calificación',       colorId: 'blue',    wipLimit: 0 },
+    { id: 'cotizacion',   label: 'Cotización Enviada', colorId: 'violet',  wipLimit: 0 },
+    { id: 'negociacion',  label: 'En Negociación',     colorId: 'amber',   wipLimit: 0 },
+    { id: 'ganada',       label: 'Venta Ganada',       colorId: 'emerald', wipLimit: 0 },
+    { id: 'perdida',      label: 'Perdida',            colorId: 'slate',   wipLimit: 0 },
 ];
 
 const DEFAULT_PREFS = {
@@ -88,7 +89,7 @@ const DEFAULT_PREFS = {
     },
 };
 
-const STORAGE_COLS_KEY  = 'kanban_oportunidades_cols_v3';
+const STORAGE_COLS_KEY  = 'kanban_oportunidades_cols_v4';
 const STORAGE_PREFS_KEY = 'kanban_oportunidades_prefs_v3';
 
 const getColor   = (id) => COLUMN_COLORS.find(c => c.id === id) || COLUMN_COLORS[0];
@@ -131,10 +132,12 @@ const OportunidadCard = ({ oportunidad, cardSize, fields, colorId, isDragging, o
     const isCompact  = cardSize === 'compact';
     const isDetailed = cardSize === 'detailed';
 
+    const isGanada = oportunidad.etapa === 'ganada';
     return (
         <div
-            className={`group relative bg-white rounded-xl border border-slate-200/80
+            className={`group relative rounded-xl border
                 shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer select-none
+                ${isGanada ? 'bg-emerald-50/80 border-emerald-200/60' : 'bg-white border-slate-200/80'}
                 ${isDragging ? 'opacity-30 scale-95 rotate-1 shadow-none' : 'hover:-translate-y-0.5'}
                 ${isCompact ? 'p-2' : isDetailed ? 'p-4' : 'p-3'}`}
             onClick={() => onVerDetalles(oportunidad)}
@@ -153,12 +156,12 @@ const OportunidadCard = ({ oportunidad, cardSize, fields, colorId, isDragging, o
                     <p className={`text-slate-500 truncate mt-0.5 text-[11px]`}>
                         {nombreCliente}
                     </p>
-                    <div className="mt-1.5">
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${esProspecto(oportunidad) ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                            {esProspecto(oportunidad) ? 'PROSPECTO' : 'CLIENTE'}
-                        </span>
-                    </div>
                 </div>
+            </div>
+
+            {/* Etiqueta Prospecto/Cliente en la esquina */}
+            <div className={`absolute top-0 right-0 px-2 py-0.5 rounded-tr-xl rounded-bl-lg text-[8px] font-bold tracking-widest uppercase ${esProspecto(oportunidad) ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                {esProspecto(oportunidad) ? 'PROSPECTO' : 'CLIENTE'}
             </div>
 
             {/* Footer: money */}

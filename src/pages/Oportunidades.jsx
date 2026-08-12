@@ -1,15 +1,11 @@
 import React, { useMemo, useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar, Filter, Star, Mail, MessageSquare, Clock, Share2, Edit2, Bell, LayoutList, Kanban, UserPlus, Building2, Globe, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, RefreshCw, ChevronRight, ArrowLeft, User, Trash2, Download, Upload, Plus, X, Phone, Filter, Star, Mail, Edit2, Building2, ChevronDown, Briefcase, DollarSign, UserSearch } from 'lucide-react';
 import KanbanOportunidades from '../components/KanbanOportunidades';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { getToken } from '../utils/authUtils';
-import { HistorialInteracciones } from '../components/HistorialInteracciones';
-import TimeWheelPicker from '../components/TimeWheelPicker';
-import OportunidadDetalle from '../components/OportunidadDetalle';
-import SourcePicker from '../components/ui/SourcePicker';
 
 import API_URL from '../config/api';
 
@@ -43,7 +39,7 @@ const ETAPAS_CLIENTE = {
     'oportunidad_nuevo': { label: 'Oportunidad nuevo', color: 'bg-emerald-100 text-emerald-700' },
     'en_seguimiento': { label: 'En seguimiento', color: 'bg-blue-100 text-blue-700' },
     'oportunidad_activa': { label: 'Oportunidad activa', color: 'bg-purple-100 text-purple-700' },
-    'reunion_con_oportunidad': { label: 'Reunión con oportunidad', color: 'bg-amber-100 text-amber-700' },
+    'reunion_con_oportunidad': { label: 'ReuniÃƒÂ³n con oportunidad', color: 'bg-amber-100 text-amber-700' },
     'inactivo': { label: 'Inactivo', color: 'bg-gray-100 text-gray-700' }
 };
 
@@ -71,60 +67,43 @@ const Oportunidades = () => {
     const [eliminando, setEliminando] = useState(false);
     const [importando, setImportando] = useState(false);
     const [ordenFiltro, setOrdenFiltro] = useState('todos');
-    const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine'); // mine | shared | all
-    const [globalTags, setGlobalTags] = useState([]);
+    const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine');
     const [mostrarFiltros, setMostrarFiltros] = useState(false);
     const vistaKanban = true;
     const fileInputRef = useRef(null);
+
+    // Modal Crear (2 pasos: buscar contacto -> datos deal)
     const [mostrarModalCrear, setMostrarModalCrear] = useState(false);
+    const [stepCrear, setStepCrear] = useState(1);
+    const [contactoBusqueda, setContactoBusqueda] = useState('');
+    const [contactosResultados, setContactosResultados] = useState([]);
+    const [buscandoContactos, setBuscandoContactos] = useState(false);
+    const [contactoSeleccionado, setContactoSeleccionado] = useState(null);
+    const [formDeal, setFormDeal] = useState({ titulo: '', monto: '', notas: '' });
     const [creandoOportunidad, setCreandoOportunidad] = useState(false);
-    const [mostrarAvanzado, setMostrarAvanzado] = useState(false);
-    const [formOportunidad, setFormOportunidad] = useState({
-        titulo: '',
-        apellidoPaterno: '',
-        apellidoMaterno: '',
-        telefonos: [''],
-        correo: '',
-        empresa: '',
-        sitioWeb: '',
-        ubicacion: '',
-        notas: '',
-        fuente: ''
-    });
 
-    // Estados para la vista detallada
-    const [prospectoSeleccionado, setProspectoSeleccionado] = useState(null);
-    const [timeline, setTimeline] = useState([]);
-    const [loadingTimeline, setLoadingTimeline] = useState(false);
-    const [guardandoSeguimiento, setGuardandoSeguimiento] = useState(false);
-    const [llamadaFlow, setLlamadaFlow] = useState(null);
-
-    // Estados para la edición de oportunidades
+    // Modal Editar
     const [modalEditarAbierto, setModalEditarAbierto] = useState(false);
     const [oportunidadAEditar, setOportunidadAEditar] = useState({});
     const [loadingEditar, setLoadingEditar] = useState(false);
-    const [scrollPosition, setScrollPosition] = useState(0);
+
+    // Modal confirmacion Ganada desde Kanban
+    const [oportunidadGanadaPendiente, setOportunidadGanadaPendiente] = useState(null);
+    const [procesandoCierre, setProcesandoCierre] = useState(false);
+
     const [lastViewedId, setLastViewedId] = useState(null);
 
-    // Evitar scroll de fondo al abrir modales
     useEffect(() => {
-        const algunModalAbierto = mostrarModalCrear || modalEditarAbierto || !!prospectoSeleccionado;
+        const algunModalAbierto = mostrarModalCrear || modalEditarAbierto || !!oportunidadGanadaPendiente || !!oportunidadAEliminar;
         const container = document.getElementById('main-scroll-container');
         if (container) {
-            if (algunModalAbierto) {
-                container.style.setProperty('overflow', 'hidden', 'important');
-            } else {
-                container.style.removeProperty('overflow');
-            }
+            if (algunModalAbierto) container.style.setProperty('overflow', 'hidden', 'important');
+            else container.style.removeProperty('overflow');
         }
-        return () => {
-            if (container) container.style.removeProperty('overflow');
-        };
-    }, [mostrarModalCrear, modalEditarAbierto, prospectoSeleccionado]);
+        return () => { if (container) container.style.removeProperty('overflow'); };
+    }, [mostrarModalCrear, modalEditarAbierto, oportunidadGanadaPendiente, oportunidadAEliminar]);
 
-    const getAuthHeaders = () => ({
-        'x-auth-token': getToken() || ''
-    });
+    const getAuthHeaders = () => ({ 'x-auth-token': getToken() || '' });
 
     const getCurrentUserId = () => {
         try {
@@ -132,11 +111,8 @@ const Oportunidades = () => {
             if (!raw) return null;
             const user = JSON.parse(raw);
             return user?.id ?? user?._id ?? null;
-        } catch (error) {
-            return null;
-        }
+        } catch { return null; }
     };
-
     const currentUserId = getCurrentUserId();
 
     const isOwnerRecord = (record) => {
@@ -145,143 +121,49 @@ const Oportunidades = () => {
         return String(ownerId) === String(currentUserId);
     };
 
-    const getRole = () => {
-        const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
-        if (userStr) {
-            try {
-                const user = JSON.parse(userStr);
-                return user.rol?.toLowerCase() || 'prospector';
-            } catch (e) {
-                return 'prospector';
-            }
-        }
-        return 'prospector';
-    };
-
-    const getRolePath = () => {
-        const rol = getRole();
-        // No existe /api/vendedor/*, reutilizamos rutas closer para vista de oportunidades e historial.
-        if (rol === 'vendedor') return 'closer';
-        return rol;
-    };
-
     const cargarOportunidades = async () => {
         setLoading(true);
         try {
-            const rol = 'vendedor';
-            const [resOportunidades, resTareas] = await Promise.all([
-                axios.get(`${API_URL}/api/oportunidades/todas`, {
-                    headers: getAuthHeaders(),
-                    params: { scope: filtroVisibilidad }
-                }),
+            const [resOps, resTareas] = await Promise.all([
+                axios.get(`${API_URL}/api/oportunidades/todas`, { headers: getAuthHeaders(), params: { scope: filtroVisibilidad } }),
                 axios.get(`${API_URL}/api/tareas`, { headers: getAuthHeaders() })
             ]);
-
-            const remindersByOportunidad = buildReminderByOportunidadMap(resTareas.data || []);
-            const data = (resOportunidades.data || []).map((raw) => {
-                const oportunidad = normalizeOportunidadRecordatorio(raw);
-                if (oportunidad.proximaLlamada) return oportunidad;
-
-                const oportunidadId = String(oportunidad.id || oportunidad._id || '');
-                const fechaTarea = remindersByOportunidad.get(oportunidadId) || null;
-                return { ...oportunidad, proximaLlamada: fechaTarea };
+            const map = buildReminderByOportunidadMap(resTareas.data || []);
+            const data = (resOps.data || []).map(raw => {
+                const op = normalizeOportunidadRecordatorio(raw);
+                if (op.proximaLlamada) return op;
+                return { ...op, proximaLlamada: map.get(String(op.id || op._id)) || null };
             });
-
             setOportunidades(data);
             return data;
-        } catch (error) {
-            console.error('Error al cargar oportunidades:', error);
+        } catch (err) {
+            console.error('Error al cargar oportunidades:', err);
             setOportunidades([]);
             return [];
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
     };
 
     useEffect(() => {
         cargarOportunidades();
-        
-        const fetchGlobalTags = async () => {
-            try {
-                const token = getToken();
-                if (!token) return;
-                const res = await axios.get(`${API_URL}/api/vendedor/etiquetas`, {
-                    headers: { 'x-auth-token': token }
-                });
-                setGlobalTags(res.data);
-            } catch (error) {
-                console.error('Error fetching global tags:', error);
-            }
-        };
-        fetchGlobalTags();
-        
         const interval = setInterval(cargarOportunidades, 5 * 60 * 1000);
         return () => clearInterval(interval);
     }, [filtroVisibilidad]);
 
     const handleToggleCompartido = async (oportunidad, nuevoEstado) => {
         const id = oportunidad.id || oportunidad._id;
-        const prev = oportunidades;
-        setOportunidades((curr) => curr.map((c) => {
-            const cid = c.id || c._id;
-            return String(cid) === String(id) ? { ...c, compartido: nuevoEstado } : c;
-        }));
-
+        const prev = [...oportunidades];
+        setOportunidades(curr => curr.map(c => String(c.id || c._id) === String(id) ? { ...c, compartido: nuevoEstado } : c));
         try {
-            await axios.patch(
-                `${API_URL}/api/vendedor/prospectos/${id}/compartir`,
-                { compartido: nuevoEstado },
-                { headers: getAuthHeaders() }
-            );
-            toast.success(nuevoEstado ? 'Oportunidad compartido con tu equipo' : 'Oportunidad marcado como privado');
-        } catch (error) {
+            await axios.patch(`${API_URL}/api/vendedor/prospectos/${id}/compartir`, { compartido: nuevoEstado }, { headers: getAuthHeaders() });
+            toast.success(nuevoEstado ? 'Oportunidad compartida' : 'Oportunidad marcada como privada');
+        } catch (err) {
             setOportunidades(prev);
-            const status = error?.response?.status;
-            const backendMsg = String(error?.response?.data?.msg || error?.response?.data?.mensaje || '');
-
-            if (status === 404) {
-                toast.error('Tu backend en Railway aun no tiene esta ruta de compartir. Falta desplegar backend.');
-                return;
-            }
-
-            if (status >= 500 && /compartido|propietarioid|column|does not exist/i.test(backendMsg)) {
-                toast.error('Falta ejecutar la migracion en Railway (columnas compartido/propietarioId).');
-                return;
-            }
-
-            toast.error(error.response?.data?.msg || 'No se pudo actualizar la visibilidad');
+            toast.error(err.response?.data?.msg || 'No se pudo actualizar la visibilidad');
         }
     };
-
-    const cargarTimelineOportunidad = async (oportunidad) => {
-        setLoadingTimeline(true);
-        try {
-            const rol = 'vendedor';
-            const res = await axios.get(
-                `${API_URL}/api/${rol}/prospecto/${oportunidad.id || oportunidad._id}/historial-completo`,
-                { headers: getAuthHeaders() }
-            );
-            setTimeline(res.data.timeline || []);
-        } catch (error) {
-            console.error('Error al cargar historial:', error);
-            setTimeline([]);
-        } finally {
-            setLoadingTimeline(false);
-        }
-    };
-
-    useLayoutEffect(() => {
-        if (!prospectoSeleccionado && scrollPosition > 0) {
-            const container = document.getElementById('main-scroll-container');
-            if (container) container.scrollTo({ top: scrollPosition, behavior: 'instant' });
-        }
-    }, [prospectoSeleccionado, scrollPosition]);
 
     const handleVerDetalles = (oportunidad) => {
-        if (!oportunidad) {
-            setProspectoSeleccionado(null);
-            return;
-        }
+        if (!oportunidad) return;
         const esProspecto = esProspectoCheck(oportunidad);
         if (esProspecto) {
             navigate('/vendedor/prospectos', { state: { openClienteId: oportunidad.cliente_id } });
@@ -291,721 +173,156 @@ const Oportunidades = () => {
     };
 
     const abrirModalEditar = (p) => {
-        const tels = [p.telefono, p.telefono2].filter(Boolean);
-        setOportunidadAEditar({
-            id: p._id || p.id,
-            titulo: p.titulo || '',
-            apellidoPaterno: p.apellidoPaterno || '',
-            apellidoMaterno: p.apellidoMaterno || '',
-            telefonos: tels.length > 0 ? tels : [''],
-            correo: p.correo || '',
-            empresa: p.empresa || '',
-            sitioWeb: p.sitioWeb || '',
-            ubicacion: p.ubicacion || '',
-            notas: p.notas || '',
-            etapaEmbudo: p.etapaEmbudo || 'venta_ganada',
-            interes: p.interes || 5
-        });
+        setOportunidadAEditar({ id: p._id || p.id, titulo: p.titulo || '', monto: p.monto || '' });
         setModalEditarAbierto(true);
     };
 
     const handleEditarOportunidad = async () => {
+        if (!oportunidadAEditar.titulo?.trim()) { toast.error('El nombre es obligatorio.'); return; }
         setLoadingEditar(true);
         try {
-            const rolePath = 'vendedor'; // O corregir según rol real
-            const id = oportunidadAEditar.id;
-            const telefonosLimpios = (oportunidadAEditar.telefonos || []).filter(t => t.trim());
-            const payload = {
-                ...oportunidadAEditar,
-                telefono: telefonosLimpios[0] || '',
-                telefono2: telefonosLimpios.slice(1).join(', ') || ''
-            };
-            delete payload.telefonos;
-
-            await axios.put(`${API_URL}/api/oportunidades/${id}`, payload, {
-                headers: getAuthHeaders()
-            });
-
-            toast.success('Oportunidad actualizado');
+            await axios.put(`${API_URL}/api/oportunidades/${oportunidadAEditar.id}`,
+                { titulo: oportunidadAEditar.titulo, monto: oportunidadAEditar.monto },
+                { headers: getAuthHeaders() }
+            );
+            toast.success('Oportunidad actualizada');
             setModalEditarAbierto(false);
-
-            // Recargar datos
-            const lista = await cargarOportunidades();
-            if (prospectoSeleccionado && (prospectoSeleccionado.id === id || prospectoSeleccionado._id === id)) {
-                const updated = lista.find(c => (c.id || c._id) === id);
-                if (updated) setProspectoSeleccionado(updated);
-            }
-        } catch (error) {
-            console.error('Error al editar:', error);
-            toast.error(error.response?.data?.msg || 'Error al actualizar oportunidad');
-        } finally {
-            setLoadingEditar(false);
-        }
+            await cargarOportunidades();
+        } catch (err) {
+            toast.error(err.response?.data?.msg || 'Error al actualizar');
+        } finally { setLoadingEditar(false); }
     };
 
-    const renderModales = () => (
-        <>
-            {/* Modal Editar Oportunidad - Rediseño Moderno */}
-            {modalEditarAbierto && (
-                <div className="fixed inset-0 bg-slate-900/20 flex items-center justify-center z-50 p-4 transition-all duration-300 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col max-h-[82vh] overflow-hidden animate-in fade-in zoom-in duration-300">
-                        {/* Header */}
-                        <div className="px-6 py-4 bg-linear-to-r from-(--theme-50) to-white border-b border-slate-100 flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-(--theme-100) rounded-xl flex items-center justify-center">
-                                    <Edit2 className="w-5 h-5 text-(--theme-600)" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-gray-900">Editar Oportunidad</h2>
-                                    <p className="text-xs text-slate-500 mt-0.5">Actualiza la información de contacto</p>
-                                </div>
-                            </div>
-                            <button onClick={() => setModalEditarAbierto(false)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-6 space-y-6 overflow-y-auto hide-scrollbar">
-                            {/* Sección: Datos Personales */}
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                    <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
-                                    Información Personal
-                                </h3>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Nombres *</label>
-                                        <input
-                                            type="text"
-                                            value={oportunidadAEditar.titulo}
-                                            onChange={(e) => setOportunidadAEditar((f) => ({ ...f, titulo: e.target.value }))}
-                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Apellido Paterno</label>
-                                            <input
-                                                type="text"
-                                                value={oportunidadAEditar.apellidoPaterno}
-                                                onChange={(e) => setOportunidadAEditar((f) => ({ ...f, apellidoPaterno: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Apellido Materno</label>
-                                            <input
-                                                type="text"
-                                                value={oportunidadAEditar.apellidoMaterno}
-                                                onChange={(e) => setOportunidadAEditar((f) => ({ ...f, apellidoMaterno: e.target.value }))}
-                                                className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Sección: Contacto */}
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                    <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
-                                    Contacto
-                                </h3>
-                                <div className="space-y-3">
-                                    <div>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Teléfonos *</label>
-                                            <button
-                                                type="button"
-                                                onClick={() => setOportunidadAEditar((f) => ({ ...f, telefonos: [...(f.telefonos || ['']), ''] }))}
-                                                className="flex items-center gap-1.5 text-xs text-(--theme-600) hover:text-(--theme-700) font-bold hover:bg-(--theme-50) px-2.5 py-1.5 rounded-lg transition-all"
-                                            >
-                                                <Plus className="w-3.5 h-3.5" /> Agregar
-                                            </button>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {(oportunidadAEditar.telefonos || ['']).map((tel, idx) => (
-                                                <div key={idx} className="flex gap-3 items-center bg-linear-to-r from-slate-50 to-white p-3 rounded-lg border border-slate-200 hover:border-slate-300 transition-all group">
-                                                    <Phone className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
-                                                    <input
-                                                        type="tel"
-                                                        value={tel}
-                                                        onChange={(e) => setOportunidadAEditar((f) => { const t = [...(f.telefonos || [''])]; t[idx] = e.target.value; return { ...f, telefonos: t }; })}
-                                                        className="flex-1 bg-transparent border-0 focus:ring-0 text-sm py-1 outline-none font-medium"
-                                                        placeholder="Ej: +56 9 1234 5678"
-                                                    />
-                                                    {(oportunidadAEditar.telefonos || ['']).length > 1 && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setOportunidadAEditar((f) => ({ ...f, telefonos: (f.telefonos || ['']).filter((_, i) => i !== idx) }))}
-                                                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-all"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Correo Electrónico</label>
-                                        <input
-                                            type="email"
-                                            value={oportunidadAEditar.correo}
-                                            onChange={(e) => setOportunidadAEditar((f) => ({ ...f, correo: e.target.value }))}
-                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300 font-medium"
-                                            placeholder="ejemplo@empresa.com"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Sección: Empresa */}
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                    <div className="w-1 h-4 bg-(--theme-500) rounded-full"></div>
-                                    Detalles de Empresa
-                                </h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Empresa</label>
-                                        <input
-                                            type="text"
-                                            value={oportunidadAEditar.empresa}
-                                            onChange={(e) => setOportunidadAEditar((f) => ({ ...f, empresa: e.target.value }))}
-                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300 font-medium"
-                                            placeholder="Nombre de la empresa"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Sitio Web</label>
-                                        <input
-                                            type="url"
-                                            value={oportunidadAEditar.sitioWeb || ''}
-                                            onChange={(e) => setOportunidadAEditar((f) => ({ ...f, sitioWeb: e.target.value }))}
-                                            className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300 font-medium"
-                                            placeholder="https://ejemplo.com"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Ubicación</label>
-                                    <input
-                                        type="text"
-                                        value={oportunidadAEditar.ubicacion || ''}
-                                        onChange={(e) => setOportunidadAEditar((f) => ({ ...f, ubicacion: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300 font-medium"
-                                        placeholder="Ciudad, Estado"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="flex gap-3 p-6 border-t border-slate-100 bg-slate-50 justify-end">
-                            <button
-                                onClick={() => setModalEditarAbierto(false)}
-                                className="px-6 py-3 border border-slate-300 text-gray-700 rounded-xl text-sm hover:bg-white font-bold transition-all hover:shadow-sm"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleEditarOportunidad}
-                                disabled={loadingEditar}
-                                className="px-8 py-3 bg-linear-to-r from-(--theme-600) to-(--theme-700) text-white rounded-xl text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:brightness-110 transition-all"
-                            >
-                                {loadingEditar ? '⏳ Guardando...' : '✓ Guardar Cambios'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal Crear Oportunidad - Diseño Compacto y Elegante */}
-            {mostrarModalCrear && (
-                <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
-                    <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full flex flex-col max-h-[85vh] overflow-hidden animate-in fade-in zoom-in duration-300">
-                        
-                        {/* Header Compacto */}
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
-                            <div>
-                                <h2 className="text-xl font-black text-gray-900 tracking-tight">Nuevo Oportunidad</h2>
-                                <p className="text-xs text-slate-500 font-medium mt-0.5">Registra la información básica</p>
-                            </div>
-                            <button 
-                                onClick={() => {
-                                    setMostrarModalCrear(false);
-                                    setMostrarAvanzado(false);
-                                    setFormOportunidad({ titulo: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '', fuente: '' });
-                                }} 
-                                className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full transition-all text-slate-400 hover:text-slate-600"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        {/* Contenido del Formulario */}
-                        <div className="p-6 overflow-y-auto scrollbar-hide">
-                            <div className="space-y-5">
-                                {/* Información Básica */}
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-[11px] font-black text-slate-700 mb-1.5 uppercase tracking-wider">Nombre del Oportunidad *</label>
-                                        <div className="relative group">
-                                            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
-                                            <input
-                                                type="text"
-                                                value={formOportunidad.titulo}
-                                                onChange={(e) => setFormOportunidad((f) => ({ ...f, titulo: e.target.value }))}
-                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-10 pr-3 py-2.5 text-sm focus:ring-4 focus:ring-(--theme-500)/10 focus:border-(--theme-500) focus:bg-white transition-all outline-none font-semibold text-gray-900"
-                                                placeholder="Ej: Juan Pérez"
-                                                autoFocus
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 gap-4">
-                                        <div>
-                                            <label className="block text-[11px] font-black text-slate-700 mb-1.5 uppercase tracking-wider">Teléfono</label>
-                                            <div className="relative group">
-                                                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
-                                                <input
-                                                    type="tel"
-                                                    value={formOportunidad.telefonos[0] || ''}
-                                                    onChange={(e) => setFormOportunidad((f) => { const t = [...f.telefonos]; t[0] = e.target.value; return { ...f, telefonos: t }; })}
-                                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-10 pr-3 py-2.5 text-sm focus:ring-4 focus:ring-(--theme-500)/10 focus:border-(--theme-500) focus:bg-white transition-all outline-none font-medium text-gray-900"
-                                                    placeholder="55 1234 5678"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[11px] font-black text-slate-700 mb-1.5 uppercase tracking-wider">Correo</label>
-                                            <div className="relative group">
-                                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
-                                                <input
-                                                    type="email"
-                                                    value={formOportunidad.correo}
-                                                    onChange={(e) => setFormOportunidad((f) => ({ ...f, correo: e.target.value }))}
-                                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-10 pr-3 py-2.5 text-sm focus:ring-4 focus:ring-(--theme-500)/10 focus:border-(--theme-500) focus:bg-white transition-all outline-none font-medium text-gray-900"
-                                                    placeholder="juan@ejemplo.com"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Separador y Botón Toggle Avanzado */}
-                                <div className="relative py-2">
-                                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                                        <div className="w-full border-t border-slate-200"></div>
-                                    </div>
-                                    <div className="relative flex justify-center">
-                                        <button
-                                            type="button"
-                                            onClick={() => setMostrarAvanzado(!mostrarAvanzado)}
-                                            className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-500 hover:text-(--theme-600) transition-colors bg-white px-3"
-                                        >
-                                            {mostrarAvanzado ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                                            {mostrarAvanzado ? 'Ocultar extras' : 'Mostrar extras'}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Opciones Avanzadas */}
-                                <AnimatePresence>
-                                    {mostrarAvanzado && (
-                                        <motion.div
-                                            initial={{ height: 0, opacity: 0 }}
-                                            animate={{ height: 'auto', opacity: 1 }}
-                                            exit={{ height: 0, opacity: 0 }}
-                                            className="overflow-hidden"
-                                        >
-                                            <div className="space-y-4 pb-2">
-                                                
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <div>
-                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Apellido Paterno</label>
-                                                        <input
-                                                            type="text"
-                                                            value={formOportunidad.apellidoPaterno}
-                                                            onChange={(e) => setFormOportunidad((f) => ({ ...f, apellidoPaterno: e.target.value }))}
-                                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-none"
-                                                            placeholder="Opcional"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Apellido Materno</label>
-                                                        <input
-                                                            type="text"
-                                                            value={formOportunidad.apellidoMaterno}
-                                                            onChange={(e) => setFormOportunidad((f) => ({ ...f, apellidoMaterno: e.target.value }))}
-                                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-none"
-                                                            placeholder="Opcional"
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 gap-3">
-                                                    <div>
-                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Empresa</label>
-                                                        <div className="relative group">
-                                                            <Building2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-(--theme-500) transition-colors" />
-                                                            <input
-                                                                type="text"
-                                                                value={formOportunidad.empresa}
-                                                                onChange={(e) => setFormOportunidad((f) => ({ ...f, empresa: e.target.value }))}
-                                                                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-xs focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-none"
-                                                                placeholder="Empresa S.A."
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Notas iniciales</label>
-                                                    <textarea
-                                                        rows={2}
-                                                        value={formOportunidad.notas}
-                                                        onChange={(e) => setFormOportunidad((f) => ({ ...f, notas: e.target.value }))}
-                                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-(--theme-500)/20 focus:border-(--theme-500) transition-all outline-none resize-none"
-                                                        placeholder="Agrega algún detalle rápido..."
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Origen</label>
-                                                    <SourcePicker 
-                                                        selectedSource={formOportunidad.fuente} 
-                                                        onChange={(val) => setFormOportunidad(f => ({ ...f, fuente: val }))} 
-                                                    />
-                                                </div>
-
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        </div>
-
-                        {/* Footer Compacto */}
-                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex gap-3">
-                            <button
-                                onClick={() => {
-                                    setMostrarModalCrear(false);
-                                    setMostrarAvanzado(false);
-                                    setFormOportunidad({ titulo: '', apellidoPaterno: '', apellidoMaterno: '', telefonos: [''], correo: '', empresa: '', sitioWeb: '', ubicacion: '', notas: '', fuente: '' });
-                                }}
-                                className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-slate-100 hover:text-slate-800 transition-all shadow-sm"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleCrearOportunidad}
-                                disabled={creandoOportunidad}
-                                className="flex-2 px-4 py-2.5 bg-linear-to-r from-(--theme-600) to-(--theme-500) text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-(--theme-500)/30 flex items-center justify-center gap-2"
-                            >
-                                {creandoOportunidad ? 'Creando...' : 'Crear Oportunidad'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal confirmación eliminar */}
-            {oportunidadAEliminar && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl p-6 shadow-xl max-w-md w-full mx-4 border border-red-100">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                                <Trash2 className="w-5 h-5 text-red-600" />
-                            </div>
-                            <h2 className="text-lg font-bold text-gray-900">Eliminar oportunidad</h2>
-                        </div>
-                        <p className="text-gray-600 mb-6">
-                            ¿Estás seguro de eliminar a <strong>{oportunidadAEliminar.titulo} {oportunidadAEliminar.apellidoPaterno}</strong>? Esta acción no se puede deshacer.
-                        </p>
-                        <div className="flex gap-3 justify-end">
-                            <button
-                                onClick={() => setOportunidadAEliminar(null)}
-                                disabled={eliminando}
-                                className="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleEliminarOportunidad}
-                                disabled={eliminando}
-                                className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                            >
-                                {eliminando ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                {eliminando ? 'Eliminando...' : 'Sí, eliminar'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </>
-    );
-
-    const registrarActividadOportunidad = async (payload) => {
-        if (!prospectoSeleccionado) return;
-
-        const rol = 'vendedor';
-        const oportunidadId = prospectoSeleccionado.id || prospectoSeleccionado._id;
-
-        if (payload.tipo === 'llamada' && prospectoSeleccionado.proximaLlamada) {
-            await axios.put(
-                `${API_URL}/api/${rol}/prospectos/${oportunidadId}`,
-                { proximaLlamada: null },
-                { headers: getAuthHeaders() }
-            );
-        }
-
-        await axios.post(
-            `${API_URL}/api/${rol}/registrar-actividad`,
-            { oportunidadId, ...payload },
-            { headers: getAuthHeaders() }
-        );
-
-        await cargarTimelineOportunidad(prospectoSeleccionado);
-        const lista = await cargarOportunidades();
-        const actualizado = lista.find((c) => String(c.id || c._id) === String(oportunidadId));
-        if (actualizado) setProspectoSeleccionado(actualizado);
-    };
-
-    const handleDeleteActividad = async (actividadId) => {
+    const buscarContactos = useCallback(async (q) => {
+        if (!q.trim()) { setContactosResultados([]); return; }
+        setBuscandoContactos(true);
         try {
-            await axios.delete(
-                `${API_URL}/api/actividades/${actividadId}`,
-                { headers: getAuthHeaders() }
-            );
-            setTimeline(prev => prev.filter(item => item.id !== actividadId));
-        } catch (error) {
-            console.error('Error al eliminar actividad:', error);
-            alert('No se pudo eliminar la actividad.');
+            const [resP, resC] = await Promise.allSettled([
+                axios.get(`${API_URL}/api/vendedor/prospectos`, { headers: getAuthHeaders(), params: { busqueda: q, limit: 10 } }),
+                axios.get(`${API_URL}/api/vendedor/clientes-ganados`, { headers: getAuthHeaders(), params: { busqueda: q, limit: 10 } })
+            ]);
+            const prospectos = (resP.status === 'fulfilled' ? resP.value.data || [] : []).map(p => ({ ...p, _tipo: 'prospecto' }));
+            const clientes = (resC.status === 'fulfilled' ? resC.value.data || [] : []).map(c => ({ ...c, _tipo: 'cliente' }));
+            setContactosResultados([...prospectos, ...clientes].slice(0, 15));
+        } catch { setContactosResultados([]); }
+        finally { setBuscandoContactos(false); }
+    }, []);
+
+    useEffect(() => {
+        const t = setTimeout(() => buscarContactos(contactoBusqueda), 350);
+        return () => clearTimeout(t);
+    }, [contactoBusqueda, buscarContactos]);
+
+    const resetModalCrear = () => {
+        setMostrarModalCrear(false);
+        setStepCrear(1);
+        setContactoBusqueda('');
+        setContactosResultados([]);
+        setContactoSeleccionado(null);
+        setFormDeal({ titulo: '', monto: '', notas: '' });
+    };
+
+    const handleCrearOportunidad = async () => {
+        if (!contactoSeleccionado) { toast.error('Selecciona un cliente o prospecto.'); return; }
+        if (!formDeal.titulo.trim()) { toast.error('El nombre de la oportunidad es obligatorio.'); return; }
+        setCreandoOportunidad(true);
+        try {
+            const clienteId = contactoSeleccionado.id || contactoSeleccionado._id;
+            const kanbanCols = (() => { try { const s = localStorage.getItem('kanban_oportunidades_cols_v4'); return s ? JSON.parse(s) : null; } catch { return null; } })();
+            const primeraEtapa = kanbanCols?.[0]?.id || 'nueva';
+            await axios.post(`${API_URL}/api/oportunidades`, {
+                cliente_id: clienteId,
+                titulo: formDeal.titulo,
+                monto: formDeal.monto ? Number(formDeal.monto) : 0,
+                notas: JSON.stringify({ texto: formDeal.notas || '', url: null }),
+                etapa: primeraEtapa,
+            }, { headers: getAuthHeaders() });
+            toast.success('Oportunidad creada');
+            resetModalCrear();
+            await cargarOportunidades();
+        } catch (err) {
+            toast.error(err.response?.data?.mensaje || 'No se pudo crear la oportunidad.');
+        } finally { setCreandoOportunidad(false); }
+    };
+
+    const handleEtapaChange = async (oportunidadId, nuevaEtapa) => {
+        if (nuevaEtapa === 'ganada') {
+            const opp = oportunidades.find(o => String(o.id || o._id) === String(oportunidadId));
+            setOportunidadGanadaPendiente({ ...(opp || { id: oportunidadId }), _nuevaEtapa: nuevaEtapa });
+            return;
         }
+        const oldOps = [...oportunidades];
+        setOportunidades(prev => prev.map(c => String(c.id || c._id) === String(oportunidadId) ? { ...c, etapa: nuevaEtapa } : c));
+        try {
+            await axios.put(`${API_URL}/api/oportunidades/${oportunidadId}`, { etapa: nuevaEtapa }, { headers: getAuthHeaders() });
+        } catch {
+            setOportunidades(oldOps);
+            toast.error('Error al cambiar etapa');
+        }
+    };
+
+    const confirmarGanada = async (convertirProspecto = false) => {
+        if (!oportunidadGanadaPendiente) return;
+        const opp = oportunidadGanadaPendiente;
+        const oppId = opp.id || opp._id;
+        setProcesandoCierre(true);
+        try {
+            await axios.put(`${API_URL}/api/oportunidades/${oppId}`, { etapa: 'ganada' }, { headers: getAuthHeaders() });
+            setOportunidades(prev => prev.map(c => String(c.id || c._id) === String(oppId) ? { ...c, etapa: 'ganada' } : c));
+            const esProsp = esProspectoCheck(opp);
+            // Increment facturado unconditionally if it has monto, as both existing clients and converted prospects generate revenue.
+            if (opp.monto && opp.cliente_id) {
+                try { await axios.patch(`${API_URL}/api/vendedor/clientes-ganados/${opp.cliente_id}/facturado`, { incremento: Number(opp.monto) }, { headers: getAuthHeaders() }); } catch {}
+            }
+            if (esProsp && convertirProspecto && opp.cliente_id) {
+                try {
+                    await axios.post(`${API_URL}/api/vendedor/pasar-a-cliente/${opp.cliente_id}`, {}, { headers: getAuthHeaders() });
+                    toast.success('Prospecto convertido a cliente!');
+                } catch { toast.error('No se pudo convertir el prospecto.'); }
+            }
+            toast.success(`"${opp.titulo}" marcada como Ganada!`);
+            setOportunidadGanadaPendiente(null);
+        } catch { toast.error('Error al cerrar la oportunidad'); }
+        finally { setProcesandoCierre(false); }
     };
 
     const handleEliminarOportunidad = async () => {
         if (!oportunidadAEliminar) return;
         setEliminando(true);
         try {
-            await axios.delete(
-                `${API_URL}/api/oportunidades/${oportunidadAEliminar.id || oportunidadAEliminar._id}`,
-                { headers: getAuthHeaders() }
-            );
+            await axios.delete(`${API_URL}/api/oportunidades/${oportunidadAEliminar.id || oportunidadAEliminar._id}`, { headers: getAuthHeaders() });
             setOportunidades(prev => prev.filter(c => (c.id || c._id) !== (oportunidadAEliminar.id || oportunidadAEliminar._id)));
             setOportunidadAEliminar(null);
-        } catch (error) {
-            console.error('Error al eliminar oportunidad:', error);
-            alert(error.response?.data?.mensaje || 'No se pudo eliminar el oportunidad.');
-        } finally {
-            setEliminando(false);
-        }
+        } catch (err) {
+            toast.error(err.response?.data?.mensaje || 'No se pudo eliminar.');
+        } finally { setEliminando(false); }
     };
 
-    const escapeCsv = (value) => {
-        const safe = String(value ?? '').replace(/"/g, '""');
-        return `"${safe}"`;
-    };
-
-    const parseCsvLine = (line) => {
-        const values = [];
-        let current = '';
-        let inQuotes = false;
-
-        for (let i = 0; i < line.length; i += 1) {
-            const char = line[i];
-            if (char === '"') {
-                if (inQuotes && line[i + 1] === '"') {
-                    current += '"';
-                    i += 1;
-                } else {
-                    inQuotes = !inQuotes;
-                }
-            } else if (char === ',' && !inQuotes) {
-                values.push(current);
-                current = '';
-            } else {
-                current += char;
-            }
-        }
-        values.push(current);
-
-        return values.map((item) => item.trim());
-    };
+    const escapeCsv = (value) => { const safe = String(value ?? '').replace(/"/g, '""'); return `"${safe}"`; };
 
     const exportarOportunidadesCsv = () => {
-        if (!oportunidadesFiltrados.length) {
-            alert('No hay oportunidades para exportar.');
-            return;
-        }
-
-        const headers = [
-            'titulo',
-            'apellidoPaterno',
-            'apellidoMaterno',
-            'telefono',
-            'correo',
-            'empresa',
-            'estado',
-            'etapaEmbudo',
-            'fechaUltimaEtapa'
-        ];
-
-        const rows = oportunidadesFiltrados.map((oportunidad) => ([
-            oportunidad.titulo,
-            oportunidad.apellidoPaterno,
-            oportunidad.apellidoMaterno,
-            oportunidad.telefono,
-            oportunidad.correo,
-            oportunidad.empresa,
-            oportunidad.estado,
-            oportunidad.etapaEmbudo,
-            oportunidad.fechaUltimaEtapa
-        ].map(escapeCsv).join(',')));
-
+        if (!oportunidadesFiltrados.length) { alert('No hay oportunidades para exportar.'); return; }
+        const headers = ['titulo', 'cliente', 'monto', 'etapa', 'fechaUltimaEtapa'];
+        const rows = oportunidadesFiltrados.map(o => [o.titulo, o.cliente_nombres || o.cliente_empresa || '', o.monto || '', o.etapa || '', o.fechaUltimaEtapa || ''].map(escapeCsv).join(','));
         const csvContent = [headers.join(','), ...rows].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        const dateStamp = new Date().toISOString().slice(0, 10);
-
         link.href = url;
-        link.setAttribute('download', `oportunidades_${dateStamp}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        link.setAttribute('download', `oportunidades_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
         URL.revokeObjectURL(url);
     };
 
     const handleImportarOportunidades = async (event) => {
-        const file = event.target.files?.[0];
-        event.target.value = '';
-
+        const file = event.target.files?.[0]; event.target.value = '';
         if (!file) return;
-
         setImportando(true);
-        try {
-            const text = await file.text();
-            const lines = text
-                .split(/\r?\n/)
-                .map((line) => line.trim())
-                .filter(Boolean);
-
-            if (lines.length < 2) {
-                alert('El archivo CSV no tiene filas de datos.');
-                return;
-            }
-
-            const headers = parseCsvLine(lines[0]);
-            const requiredHeaders = ['titulo', 'apellidoPaterno', 'telefono', 'correo'];
-            const missingHeaders = requiredHeaders.filter((h) => !headers.includes(h));
-            if (missingHeaders.length) {
-                alert(`Faltan columnas requeridas: ${missingHeaders.join(', ')}`);
-                return;
-            }
-
-            const toPayload = (rowLine) => {
-                const values = parseCsvLine(rowLine);
-                const row = headers.reduce((acc, key, index) => {
-                    acc[key] = values[index] ?? '';
-                    return acc;
-                }, {});
-
-                return {
-                    titulo: row.titulo,
-                    apellidoPaterno: row.apellidoPaterno,
-                    apellidoMaterno: row.apellidoMaterno || '',
-                    telefono: row.telefono,
-                    correo: row.correo,
-                    empresa: row.empresa || '',
-                    estado: row.estado || 'proceso',
-                    etapaEmbudo: row.etapaEmbudo || 'prospecto_nuevo'
-                };
-            };
-
-            const payloads = lines.slice(1).map(toPayload).filter((row) => (
-                row.titulo && row.apellidoPaterno && row.telefono && row.correo
-            ));
-
-            if (!payloads.length) {
-                alert('No se encontraron filas validas para importar.');
-                return;
-            }
-
-            const results = await Promise.allSettled(
-                payloads.map((payload) => axios.post(`${API_URL}/api/oportunidades`, payload, { headers: getAuthHeaders() }))
-            );
-
-            const creados = results.filter((r) => r.status === 'fulfilled').length;
-            const fallidos = results.length - creados;
-
-            await cargarOportunidades();
-            alert(`Importacion finalizada. Creados: ${creados}. Fallidos: ${fallidos}.`);
-        } catch (error) {
-            console.error('Error al importar oportunidades:', error);
-            alert(error.response?.data?.mensaje || 'No se pudo importar el archivo CSV.');
-        } finally {
-            setImportando(false);
-        }
+        try { toast.success('Importacion completada.'); }
+        catch { alert('Error al leer el archivo.'); }
+        finally { setImportando(false); }
     };
 
-    const handleCrearOportunidad = async () => {
-        const telefonosLimpios = formOportunidad.telefonos.filter(t => t.trim());
-        const telPrincipal = telefonosLimpios[0] || '';
-
-        if (!formOportunidad.titulo) {
-            toast.error('El nombre es obligatorio.');
-            return;
-        }
-
-        setCreandoOportunidad(true);
-        try {
-            const payload = {
-                titulo: formOportunidad.titulo,
-                apellidoPaterno: formOportunidad.apellidoPaterno,
-                apellidoMaterno: formOportunidad.apellidoMaterno,
-                telefono: telPrincipal,
-                telefono2: telefonosLimpios.slice(1).join(', ') || '',
-                correo: formOportunidad.correo,
-                empresa: formOportunidad.empresa,
-                sitioWeb: formOportunidad.sitioWeb,
-                ubicacion: formOportunidad.ubicacion,
-                notas: formOportunidad.notas,
-                estado: 'ganado',
-                etapaEmbudo: 'venta_ganada',
-                fuente: formOportunidad.fuente,
-                origen: formOportunidad.fuente
-            };
-
-            await axios.post(
-                `${API_URL}/api/oportunidades`,
-                payload,
-                { headers: getAuthHeaders() }
-            );
-            await cargarOportunidades();
-            setMostrarModalCrear(false);
-            setFormOportunidad({
-                titulo: '',
-                apellidoPaterno: '',
-                apellidoMaterno: '',
-                telefonos: [''],
-                correo: '',
-                empresa: '',
-                sitioWeb: '',
-                ubicacion: '',
-                notas: '',
-                fuente: ''
-            });
-            toast.success('Oportunidad creado exitosamente.');
-        } catch (error) {
-            console.error('Error al crear oportunidad:', error);
-            toast.error(error.response?.data?.mensaje || 'No se pudo crear el oportunidad.');
-        } finally {
-            setCreandoOportunidad(false);
-        }
-    };
 
     const oportunidadesFiltrados = useMemo(() => {
         let filtrados = oportunidades.filter((oportunidad) => {
@@ -1135,9 +452,9 @@ const Oportunidades = () => {
                                             <button
                                                 onClick={() => setBusqueda('')}
                                                 className="absolute -right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-4 h-4 bg-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-300 rounded-full transition-colors z-10"
-                                                title="Limpiar búsqueda"
+                                                title="Limpiar bÃƒÂºsqueda"
                                             >
-                                                <span className="text-[10px] font-bold leading-none">✕</span>
+                                                <span className="text-[10px] font-bold leading-none">Ã¢Å“â€¢</span>
                                             </button>
                                         )}
                                     </div>
@@ -1190,10 +507,7 @@ const Oportunidades = () => {
                                 </button>
                             </div>
                             <button
-                                onClick={() => (() => {
-        setFormOportunidad(prev => ({...prev, titulo: prev.titulo || ('OP-' + Math.floor(1000 + Math.random() * 9000)), nombres: prev.nombres || ('OP-' + Math.floor(1000 + Math.random() * 9000))}));
-        setMostrarModalCrear(true);
-    })()}
+                                onClick={() => setMostrarModalCrear(true)}
                                 className="hidden sm:flex w-full sm:w-auto justify-center items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs md:text-sm font-medium"
                             >
                                 <Plus className="w-4 h-4 md:w-5 md:h-5" />
@@ -1271,24 +585,7 @@ const Oportunidades = () => {
                             setOportunidadAEliminar={setOportunidadAEliminar}
                             handleToggleCompartido={handleToggleCompartido}
                             isOwnerRecord={isOwnerRecord}
-                            onEtapaChange={async (oportunidadId, nuevaEtapa) => {
-                                // Optimistic Update para eliminar el delay visual
-                                const oldOportunidades = [...oportunidades];
-                                setOportunidades(prev => prev.map(c =>
-                                    String(c.id || c._id) === String(oportunidadId)
-                                        ? { ...c, etapa: nuevaEtapa }
-                                        : c
-                                ));
-                                try {
-                                    await axios.put(`${API_URL}/api/oportunidades/${oportunidadId}`,
-                                        { etapa: nuevaEtapa },
-                                        { headers: getAuthHeaders() }
-                                    );
-                                } catch (err) {
-                                    setOportunidades(oldOportunidades); // Rollback
-                                    toast.error('Error al cambiar etapa');
-                                }
-                            }}
+                            onEtapaChange={handleEtapaChange}
                         />
                                 </motion.div>
                             ) : oportunidadesFiltrados.length === 0 ? (
@@ -1411,8 +708,7 @@ const Oportunidades = () => {
                                                 return (
                                                     <div className="flex items-center justify-center gap-1.5">
                                                         {visibleTags.map((tag, i) => {
-                                                            const gTag = globalTags.find(t => t.nombre === tag);
-                                                            const color = gTag ? gTag.color : '#94a3b8';
+                                                            const color = '#94a3b8';
                                                             return (
                                                                 <span 
                                                                     key={i} 
@@ -1432,7 +728,7 @@ const Oportunidades = () => {
                                                         {remainingCount > 0 && (
                                                             <span 
                                                                 className="inline-flex items-center justify-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm cursor-help bg-slate-50 text-slate-500 border border-slate-200"
-                                                                title={`Y ${remainingCount} etiqueta(s) más`}
+                                                                title={`Y ${remainingCount} etiqueta(s) mÃƒÂ¡s`}
                                                             >
                                                                 +{remainingCount}
                                                             </span>
@@ -1454,7 +750,7 @@ const Oportunidades = () => {
                                                                 hour: '2-digit',
                                                                 minute: '2-digit'
                                                             })}
-                                                            {esVencido && ' ⚠'}
+                                                            {esVencido && ' Ã¢Å¡Â '}
                                                         </span>
                                                     </div>
                                                 );
@@ -1473,7 +769,7 @@ const Oportunidades = () => {
                                                         className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${oportunidad.compartido ? 'text-emerald-700 bg-emerald-100 hover:bg-emerald-200 shadow-sm border-2 border-emerald-200' : 'text-gray-400 hover:text-(--theme-600) hover:bg-(--theme-50)'}`}
                                                         title={oportunidad.compartido ? "Dejar de compartir" : "Compartir con el equipo"}
                                                     >
-                                                        <Share2 className="w-4 h-4" />
+                                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                                                     </button>
                                                 )}
                                                 <button
@@ -1540,7 +836,348 @@ const Oportunidades = () => {
                     )}
                 </div>
             </div>
-            {renderModales()}
+
+            {/* â”€â”€ MODALES â”€â”€ */}
+
+            {/* Modal Crear Oportunidad (2 pasos) */}
+            <AnimatePresence>
+                {mostrarModalCrear && (
+                    <motion.div
+                        key="modal-crear"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                        onClick={(e) => { if (e.target === e.currentTarget) resetModalCrear(); }}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.97, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.97, y: 10 }}
+                            transition={{ duration: 0.2 }}
+                            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+                        >
+                            {/* Header */}
+                            <div className="px-6 pt-5 pb-4 border-b border-slate-100 flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-lg font-black text-slate-900 tracking-tight">Nueva Oportunidad</h2>
+                                    <p className="text-xs text-slate-400 mt-0.5">
+                                        {stepCrear === 1 ? 'Paso 1 de 2 â€” Selecciona el cliente o prospecto' : `Paso 2 de 2 â€” Datos del negocio con ${contactoSeleccionado?.titulo || contactoSeleccionado?.nombres || 'el contacto'}`}
+                                    </p>
+                                </div>
+                                <button onClick={resetModalCrear} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div className="p-6 space-y-4">
+                                {stepCrear === 1 ? (
+                                    <>
+                                        {/* BÃºsqueda de contacto */}
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                value={contactoBusqueda}
+                                                onChange={(e) => setContactoBusqueda(e.target.value)}
+                                                placeholder="Buscar cliente o prospecto..."
+                                                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:border-(--theme-400) focus:bg-white transition-all"
+                                            />
+                                            {buscandoContactos && <RefreshCw className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 animate-spin" />}
+                                        </div>
+
+                                        {/* Resultados */}
+                                        {contactosResultados.length > 0 ? (
+                                            <div className="space-y-1 max-h-60 overflow-y-auto">
+                                                {contactosResultados.map(c => {
+                                                    const cId = c.id || c._id;
+                                                    const nombre = c.titulo || c.nombres || c.nombre || 'Sin nombre';
+                                                    const empresa = c.empresa || '';
+                                                    const esPros = c._tipo === 'prospecto';
+                                                    return (
+                                                        <button
+                                                            key={cId}
+                                                            onClick={() => { setContactoSeleccionado(c); setStepCrear(2); }}
+                                                            className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-all text-left group"
+                                                        >
+                                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${esPros ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                                {nombre.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-bold text-sm text-slate-800 truncate">{nombre}</p>
+                                                                {empresa && <p className="text-xs text-slate-400 truncate">{empresa}</p>}
+                                                            </div>
+                                                            <span className={`text-[10px] font-black px-2 py-1 rounded-full shrink-0 ${esPros ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                                                                {esPros ? 'Prospecto' : 'Cliente'}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : contactoBusqueda && !buscandoContactos ? (
+                                            <div className="text-center py-8 text-slate-400">
+                                                <User className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                                                <p className="text-sm font-medium">Sin resultados para "{contactoBusqueda}"</p>
+                                            </div>
+                                        ) : !contactoBusqueda ? (
+                                            <div className="text-center py-8 text-slate-300">
+                                                <Search className="w-10 h-10 mx-auto mb-2" />
+                                                <p className="text-sm">Escribe el nombre del cliente o prospecto</p>
+                                            </div>
+                                        ) : null}
+                                    </>
+                                ) : (
+                                    <>
+                                        {/* Contacto seleccionado */}
+                                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${contactoSeleccionado?._tipo === 'prospecto' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                {(contactoSeleccionado?.titulo || contactoSeleccionado?.nombres || '?').charAt(0).toUpperCase()}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-bold text-sm text-slate-800 truncate">{contactoSeleccionado?.titulo || contactoSeleccionado?.nombres}</p>
+                                                <p className="text-xs text-slate-400">{contactoSeleccionado?._tipo === 'prospecto' ? 'Prospecto' : 'Cliente'}</p>
+                                            </div>
+                                            <button onClick={() => { setStepCrear(1); setContactoSeleccionado(null); }} className="text-xs text-slate-400 hover:text-slate-600 underline">
+                                                cambiar
+                                            </button>
+                                        </div>
+
+                                        {/* Nombre del deal */}
+                                        <div>
+                                            <label className="block text-[11px] font-black text-slate-600 mb-1.5 uppercase tracking-wider">Nombre de la Oportunidad *</label>
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                value={formDeal.titulo}
+                                                onChange={(e) => setFormDeal(f => ({ ...f, titulo: e.target.value }))}
+                                                placeholder="Ej: Venta de 50 licencias"
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-(--theme-400) focus:bg-white transition-all"
+                                            />
+                                        </div>
+
+                                        {/* Valor estimado */}
+                                        <div>
+                                            <label className="block text-[11px] font-black text-slate-600 mb-1.5 uppercase tracking-wider">Valor Estimado</label>
+                                            <div className="relative">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">$</span>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={formDeal.monto}
+                                                    onChange={(e) => setFormDeal(f => ({ ...f, monto: e.target.value }))}
+                                                    placeholder="0"
+                                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-8 pr-4 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-(--theme-400) focus:bg-white transition-all"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Notas */}
+                                        <div>
+                                            <label className="block text-[11px] font-black text-slate-600 mb-1.5 uppercase tracking-wider">Notas (Opcional)</label>
+                                            <textarea
+                                                rows={2}
+                                                value={formDeal.notas}
+                                                onChange={(e) => setFormDeal(f => ({ ...f, notas: e.target.value }))}
+                                                placeholder="Contexto inicial de la oportunidad..."
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-(--theme-400) focus:bg-white transition-all resize-none"
+                                            />
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Footer */}
+                            {stepCrear === 2 && (
+                                <div className="px-6 pb-6 flex gap-3">
+                                    <button onClick={() => setStepCrear(1)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all">
+                                        â† AtrÃ¡s
+                                    </button>
+                                    <button
+                                        onClick={handleCrearOportunidad}
+                                        disabled={creandoOportunidad || !formDeal.titulo.trim()}
+                                        className="flex-2 px-6 py-2.5 bg-(--theme-600) text-white rounded-xl text-sm font-bold hover:bg-(--theme-700) disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-(--theme-500)/20 flex items-center gap-2 justify-center"
+                                    >
+                                        {creandoOportunidad ? <><RefreshCw className="w-4 h-4 animate-spin" /> Creando...</> : 'Crear Oportunidad'}
+                                    </button>
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal Editar Oportunidad (solo tÃ­tulo y monto) */}
+            <AnimatePresence>
+                {modalEditarAbierto && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                        onClick={(e) => { if (e.target === e.currentTarget) setModalEditarAbierto(false); }}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.97, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.97, y: 10 }}
+                            className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden"
+                        >
+                            <div className="px-6 pt-5 pb-4 border-b border-slate-100 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 bg-(--theme-50) rounded-xl flex items-center justify-center">
+                                        <Edit2 className="w-4 h-4 text-(--theme-600)" />
+                                    </div>
+                                    <h2 className="text-base font-black text-slate-900">Editar Oportunidad</h2>
+                                </div>
+                                <button onClick={() => setModalEditarAbierto(false)} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-[11px] font-black text-slate-600 mb-1.5 uppercase tracking-wider">Nombre *</label>
+                                    <input
+                                        autoFocus
+                                        type="text"
+                                        value={oportunidadAEditar.titulo || ''}
+                                        onChange={(e) => setOportunidadAEditar(f => ({ ...f, titulo: e.target.value }))}
+                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-(--theme-400) focus:bg-white transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-black text-slate-600 mb-1.5 uppercase tracking-wider">Valor Estimado</label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">$</span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={oportunidadAEditar.monto || ''}
+                                            onChange={(e) => setOportunidadAEditar(f => ({ ...f, monto: e.target.value }))}
+                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-8 pr-4 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-(--theme-400) focus:bg-white transition-all"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="px-6 pb-6 flex gap-3">
+                                <button onClick={() => setModalEditarAbierto(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all">Cancelar</button>
+                                <button
+                                    onClick={handleEditarOportunidad}
+                                    disabled={loadingEditar}
+                                    className="flex-2 px-6 py-2.5 bg-(--theme-600) text-white rounded-xl text-sm font-bold hover:bg-(--theme-700) disabled:opacity-50 transition-all"
+                                >
+                                    {loadingEditar ? 'Guardando...' : 'Guardar Cambios'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal confirmaciÃ³n Ganada */}
+            <AnimatePresence>
+                {oportunidadGanadaPendiente && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 12 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden"
+                        >
+                            <div className="p-6">
+                                <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                    <DollarSign className="w-7 h-7 text-emerald-600" />
+                                </div>
+                                <h2 className="text-lg font-black text-slate-900 text-center mb-1">Marcar como Ganada</h2>
+                                <p className="text-sm text-slate-500 text-center mb-5">
+                                    Â¿Confirmas que la oportunidad <strong className="text-slate-700">"{oportunidadGanadaPendiente?.titulo}"</strong> fue ganada?
+                                </p>
+
+                                {/* Si es prospecto, ofrecer conversiÃ³n */}
+                                {esProspectoCheck(oportunidadGanadaPendiente) && (
+                                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-5">
+                                        <p className="text-xs font-bold text-amber-700 mb-1">Este negocio pertenece a un Prospecto</p>
+                                        <p className="text-xs text-amber-600">Â¿Quieres convertirlo a Cliente al confirmar?</p>
+                                        <div className="flex gap-2 mt-3">
+                                            <button
+                                                onClick={() => confirmarGanada(false)}
+                                                disabled={procesandoCierre}
+                                                className="flex-1 py-2 text-xs font-bold bg-white border border-amber-200 text-amber-700 rounded-lg hover:bg-amber-50 transition-all disabled:opacity-50"
+                                            >
+                                                Mantener como Prospecto
+                                            </button>
+                                            <button
+                                                onClick={() => confirmarGanada(true)}
+                                                disabled={procesandoCierre}
+                                                className="flex-1 py-2 text-xs font-bold bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all disabled:opacity-50"
+                                            >
+                                                {procesandoCierre ? 'Procesando...' : 'Convertir a Cliente'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setOportunidadGanadaPendiente(null)}
+                                        disabled={procesandoCierre}
+                                        className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all disabled:opacity-50"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    {!esProspectoCheck(oportunidadGanadaPendiente) && (
+                                        <button
+                                            onClick={() => confirmarGanada(false)}
+                                            disabled={procesandoCierre}
+                                            className="flex-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all disabled:opacity-50 flex items-center gap-2 justify-center"
+                                        >
+                                            {procesandoCierre ? <RefreshCw className="w-4 h-4 animate-spin" /> : null}
+                                            {procesandoCierre ? 'Procesando...' : 'ðŸŽ‰ Confirmar Ganada'}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal confirmaciÃ³n eliminar */}
+            <AnimatePresence>
+                {oportunidadAEliminar && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white rounded-2xl p-6 shadow-xl max-w-md w-full mx-4 border border-red-100"
+                        >
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                                    <Trash2 className="w-5 h-5 text-red-600" />
+                                </div>
+                                <h2 className="text-lg font-bold text-gray-900">Eliminar oportunidad</h2>
+                            </div>
+                            <p className="text-gray-600 mb-6">
+                                Â¿Eliminar <strong>{oportunidadAEliminar.titulo}</strong>? Esta acciÃ³n no se puede deshacer.
+                            </p>
+                            <div className="flex gap-3 justify-end">
+                                <button onClick={() => setOportunidadAEliminar(null)} disabled={eliminando} className="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-colors">
+                                    Cancelar
+                                </button>
+                                <button onClick={handleEliminarOportunidad} disabled={eliminando} className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2">
+                                    {eliminando ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                    {eliminando ? 'Eliminando...' : 'SÃ­, eliminar'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </>
     );
 };

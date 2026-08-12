@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
-    Edit2, Trash2, X, Plus, CheckCircle2, Upload, Target, FileText
+    Edit2, Trash2, X, Plus, CheckCircle2, Upload, Target, FileText, XCircle, Star, DollarSign, Briefcase
 } from 'lucide-react';
 import { getToken } from '../utils/authUtils';
 import API_URL from '../config/api';
@@ -14,10 +14,50 @@ export default function OportunidadesPanel({
 }) {
     const [oportunidades, setOportunidades] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [uploadingState, setUploadingState] = useState(null);
     const fileInputRef = useRef(null);
 
-    const defaultEtapas = ['Prospecto Nuevo', 'Cita Generada', 'Propuesta Enviada', 'Negociación', 'Cierre Ganado'];
+    const [kanbanColumns, setKanbanColumns] = useState([]);
+
+    const DEFAULT_KANBAN_COLUMNS = [
+        { id: 'nueva',        label: 'Nueva Oportunidad',  colorId: 'emerald' },
+        { id: 'calificacion', label: 'Calificación',       colorId: 'blue' },
+        { id: 'cotizacion',   label: 'Cotización Enviada', colorId: 'violet' },
+        { id: 'negociacion',  label: 'En Negociación',     colorId: 'amber' },
+        { id: 'ganada',       label: 'Venta Ganada',       colorId: 'emerald' },
+        { id: 'perdida',      label: 'Perdida',            colorId: 'slate' }
+    ];
+
+    useEffect(() => {
+        try {
+            const colsStr = localStorage.getItem('kanban_oportunidades_cols_v4');
+            if (colsStr) {
+                setKanbanColumns(JSON.parse(colsStr));
+            } else {
+                setKanbanColumns(DEFAULT_KANBAN_COLUMNS);
+            }
+        } catch (e) {
+            setKanbanColumns(DEFAULT_KANBAN_COLUMNS);
+        }
+    }, []);
+
+    const getColumnClasses = (colorId, isCurrent, isCompleted) => {
+        const colors = {
+            slate: { active: 'bg-slate-500 text-white', completed: 'bg-slate-100 text-slate-600 border-slate-100', dot: 'bg-slate-500' },
+            blue: { active: 'bg-blue-500 text-white', completed: 'bg-blue-100 text-blue-700 border-blue-100', dot: 'bg-blue-500' },
+            violet: { active: 'bg-violet-500 text-white', completed: 'bg-violet-100 text-violet-700 border-violet-100', dot: 'bg-violet-500' },
+            emerald: { active: 'bg-emerald-500 text-white', completed: 'bg-emerald-100 text-emerald-700 border-emerald-100', dot: 'bg-emerald-500' },
+            amber: { active: 'bg-amber-500 text-white', completed: 'bg-amber-100 text-amber-700 border-amber-100', dot: 'bg-amber-500' },
+            rose: { active: 'bg-rose-500 text-white', completed: 'bg-rose-100 text-rose-700 border-rose-100', dot: 'bg-rose-500' },
+            cyan: { active: 'bg-cyan-500 text-white', completed: 'bg-cyan-100 text-cyan-700 border-cyan-100', dot: 'bg-cyan-500' },
+            orange: { active: 'bg-orange-500 text-white', completed: 'bg-orange-100 text-orange-700 border-orange-100', dot: 'bg-orange-500' },
+            teal: { active: 'bg-teal-500 text-white', completed: 'bg-teal-100 text-teal-700 border-teal-100', dot: 'bg-teal-500' },
+            white: { active: 'bg-slate-700 text-white', completed: 'bg-slate-100 text-slate-700 border-slate-100', dot: 'bg-slate-700' }
+        };
+        const c = colors[colorId] || colors.slate;
+        if (isCurrent) return { class: `${c.active} shadow-md scale-[1.02] z-10 font-bold border-transparent`, dot: c.dot };
+        if (isCompleted) return { class: `${c.completed} font-semibold`, dot: '' };
+        return { class: 'bg-slate-50 text-slate-400 border-slate-50', dot: '' };
+    };
 
     useEffect(() => {
         cargarOportunidades();
@@ -32,14 +72,6 @@ export default function OportunidadesPanel({
             });
             // Parsamos el JSON
             const data = res.data.map(opp => {
-                let parsedEtapas = [];
-                try {
-                    const parsed = JSON.parse(opp.etapas_json);
-                    parsedEtapas = Array.isArray(parsed?.nombres) ? parsed.nombres : defaultEtapas;
-                } catch(e) {
-                    parsedEtapas = defaultEtapas;
-                }
-                
                 let parsedContent = {};
                 try {
                     parsedContent = opp.notas ? JSON.parse(opp.notas) : {};
@@ -49,7 +81,6 @@ export default function OportunidadesPanel({
 
                 return {
                     ...opp,
-                    parsedEtapas,
                     parsedContent
                 };
             });
@@ -69,8 +100,8 @@ export default function OportunidadesPanel({
                 cliente_id: clienteId,
                 titulo: `OP-${Math.floor(1000 + Math.random() * 9000)}`,
                 monto: 0,
-                etapa: 'abierta',
-                etapas_json: JSON.stringify({ nombres: defaultEtapas, actual: 0 }),
+                etapa: kanbanColumns.length > 0 ? kanbanColumns[0].id : 'nueva',
+                etapas_json: JSON.stringify({ actual: 0 }),
                 notas: JSON.stringify({ url: null, nombreArchivo: null })
             }, {
                 headers: { 'x-auth-token': token }
@@ -78,7 +109,6 @@ export default function OportunidadesPanel({
             
             const newOpp = {
                 ...res.data,
-                parsedEtapas: defaultEtapas,
                 parsedContent: { url: null, nombreArchivo: null }
             };
             setOportunidades([...oportunidades, newOpp]);
@@ -102,15 +132,11 @@ export default function OportunidadesPanel({
             
             const payload = {
                 titulo: campos.titulo !== undefined ? campos.titulo : oppActual.titulo,
-                monto: campos.monto !== undefined ? campos.monto : oppActual.monto,
+                monto: campos.monto !== undefined ? (campos.monto === '' ? 0 : Number(campos.monto)) : oppActual.monto,
                 etapa: campos.etapa !== undefined ? campos.etapa : oppActual.etapa,
             };
             
-            let currentParsedEtapas = campos.parsedEtapas !== undefined ? campos.parsedEtapas : oppActual.parsedEtapas;
-            let currentEtapaActual = campos.etapaActual !== undefined ? campos.etapaActual : 
-                (oppActual.etapas_json ? (JSON.parse(oppActual.etapas_json)?.actual || 0) : 0);
-            
-            payload.etapas_json = JSON.stringify({ nombres: currentParsedEtapas, actual: currentEtapaActual });
+            payload.etapas_json = JSON.stringify({ actual: 0 });
             
             let currentContent = { ...oppActual.parsedContent, ...campos.parsedContent };
             payload.notas = JSON.stringify(currentContent);
@@ -185,240 +211,133 @@ export default function OportunidadesPanel({
             />
             
             {oportunidades.map(opp => {
-                const isCerrada = opp.etapa === 'ganada' || opp.etapa === 'perdida';
+                const isCerrada = false; // Removido por columnas dinámicas, el estado no se bloquea por etapas duras
                 const etapaActual = opp.etapas_json ? (JSON.parse(opp.etapas_json)?.actual || 0) : 0;
                 const url = opp.parsedContent?.url;
                 const nombreArchivo = opp.parsedContent?.nombreArchivo;
 
                 return (
-                    <div key={opp.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm group flex flex-col overflow-hidden h-auto min-h-[300px]">
-                        {/* Header */}
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="flex items-center gap-2 flex-1 group/title relative">
-                                <Target className="w-5 h-5 text-blue-500 shrink-0" />
-                                <input
-                                    type="text"
-                                    value={opp.titulo}
-                                    onChange={e => actualizarOportunidad(opp.id, { titulo: e.target.value })}
-                                    className="font-bold text-gray-800 text-sm bg-transparent border-none outline-none focus:ring-1 focus:ring-slate-100 rounded px-1 -ml-1 w-full hover:bg-slate-50 transition-colors cursor-text"
-                                    placeholder="Nombre de la Oportunidad"
-                                />
-                                <Edit2 className="w-3 h-3 text-slate-300 opacity-0 group-hover/title:opacity-100 transition-opacity pointer-events-none" />
-                            </div>
-                            <button
-                                onClick={() => eliminarOportunidad(opp.id)}
-                                className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all ml-2 shrink-0"
-                                title="Eliminar oportunidad"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto pr-1 hide-scrollbar">
-                            <div className="flex flex-col flex-1">
-                                <div className="flex items-center gap-4 flex-wrap bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6">
-                                    <div className="flex-1 min-w-[200px]">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1 block">Valor Estimado</label>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400">$</span>
-                                            <input 
-                                                type="number"
-                                                value={opp.monto || ''}
-                                                onChange={e => actualizarOportunidad(opp.id, { monto: e.target.value })}
-                                                placeholder="0.00"
-                                                disabled={isCerrada}
-                                                className="w-full pl-7 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-gray-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-50"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="shrink-0 flex flex-col justify-center">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1 block text-right">Estado</label>
-                                        {!isCerrada ? (
-                                            <div className="px-3 py-1 bg-amber-100 text-amber-700 font-black text-[10px] rounded-full uppercase tracking-wider border border-amber-200 shadow-sm animate-pulse">
-                                                EN PROGRESO
-                                            </div>
-                                        ) : (
-                                            <div className={`px-3 py-1 font-black text-[10px] rounded-full uppercase tracking-wider border shadow-sm ${opp.etapa === 'ganada' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
-                                                {opp.etapa === 'ganada' ? 'GANADA' : 'PERDIDA'}
-                                            </div>
-                                        )}
-                                    </div>
+                    <div key={opp.id} className={`border-2 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow group flex flex-col gap-5 relative overflow-hidden ${opp.etapa === 'ganada' ? 'bg-emerald-50/50 border-emerald-200/80' : 'bg-white border-slate-100'}`}>
+                        {/* Header: Titulo & Valor */}
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div className="flex items-center gap-3 flex-1 w-full">
+                                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl shadow-sm border border-blue-100">
+                                    <Briefcase className="w-5 h-5" />
                                 </div>
-
-                                {/* Timeline */}
-                                <div className="relative pt-6 pb-4 overflow-x-auto hide-scrollbar flex justify-center sm:justify-start">
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center sm:min-w-max mx-auto px-2 gap-4 sm:gap-0 w-full sm:w-auto">
-                                        {opp.parsedEtapas.map((etapa, stepIdx) => {
-                                            const isCompleted = stepIdx < etapaActual;
-                                            const isCurrent = stepIdx === etapaActual;
-                                            const isLast = stepIdx === opp.parsedEtapas.length - 1;
-                                            
-                                            return (
-                                                <div key={stepIdx} className="flex flex-row sm:flex-col items-center relative group/step w-full sm:w-auto sm:min-w-[120px]">
-                                                    {/* Connecting Line */}
-                                                    {!isLast && (
-                                                        <>
-                                                            <div className={`hidden sm:block absolute top-4 left-1/2 w-full h-[3px] z-0 ${isCompleted ? 'bg-blue-500' : 'bg-slate-200'}`}></div>
-                                                            <div className={`sm:hidden absolute top-8 left-4 w-[3px] h-full z-0 ${isCompleted ? 'bg-blue-500' : 'bg-slate-200'}`}></div>
-                                                        </>
-                                                    )}
-                                                    
-                                                    {/* Step Node */}
-                                                    <div 
-                                                        className={`w-8 h-8 rounded-full flex items-center justify-center border-[3px] transition-colors z-10 bg-white shrink-0 ${!isCerrada ? 'cursor-pointer' : ''} ${
-                                                            isCompleted ? 'border-blue-500 text-blue-500' : 
-                                                            isCurrent ? 'border-blue-500 text-blue-500 ring-4 ring-blue-100' : 
-                                                            'border-slate-300 text-slate-300'
-                                                        }`}
-                                                        onClick={() => { if (!isCerrada) actualizarOportunidad(opp.id, { etapaActual: stepIdx }); }}
-                                                    >
-                                                        {isCompleted ? <CheckCircle2 className="w-4 h-4 fill-blue-500 text-white" /> : (isCurrent ? <div className="w-2.5 h-2.5 rounded-full bg-blue-500" /> : null)}
-                                                    </div>
-
-                                                    {/* Editable Label */}
-                                                    <input 
-                                                        type="text"
-                                                        value={etapa}
-                                                        onChange={(e) => {
-                                                            const newEtapas = [...opp.parsedEtapas];
-                                                            newEtapas[stepIdx] = e.target.value;
-                                                            actualizarOportunidad(opp.id, { parsedEtapas: newEtapas });
-                                                        }}
-                                                        className={`ml-3 sm:ml-0 sm:mt-2 text-[11px] font-bold sm:text-center text-left bg-transparent border-b border-transparent focus:border-blue-300 outline-none flex-1 sm:flex-none sm:w-[100px] truncate ${isCompleted || isCurrent ? 'text-slate-800' : 'text-slate-400'}`}
-                                                        disabled={isCerrada}
-                                                    />
-
-                                                    {/* Delete step button */}
-                                                    {!isCerrada && (
-                                                        <button 
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                const newEtapas = [...opp.parsedEtapas];
-                                                                newEtapas.splice(stepIdx, 1);
-                                                                actualizarOportunidad(opp.id, { 
-                                                                    parsedEtapas: newEtapas,
-                                                                    etapaActual: etapaActual >= newEtapas.length ? Math.max(0, newEtapas.length - 1) : etapaActual
-                                                                });
-                                                            }}
-                                                            className="absolute sm:-top-1 sm:right-1/2 sm:translate-x-6 right-0 p-0.5 bg-red-100 text-red-500 rounded-full opacity-0 group-hover/step:opacity-100 transition-opacity z-20"
-                                                            title="Eliminar etapa"
-                                                        ><X className="w-3 h-3" /></button>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                        
-                                        {/* Add Step Button */}
-                                        {!isCerrada && (
-                                            <div className="flex flex-row sm:flex-col items-center justify-start sm:ml-2 sm:pt-1 mt-2 sm:mt-0 w-full sm:w-auto">
-                                                <div className="w-8 flex justify-center shrink-0">
-                                                    <button 
-                                                        onClick={() => {
-                                                            const newEtapas = [...opp.parsedEtapas];
-                                                            newEtapas.push('Nueva Etapa');
-                                                            actualizarOportunidad(opp.id, { parsedEtapas: newEtapas });
-                                                        }}
-                                                        className="flex items-center justify-center w-6 h-6 rounded-full border-2 border-dashed border-slate-300 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
-                                                        title="Añadir etapa"
-                                                    >
-                                                        <Plus className="w-3 h-3" />
-                                                    </button>
-                                                </div>
-                                                <span className="sm:hidden ml-3 text-[11px] font-bold text-slate-400">Añadir etapa</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Footer: Attachment & Close buttons */}
-                                <div className="mt-2 pt-3 border-t border-slate-200/60 flex items-center justify-between gap-3 flex-wrap">
-                                    <div className="flex items-center gap-2">
-                                        {url ? (
-                                            <div className="flex items-center gap-2">
-                                                <a href={API_URL + url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-bold hover:bg-blue-100 transition-colors border border-blue-200">
-                                                    <FileText className="w-3.5 h-3.5" /> {nombreArchivo || 'Cotización.pdf'}
-                                                </a>
-                                                {!isCerrada && (
-                                                    <button 
-                                                        onClick={() => actualizarOportunidad(opp.id, { parsedContent: { url: null, nombreArchivo: null } })}
-                                                        className="p-1.5 text-slate-400 hover:text-red-500 rounded bg-white border border-slate-200"
-                                                    ><Trash2 className="w-3.5 h-3.5" /></button>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            !isCerrada && (
-                                                <button 
-                                                    onClick={() => {
-                                                        setUploadingState({ oppId: opp.id });
-                                                        fileInputRef.current?.click();
-                                                    }}
-                                                    disabled={uploadingState?.oppId === opp.id}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-slate-300 rounded-lg text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors"
-                                                >
-                                                    {uploadingState?.oppId === opp.id ? <Upload className="w-3.5 h-3.5 animate-bounce" /> : <Upload className="w-3.5 h-3.5" />}
-                                                    Adjuntar Cotización
-                                                </button>
-                                            )
-                                        )}
-                                    </div>
-
-                                    {!isCerrada && (
-                                        <div className="flex flex-wrap items-center gap-2 mt-3 sm:mt-0 w-full sm:w-auto justify-end">
-                                            <button
-                                                onClick={async () => {
-                                                    if (!opp.titulo || opp.titulo.trim() === '') {
-                                                        toast.error('Por favor asigna un nombre a la oportunidad');
-                                                        return;
-                                                    }
-                                                    await actualizarOportunidad(opp.id, { etapa: 'perdida' });
-                                                    if (onOportunidadCerrada) await onOportunidadCerrada(opp, 'perdida');
-                                                }}
-                                                className="px-3 py-1.5 rounded bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 text-[10px] font-bold transition-colors border border-red-200 w-full sm:w-auto flex-1 sm:flex-none min-w-[120px] text-center"
-                                            >
-                                                Cerrar Perdida
-                                            </button>
-                                            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-                                                <button
-                                                    onClick={async () => {
-                                                        if (!opp.titulo || opp.titulo.trim() === '') {
-                                                            toast.error('Por favor asigna un nombre a la oportunidad');
-                                                            return;
-                                                        }
-                                                        if (!opp.monto || isNaN(parseFloat(opp.monto)) || parseFloat(opp.monto) <= 0) {
-                                                            toast.error('Por favor ingresa un monto estimado mayor a $0 para registrar la venta');
-                                                            return;
-                                                        }
-                                                        await actualizarOportunidad(opp.id, { etapa: 'ganada' });
-                                                        if (onOportunidadCerrada) await onOportunidadCerrada(opp, 'ganada', 'venta');
-                                                    }}
-                                                    className="w-full sm:w-auto px-3 py-1.5 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 text-[10px] font-bold transition-colors border border-emerald-200 flex-1 min-w-[120px]"
-                                                >
-                                                    Ganada (Venta)
-                                                </button>
-                                                <button
-                                                    onClick={async () => {
-                                                        if (!opp.titulo || opp.titulo.trim() === '') {
-                                                            toast.error('Por favor asigna un nombre a la oportunidad');
-                                                            return;
-                                                        }
-                                                        if (!opp.monto || isNaN(parseFloat(opp.monto)) || parseFloat(opp.monto) <= 0) {
-                                                            toast.error('Por favor ingresa un monto estimado mayor a $0 para registrar la suscripción');
-                                                            return;
-                                                        }
-                                                        await actualizarOportunidad(opp.id, { etapa: 'ganada' });
-                                                        if (onOportunidadCerrada) await onOportunidadCerrada(opp, 'ganada', 'suscripcion');
-                                                    }}
-                                                    className="w-full sm:w-auto px-3 py-1.5 rounded bg-violet-50 text-violet-600 hover:bg-violet-100 hover:text-violet-700 text-[10px] font-bold transition-colors border border-violet-200 flex-1 min-w-[120px]"
-                                                >
-                                                    Ganada (Suscripción)
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
+                                <div className="flex-1 relative group/title">
+                                    <input
+                                        type="text"
+                                        value={opp.titulo}
+                                        onChange={e => actualizarOportunidad(opp.id, { titulo: e.target.value })}
+                                        className="font-black text-slate-800 text-xl bg-transparent border-b-2 border-transparent focus:border-blue-400 outline-none px-2 py-1.5 -ml-2 w-full hover:bg-slate-50 transition-colors placeholder:text-slate-300 placeholder:font-normal"
+                                        placeholder="Nombre de la Oportunidad"
+                                    />
+                                    <Edit2 className="w-4 h-4 text-slate-300 opacity-0 group-hover/title:opacity-100 transition-opacity pointer-events-none absolute right-2 top-1/2 -translate-y-1/2" />
                                 </div>
                             </div>
+                            
+                            <div className="flex items-center gap-4 shrink-0 bg-slate-50/80 px-4 py-2 rounded-xl border border-slate-100">
+                                <div className="flex flex-col items-end">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Valor</label>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-xl font-bold text-emerald-600">$</span>
+                                        <input 
+                                            type="number"
+                                            value={opp.monto || ''}
+                                            onChange={e => actualizarOportunidad(opp.id, { monto: e.target.value })}
+                                            placeholder="0.00"
+                                            disabled={isCerrada}
+                                            className="w-32 bg-transparent text-2xl font-black text-slate-700 outline-none border-b-2 border-transparent focus:border-emerald-500 pb-0.5 text-right transition-colors disabled:opacity-70"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="w-[1px] h-10 bg-slate-200"></div>
+                                <button
+                                    onClick={() => eliminarOportunidad(opp.id)}
+                                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                                    title="Eliminar oportunidad"
+                                >
+                                    <Trash2 className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
+
+                        {/* Kanban Progress Bar */}
+                        <div className="w-full">
+                            <div className="flex w-full gap-2 overflow-x-auto hide-scrollbar">
+                                {kanbanColumns.map((column, stepIdx) => {
+                                    const etapaActual = Math.max(0, kanbanColumns.findIndex(c => c.id === opp.etapa));
+                                    const isCompleted = stepIdx < etapaActual;
+                                    const isCurrent = stepIdx === etapaActual;
+                                    const styles = getColumnClasses(column.colorId || 'slate', isCurrent, isCompleted);
+                                    
+                                    return (
+                                        <div 
+                                            key={column.id}
+                                            onClick={() => { if (!isCerrada) actualizarOportunidad(opp.id, { etapa: column.id }); }}
+                                            className={`
+                                                relative flex items-center justify-center min-w-[100px] flex-1 py-2 px-3 rounded-lg border transition-all duration-300
+                                                ${!isCerrada ? 'cursor-pointer hover:shadow-sm hover:scale-[1.02]' : ''}
+                                                ${styles.class}
+                                            `}
+                                        >
+                                            <span className="text-[10px] font-black uppercase tracking-wider text-center leading-tight">
+                                                {column.label}
+                                            </span>
+                                            {isCurrent && (
+                                                <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full ${styles.dot} shadow-sm animate-pulse`}></div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Footer: Close buttons */}
+                        {!isCerrada && (
+                            <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-center gap-3">
+                                <button
+                                    onClick={async () => {
+                                        if (!opp.titulo || opp.titulo.trim() === '') {
+                                            toast.error('La oportunidad necesita un título');
+                                            return;
+                                        }
+                                        await actualizarOportunidad(opp.id, { etapa: 'perdida' });
+                                    }}
+                                    className="flex items-center gap-2 px-5 py-2.5 text-xs font-black rounded-xl border-2 border-red-100 text-red-500 bg-white hover:bg-red-50 hover:border-red-200 transition-all shadow-sm hover:shadow"
+                                >
+                                    <XCircle className="w-4 h-4" /> Perdida
+                                </button>
+                                
+                                <button
+                                    onClick={async () => {
+                                        if (!opp.titulo || opp.titulo.trim() === '') {
+                                            toast.error('La oportunidad necesita un título');
+                                            return;
+                                        }
+                                        await actualizarOportunidad(opp.id, { etapa: 'ganada' });
+                                        if (onOportunidadCerrada) onOportunidadCerrada(opp, 'venta');
+                                    }}
+                                    className="flex items-center gap-2 px-5 py-2.5 text-xs font-black rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 border-2 border-emerald-500 hover:border-emerald-600 transition-all shadow-sm hover:shadow-md shadow-emerald-500/20"
+                                >
+                                    <DollarSign className="w-4 h-4" /> Ganada (Venta)
+                                </button>
+
+                                <button
+                                    onClick={async () => {
+                                        if (!opp.titulo || opp.titulo.trim() === '') {
+                                            toast.error('La oportunidad necesita un título');
+                                            return;
+                                        }
+                                        await actualizarOportunidad(opp.id, { etapa: 'ganada' });
+                                        if (onOportunidadCerrada) onOportunidadCerrada(opp, 'suscripcion');
+                                    }}
+                                    className="flex items-center gap-2 px-5 py-2.5 text-xs font-black rounded-xl bg-violet-500 text-white hover:bg-violet-600 border-2 border-violet-500 hover:border-violet-600 transition-all shadow-sm hover:shadow-md shadow-violet-500/20"
+                                >
+                                    <Star className="w-4 h-4" /> Ganada (Suscripción)
+                                </button>
+                            </div>
+                        )}
                     </div>
                 );
             })}
