@@ -404,6 +404,18 @@ const initDb = async () => {
     equipo_id INTEGER REFERENCES equipos(id),
     "fechaCreacion" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS oportunidades (
+    id SERIAL PRIMARY KEY,
+    cliente_id INTEGER NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+    vendedor_id INTEGER NOT NULL REFERENCES usuarios(id),
+    titulo TEXT NOT NULL,
+    monto DOUBLE PRECISION NOT NULL DEFAULT 0,
+    etapa TEXT NOT NULL,
+    notas TEXT,
+    etapas_json TEXT NOT NULL DEFAULT '[]',
+    "fechaCreacion" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "fechaActualizacion" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+  );
 `;
 
   let finalSql = sql;
