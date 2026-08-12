@@ -93,6 +93,17 @@ const Clientes = () => {
 
     // Estados para la vista detallada
     const [prospectoSeleccionado, setProspectoSeleccionado] = useState(null);
+
+    useEffect(() => {
+        if (location.state?.openClienteId && clientes.length > 0) {
+            const cli = clientes.find(c => (c.id === location.state.openClienteId || c._id === location.state.openClienteId));
+            if (cli) {
+                setProspectoSeleccionado(cli);
+                navigate(location.pathname, { replace: true, state: {} });
+            }
+        }
+    }, [location.state, clientes, navigate]);
+    
     const [timeline, setTimeline] = useState([]);
     const [loadingTimeline, setLoadingTimeline] = useState(false);
     const [guardandoSeguimiento, setGuardandoSeguimiento] = useState(false);

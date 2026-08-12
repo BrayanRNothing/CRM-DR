@@ -284,6 +284,17 @@ const Seguimiento = () => {
 
     // Estados para la nueva vista detallada
     const [prospectoSeleccionado, setProspectoSeleccionado] = useState(null);
+
+    useEffect(() => {
+        if (location.state?.openClienteId && prospectos.length > 0) {
+            const cli = prospectos.find(c => (c.id === location.state.openClienteId || c._id === location.state.openClienteId));
+            if (cli) {
+                setProspectoSeleccionado(cli);
+                navigate(location.pathname, { replace: true, state: {} });
+            }
+        }
+    }, [location.state, prospectos, navigate]);
+    
     const [scrollPosition, setScrollPosition] = useState(0);
     const [lastViewedId, setLastViewedId] = useState(null);
         // Estado para el flujo de llamada inline
