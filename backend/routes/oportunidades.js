@@ -9,7 +9,7 @@ router.get('/todas', auth, async (req, res) => {
         const vendedor_id = req.usuario.id;
         // Join with clientes to get the client name
         const oportunidades = await db.prepare(`
-            SELECT o.*, c.nombres as cliente_nombres, c.empresa as cliente_empresa 
+            SELECT o.*, c.nombres as cliente_nombres, c.empresa as cliente_empresa, c.etapaEmbudo as cliente_etapaEmbudo 
             FROM oportunidades o
             LEFT JOIN clientes c ON o.cliente_id = c.id
             WHERE o.vendedor_id = ?

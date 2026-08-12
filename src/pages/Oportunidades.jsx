@@ -1205,7 +1205,10 @@ const Oportunidades = () => {
                                 </button>
                             </div>
                             <button
-                                onClick={() => setMostrarModalCrear(true)}
+                                onClick={() => (() => {
+        setFormOportunidad(prev => ({...prev, titulo: prev.titulo || ('OP-' + Math.floor(1000 + Math.random() * 9000)), nombres: prev.nombres || ('OP-' + Math.floor(1000 + Math.random() * 9000))}));
+        setMostrarModalCrear(true);
+    })()}
                                 className="hidden sm:flex w-full sm:w-auto justify-center items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs md:text-sm font-medium"
                             >
                                 <Plus className="w-4 h-4 md:w-5 md:h-5" />
