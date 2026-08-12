@@ -10,6 +10,10 @@ import {
     Building2, Calendar, Zap, AlertCircle, Info
 } from 'lucide-react';
 
+
+const ETAPAS_PROSPECTO_LIST = ['prospecto_nuevo', 'en_contacto', 'reunion_agendada', 'reunion_realizada', 'en_negociacion', 'venta_ganada', 'perdido'];
+const esProspecto = (etapa) => ETAPAS_PROSPECTO_LIST.includes(etapa);
+
 /* ═══════════════════════════════════════════════════════════════
    CONSTANTES & HELPERS
 ═══════════════════════════════════════════════════════════════ */
