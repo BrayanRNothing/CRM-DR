@@ -144,8 +144,8 @@ const OportunidadCard = ({ oportunidad, cardSize, fields, colorId, isDragging, o
                         {nombreCliente}
                     </p>
                     <div className="mt-1.5">
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${(oportunidad.cliente_etapaEmbudo || '').includes('prospecto') ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                            {(oportunidad.cliente_etapaEmbudo || '').includes('prospecto') ? 'PROSPECTO' : 'CLIENTE'}
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${esProspecto(oportunidad.cliente_etapaEmbudo) ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                            {esProspecto(oportunidad.cliente_etapaEmbudo) ? 'PROSPECTO' : 'CLIENTE'}
                         </span>
                     </div>
                 </div>

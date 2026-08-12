@@ -67,7 +67,7 @@ export default function OportunidadesPanel({
             const token = getToken();
             const res = await axios.post(`${API_URL}/api/oportunidades`, {
                 cliente_id: clienteId,
-                titulo: 'Nueva Oportunidad',
+                titulo: `OP-${Math.floor(1000 + Math.random() * 9000)}`,
                 monto: 0,
                 etapa: 'abierta',
                 etapas_json: JSON.stringify({ nombres: defaultEtapas, actual: 0 }),
