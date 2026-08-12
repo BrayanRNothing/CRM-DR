@@ -152,8 +152,9 @@ const buildReminderByClienteMap = (tareas = []) => {
 };
 
 const Seguimiento = () => {
-    const navigate = useNavigate();
+    
     const location = useLocation();
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const rolePath = 'vendedor';
     const [prospectos, setProspectos] = useState([]);

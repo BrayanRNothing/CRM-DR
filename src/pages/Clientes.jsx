@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, RefreshCw, ChevronRight, ArrowLeft, User, History, Trash2, Download, Upload, Plus, X, Phone, MessageCircle, Calendar, Filter, Star, Mail, MessageSquare, Clock, Share2, Edit2, Bell, LayoutList, Kanban, UserPlus, Building2, Globe, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 import KanbanClientes from '../components/KanbanClientes';
@@ -52,6 +52,7 @@ const getEtapaColor = (etapa) => ETAPAS_CLIENTE[etapa]?.color || 'bg-emerald-100
 
 const Clientes = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const esMenuSeguimiento = location.pathname.endsWith('/clientes/seguimiento');
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
