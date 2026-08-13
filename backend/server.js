@@ -197,6 +197,21 @@ io.on('connection', (socket) => {
         }
     });
 
+    const forwardToTeam = (eventName) => {
+        for (const room of socket.rooms) {
+            if (room.startsWith('team_')) {
+                socket.to(room).emit(eventName);
+                return;
+            }
+        }
+        // Si no está en un equipo, broadcast general (aunque no recomendado, fallback seguro para mono-tenant)
+        socket.broadcast.emit(eventName);
+    };
+
+    socket.on('prospectos_actualizados', () => forwardToTeam('prospectos_actualizados'));
+    socket.on('oportunidades_actualizadas', () => forwardToTeam('oportunidades_actualizadas'));
+    socket.on('clientes_actualizados', () => forwardToTeam('clientes_actualizados'));
+
     socket.on('disconnect', async () => {
         console.log(`🔌 Cliente desconectado: ${socket.id}`);
         const userId = onlineUsers.get(socket.id);

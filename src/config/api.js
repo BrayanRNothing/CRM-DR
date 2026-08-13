@@ -1,6 +1,7 @@
 // Placeholder API configurations
 // Replace this with your actual backend URL when you connect your API
 import axios from 'axios';
+import socket from './socket';
 
 const rawEnvApiUrl = (import.meta.env.VITE_API_URL || '').trim();
 const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
@@ -21,7 +22,26 @@ const API_URL = forceSameOriginHosts.has(currentHost)
 
 // Global interceptor: auto-logout when token is expired or invalid  
 axios.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        const config = response.config;
+        if (config && ['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase())) {
+            const url = config.url || '';
+            if (url.includes('/prospectos') || url.includes('/importar-csv')) {
+                socket.emit('prospectos_actualizados');
+            }
+            if (url.includes('/oportunidades')) {
+                socket.emit('oportunidades_actualizadas');
+            }
+            if (url.includes('/clientes')) {
+                socket.emit('clientes_actualizados');
+            }
+            if (url.includes('/tareas') || url.includes('/actividades')) {
+                socket.emit('prospectos_actualizados');
+                socket.emit('oportunidades_actualizadas');
+            }
+        }
+        return response;
+    },
     (error) => {
         if (error.response && error.response.status === 401) {
             const code = error.response.data?.code;

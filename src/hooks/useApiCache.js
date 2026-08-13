@@ -179,12 +179,14 @@ const useApiCache = (cacheKey, fetcher, options = {}) => {
     }, [cacheKey, ttl, enabled, staleWhileRevalidate, ...deps]);
 
     /**
-     * Fuerza un refresh desde la API e invalida el caché local.
-     * Útil para el botón de "Actualizar".
+     * Fuerza un refresh desde la API.
+     * @param {boolean} isBackground - Si true, recarga en background sin spinner.
      */
-    const refresh = useCallback(() => {
-        clearCacheKey(cacheKey);
-        fetchData(false);
+    const refresh = useCallback((isBackground = false) => {
+        if (!isBackground) {
+            clearCacheKey(cacheKey);
+        }
+        fetchData(isBackground);
     }, [cacheKey, fetchData]);
 
     return { data, loading, backgroundLoading, error, refresh };

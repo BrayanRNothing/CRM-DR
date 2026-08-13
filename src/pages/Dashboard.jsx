@@ -354,11 +354,11 @@ const Dashboard = () => {
         if (!silent) {
             clearCacheByPrefix('dashboard');
         }
-        refreshDashboard();
-        refreshCloser();
-        refreshProspectos();
-        refreshOportunidades();
-        refreshClientes();
+        refreshDashboard(silent);
+        refreshCloser(silent);
+        refreshProspectos(silent);
+        refreshOportunidades(silent);
+        refreshClientes(silent);
     };
 
     const cargarListas = async (silent = false) => {
