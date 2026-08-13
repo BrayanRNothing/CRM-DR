@@ -835,6 +835,7 @@ const initDb = async () => {
       ['clientes', 'kanbanColProspecto TEXT'],
       ['clientes', 'kanbanColCliente TEXT'],
       ['tareas', 'equipo_id INTEGER'],
+      ['oportunidades', 'estado TEXT DEFAULT "en_proceso"'],
     ];
     for (const [table, colDef] of colsMissingSqlite) {
       try {
@@ -844,6 +845,13 @@ const initDb = async () => {
           console.error(`⚠️ SQLite: error agregando ${colDef} a ${table}:`, e.message);
         }
       }
+    }
+    // Migrar oportunidades antiguas (etapa a estado)
+    try {
+      internalDb.prepare(`UPDATE oportunidades SET estado = 'ganada' WHERE etapa = 'ganada' AND estado = 'en_proceso'`).run();
+      internalDb.prepare(`UPDATE oportunidades SET estado = 'perdida' WHERE etapa = 'perdida' AND estado = 'en_proceso'`).run();
+    } catch (e) {
+      console.error('⚠️ Migración oportunidades (estado) falló:', e.message);
     }
 
     // SQLite no permite modificar CHECK fácilmente: recreamos tabla usuarios para permitir nuevos roles.

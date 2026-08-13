@@ -634,41 +634,37 @@ export default function ClienteDetalle({
             if (estado === 'ganada') {
                 const sectionType = tipoCierre === 'suscripcion' ? 'subscriptions' : 'sales';
                 
-                await new Promise(resolve => {
-                    setCustomSections(prev => {
-                        const targetSection = prev.find(s => s.tipo === sectionType);
-                        const newRecord = {
-                            id: Date.now().toString(),
-                            descripcion: opp.nombre || 'Venta',
-                            monto: opp.valor || '',
-                            estado: 'completada',
-                            fecha: new Date().toISOString().slice(0, 10),
-                            url: opp.url || null,
-                            nombreArchivo: opp.nombreArchivo || null
-                        };
+                const currentSections = customSectionsRef.current;
+                const targetSection = currentSections.find(s => s.tipo === sectionType);
+                const newRecord = {
+                    id: Date.now().toString(),
+                    descripcion: opp.titulo || opp.nombre || 'Venta',
+                    monto: opp.monto || opp.valor || '',
+                    estado: 'completada',
+                    fecha: new Date().toISOString().slice(0, 10),
+                    url: opp.parsedContent?.url || opp.url || null,
+                    nombreArchivo: opp.parsedContent?.nombreArchivo || opp.nombreArchivo || null
+                };
 
-                        if (sectionType === 'subscriptions') {
-                            newRecord.nombre = newRecord.descripcion;
-                            newRecord.frecuencia = 'mensual';
-                            newRecord.fechaInicio = newRecord.fecha;
-                            newRecord.fechaFin = '';
-                            newRecord.estado = 'activa';
-                        }
+                if (sectionType === 'subscriptions') {
+                    newRecord.nombre = newRecord.descripcion;
+                    newRecord.frecuencia = 'mensual';
+                    newRecord.fechaInicio = newRecord.fecha;
+                    newRecord.fechaFin = '';
+                    newRecord.estado = 'activa';
+                }
 
-                        let updated;
-                        if (targetSection) {
-                            const newContent = [...(Array.isArray(targetSection.contenido) ? targetSection.contenido : []), newRecord];
-                            updated = prev.map(s => s.id === targetSection.id ? { ...s, contenido: newContent } : s);
-                        } else {
-                            const newSection = { id: Date.now().toString(), tipo: sectionType, titulo: sectionType === 'sales' ? 'Historial de Ventas' : 'Suscripciones', contenido: [newRecord] };
-                            updated = [...prev, newSection];
-                        }
-                        
-                        // Guardar en BD y resolver la promesa cuando termine
-                        handleGuardarSeccionesPersonalizadas(updated).finally(resolve);
-                        return updated;
-                    });
-                });
+                let updated;
+                if (targetSection) {
+                    const newContent = [...(Array.isArray(targetSection.contenido) ? targetSection.contenido : []), newRecord];
+                    updated = currentSections.map(s => s.id === targetSection.id ? { ...s, contenido: newContent } : s);
+                } else {
+                    const newSection = { id: Date.now().toString(), tipo: sectionType, titulo: sectionType === 'sales' ? 'Historial de Ventas' : 'Suscripciones', contenido: [newRecord] };
+                    updated = [...currentSections, newSection];
+                }
+                
+                setCustomSections(updated);
+                await handleGuardarSeccionesPersonalizadas(updated);
             }
 
             // 2. Después registrar la actividad (así el servidor ya tiene los datos actualizados)
@@ -928,9 +924,9 @@ export default function ClienteDetalle({
                                                     </button>
                                                 </div>
                                             )}
-                                            
+
                                             <div className="ml-2 pl-2 border-l border-gray-200">
-                                                <GestorEtiquetas 
+                                                <GestorEtiquetas
                                                     clienteEtiquetas={ClienteSeleccionado.etiquetas}
                                                     onEtiquetasChange={handleEtiquetasChange}
                                                 />
@@ -940,7 +936,7 @@ export default function ClienteDetalle({
                                                     <Star className="w-4 h-4 fill-green-500 text-green-500" />
                                                     Cliente Ganado
                                                 </div>
-                                                
+
                                                 <div className="flex items-center gap-2 py-1 mt-1">
                                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Interés:</span>
                                                     <div className="flex items-center gap-0.5 text-yellow-500">
@@ -1037,7 +1033,7 @@ export default function ClienteDetalle({
                                                     </div>
                                                 </div>
                                             )}
-                                            
+
                                             {/* Botones de acción — siempre al final derecho */}
                                             <div className="ml-auto flex items-center gap-2 shrink-0">
                                                 <PlantillasMensajesModal contacto={ClienteSeleccionado} scope="cliente" />
@@ -1132,7 +1128,7 @@ export default function ClienteDetalle({
                                                         </div>
                                                     </div>
                                                 )}
-                                                
+
                                             </div>
 
                                             {/* Botones de acción rápida - Móvil */}
@@ -1363,16 +1359,16 @@ export default function ClienteDetalle({
                                         )}
                                     </div>
                                 </div>
-                                </ModulosCliente>
-                                {/* Componente de Oportunidades de Venta */}
-                                <div className="mt-4 col-span-1 xl:col-span-2">
-                                    <OportunidadesPanel 
-                                        clienteId={pid}
-                                        onOportunidadCerrada={handleOportunidadCerrada}
-                                        containerClassName=""
-                                    />
-                                </div>
+                            </ModulosCliente>
+                            {/* Componente de Oportunidades de Venta */}
+                            <div className="mt-4 col-span-1 xl:col-span-2">
+                                <OportunidadesPanel
+                                    clienteId={pid}
+                                    onOportunidadCerrada={handleOportunidadCerrada}
+                                    containerClassName=""
+                                />
                             </div>
+                        </div>
                     </div>
 
                     {/* ===================== COLUMNA DERECHA: HISTORIAL (Drawer en Mobile) ===================== */}

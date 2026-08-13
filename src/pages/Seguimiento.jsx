@@ -1717,22 +1717,20 @@ const Seguimiento = () => {
                                                                 return (
                                                                     <span 
                                                                         key={i} 
-                                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm truncate max-w-[100px]"
+                                                                        className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider truncate max-w-[100px]"
                                                                         style={{ 
-                                                                            backgroundColor: `${color}15`, 
-                                                                            color: color, 
-                                                                            border: `1px solid ${color}40` 
+                                                                            backgroundColor: `${color}20`, 
+                                                                            color: color 
                                                                         }}
                                                                         title={tag}
                                                                     >
-                                                                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }}></span>
                                                                         <span className="truncate leading-none pt-px">{tag}</span>
                                                                     </span>
                                                                 );
                                                             })}
                                                             {remainingCount > 0 && (
                                                                 <span 
-                                                                    className="inline-flex items-center justify-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm cursor-help bg-slate-50 text-slate-500 border border-slate-200"
+                                                                    className="inline-flex items-center justify-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider cursor-help bg-slate-100 text-slate-500"
                                                                     title={`Y ${remainingCount} etiqueta(s) más`}
                                                                 >
                                                                     +{remainingCount}

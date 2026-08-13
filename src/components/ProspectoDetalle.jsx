@@ -281,16 +281,16 @@ export default function ProspectoDetalle({
         }
     };
 
-    const handleGuardarMetricaPersonalizada = async () => {
+    const handleGuardarMetricaPersonalizada = async (nuevoValor = valorProspecto, nuevaMoneda = monedaSeleccionada) => {
         if (!prospectoSeleccionado) return;
         setGuardandoMetrica(true);
         try {
             const pidLoc = prospectoSeleccionado.id || prospectoSeleccionado._id;
             await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pidLoc}`, {
-                customMetricLabel: monedaSeleccionada,
-                customMetricValue: valorProspecto
+                customMetricLabel: nuevaMoneda,
+                customMetricValue: nuevoValor
             }, { headers: getAuthHeaders() });
-            setProspectoSeleccionado(prev => ({ ...prev, customMetricLabel: monedaSeleccionada, customMetricValue: valorProspecto }));
+            setProspectoSeleccionado(prev => ({ ...prev, customMetricLabel: nuevaMoneda, customMetricValue: nuevoValor }));
             if (onActualizado) onActualizado();
         } catch (error) {
             console.error('Error al guardar métrica personalizada:', error);
@@ -1101,7 +1101,7 @@ export default function ProspectoDetalle({
                                 <p className="text-[10px] text-gray-400 mt-1 font-bold">Realizadas</p>
                             </div>
 
-                            {/* Cuadro 4: Valor del Prospecto (Editable) */}
+                            {/* Cuadro 4: Valor del Prospecto (Automático desde Oportunidades) */}
                             <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm flex flex-col justify-center relative min-h-[100px] overflow-hidden group">
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Valor del Prospecto</p>
 
@@ -1110,15 +1110,10 @@ export default function ProspectoDetalle({
                                         <span className="text-xl font-black text-(--theme-600) opacity-50">$</span>
                                         <input
                                             type="text"
-                                            value={valorProspecto}
-                                            onChange={(e) => {
-                                                const val = e.target.value.replace(/[^0-9.,]/g, '');
-                                                setValorProspecto(val);
-                                            }}
-                                            onBlur={handleGuardarMetricaPersonalizada}
-                                            placeholder="0.00"
-                                            className="text-2xl font-black text-(--theme-600) bg-transparent border-none text-center outline-none focus:ring-0 p-0"
-                                            style={{ width: `${Math.max((valorProspecto || '').length, 4)}ch`, minWidth: '4ch', maxWidth: '14ch' }}
+                                            value={valorProspecto ? Number(valorProspecto).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                                            readOnly
+                                            className="text-2xl font-black text-(--theme-600) bg-transparent border-none text-center outline-none focus:ring-0 p-0 cursor-default"
+                                            style={{ width: `${Math.max((valorProspecto ? Number(valorProspecto).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00').length, 4)}ch`, minWidth: '4ch', maxWidth: '14ch' }}
                                         />
 
                                         <div className="relative flex items-center bg-slate-50 border border-slate-100 rounded-md px-1 py-0.5 group/moneda hover:bg-white transition-all cursor-pointer ml-1">
@@ -1405,7 +1400,15 @@ export default function ProspectoDetalle({
                                 {/* Componente de Oportunidades de Venta */}
                                 <OportunidadesPanel 
                                     clienteId={pid} 
-                                    containerClassName="xl:col-span-2 mt-4" 
+                                    containerClassName="xl:col-span-2 mt-4"
+                                    onOportunidadesChange={(opps) => {
+                                        const sum = opps.reduce((acc, o) => acc + (Number(o.monto) || 0), 0);
+                                        const sumStr = sum.toString();
+                                        if (valorProspecto !== sumStr) {
+                                            setValorProspecto(sumStr);
+                                            handleGuardarMetricaPersonalizada(sumStr, monedaSeleccionada);
+                                        }
+                                    }}
                                 />
                             </div>
                         </div>

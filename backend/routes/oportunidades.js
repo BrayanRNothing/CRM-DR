@@ -90,7 +90,7 @@ router.post('/', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
     try {
         const id = req.params.id;
-        const { titulo, monto, etapa, notas, etapas_json } = req.body;
+        const { titulo, monto, etapa, notas, etapas_json, estado } = req.body;
         
         await db.prepare(
             `UPDATE oportunidades 
@@ -99,9 +99,10 @@ router.put('/:id', auth, async (req, res) => {
                  etapa = COALESCE(?, etapa), 
                  notas = COALESCE(?, notas), 
                  etapas_json = COALESCE(?, etapas_json), 
+                 estado = COALESCE(?, estado),
                  "fechaActualizacion" = CURRENT_TIMESTAMP 
              WHERE id = ?`
-        ).run(titulo, monto, etapa, notas, etapas_json, id);
+        ).run(titulo, monto, etapa, notas, etapas_json, estado, id);
         
                 const oportunidad = await db.prepare(`
             SELECT o.*, c.nombres as cliente_nombres, c.empresa as cliente_empresa, c.etapaEmbudo as cliente_etapaEmbudo
