@@ -10,6 +10,7 @@ import { HistorialInteracciones } from '../components/HistorialInteracciones';
 import TimeWheelPicker from '../components/TimeWheelPicker';
 import ClienteDetalle from '../components/ClienteDetalle';
 import SourcePicker from '../components/ui/SourcePicker';
+import useApiCache from '../hooks/useApiCache';
 
 import API_URL from '../config/api';
 import { ESTADOS_ENTIDAD, getEstadoLabel, getEstadoColor, calcularEstado, ORDEN_ESTADO } from '../utils/estadosEntidad';
@@ -53,6 +54,26 @@ const Clientes = () => {
     const [importando, setImportando] = useState(false);
     const [ordenFiltro, setOrdenFiltro] = useState('todos');
     const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine'); // mine | shared | all
+
+
+    const { data: oportunidadesList } = useApiCache(
+        'dashboard-oportunidades',
+        async () => {
+            const res = await axios.get(`${API_URL}/api/oportunidades/todas`, { headers: getAuthHeaders() });
+            return Array.isArray(res.data) ? res.data : [];
+        },
+        { ttl: 60, staleWhileRevalidate: true }
+    );
+
+    const getOportunidadesActivas = useCallback((entidadId) => {
+        if (!oportunidadesList) return 0;
+        return oportunidadesList.filter(o => 
+            String(o.cliente_id) === String(entidadId) && 
+            (o.etapa || '').toLowerCase() !== 'ganada' && 
+            (o.etapa || '').toLowerCase() !== 'perdida'
+        ).length;
+    }, [oportunidadesList]);
+
     const [globalTags, setGlobalTags] = useState([]);
     const [mostrarFiltros, setMostrarFiltros] = useState(false);
     const [vistaKanban, setVistaKanban] = useState(() => {
@@ -1430,7 +1451,7 @@ const Clientes = () => {
                                         </td>
                                         <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
                                             {(() => {
-                                                const estadoCalculado = calcularEstado(cliente, cliente.oportunidades?.length || 0);
+                                                const estadoCalculado = calcularEstado(cliente, getOportunidadesActivas(cliente.id || cliente._id));
                                                 return (
                                                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEstadoColor(estadoCalculado)}`}>
                                                         {getEstadoLabel(estadoCalculado)}

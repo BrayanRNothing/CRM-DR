@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ESTADOS_ENTIDAD, getEstadoLabel, getEstadoColor, calcularEstado, ORDEN_ESTADO } from '../utils/estadosEntidad';
 import {
     Phone,
@@ -44,6 +44,7 @@ import HistorialInteracciones from '../components/HistorialInteracciones';
 import ProspectoDetalle from '../components/ProspectoDetalle';
 import KanbanProspectos from '../components/KanbanProspectos';
 import TimeWheelPicker from '../components/TimeWheelPicker';
+import useApiCache from '../hooks/useApiCache';
 
 import API_URL from '../config/api';
 import socket from '../config/socket';
@@ -146,6 +147,7 @@ const Seguimiento = () => {
     const rolePath = 'vendedor';
     const [prospectos, setProspectos] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [backgroundLoading, setBackgroundLoading] = useState(false);
     // Filtros
     const [busquedaProspecto, setBusquedaProspecto] = useState('');
     const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine'); // mine | shared | all
@@ -159,6 +161,24 @@ const Seguimiento = () => {
         } catch (_) {}
         return false;
     });
+
+    const { data: oportunidadesList } = useApiCache(
+        'dashboard-oportunidades',
+        async () => {
+            const res = await axios.get(`${API_URL}/api/oportunidades/todas`, { headers: getAuthHeaders() });
+            return Array.isArray(res.data) ? res.data : [];
+        },
+        { ttl: 60, staleWhileRevalidate: true }
+    );
+
+    const getOportunidadesActivas = useCallback((entidadId) => {
+        if (!oportunidadesList) return 0;
+        return oportunidadesList.filter(o => 
+            String(o.cliente_id) === String(entidadId) && 
+            (o.etapa || '').toLowerCase() !== 'ganada' && 
+            (o.etapa || '').toLowerCase() !== 'perdida'
+        ).length;
+    }, [oportunidadesList]);
 
     useEffect(() => {
         localStorage.setItem('crm_vistaKanban_prospectos', JSON.stringify(vistaKanban));
@@ -516,8 +536,8 @@ const Seguimiento = () => {
             if (interesA !== interesB) return interesB - interesA;
         }
         // Perdidos siempre al fondo
-        const estadoA = calcularEstado(a, a.oportunidades?.length || 0);
-        const estadoB = calcularEstado(b, b.oportunidades?.length || 0);
+        const estadoA = calcularEstado(a, getOportunidadesActivas(a.id || a._id));
+        const estadoB = calcularEstado(b, getOportunidadesActivas(b.id || b._id));
         const esPerdidoA = estadoA === 'perdido';
         const esPerdidoB = estadoB === 'perdido';
         if (esPerdidoA !== esPerdidoB) return esPerdidoA ? 1 : -1;
@@ -1650,7 +1670,7 @@ const Seguimiento = () => {
                                             </td>
                                             <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
                                                 {(() => {
-                                                    const estadoCalculado = calcularEstado(p, p.oportunidades?.length || 0);
+                                                    const estadoCalculado = calcularEstado(p, getOportunidadesActivas(p.id || p._id));
                                                     return (
                                                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEstadoColor(estadoCalculado)}`}>
                                                             {getEstadoLabel(estadoCalculado)}

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { calcularEstado } from '../utils/estadosEntidad';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, UserPlus, Calendar, TrendingUp, RefreshCw, Clock, CheckCircle2, Target, MessageSquare, ExternalLink, Users, Award, DollarSign, AlertTriangle, TrendingDown, Zap, Bell, ArrowRightLeft, PercentCircle, BarChart3, Search, FileText, Video, Globe, XCircle, Plus, Pencil, Trash2, Activity, ChevronRight, ChevronLeft, LogIn, LogOut, History, MousePointer2 } from 'lucide-react';
 import axios from 'axios';
@@ -275,6 +276,69 @@ const Dashboard = () => {
         { ttl: 60, staleWhileRevalidate: true }
     );
 
+    // ── Datos reales de prospectos (nueva arquitectura)
+    const {
+        data: prospectosList,
+        loading: loadingProspectos,
+        refresh: refreshProspectos
+    } = useApiCache(
+        'dashboard-prospectos',
+        async () => {
+            const res = await axios.get(`${API_URL}/api/vendedor/prospectos`, { headers: getAuthHeaders() });
+            return Array.isArray(res.data) ? res.data : [];
+        },
+        { ttl: 60, staleWhileRevalidate: true }
+    );
+
+    // ── Datos reales de clientes (para ventas y cierres) ──────────────────────
+    const {
+        data: clientesList,
+        loading: loadingClientes,
+        refresh: refreshClientes
+    } = useApiCache(
+        'dashboard-clientes',
+        async () => {
+            const res = await axios.get(`${API_URL}/api/vendedor/clientes-ganados`, { headers: getAuthHeaders() });
+            return Array.isArray(res.data) ? res.data : [];
+        },
+        { ttl: 60, staleWhileRevalidate: true }
+    );
+
+    // ── Datos reales de oportunidades (nueva arquitectura)
+    const {
+        data: oportunidadesList,
+        loading: loadingOportunidades,
+        refresh: refreshOportunidades
+    } = useApiCache(
+        'dashboard-oportunidades',
+        async () => {
+            const res = await axios.get(`${API_URL}/api/oportunidades/todas`, { headers: getAuthHeaders() });
+            return Array.isArray(res.data) ? res.data : [];
+        },
+        { ttl: 60, staleWhileRevalidate: true }
+    );
+
+    const isOportunidadGanada = o => {
+        const e = (o.etapa || '').toLowerCase();
+        const est = (o.estado || '').toLowerCase();
+        return e === 'ganada' || e === 'venta_ganada' || est === 'ganada' || est === 'venta_ganada';
+    };
+
+    const isOportunidadPerdida = o => {
+        const e = (o.etapa || '').toLowerCase();
+        const est = (o.estado || '').toLowerCase();
+        return e === 'perdida' || e === 'perdido' || est === 'perdida' || est === 'perdido';
+    };
+
+    const getOportunidadesActivas = useCallback((entidadId) => {
+        if (!oportunidadesList) return 0;
+        return oportunidadesList.filter(o => 
+            String(o.cliente_id) === String(entidadId) && 
+            !isOportunidadGanada(o) && 
+            !isOportunidadPerdida(o)
+        ).length;
+    }, [oportunidadesList]);
+
     useEffect(() => {
         if (dashboardRaw) setVendedorData(dashboardRaw);
     }, [dashboardRaw]);
@@ -283,7 +347,7 @@ const Dashboard = () => {
         if (closerRaw) setCloserData(closerRaw);
     }, [closerRaw]);
 
-    const loading = loadingDashboard || loadingCloser;
+    const loading = loadingDashboard || loadingCloser || loadingProspectos || loadingOportunidades || loadingClientes;
     const backgroundLoading = bgLoadingDashboard || bgLoadingCloser;
 
     const cargarDatos = async (silent = false) => {
@@ -292,6 +356,9 @@ const Dashboard = () => {
         }
         refreshDashboard();
         refreshCloser();
+        refreshProspectos();
+        refreshOportunidades();
+        refreshClientes();
     };
 
     const cargarListas = async (silent = false) => {
@@ -491,10 +558,14 @@ const Dashboard = () => {
             cargarMetasEquipo();
         };
         socket.on('prospectos_actualizados', handleSocketUpdate);
+        socket.on('oportunidades_actualizadas', handleSocketUpdate);
+        socket.on('clientes_actualizados', handleSocketUpdate);
 
         return () => {
             clearInterval(interval);
             socket.off('prospectos_actualizados', handleSocketUpdate);
+            socket.off('oportunidades_actualizadas', handleSocketUpdate);
+            socket.off('clientes_actualizados', handleSocketUpdate);
         };
     }, []);
 
@@ -539,18 +610,79 @@ const Dashboard = () => {
     const formatMoney = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
     const formatNumber = new Intl.NumberFormat('es-MX');
 
-    const totalEntrada = vendedorData.embudo.total || 0;
-    const prospectosActivos = vendedorData.embudo.prospectos_activos !== undefined ? vendedorData.embudo.prospectos_activos : totalEntrada;
-    const enContacto = vendedorData.embudo.en_contacto || 0;
-    const sinContactar = Math.max(0, totalEntrada - enContacto);
-    const citas = vendedorData.embudo.reunion_agendada || 0;
-    const negociacion = vendedorData.embudo.reunion_realizada || 0;
-    const ganadas = vendedorData.embudo.venta_ganada || 0;
+    // ── Conteos reales desde los endpoints actuales ──────────────────────────
+    const allProspectos = prospectosList || [];
+    const allOportunidades = oportunidadesList || [];
 
+    const filterByPeriod = (items, dateField, p) => {
+        if (p === 'total') return items;
+        const hoy = new Date();
+        return items.filter(item => {
+            const dateStr = item[dateField] || item.fechaCreacion || item.fecha || item.createdAt;
+            if (!dateStr) return false;
+            const itemDate = new Date(dateStr);
+            if (isNaN(itemDate.getTime())) return false;
+            
+            if (p === 'dia') {
+                return itemDate.toDateString() === hoy.toDateString();
+            } else if (p === 'semana') {
+                const diff = (hoy - itemDate) / (1000 * 60 * 60 * 24);
+                return diff <= 7 && diff >= 0;
+            } else if (p === 'mes') {
+                return itemDate.getMonth() === hoy.getMonth() && itemDate.getFullYear() === hoy.getFullYear();
+            }
+            return true;
+        });
+    };
+
+    const prospectosPeriodo = filterByPeriod(allProspectos, 'createdAt', periodo);
+    const oportunidadesPeriodo = filterByPeriod(allOportunidades, 'createdAt', periodo);
+
+    // Nuevos KPIs:
+    const oportunidadesActivasPeriodo = oportunidadesPeriodo.filter(o => !isOportunidadGanada(o) && !isOportunidadPerdida(o));
+    const valorOportunidadesPeriodo = oportunidadesActivasPeriodo.reduce((acc, o) => acc + (Number(o.monto) || 0), 0);
+    const cantidadOportunidadesPeriodo = oportunidadesActivasPeriodo.length;
+
+    let inactivosPeriodo = 0;
+    let activosPeriodo = 0;
+    prospectosPeriodo.forEach(p => {
+        const est = calcularEstado(p, getOportunidadesActivas(p.id || p._id));
+        if (est === 'inactivo') inactivosPeriodo++;
+        else if (est === 'activo' || est === 'en_contacto' || est === 'con_oportunidad') activosPeriodo++;
+    });
+
+    const allClientes = clientesList || [];
+    const ventasGanadasPeriodo = filterByPeriod(allClientes, 'createdAt', periodo);
+    const valorVentasPeriodo = ventasGanadasPeriodo.reduce((acc, c) => acc + (Number(c.totalFacturado) || Number(c.facturado) || 0), 0);
+    const cantidadVentasPeriodo = ventasGanadasPeriodo.length;
+
+    // Prospectos totales
+    const totalEntrada = allProspectos.length;
+    const prospectosActivos = totalEntrada; // alias usado en otras partes
+
+    // En contacto: prospectos cuyo estado calculado NO es 'nuevo' ni 'perdido'
+    const enContacto = allProspectos.filter(p => {
+        const estado = calcularEstado(p, getOportunidadesActivas(p.id || p._id));
+        return estado === 'en_contacto' || estado === 'activo' || estado === 'con_oportunidad';
+    }).length;
+    const sinContactar = Math.max(0, totalEntrada - enContacto);
+
+    const totalOportunidades = allOportunidades.length;
+    // Oportunidades activas (etapas que no son ganada ni perdida)
+    const oportunidadesActivas = allOportunidades.filter(o => !isOportunidadGanada(o) && !isOportunidadPerdida(o)).length;
+
+    // Cierres: oportunidades ganadas
+    const ganadas = allOportunidades.filter(o => isOportunidadGanada(o)).length;
+    const perdidas = allOportunidades.filter(o => isOportunidadPerdida(o)).length;
+
+    // Tasas de conversión
     const tasaGlobal = totalEntrada > 0 ? clampPercent((ganadas / totalEntrada) * 100) : 0;
     const tasaContacto = totalEntrada > 0 ? clampPercent((enContacto / totalEntrada) * 100) : 0;
-    const tasaAgendamiento = enContacto > 0 ? clampPercent((citas / enContacto) * 100) : 0;
-    const tasaCierre = citas > 0 ? clampPercent((ganadas / citas) * 100) : 0;
+    const tasaOportunidad = enContacto > 0 ? clampPercent((totalOportunidades / enContacto) * 100) : 0;
+    const tasaCierre = totalOportunidades > 0 ? clampPercent((ganadas / totalOportunidades) * 100) : 0;
+
+    // Compatibilidad con referencias legacy
+    const negociacion = vendedorData.embudo.reunion_realizada || 0;
 
     const analisisFuentesCombinado = {};
     const mergeFuentes = (fuentesData) => {
@@ -604,11 +736,11 @@ const Dashboard = () => {
                     fromLogin={fromLogin}
                     stages={[
                         {
-                            etapa: 'Entrada',
+                            etapa: 'Prospectos',
                             cantidad: totalEntrada,
                             color: 'bg-(--theme-600)',
                             contadorHoy: vendedorData.periodos?.[periodo]?.prospectos ?? 0,
-                            labelContador: `recibidos ${periodoSuffix}`,
+                            labelContador: `nuevos ${periodoSuffix}`,
                             cantidadExito: enContacto,
                             cantidadPerdida: sinContactar,
                             porcentajeExito: formatPercent(tasaContacto),
@@ -622,33 +754,43 @@ const Dashboard = () => {
                             color: 'bg-(--theme-500)',
                             contadorHoy: vendedorData.periodos?.[periodo]?.llamadas ?? 0,
                             labelContador: `esfuerzos ${periodoSuffix}`,
-                            cantidadExito: citas,
-                            cantidadPerdida: Math.max(0, enContacto - citas),
-                            porcentajeExito: formatPercent(tasaAgendamiento),
-                            porcentajePerdida: formatPercent(100 - tasaAgendamiento),
-                            labelExito: 'Con cita',
-                            labelPerdida: 'Sin cita'
+                            cantidadExito: totalOportunidades,
+                            cantidadPerdida: Math.max(0, enContacto - totalOportunidades),
+                            porcentajeExito: formatPercent(tasaOportunidad),
+                            porcentajePerdida: formatPercent(100 - tasaOportunidad),
+                            labelExito: 'Con oportunidad',
+                            labelPerdida: 'Sin oportunidad'
                         },
                         {
-                            etapa: 'Citas',
-                            cantidad: citas,
+                            etapa: 'Oportunidades',
+                            cantidad: totalOportunidades,
                             color: 'bg-(--theme-400)',
-                            contadorHoy: (vendedorData.periodos?.[periodo]?.reuniones ?? 0) + (closerData.metricas.reuniones.realizadasHoy || 0),
-                            labelContador: `citas ${periodoSuffix}`,
+                            contadorHoy: allOportunidades.filter(o => {
+                                const hoy = new Date(); hoy.setHours(0,0,0,0);
+                                const creado = o.createdAt ? new Date(o.createdAt) : null;
+                                return creado && creado >= hoy;
+                            }).length,
+                            labelContador: `nuevas ${periodoSuffix}`,
                             cantidadExito: ganadas,
-                            cantidadPerdida: Math.max(0, citas - ganadas),
-                            porcentajeExito: formatPercent(tasaCierre),
-                            labelExito: 'Con cierre',
-                            labelPerdida: 'Sin cierre'
+                            cantidadPerdida: perdidas,
+                            porcentajeExito: formatPercent(totalOportunidades > 0 ? (ganadas / totalOportunidades) * 100 : 0),
+                            porcentajePerdida: formatPercent(totalOportunidades > 0 ? (perdidas / totalOportunidades) * 100 : 0),
+                            labelExito: 'Ganadas',
+                            labelPerdida: 'Perdidas'
                         },
                         {
-                            etapa: 'Cierre',
+                            etapa: 'Cierres',
                             cantidad: ganadas,
                             color: 'bg-green-500',
-                            contadorHoy: closerData.metricas.ventas.ventasHoy || 0,
+                            contadorHoy: allOportunidades.filter(o => {
+                                if ((o.etapa || '').toLowerCase() !== 'ganada') return false;
+                                const hoy = new Date(); hoy.setHours(0,0,0,0);
+                                const upd = o.updatedAt ? new Date(o.updatedAt) : null;
+                                return upd && upd >= hoy;
+                            }).length,
                             labelContador: `ganadas ${periodoSuffix}`,
                             cantidadExito: ganadas,
-                            porcentajeExito: formatPercent(citas > 0 ? (ganadas / citas) * 100 : 0),
+                            porcentajeExito: formatPercent(totalOportunidades > 0 ? (ganadas / totalOportunidades) * 100 : 0),
                             labelExito: 'Tasa de cierre'
                         }
                     ]}
@@ -657,7 +799,7 @@ const Dashboard = () => {
             </motion.div>
 
             <motion.div variants={bottomVariants} className="flex-1 flex flex-col xl:flex-row gap-4 min-h-0 overflow-y-auto xl:overflow-hidden pr-0.5 scrollbar-hide">
-                <div className="flex-1 min-h-0 bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col relative overflow-hidden">
+                <div className="flex-1 min-h-0 bg-transparent flex flex-col relative overflow-hidden">
 
 
 
@@ -669,9 +811,7 @@ const Dashboard = () => {
 
                                     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full">
                                         <div className="flex items-center gap-3 mb-6 shrink-0">
-                                            <div className="w-10 h-10 bg-(--theme-50) rounded-2xl flex items-center justify-center text-(--theme-600) shadow-xs">
-                                                <Activity className="w-5 h-5" />
-                                            </div>
+                                            <Activity className="w-6 h-6 text-(--theme-600)" />
                                             <div>
                                                 <h3 className="text-sm font-black uppercase tracking-widest text-gray-800">Atajos Rápidos</h3>
                                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Acciones frecuentes</p>
@@ -700,9 +840,7 @@ const Dashboard = () => {
 
                                     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full">
                                         <div className="flex items-center gap-3 mb-6 shrink-0">
-                                            <div className="w-10 h-10 bg-(--theme-50) rounded-2xl flex items-center justify-center text-(--theme-600) shadow-xs">
-                                                <Zap className="w-5 h-5" />
-                                            </div>
+                                            <Zap className="w-6 h-6 text-(--theme-600)" />
                                             <div>
                                                 <h3 className="text-sm font-black uppercase tracking-widest text-gray-800">Centro de Control</h3>
                                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Módulos principales del sistema</p>
@@ -731,7 +869,7 @@ const Dashboard = () => {
                                                     <div className="w-px h-6 bg-gray-200/50" />
                                                     <div>
                                                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Conversión</p>
-                                                        <p className="text-sm font-black text-gray-700">{formatPercent(citas > 0 ? (ganadas / citas) * 100 : 0)}</p>
+                                                        <p className="text-sm font-black text-gray-700">{formatPercent(tasaCierre)}</p>
                                                     </div>
                                                 </div>
                                                 <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
@@ -798,9 +936,9 @@ const Dashboard = () => {
                         )}
 
                         {healthTab === 'kpis' && (
-                            <motion.div layoutId="panel-kpis" className="flex flex-col h-full bg-white relative z-20 rounded-xl overflow-hidden">
+                            <motion.div layoutId="panel-kpis" className="flex flex-col h-full bg-transparent relative z-20 overflow-hidden">
                                 {/* Back Header */}
-                                <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100 shrink-0">
+                                <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-200/50 shrink-0">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                                             <BarChart3 className="w-4 h-4" />
@@ -818,53 +956,53 @@ const Dashboard = () => {
                                 <div className="flex flex-col gap-6 flex-1 min-h-0 overflow-y-auto scrollbar-hide pr-1">
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 shrink-0">
                                         <MetricKPICard
-                                            title="Prospectos Totales"
-                                            value={prospectosActivos}
-                                            format="number"
-                                            icon={<Users className="w-5 h-5" />}
-                                            detail={`Histórico de leads`}
+                                            title="Valor en Oportunidades"
+                                            value={valorOportunidadesPeriodo}
+                                            format="money"
+                                            icon={<DollarSign className="w-5 h-5" />}
+                                            detail={`${cantidadOportunidadesPeriodo} abiertas ${periodoSuffix}`}
                                             color="blue"
                                         />
                                         <MetricKPICard
-                                            title="En Contacto"
-                                            value={enContacto}
+                                            title="Prospectos Activos"
+                                            value={activosPeriodo}
                                             format="number"
-                                            icon={<Phone className="w-5 h-5" />}
-                                            detail="Leads contactados"
-                                            color="indigo"
-                                        />
-                                        <MetricKPICard
-                                            title="Clientes (Ganadas)"
-                                            value={ganadas}
-                                            format="number"
-                                            icon={<CheckCircle2 className="w-5 h-5" />}
-                                            detail={`Cierres exitosos`}
+                                            icon={<Activity className="w-5 h-5" />}
+                                            detail={`En contacto ${periodoSuffix}`}
                                             color="emerald"
                                         />
                                         <MetricKPICard
-                                            title="Ventas del Mes"
-                                            value={closerData.metricas.ventas.montoMes || 0}
+                                            title="Ventas (Cierres)"
+                                            value={valorVentasPeriodo}
                                             format="money"
                                             compact={true}
-                                            icon={<DollarSign className="w-5 h-5" />}
-                                            detail={`${closerData.metricas.ventas.mes || 0} cierres este mes`}
+                                            icon={<CheckCircle2 className="w-5 h-5" />}
+                                            detail={`${cantidadVentasPeriodo} cierres ${periodoSuffix}`}
                                             color="emerald"
+                                        />
+                                        <MetricKPICard
+                                            title="Prospectos Inactivos"
+                                            value={inactivosPeriodo}
+                                            format="number"
+                                            icon={<AlertTriangle className="w-5 h-5" />}
+                                            detail={`>30 días sin actividad (${periodoSuffix})`}
+                                            color="rose"
                                         />
                                         <MetricKPICard
                                             title="Conversión Global"
                                             value={tasaGlobal}
                                             format="percent"
                                             icon={<Target className="w-5 h-5" />}
-                                            detail="Porcentaje de éxito"
+                                            detail="Histórica (Ganadas / Total)"
                                             thresholds={{ good: 15, okay: 8 }}
                                         />
                                         <MetricKPICard
                                             title="Leads Estancados"
                                             value={closerData?.eficiencia?.leadsEstancados || 0}
                                             format="number"
-                                            icon={<AlertTriangle className="w-5 h-5" />}
-                                            detail=">7 días sin actividad"
-                                            color="rose"
+                                            icon={<Clock className="w-5 h-5" />}
+                                            detail=">7 días sin avanzar"
+                                            color="orange"
                                         />
                                     </div>
 
@@ -1190,8 +1328,8 @@ const Dashboard = () => {
 
                 <div className="w-80 shrink-0 flex flex-col gap-3 overflow-y-auto scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
 
-                    <div className="bg-(--theme-50)/40 border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col flex-1 min-h-0">
-                        <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 shrink-0 uppercase tracking-widest">
+                    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col flex-1 min-h-0">
+                        <h3 className="text-sm font-black text-gray-800 flex items-center gap-2 mb-4 shrink-0 uppercase tracking-widest">
                             <Phone className="w-4 h-4 text-rose-500" /> Recordatorios Pendientes
                         </h3>
                         <div className="flex-1 overflow-y-auto space-y-2" style={{ scrollbarWidth: 'none' }}>
@@ -1246,8 +1384,8 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    <div className="bg-(--theme-50)/40 border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col flex-1 min-h-0">
-                        <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2 mb-4 shrink-0 uppercase tracking-widest">
+                    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col flex-1 min-h-0">
+                        <h3 className="text-sm font-black text-gray-800 flex items-center gap-2 mb-4 shrink-0 uppercase tracking-widest">
                             <Calendar className="w-4 h-4 text-(--theme-500)" /> Próximas Citas
                         </h3>
                         <div className="flex-1 overflow-y-auto space-y-2" style={{ scrollbarWidth: 'none' }}>

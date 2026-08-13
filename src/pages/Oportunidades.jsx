@@ -6,6 +6,7 @@ import KanbanOportunidades from '../components/KanbanOportunidades';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { getToken } from '../utils/authUtils';
+import { clearCacheByPrefix } from '../hooks/useApiCache';
 
 import API_URL from '../config/api';
 
@@ -186,6 +187,7 @@ const Oportunidades = () => {
                 { headers: getAuthHeaders() }
             );
             toast.success('Oportunidad actualizada');
+            clearCacheByPrefix('dashboard');
             setModalEditarAbierto(false);
             await cargarOportunidades();
         } catch (err) {
@@ -255,6 +257,7 @@ const Oportunidades = () => {
         setOportunidades(prev => prev.map(c => String(c.id || c._id) === String(oportunidadId) ? { ...c, etapa: nuevaEtapa } : c));
         try {
             await axios.put(`${API_URL}/api/oportunidades/${oportunidadId}`, { etapa: nuevaEtapa }, { headers: getAuthHeaders() });
+            clearCacheByPrefix('dashboard');
         } catch {
             setOportunidades(oldOps);
             toast.error('Error al cambiar etapa');
@@ -281,6 +284,7 @@ const Oportunidades = () => {
                 } catch { toast.error('No se pudo convertir el prospecto.'); }
             }
             toast.success(`"${opp.titulo}" marcada como Ganada!`);
+            clearCacheByPrefix('dashboard');
             setOportunidadGanadaPendiente(null);
         } catch { toast.error('Error al cerrar la oportunidad'); }
         finally { setProcesandoCierre(false); }
