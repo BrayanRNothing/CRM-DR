@@ -1308,7 +1308,7 @@ export default function ProspectoDetalle({
                             </div>
 
                             {/* ==================== MÓDULOS / SECCIONES PERSONALIZADAS ==================== */}
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-4">
                                 {customSections.map(seccion => (
                                     <div key={seccion.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm group flex flex-col h-full min-h-[140px]">
                                         <div className="flex justify-between items-start mb-3">
@@ -1400,7 +1400,7 @@ export default function ProspectoDetalle({
                                 {/* Componente de Oportunidades de Venta */}
                                 <OportunidadesPanel 
                                     clienteId={pid} 
-                                    containerClassName="xl:col-span-2 mt-4"
+                                    containerClassName="xl:col-span-2"
                                     onOportunidadesChange={(opps) => {
                                         const sum = opps.reduce((acc, o) => acc + (Number(o.monto) || 0), 0);
                                         const sumStr = sum.toString();
