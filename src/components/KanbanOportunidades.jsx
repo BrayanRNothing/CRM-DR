@@ -160,7 +160,7 @@ const OportunidadCard = ({ oportunidad, cardSize, fields, colorId, isDragging, o
             </div>
 
             {/* Header: titulo */}
-            <div className="flex items-start justify-between gap-1.5 mt-2">
+            <div className="flex items-start justify-between gap-1.5">
                 <div className="min-w-0 flex-1 pr-2">
                     <p className={`font-bold text-gray-900 leading-tight truncate ${isCompact ? 'text-xs' : 'text-sm'}`}>
                         {titulo}
@@ -171,22 +171,18 @@ const OportunidadCard = ({ oportunidad, cardSize, fields, colorId, isDragging, o
                 </div>
             </div>
 
-            {/* Etiqueta Prospecto/Cliente en la esquina superior izquierda */}
-            <div className={`absolute top-0 left-0 px-2 py-0.5 rounded-tl-xl rounded-br-lg text-[7px] font-bold tracking-widest uppercase ${esProspecto(oportunidad) ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                {esProspecto(oportunidad) ? 'PROSPECTO' : 'CLIENTE'}
-            </div>
-
-            {/* Footer: money */}
+            {/* Footer: money & Tipo */}
             <div className={`flex items-center justify-between ${isCompact ? 'mt-1.5' : 'mt-2.5 pt-1'}`}>
                 {money && money !== '$-' && money !== '$0' && money !== '$0.00' ? (
                     <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">{money}</span>
                 ) : (
                     <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100 border-dashed">$ No definido</span>
                 )}
+                
+                <div className={`px-1.5 py-0.5 rounded-md text-[7px] font-bold tracking-widest uppercase ${esProspecto(oportunidad) ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                    {esProspecto(oportunidad) ? 'PROSPECTO' : 'CLIENTE'}
+                </div>
             </div>
-
-            {/* Drag grip hint */}
-            <GripVertical className="absolute bottom-2 right-2 w-3 h-3 text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
     );
 };
