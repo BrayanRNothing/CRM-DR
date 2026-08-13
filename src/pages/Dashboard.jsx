@@ -638,10 +638,25 @@ const Dashboard = () => {
     const prospectosPeriodo = filterByPeriod(allProspectos, 'createdAt', periodo);
     const oportunidadesPeriodo = filterByPeriod(allOportunidades, 'createdAt', periodo);
 
+    const esProspectoCheck = (oportunidad) => {
+        if (oportunidad.cliente_tipo) return oportunidad.cliente_tipo === 'prospecto';
+        const etapa = oportunidad.cliente_etapaEmbudo || oportunidad.cliente_etapaembudo;
+        if (!etapa) return false;
+        const ETAPAS_PROSPECTO_LIST = ['prospecto_nuevo', 'en_contacto', 'reunion_agendada', 'reunion_realizada', 'en_negociacion', 'venta_ganada', 'perdido'];
+        return ETAPAS_PROSPECTO_LIST.includes(String(etapa).toLowerCase().trim());
+    };
+
     // Nuevos KPIs:
     const oportunidadesActivasPeriodo = oportunidadesPeriodo.filter(o => !isOportunidadGanada(o) && !isOportunidadPerdida(o));
     const valorOportunidadesPeriodo = oportunidadesActivasPeriodo.reduce((acc, o) => acc + (Number(o.monto) || 0), 0);
     const cantidadOportunidadesPeriodo = oportunidadesActivasPeriodo.length;
+    
+    let oppsProspectos = 0;
+    let oppsClientes = 0;
+    oportunidadesActivasPeriodo.forEach(o => {
+        if (esProspectoCheck(o)) oppsProspectos++;
+        else oppsClientes++;
+    });
 
     let inactivosPeriodo = 0;
     let activosPeriodo = 0;
@@ -653,8 +668,14 @@ const Dashboard = () => {
 
     const allClientes = clientesList || [];
     const ventasGanadasPeriodo = filterByPeriod(allClientes, 'createdAt', periodo);
-    const valorVentasPeriodo = ventasGanadasPeriodo.reduce((acc, c) => acc + (Number(c.totalFacturado) || Number(c.facturado) || 0), 0);
-    const cantidadVentasPeriodo = ventasGanadasPeriodo.length;
+    const valorClientesPeriodo = ventasGanadasPeriodo.reduce((acc, c) => acc + (Number(c.totalFacturado) || Number(c.facturado) || 0), 0);
+    
+    const oppsGanadasPeriodo = filterByPeriod(allOportunidades.filter(o => isOportunidadGanada(o)), 'updatedAt', periodo);
+    const valorOppsGanadas = oppsGanadasPeriodo.reduce((acc, o) => acc + (Number(o.monto) || 0), 0);
+
+    const valorVentasPeriodo = valorClientesPeriodo + valorOppsGanadas;
+    const cantidadVentasPeriodo = ventasGanadasPeriodo.length + oppsGanadasPeriodo.length;
+    const detalleVentas = `${oppsGanadasPeriodo.length} opps, ${ventasGanadasPeriodo.length} directas`;
 
     // Prospectos totales
     const totalEntrada = allProspectos.length;
@@ -960,7 +981,7 @@ const Dashboard = () => {
                                             value={valorOportunidadesPeriodo}
                                             format="money"
                                             icon={<DollarSign className="w-5 h-5" />}
-                                            detail={`${cantidadOportunidadesPeriodo} abiertas ${periodoSuffix}`}
+                                            detail={`${oppsProspectos} de prospectos, ${oppsClientes} de clientes (Total: ${cantidadOportunidadesPeriodo})`}
                                             color="blue"
                                         />
                                         <MetricKPICard
@@ -977,7 +998,7 @@ const Dashboard = () => {
                                             format="money"
                                             compact={true}
                                             icon={<CheckCircle2 className="w-5 h-5" />}
-                                            detail={`${cantidadVentasPeriodo} cierres ${periodoSuffix}`}
+                                            detail={`${detalleVentas} (Total: ${cantidadVentasPeriodo})`}
                                             color="emerald"
                                         />
                                         <MetricKPICard
