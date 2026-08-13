@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearCacheByPrefix } from '../hooks/useApiCache';
 
 const rawEnvApiUrl = (import.meta.env.VITE_API_URL || '').trim();
 const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
@@ -22,6 +23,9 @@ axios.interceptors.response.use(
     (response) => {
         const config = response.config;
         if (config && ['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase())) {
+            // Invalidar toda la caché local de datos para forzar refrescos inmediatos en vistas que usan useApiCache
+            clearCacheByPrefix('');
+
             const url = config.url || '';
             
             import('./socket').then((socketModule) => {

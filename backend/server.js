@@ -200,12 +200,14 @@ io.on('connection', (socket) => {
     const forwardToTeam = (eventName) => {
         for (const room of socket.rooms) {
             if (room.startsWith('team_')) {
-                socket.to(room).emit(eventName);
+                socket.to(room).emit(eventName); // envía al resto
+                socket.emit(eventName); // envía al propio emisor
                 return;
             }
         }
-        // Si no está en un equipo, broadcast general (aunque no recomendado, fallback seguro para mono-tenant)
+        // Si no está en un equipo, broadcast general
         socket.broadcast.emit(eventName);
+        socket.emit(eventName); // envía al propio emisor
     };
 
     socket.on('prospectos_actualizados', () => forwardToTeam('prospectos_actualizados'));
