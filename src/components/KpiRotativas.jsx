@@ -88,47 +88,43 @@ export default function KpiRotativas({
 
     const renderValor = (kpi) => {
         if (kpi.id === 'llamadas') return (
-            <div className="flex items-center justify-center gap-1 mt-1">
-                <span className="text-xl font-black text-(--theme-500)">{llamadasExitosas}</span>
-                <span className="text-base font-bold text-slate-300">/</span>
-                <span className="text-xl font-black text-rose-500">{llamadasFallidas}</span>
+            <div className="flex items-center justify-center gap-1">
+                <span className="text-2xl font-black text-(--theme-500)" title="Contestadas">{llamadasExitosas}</span>
+                <span className="text-xl font-bold text-slate-300">/</span>
+                <span className="text-2xl font-black text-rose-500" title="No contestadas">{llamadasFallidas}</span>
             </div>
         );
         if (kpi.id === 'facturado_edit') return (
-            <div 
-                className="flex items-center justify-center gap-0.5 mt-1 relative group" 
-                title="Monto total de ventas y suscripciones registradas"
-            >
-                <span className="text-base font-black text-emerald-600 opacity-40">$</span>
-                <span className="text-xl font-black text-emerald-600 truncate max-w-[80px]">
+            <div className="flex items-center justify-center gap-0.5 relative group" title="Monto total de ventas y suscripciones registradas">
+                <span className="text-xl font-black text-emerald-600 opacity-50">$</span>
+                <span className="text-2xl font-black text-emerald-600 truncate max-w-[120px]">
                     {formatNumber(totalFacturado)}
                 </span>
             </div>
         );
-        return <p className={`text-2xl font-black leading-none mt-1 ${kpi.valColor}`}>{kpi.value}</p>;
+        if (kpi.id === 'reuniones') return (
+            <p className={`text-3xl font-black ${kpi.valColor}`}>{kpi.value}</p>
+        );
+        return <p className={`text-2xl font-black ${kpi.valColor}`}>{kpi.value}</p>;
     };
 
     return (
         <div className="flex items-stretch gap-2">
             {/* KPIs */}
             <div className="flex-1 min-w-0 overflow-hidden">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {kpisActuales.map((kpi) => (
                         <div
                             key={kpi.id}
-                            className={`${kpi.bg} ${kpi.border} border rounded-xl px-3 py-3 shadow-sm flex flex-col items-center justify-center text-center min-h-[90px]`}
+                            className={`${kpi.bg} ${kpi.border} border rounded-xl p-4 shadow-sm flex flex-col justify-center text-center`}
                         >
-                            {/* Ícono + label */}
-                            <div className={`flex items-center gap-1 ${kpi.iconColor}`}>
-                                {kpi.icon}
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">{kpi.label}</p>
-                            </div>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{kpi.label}</p>
 
                             {/* Valor */}
                             {renderValor(kpi)}
 
                             {/* Sub */}
-                            <p className="text-[10px] text-slate-400 mt-1.5 leading-none">{kpi.sub}</p>
+                            <p className={`text-[10px] text-gray-400 mt-1 ${kpi.id === 'llamadas' ? 'font-bold italic' : 'font-bold'}`}>{kpi.sub}</p>
                         </div>
                     ))}
                 </div>
