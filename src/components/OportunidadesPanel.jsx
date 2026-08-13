@@ -208,7 +208,7 @@ export default function OportunidadesPanel({
     }
 
     return (
-        <div className={`grid grid-cols-1 gap-4 ${containerClassName}`}>
+        <div className={`grid grid-cols-1 gap-2.5 ${containerClassName}`}>
             <input
                 type="file"
                 accept=".pdf,application/pdf"
@@ -228,7 +228,7 @@ export default function OportunidadesPanel({
                 if (opp.estado === 'perdida') cardStyles = 'bg-slate-50/80 border-slate-300 opacity-90';
 
                 return (
-                    <div key={opp.id} className={`border rounded-xl p-4 shadow-sm hover:shadow transition-all group flex flex-col gap-4 relative overflow-hidden ${cardStyles}`}>
+                    <div key={opp.id} className={`border rounded-xl p-3.5 shadow-sm hover:shadow transition-all group flex flex-col gap-3.5 relative overflow-hidden ${cardStyles}`}>
                         
                         {/* Marca de agua / Estampita visual para estado */}
                         {opp.estado === 'ganada' && (
