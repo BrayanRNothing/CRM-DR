@@ -145,12 +145,12 @@ const OportunidadCard = ({ oportunidad, cardSize, fields, colorId, isDragging, o
         >
             {/* Marca de agua / Estampita visual para estado */}
             {isGanada && (
-                <div className="absolute -right-6 top-3 bg-emerald-500 text-white text-[8px] font-black uppercase tracking-widest px-8 py-0.5 rotate-45 shadow-sm z-10 pointer-events-none">
+                <div className="absolute -right-5 top-2.5 bg-emerald-500 text-white text-[7px] font-black uppercase tracking-widest px-6 py-0.5 rotate-45 shadow-sm z-10 pointer-events-none">
                     Ganada
                 </div>
             )}
             {isPerdida && (
-                <div className="absolute -right-6 top-3 bg-slate-500 text-white text-[8px] font-black uppercase tracking-widest px-8 py-0.5 rotate-45 shadow-sm z-10 pointer-events-none">
+                <div className="absolute -right-5 top-2.5 bg-slate-500 text-white text-[7px] font-black uppercase tracking-widest px-6 py-0.5 rotate-45 shadow-sm z-10 pointer-events-none">
                     Perdida
                 </div>
             )}
@@ -160,7 +160,7 @@ const OportunidadCard = ({ oportunidad, cardSize, fields, colorId, isDragging, o
             </div>
 
             {/* Header: titulo */}
-            <div className="flex items-start justify-between gap-1.5">
+            <div className="flex items-start justify-between gap-1.5 mt-2">
                 <div className="min-w-0 flex-1 pr-2">
                     <p className={`font-bold text-gray-900 leading-tight truncate ${isCompact ? 'text-xs' : 'text-sm'}`}>
                         {titulo}
@@ -171,8 +171,8 @@ const OportunidadCard = ({ oportunidad, cardSize, fields, colorId, isDragging, o
                 </div>
             </div>
 
-            {/* Etiqueta Prospecto/Cliente en la esquina */}
-            <div className={`absolute top-0 right-0 px-2 py-0.5 rounded-tr-xl rounded-bl-lg text-[8px] font-bold tracking-widest uppercase ${esProspecto(oportunidad) ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+            {/* Etiqueta Prospecto/Cliente en la esquina superior izquierda */}
+            <div className={`absolute top-0 left-0 px-2 py-0.5 rounded-tl-xl rounded-br-lg text-[7px] font-bold tracking-widest uppercase ${esProspecto(oportunidad) ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
                 {esProspecto(oportunidad) ? 'PROSPECTO' : 'CLIENTE'}
             </div>
 
