@@ -141,9 +141,9 @@ export default function OportunidadesPanel({
                 titulo: campos.titulo !== undefined ? campos.titulo : oppActual.titulo,
                 monto: campos.monto !== undefined ? (campos.monto === '' ? 0 : Number(campos.monto)) : oppActual.monto,
                 etapa: campos.etapa !== undefined ? campos.etapa : oppActual.etapa,
+                estado: campos.estado !== undefined ? campos.estado : oppActual.estado,
+                etapas_json: campos.etapas_json !== undefined ? campos.etapas_json : (oppActual.etapas_json || '[]')
             };
-
-            payload.etapas_json = JSON.stringify({ actual: 0 });
 
             let currentContent = { ...oppActual.parsedContent, ...campos.parsedContent };
             payload.notas = JSON.stringify(currentContent);
