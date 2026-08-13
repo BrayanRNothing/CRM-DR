@@ -1120,7 +1120,7 @@ export default function ProspectoDetalle({
                                             <select
                                                 value={monedaSeleccionada}
                                                 onChange={(e) => setMonedaSeleccionada(e.target.value)}
-                                                onBlur={handleGuardarMetricaPersonalizada}
+                                                onBlur={() => handleGuardarMetricaPersonalizada()}
                                                 className="text-[9px] font-black text-slate-400 bg-transparent border-none appearance-none cursor-pointer outline-none focus:ring-0 p-0 pr-3 uppercase"
                                             >
                                                 <option value="MXN">MXN</option>
