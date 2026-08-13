@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
-    Edit2, Trash2, X, Plus, CheckCircle2, Upload, Target, FileText, XCircle, Star, DollarSign, Briefcase
+    Edit2, Trash2, X, Plus, CheckCircle2, Upload, Target, FileText, XCircle, Star, DollarSign, Briefcase, Lock
 } from 'lucide-react';
 import { getToken } from '../utils/authUtils';
 import API_URL from '../config/api';
@@ -217,7 +217,7 @@ export default function OportunidadesPanel({
                 onChange={handleFileUpload}
             />
 
-            {oportunidades.map(opp => {
+            {[...oportunidades].sort((a, b) => b.id - a.id).map(opp => {
                 const isCerrada = opp.estado === 'ganada' || opp.estado === 'perdida';
                 const url = opp.parsedContent?.url;
                 const nombreArchivo = opp.parsedContent?.nombreArchivo;
@@ -314,51 +314,58 @@ export default function OportunidadesPanel({
                         </div>
 
                         {/* Footer: Close buttons */}
-                        {!isCerrada && (
-                            <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-center gap-2">
-                                <button
-                                    onClick={async () => {
-                                        if (!opp.titulo || opp.titulo.trim() === '') {
-                                            toast.error('La oportunidad necesita un título');
-                                            return;
-                                        }
-                                        await actualizarOportunidad(opp.id, { estado: 'perdida' });
-                                        if (onOportunidadCerrada) onOportunidadCerrada(opp, 'perdida');
-                                    }}
-                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 text-slate-500 bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm"
-                                >
-                                    <XCircle className="w-3.5 h-3.5" /> Perdida
-                                </button>
+                        {/* Footer: Close buttons */}
+                        <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-center gap-2">
+                            {!isCerrada ? (
+                                <>
+                                    <button
+                                        onClick={async () => {
+                                            if (!opp.titulo || opp.titulo.trim() === '') {
+                                                toast.error('La oportunidad necesita un título');
+                                                return;
+                                            }
+                                            await actualizarOportunidad(opp.id, { estado: 'perdida' });
+                                            if (onOportunidadCerrada) onOportunidadCerrada(opp, 'perdida');
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 text-slate-500 bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm"
+                                    >
+                                        <XCircle className="w-3.5 h-3.5" /> Perdida
+                                    </button>
 
-                                <button
-                                    onClick={async () => {
-                                        if (!opp.titulo || opp.titulo.trim() === '') {
-                                            toast.error('La oportunidad necesita un título');
-                                            return;
-                                        }
-                                        await actualizarOportunidad(opp.id, { estado: 'ganada' });
-                                        if (onOportunidadCerrada) onOportunidadCerrada(opp, 'ganada', 'venta');
-                                    }}
-                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
-                                >
-                                    <DollarSign className="w-3.5 h-3.5" /> Ganada (Venta)
-                                </button>
+                                    <button
+                                        onClick={async () => {
+                                            if (!opp.titulo || opp.titulo.trim() === '') {
+                                                toast.error('La oportunidad necesita un título');
+                                                return;
+                                            }
+                                            await actualizarOportunidad(opp.id, { estado: 'ganada' });
+                                            if (onOportunidadCerrada) onOportunidadCerrada(opp, 'ganada', 'venta');
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
+                                    >
+                                        <DollarSign className="w-3.5 h-3.5" /> Ganada (Venta)
+                                    </button>
 
-                                <button
-                                    onClick={async () => {
-                                        if (!opp.titulo || opp.titulo.trim() === '') {
-                                            toast.error('La oportunidad necesita un título');
-                                            return;
-                                        }
-                                        await actualizarOportunidad(opp.id, { estado: 'ganada' });
-                                        if (onOportunidadCerrada) onOportunidadCerrada(opp, 'ganada', 'suscripcion');
-                                    }}
-                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded-lg border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-500 hover:text-white transition-all shadow-sm"
-                                >
-                                    <Star className="w-3.5 h-3.5" /> Ganada (Suscripción)
-                                </button>
-                            </div>
-                        )}
+                                    <button
+                                        onClick={async () => {
+                                            if (!opp.titulo || opp.titulo.trim() === '') {
+                                                toast.error('La oportunidad necesita un título');
+                                                return;
+                                            }
+                                            await actualizarOportunidad(opp.id, { estado: 'ganada' });
+                                            if (onOportunidadCerrada) onOportunidadCerrada(opp, 'ganada', 'suscripcion');
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded-lg border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-500 hover:text-white transition-all shadow-sm"
+                                    >
+                                        <Star className="w-3.5 h-3.5" /> Ganada (Suscripción)
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200/60 text-slate-400 bg-slate-50/50 cursor-default opacity-80 h-[30px]">
+                                    <Lock className="w-3.5 h-3.5" /> {opp.estado === 'ganada' ? 'Oportunidad Ganada' : 'Oportunidad Perdida'} - Solo Lectura
+                                </div>
+                            )}
+                        </div>
                     </div>
                 );
             })}
