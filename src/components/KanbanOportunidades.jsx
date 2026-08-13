@@ -154,10 +154,7 @@ const OportunidadCard = ({ oportunidad, cardSize, fields, colorId, isDragging, o
                     Perdida
                 </div>
             )}
-            {/* Color Dot */}
-            <div className={`absolute ${isDetailed ? 'top-5 right-4' : 'right-[10%] top-1/2 -translate-y-1/2'} flex items-center justify-center`}>
-                <div className={`w-2.5 h-2.5 rounded-full animate-dot-ping ${dotColor}`} />
-            </div>
+
 
             {/* Header: titulo */}
             <div className="flex items-start justify-between gap-1.5">
