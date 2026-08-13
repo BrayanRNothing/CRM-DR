@@ -643,6 +643,7 @@ const initDb = async () => {
       ['oportunidades', 'etapas_json', "TEXT DEFAULT '[]'"],
       ['oportunidades', '"fechaCreacion"', "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP"],
       ['oportunidades', '"fechaActualizacion"', "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP"],
+      ['oportunidades', 'estado', "TEXT DEFAULT 'en_proceso'"],
     ];
     for (const [table, col, type] of colsMissingPg) {
       try {
@@ -654,6 +655,16 @@ const initDb = async () => {
           console.error(`⚠️ Error agregando ${col} a ${table}:`, e.message);
         }
       }
+    }
+    // Migración específica para oportunidades: migrar etapa a estado
+    try {
+      await internalDb.query(`
+        UPDATE oportunidades SET estado = 'ganada' WHERE etapa = 'ganada' AND estado = 'en_proceso';
+        UPDATE oportunidades SET estado = 'perdida' WHERE etapa = 'perdida' AND estado = 'en_proceso';
+      `);
+      console.log('✅ Migración: Oportunidades actualizadas (estado ganada/perdida migrado)');
+    } catch (e) {
+      console.error('⚠️ Migración oportunidades (estado) falló:', e.message);
     }
 
     // Migración específica para tabla actividades: remover constraints restrictivos
