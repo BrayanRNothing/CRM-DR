@@ -132,16 +132,28 @@ const OportunidadCard = ({ oportunidad, cardSize, fields, colorId, isDragging, o
     const isCompact  = cardSize === 'compact';
     const isDetailed = cardSize === 'detailed';
 
-    const isGanada = oportunidad.etapa === 'ganada';
+    const isGanada = oportunidad.estado === 'ganada';
+    const isPerdida = oportunidad.estado === 'perdida';
     return (
         <div
-            className={`group relative rounded-xl border
+            className={`group relative rounded-xl border overflow-hidden
                 shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer select-none
-                ${isGanada ? 'bg-emerald-50/80 border-emerald-200/60' : 'bg-white border-slate-200/80'}
+                ${isPerdida ? 'bg-slate-50/80 border-slate-300 opacity-90' : isGanada ? 'bg-emerald-50/80 border-emerald-200/60' : 'bg-white border-slate-200/80'}
                 ${isDragging ? 'opacity-30 scale-95 rotate-1 shadow-none' : 'hover:-translate-y-0.5'}
                 ${isCompact ? 'p-2' : isDetailed ? 'p-4' : 'p-3'}`}
             onClick={() => onVerDetalles(oportunidad)}
         >
+            {/* Marca de agua / Estampita visual para estado */}
+            {isGanada && (
+                <div className="absolute -right-6 top-3 bg-emerald-500 text-white text-[8px] font-black uppercase tracking-widest px-8 py-0.5 rotate-45 shadow-sm z-10 pointer-events-none">
+                    Ganada
+                </div>
+            )}
+            {isPerdida && (
+                <div className="absolute -right-6 top-3 bg-slate-500 text-white text-[8px] font-black uppercase tracking-widest px-8 py-0.5 rotate-45 shadow-sm z-10 pointer-events-none">
+                    Perdida
+                </div>
+            )}
             {/* Color Dot */}
             <div className={`absolute ${isDetailed ? 'top-5 right-4' : 'right-[10%] top-1/2 -translate-y-1/2'} flex items-center justify-center`}>
                 <div className={`w-2.5 h-2.5 rounded-full animate-dot-ping ${dotColor}`} />
