@@ -39,7 +39,7 @@ const ETAPAS_CLIENTE = {
     'oportunidad_nuevo': { label: 'Oportunidad nuevo', color: 'bg-emerald-100 text-emerald-700' },
     'en_seguimiento': { label: 'En seguimiento', color: 'bg-blue-100 text-blue-700' },
     'oportunidad_activa': { label: 'Oportunidad activa', color: 'bg-purple-100 text-purple-700' },
-    'reunion_con_oportunidad': { label: 'ReuniÃƒÂ³n con oportunidad', color: 'bg-amber-100 text-amber-700' },
+    'reunion_con_oportunidad': { label: 'Reunión con oportunidad', color: 'bg-amber-100 text-amber-700' },
     'inactivo': { label: 'Inactivo', color: 'bg-gray-100 text-gray-700' }
 };
 
@@ -452,9 +452,9 @@ const Oportunidades = () => {
                                             <button
                                                 onClick={() => setBusqueda('')}
                                                 className="absolute -right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-4 h-4 bg-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-300 rounded-full transition-colors z-10"
-                                                title="Limpiar bÃƒÂºsqueda"
+                                                title="Limpiar búsqueda"
                                             >
-                                                <span className="text-[10px] font-bold leading-none">Ã¢Å“â€¢</span>
+                                                <span className="text-[10px] font-bold leading-none">✕</span>
                                             </button>
                                         )}
                                     </div>
@@ -748,7 +748,7 @@ const Oportunidades = () => {
                                                                 hour: '2-digit',
                                                                 minute: '2-digit'
                                                             })}
-                                                            {esVencido && ' Ã¢Å¡Â '}
+                                                            {esVencido && ' ⚠'}
                                                         </span>
                                                     </div>
                                                 );
@@ -835,7 +835,7 @@ const Oportunidades = () => {
                 </div>
             </div>
 
-            {/* â”€â”€ MODALES â”€â”€ */}
+            {/* ── MODALES ── */}
 
             {/* Modal Crear Oportunidad (2 pasos) */}
             <AnimatePresence>
@@ -860,7 +860,7 @@ const Oportunidades = () => {
                                 <div>
                                     <h2 className="text-lg font-black text-slate-900 tracking-tight">Nueva Oportunidad</h2>
                                     <p className="text-xs text-slate-400 mt-0.5">
-                                        {stepCrear === 1 ? 'Paso 1 de 2 â€” Selecciona el cliente o prospecto' : `Paso 2 de 2 â€” Datos del negocio con ${contactoSeleccionado?.titulo || contactoSeleccionado?.nombres || 'el contacto'}`}
+                                        {stepCrear === 1 ? 'Paso 1 de 2 — Selecciona el cliente o prospecto' : `Paso 2 de 2 — Datos del negocio con ${contactoSeleccionado?.titulo || contactoSeleccionado?.nombres || 'el contacto'}`}
                                     </p>
                                 </div>
                                 <button onClick={resetModalCrear} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
@@ -871,7 +871,7 @@ const Oportunidades = () => {
                             <div className="p-6 space-y-4">
                                 {stepCrear === 1 ? (
                                     <>
-                                        {/* BÃºsqueda de contacto */}
+                                        {/* Búsqueda de contacto */}
                                         <div className="relative">
                                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                             <input
@@ -989,7 +989,7 @@ const Oportunidades = () => {
                             {stepCrear === 2 && (
                                 <div className="px-6 pb-6 flex gap-3">
                                     <button onClick={() => setStepCrear(1)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all">
-                                        â† AtrÃ¡s
+                                        ← Atrás
                                     </button>
                                     <button
                                         onClick={handleCrearOportunidad}
@@ -1005,7 +1005,7 @@ const Oportunidades = () => {
                 )}
             </AnimatePresence>
 
-            {/* Modal Editar Oportunidad (solo tÃ­tulo y monto) */}
+            {/* Modal Editar Oportunidad (solo título y monto) */}
             <AnimatePresence>
                 {modalEditarAbierto && (
                     <motion.div
@@ -1070,7 +1070,7 @@ const Oportunidades = () => {
                 )}
             </AnimatePresence>
 
-            {/* Modal confirmaciÃ³n Ganada */}
+            {/* Modal confirmación Ganada */}
             <AnimatePresence>
                 {oportunidadGanadaPendiente && (
                     <motion.div
@@ -1089,14 +1089,14 @@ const Oportunidades = () => {
                                 </div>
                                 <h2 className="text-lg font-black text-slate-900 text-center mb-1">Marcar como Ganada</h2>
                                 <p className="text-sm text-slate-500 text-center mb-5">
-                                    Â¿Confirmas que la oportunidad <strong className="text-slate-700">"{oportunidadGanadaPendiente?.titulo}"</strong> fue ganada?
+                                    ¿Confirmas que la oportunidad <strong className="text-slate-700">"{oportunidadGanadaPendiente?.titulo}"</strong> fue ganada?
                                 </p>
 
-                                {/* Si es prospecto, ofrecer conversiÃ³n */}
+                                {/* Si es prospecto, ofrecer conversión */}
                                 {esProspectoCheck(oportunidadGanadaPendiente) && (
                                     <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-5">
                                         <p className="text-xs font-bold text-amber-700 mb-1">Este negocio pertenece a un Prospecto</p>
-                                        <p className="text-xs text-amber-600">Â¿Quieres convertirlo a Cliente al confirmar?</p>
+                                        <p className="text-xs text-amber-600">¿Quieres convertirlo a Cliente al confirmar?</p>
                                         <div className="flex gap-2 mt-3">
                                             <button
                                                 onClick={() => confirmarGanada(false)}
@@ -1131,7 +1131,7 @@ const Oportunidades = () => {
                                             className="flex-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all disabled:opacity-50 flex items-center gap-2 justify-center"
                                         >
                                             {procesandoCierre ? <RefreshCw className="w-4 h-4 animate-spin" /> : null}
-                                            {procesandoCierre ? 'Procesando...' : 'ðŸŽ‰ Confirmar Ganada'}
+                                            {procesandoCierre ? 'Procesando...' : '🎉 Confirmar Ganada'}
                                         </button>
                                     )}
                                 </div>
@@ -1141,7 +1141,7 @@ const Oportunidades = () => {
                 )}
             </AnimatePresence>
 
-            {/* Modal confirmaciÃ³n eliminar */}
+            {/* Modal confirmación eliminar */}
             <AnimatePresence>
                 {oportunidadAEliminar && (
                     <motion.div
@@ -1161,7 +1161,7 @@ const Oportunidades = () => {
                                 <h2 className="text-lg font-bold text-gray-900">Eliminar oportunidad</h2>
                             </div>
                             <p className="text-gray-600 mb-6">
-                                Â¿Eliminar <strong>{oportunidadAEliminar.titulo}</strong>? Esta acciÃ³n no se puede deshacer.
+                                ¿Eliminar <strong>{oportunidadAEliminar.titulo}</strong>? Esta acción no se puede deshacer.
                             </p>
                             <div className="flex gap-3 justify-end">
                                 <button onClick={() => setOportunidadAEliminar(null)} disabled={eliminando} className="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-colors">
@@ -1169,7 +1169,7 @@ const Oportunidades = () => {
                                 </button>
                                 <button onClick={handleEliminarOportunidad} disabled={eliminando} className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2">
                                     {eliminando ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                    {eliminando ? 'Eliminando...' : 'SÃ­, eliminar'}
+                                    {eliminando ? 'Eliminando...' : 'Sí, eliminar'}
                                 </button>
                             </div>
                         </motion.div>

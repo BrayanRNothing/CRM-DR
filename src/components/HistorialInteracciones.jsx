@@ -53,13 +53,24 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
     const getLabel = (item) => {
         if (item.tipo === 'cambio_etapa') {
             const etapaLabels = {
+                // Viejos prospecto
                 prospecto_nuevo: '🆕 Prospecto nuevo',
                 en_contacto: '📞 En contacto',
                 reunion_agendada: '📅 Reunión agendada',
                 reunion_realizada: '✓ Reunión realizada',
                 en_negociacion: '💼 En negociación',
                 venta_ganada: '🏆 Venta ganada',
-                perdido: '❌ Perdido'
+                perdido: '❌ Perdido',
+                // Viejos cliente
+                cliente_nuevo: '🆕 Cliente nuevo',
+                en_seguimiento: '📞 En seguimiento',
+                oportunidad_activa: '💼 Oportunidad activa',
+                reunion_con_cliente: '📅 Reunión con cliente',
+                // Nuevos estados unificados
+                nuevo: '🆕 Nuevo',
+                con_oportunidad: '💼 Con oportunidad',
+                activo: '🟢 Activo',
+                inactivo: '⚪ Inactivo'
             };
             return etapaLabels[item.etapa] || item.etapa;
         }
@@ -174,7 +185,7 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
                             : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
                         }`}
                 >
-                    📊 Etapas
+                    📊 Estados
                 </button>
                 <button
                     onClick={() => setFiltroTipo('prospector')}
@@ -342,7 +353,7 @@ export const HistorialInteracciones = ({ timeline = [], esProspector = true, onD
                         </p>
                     </div>
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
-                        <p className="text-xs text-amber-600 font-semibold mb-1">Cambios de Etapa</p>
+                        <p className="text-xs text-amber-600 font-semibold mb-1">Cambios de Estado</p>
                         <p className="text-xl font-bold text-amber-700">
                             {timeline.filter(i => i.tipo === 'cambio_etapa').length}
                         </p>

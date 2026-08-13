@@ -16,19 +16,7 @@ import PlantillasMensajesModal from './PlantillasMensajesModal';
 import GestorEtiquetas from './GestorEtiquetas';
 import GmailIcon from '../assets/google-gmail-svgrepo-com.svg';
 import OportunidadesPanel from './OportunidadesPanel';
-
-const ETAPAS_EMBUDO = {
-    'prospecto_nuevo': { label: 'Sin contacto', color: 'bg-red-100 text-red-600' },
-    'en_contacto': { label: 'En contacto', color: 'bg-[var(--theme-100)] text-[var(--theme-600)]' },
-    'reunion_agendada': { label: 'Cita agendada', color: 'bg-[var(--theme-100)] text-[var(--theme-600)]' },
-    'reunion_realizada': { label: 'Cita realizada', color: 'bg-[var(--theme-100)] text-[var(--theme-600)]' },
-    'en_negociacion': { label: 'Negociación', color: 'bg-amber-100 text-amber-600' },
-    'venta_ganada': { label: 'Venta ganada', color: 'bg-[var(--theme-100)] text-[var(--theme-600)]' },
-    'perdido': { label: 'Perdido', color: 'bg-rose-100 text-rose-600' }
-};
-
-const getEtapaLabel = (etapa) => ETAPAS_EMBUDO[etapa]?.label || etapa;
-const getEtapaColor = (etapa) => ETAPAS_EMBUDO[etapa]?.color || 'bg-gray-100 text-gray-600';
+import { ESTADOS_ENTIDAD, getEstadoLabel, getEstadoColor, calcularEstado } from '../utils/estadosEntidad';
 
 const getAuthHeaders = () => ({
     'x-auth-token': getToken() || ''
@@ -436,15 +424,7 @@ export default function ProspectoDetalle({
         setRegistrandoActividad(true);
 
         try {
-            // Promover etapa automáticamente si corresponde
             const payloadFinal = { ...payload };
-            if (
-                payload.tipo === 'llamada' &&
-                payload.resultado === 'exitoso' &&
-                prospectoSeleccionado.etapaEmbudo === 'prospecto_nuevo'
-            ) {
-                payloadFinal.etapaEmbudo = 'en_contacto';
-            }
 
             // Al registrar cualquier llamada, limpiar el seguimiento pendiente
             // (si se agenda nueva fecha, el flujo "Llamar después" la sobreescribe)
@@ -639,22 +619,6 @@ export default function ProspectoDetalle({
             }, { headers: getAuthHeaders() });
 
             const quedanPendientes = citasPendientes.some((c) => c.id !== cita.id);
-            if (!quedanPendientes && prospectoSeleccionado.etapaEmbudo === 'reunion_agendada') {
-                await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}/editar`, {
-                    nombres: prospectoSeleccionado.nombres || '',
-                    apellidoPaterno: prospectoSeleccionado.apellidoPaterno || '',
-                    apellidoMaterno: prospectoSeleccionado.apellidoMaterno || '',
-                    telefono: prospectoSeleccionado.telefono || '',
-                    telefono2: prospectoSeleccionado.telefono2 || '',
-                    correo: prospectoSeleccionado.correo || '',
-                    empresa: prospectoSeleccionado.empresa || '',
-                    sitioWeb: prospectoSeleccionado.sitioWeb || '',
-                    ubicacion: prospectoSeleccionado.ubicacion || '',
-                    notas: prospectoSeleccionado.notas || '',
-                    etapaEmbudo: 'reunion_realizada'
-                }, { headers: getAuthHeaders() });
-                setProspectoSeleccionado(prev => ({ ...prev, etapaEmbudo: 'reunion_realizada' }));
-            }
 
             toast.success('Cita marcada como realizada');
             if (onActualizado) onActualizado();
@@ -683,7 +647,7 @@ export default function ProspectoDetalle({
                 notas: prospectoSeleccionado.notas || '',
                 etapaEmbudo: nuevaEtapa
             }, { headers: getAuthHeaders() });
-            toast.success(`Etapa actualizada: ${getEtapaLabel(nuevaEtapa)}`);
+            toast.success(`Estado actualizado a ${getEstadoLabel(nuevaEtapa)}`);
             setEditandoEtapa(false);
             const res = await axios.get(`${API_URL}/api/${rolePath}/prospectos`, { headers: getAuthHeaders() });
             const updated = res.data.find(p => p.id === pid || p._id === pid);
@@ -711,6 +675,7 @@ export default function ProspectoDetalle({
             toast.error('Error al actualizar etiquetas');
         }
     };
+    const estadoCalculado = calcularEstado(prospectoSeleccionado, prospectoSeleccionado?.oportunidades?.length || 0);
 
     return (
         <div className="fixed inset-0 overflow-hidden p-4 sm:p-6 bg-slate-50 z-40">
@@ -759,9 +724,9 @@ export default function ProspectoDetalle({
                                                         disabled={loadingEtapa}
                                                         className="border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold bg-white focus:ring-2 focus:ring-(--theme-500) outline-none"
                                                     >
-                                                        {Object.entries(ETAPAS_EMBUDO).map(([key, val]) => (
-                                                            <option key={key} value={key}>{val.label}</option>
-                                                        ))}
+                                                        <option value="" disabled>Seleccionar...</option>
+                                                        <option value="nuevo">Automático (Calculado)</option>
+                                                        <option value="perdido">Perdido</option>
                                                     </select>
                                                     <button
                                                         onClick={() => setEditandoEtapa(false)}
@@ -773,13 +738,13 @@ export default function ProspectoDetalle({
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-1">
-                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEtapaColor(prospectoSeleccionado.etapaEmbudo)}`}>
-                                                        {getEtapaLabel(prospectoSeleccionado.etapaEmbudo)}
+                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEstadoColor(estadoCalculado)}`}>
+                                                        {getEstadoLabel(estadoCalculado)}
                                                     </span>
                                                     <button
                                                         onClick={() => setEditandoEtapa(true)}
                                                         className="p-1 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded transition-all"
-                                                        title="Cambiar etapa"
+                                                        title="Forzar estado"
                                                     >
                                                         <Edit2 className="w-3 h-3" />
                                                     </button>
@@ -1483,11 +1448,6 @@ export default function ProspectoDetalle({
 
                                                     {/* Tarjeta */}
                                                     <div className="flex-1 min-w-0">
-                                                        {esElMasReciente && (
-                                                            <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest text-white bg-(--theme-500) rounded px-1.5 py-0.5 mb-1">
-                                                                Más reciente
-                                                            </span>
-                                                        )}
                                                         <div className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 hover:border-slate-200 transition-colors">
                                                             <div className="flex items-start justify-between gap-1">
                                                                 <div className="min-w-0">

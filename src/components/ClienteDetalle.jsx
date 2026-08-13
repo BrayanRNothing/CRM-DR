@@ -19,17 +19,7 @@ import GmailIcon from '../assets/google-gmail-svgrepo-com.svg';
 import GestorEtiquetas from './GestorEtiquetas';
 import OportunidadesPanel from './OportunidadesPanel';
 
-const ETAPAS_CLIENTE = {
-    'cliente_nuevo': { label: 'Cliente nuevo', color: 'bg-emerald-100 text-emerald-700' },
-    'en_seguimiento': { label: 'En seguimiento', color: 'bg-blue-100 text-blue-700' },
-    'oportunidad_activa': { label: 'Oportunidad activa', color: 'bg-purple-100 text-purple-700' },
-    'reunion_con_cliente': { label: 'Reunión con cliente', color: 'bg-amber-100 text-amber-700' },
-    'inactivo': { label: 'Inactivo', color: 'bg-gray-100 text-gray-700' }
-};
-
-const getEtapaLabel = (etapa) => ETAPAS_CLIENTE[etapa]?.label || (etapa || 'cliente_nuevo');
-const getEtapaColor = (etapa) => ETAPAS_CLIENTE[etapa]?.color || 'bg-emerald-100 text-emerald-700';
-
+import { ESTADOS_ENTIDAD, getEstadoLabel, getEstadoColor, calcularEstado } from '../utils/estadosEntidad';
 const getAuthHeaders = () => ({
     'x-auth-token': getToken() || ''
 });
@@ -88,7 +78,6 @@ export default function ClienteDetalle({
     const registrandoActividadRef = useRef(false);
     const registrandoActividadLockoutRef = useRef(0);
     const [registrandoActividadBlockedUntil, setRegistrandoActividadBlockedUntil] = useState(0);
-    const [editandoEtapa, setEditandoEtapa] = useState(false);
     const [loadingEtapa, setLoadingEtapa] = useState(false);
 
     const [modalRecordatorioAbierto, setModalRecordatorioAbierto] = useState(false);
@@ -448,15 +437,7 @@ export default function ClienteDetalle({
         setRegistrandoActividad(true);
 
         try {
-            // Promover etapa automáticamente si corresponde
             const payloadFinal = { ...payload };
-            if (
-                payload.tipo === 'llamada' &&
-                payload.resultado === 'exitoso' &&
-                ClienteSeleccionado.etapaEmbudo === 'Cliente_nuevo'
-            ) {
-                payloadFinal.etapaEmbudo = 'en_contacto';
-            }
 
             // Al registrar cualquier llamada, limpiar el seguimiento pendiente
             // (si se agenda nueva fecha, el flujo "Llamar después" la sobreescribe)
@@ -786,23 +767,6 @@ export default function ClienteDetalle({
                 notas: cita.notas ? `${cita.notas}\n[Manual] Cita marcada como realizada` : '[Manual] Cita marcada como realizada'
             }, { headers: getAuthHeaders() });
 
-            const quedanPendientes = citasPendientes.some((c) => c.id !== cita.id);
-            if (!quedanPendientes && ClienteSeleccionado.etapaEmbudo === 'reunion_agendada') {
-                await axios.put(`${API_URL}/api/${rolePath}/prospectos/${pid}/editar`, {
-                    nombres: ClienteSeleccionado.nombres || '',
-                    apellidoPaterno: ClienteSeleccionado.apellidoPaterno || '',
-                    apellidoMaterno: ClienteSeleccionado.apellidoMaterno || '',
-                    telefono: ClienteSeleccionado.telefono || '',
-                    telefono2: ClienteSeleccionado.telefono2 || '',
-                    correo: ClienteSeleccionado.correo || '',
-                    empresa: ClienteSeleccionado.empresa || '',
-                    sitioWeb: ClienteSeleccionado.sitioWeb || '',
-                    ubicacion: ClienteSeleccionado.ubicacion || '',
-                    notas: ClienteSeleccionado.notas || '',
-                    etapaEmbudo: 'reunion_realizada'
-                }, { headers: getAuthHeaders() });
-                setClienteSeleccionado(prev => ({ ...prev, etapaEmbudo: 'reunion_realizada' }));
-            }
 
             toast.success('Cita marcada como realizada');
             if (onActualizado) onActualizado();
@@ -815,26 +779,6 @@ export default function ClienteDetalle({
         }
     };
 
-    const handleCambiarEtapa = async (nuevaEtapa) => {
-        setLoadingEtapa(true);
-        try {
-            await axios.put(`${API_URL}/api/${rolePath}/prospectos/${ClienteSeleccionado.id || ClienteSeleccionado._id}/editar`,
-                {
-                    etapaCliente: nuevaEtapa
-                },
-                { headers: getAuthHeaders() }
-            );
-            setClienteSeleccionado(prev => ({ ...prev, etapaCliente: nuevaEtapa }));
-            toast.success(`Etapa actualizada: ${getEtapaLabel(nuevaEtapa)}`);
-            setEditandoEtapa(false);
-            if (onActualizado) onActualizado();
-        } catch (error) {
-            console.error('Error al cambiar la etapa:', error);
-            toast.error('Error al cambiar la etapa');
-        } finally {
-            setLoadingEtapa(false);
-        }
-    };
 
     const handleEtiquetasChange = async (nuevasEtiquetas) => {
         try {
@@ -850,6 +794,8 @@ export default function ClienteDetalle({
             toast.error('Error al actualizar etiquetas');
         }
     };
+
+    const estadoCalculado = calcularEstado(ClienteSeleccionado, ClienteSeleccionado?.oportunidades?.length || 0);
 
     return (
         <div className="fixed inset-0 overflow-hidden p-4 sm:p-6 bg-slate-50 z-40">
@@ -889,41 +835,11 @@ export default function ClienteDetalle({
                                             </button>
                                         </div>
                                         <div className="flex items-center gap-3 flex-wrap">
-                                            {editandoEtapa ? (
-                                                <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-md p-0.5 shadow-sm">
-                                                    <select
-                                                        className="text-xs bg-transparent border-none outline-none text-gray-700 py-1 pl-2 pr-6 cursor-pointer"
-                                                        defaultValue={ClienteSeleccionado.etapaCliente || 'cliente_nuevo'}
-                                                        onChange={(e) => handleCambiarEtapa(e.target.value)}
-                                                        disabled={loadingEtapa}
-                                                    >
-                                                        <option value="" disabled>Seleccionar etapa...</option>
-                                                        {Object.entries(ETAPAS_CLIENTE).map(([key, val]) => (
-                                                            <option key={key} value={key}>{val.label}</option>
-                                                        ))}
-                                                    </select>
-                                                    <button
-                                                        onClick={() => setEditandoEtapa(false)}
-                                                        className="p-1 hover:bg-gray-100 rounded-md text-gray-400"
-                                                        disabled={loadingEtapa}
-                                                    >
-                                                        <X className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2 group/etapa cursor-pointer">
-                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-medium tracking-wide uppercase shadow-sm ${getEtapaColor(ClienteSeleccionado.etapaCliente || 'cliente_nuevo')}`}>
-                                                        {getEtapaLabel(ClienteSeleccionado.etapaCliente || 'cliente_nuevo')}
-                                                    </span>
-                                                    <button
-                                                        onClick={() => setEditandoEtapa(true)}
-                                                        className="p-1 text-gray-300 hover:text-[var(--theme-500)] hover:bg-[var(--theme-50)] rounded-full transition-colors opacity-0 group-hover/etapa:opacity-100"
-                                                        title="Cambiar etapa"
-                                                    >
-                                                        <Edit2 className="w-3 h-3" />
-                                                    </button>
-                                                </div>
-                                            )}
+                                            <div className="flex items-center gap-2">
+                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-medium tracking-wide uppercase shadow-sm ${getEstadoColor(estadoCalculado)}`}>
+                                                    {getEstadoLabel(estadoCalculado)}
+                                                </span>
+                                            </div>
 
                                             <div className="ml-2 pl-2 border-l border-gray-200">
                                                 <GestorEtiquetas

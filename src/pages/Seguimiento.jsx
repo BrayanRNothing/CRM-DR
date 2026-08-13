@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
+import { ESTADOS_ENTIDAD, getEstadoLabel, getEstadoColor, calcularEstado, ORDEN_ESTADO } from '../utils/estadosEntidad';
 import {
     Phone,
     MessageSquare,
@@ -114,22 +115,8 @@ const RESULTADOS = [
     { value: 'fallido', label: 'No contestó', icon: XCircle }
 ];
 
-const getTipoLabel = (tipo) => TIPOS_ACTIVIDAD.find(t => t.value === tipo)?.label || tipo;
-const getTipoColor = (tipo) => TIPOS_ACTIVIDAD.find(t => t.value === tipo)?.color || 'bg-gray-500';
-const getResultadoLabel = (r) => RESULTADOS.find(x => x.value === r)?.label || r;
 
-const ETAPAS_EMBUDO = {
-    'prospecto_nuevo': { label: 'Sin contacto', color: 'bg-red-100 text-red-600' },
-    'en_contacto': { label: 'En contacto', color: 'bg-(--theme-100) text-(--theme-600)' },
-    'reunion_agendada': { label: 'Cita agendada', color: 'bg-(--theme-100) text-(--theme-600)' },
-    'reunion_realizada': { label: 'Cita realizada', color: 'bg-(--theme-100) text-(--theme-600)' },
-    'en_negociacion': { label: 'Negociación', color: 'bg-amber-100 text-amber-600' },
-    'venta_ganada': { label: 'Venta ganada', color: 'bg-(--theme-100) text-(--theme-600)' },
-    'perdido': { label: 'Perdido', color: 'bg-rose-100 text-rose-600' }
-};
 
-const getEtapaLabel = (etapa) => ETAPAS_EMBUDO[etapa]?.label || etapa;
-const getEtapaColor = (etapa) => ETAPAS_EMBUDO[etapa]?.color || 'bg-gray-100 text-gray-600';
 const normalizeProspectoRecordatorio = (p) => ({
     ...p,
     proximaLlamada: p?.proximaLlamada || p?.proximallamada || p?.proximoRecordatorio || p?.proximorecordatorio || null
@@ -159,7 +146,6 @@ const Seguimiento = () => {
     const rolePath = 'vendedor';
     const [prospectos, setProspectos] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [backgroundLoading, setBackgroundLoading] = useState(false); // carga silenciosa
     // Filtros
     const [busquedaProspecto, setBusquedaProspecto] = useState('');
     const [filtroVisibilidad, setFiltroVisibilidad] = useState('mine'); // mine | shared | all
@@ -170,7 +156,7 @@ const Seguimiento = () => {
         try {
             const saved = localStorage.getItem('crm_vistaKanban_prospectos');
             if (saved !== null) return JSON.parse(saved);
-        } catch (e) {}
+        } catch (_) {}
         return false;
     });
 
@@ -311,7 +297,7 @@ const Seguimiento = () => {
             if (!raw) return null;
             const user = JSON.parse(raw);
             return user?.id ?? user?._id ?? null;
-        } catch (error) {
+        } catch (_) {
             return null;
         }
     };
@@ -497,16 +483,7 @@ const Seguimiento = () => {
         }
     }, [prospectoSeleccionado, scrollPosition]);
 
-    // Orden de prioridad de etapas (más avanzadas primero, perdido al fondo)
-    const ORDEN_ETAPA = {
-        'reunion_agendada': 1,
-        'reunion_realizada': 2,
-        'en_negociacion': 3,
-        'en_contacto': 4,
-        'prospecto_nuevo': 5,
-        'venta_ganada': 6,
-        'perdido': 99
-    };
+
     // Filtro principal
     const prospectosFiltrados = useMemo(() => {
         let filtrados = prospectos;
@@ -539,8 +516,10 @@ const Seguimiento = () => {
             if (interesA !== interesB) return interesB - interesA;
         }
         // Perdidos siempre al fondo
-        const esPerdidoA = a.etapaEmbudo === 'perdido';
-        const esPerdidoB = b.etapaEmbudo === 'perdido';
+        const estadoA = calcularEstado(a, a.oportunidades?.length || 0);
+        const estadoB = calcularEstado(b, b.oportunidades?.length || 0);
+        const esPerdidoA = estadoA === 'perdido';
+        const esPerdidoB = estadoB === 'perdido';
         if (esPerdidoA !== esPerdidoB) return esPerdidoA ? 1 : -1;
 
         // Con próxima llamada urgente primero (vencidas aún antes que futuras)
@@ -561,8 +540,8 @@ const Seguimiento = () => {
         if (interesB !== interesA) return interesB - interesA;
 
         // Etapa más avanzada primero
-        const orA = ORDEN_ETAPA[a.etapaEmbudo] ?? 10;
-        const orB = ORDEN_ETAPA[b.etapaEmbudo] ?? 10;
+        const orA = ORDEN_ESTADO[estadoA] ?? 10;
+        const orB = ORDEN_ESTADO[estadoB] ?? 10;
         return orA - orB;
     });
 
@@ -1079,18 +1058,7 @@ const Seguimiento = () => {
                                         placeholder="Ciudad, Estado"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Etapa del Embudo</label>
-                                    <select
-                                        value={prospectoAEditar.etapaEmbudo}
-                                        onChange={(e) => setProspectoAEditar((f) => ({ ...f, etapaEmbudo: e.target.value }))}
-                                        className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm bg-white focus:ring-2 focus:ring-(--theme-400) focus:border-transparent transition-all outline-none hover:border-slate-300"
-                                    >
-                                        {Object.entries(ETAPAS_EMBUDO).map(([key, value]) => (
-                                            <option key={key} value={key}>{value.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
+
                                 <div className="col-span-2">
                                     <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Origen del Prospecto</label>
                                     <SourcePicker
@@ -1681,15 +1649,14 @@ const Seguimiento = () => {
                                                 </div>
                                             </td>
                                             <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
-                                                {p.etapaEmbudo === 'prospecto_nuevo' && !p.ultimaActTipo ? (
-                                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500">
-                                                        No contactado
-                                                    </span>
-                                                ) : (
-                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEtapaColor(p.etapaEmbudo)}`}>
-                                                        {getEtapaLabel(p.etapaEmbudo)}
-                                                    </span>
-                                                )}
+                                                {(() => {
+                                                    const estadoCalculado = calcularEstado(p, p.oportunidades?.length || 0);
+                                                    return (
+                                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEstadoColor(estadoCalculado)}`}>
+                                                            {getEstadoLabel(estadoCalculado)}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </td>
                                             <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
                                                 {(() => {
@@ -1700,7 +1667,7 @@ const Seguimiento = () => {
                                                         } else if (Array.isArray(p.etiquetas)) {
                                                             tags = p.etiquetas;
                                                         }
-                                                    } catch (e) { tags = []; }
+                                                    } catch (_) { tags = []; }
                                                     
                                                     if (!tags || tags.length === 0) {
                                                         return <span className="text-xs text-slate-300 italic">Sin etiquetas</span>;

@@ -12,6 +12,7 @@ import ClienteDetalle from '../components/ClienteDetalle';
 import SourcePicker from '../components/ui/SourcePicker';
 
 import API_URL from '../config/api';
+import { ESTADOS_ENTIDAD, getEstadoLabel, getEstadoColor, calcularEstado, ORDEN_ESTADO } from '../utils/estadosEntidad';
 
 const normalizeClienteRecordatorio = (cliente) => ({
     ...cliente,
@@ -39,16 +40,6 @@ const buildReminderByClienteMap = (tareas = []) => {
     return map;
 };
 
-const ETAPAS_CLIENTE = {
-    'cliente_nuevo': { label: 'Cliente nuevo', color: 'bg-emerald-100 text-emerald-700' },
-    'en_seguimiento': { label: 'En seguimiento', color: 'bg-blue-100 text-blue-700' },
-    'oportunidad_activa': { label: 'Oportunidad activa', color: 'bg-purple-100 text-purple-700' },
-    'reunion_con_cliente': { label: 'Reunión con cliente', color: 'bg-amber-100 text-amber-700' },
-    'inactivo': { label: 'Inactivo', color: 'bg-gray-100 text-gray-700' }
-};
-
-const getEtapaLabel = (etapa) => ETAPAS_CLIENTE[etapa]?.label || (etapa || 'Cliente nuevo');
-const getEtapaColor = (etapa) => ETAPAS_CLIENTE[etapa]?.color || 'bg-emerald-100 text-emerald-700';
 
 const Clientes = () => {
     const location = useLocation();
@@ -1439,12 +1430,10 @@ const Clientes = () => {
                                         </td>
                                         <td className="px-2 md:px-4 py-2 md:py-3 text-center whitespace-nowrap">
                                             {(() => {
-                                                const etapaKey = cliente.etapaCliente || 'cliente_nuevo';
-                                                const colorCls = getEtapaColor(etapaKey);
-                                                const label = getEtapaLabel(etapaKey);
+                                                const estadoCalculado = calcularEstado(cliente, cliente.oportunidades?.length || 0);
                                                 return (
-                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${colorCls}`}>
-                                                        {label}
+                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getEstadoColor(estadoCalculado)}`}>
+                                                        {getEstadoLabel(estadoCalculado)}
                                                     </span>
                                                 );
                                             })()}
