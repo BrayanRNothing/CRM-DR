@@ -154,13 +154,7 @@ const Seguimiento = () => {
     const [ordenFiltro, setOrdenFiltro] = useState('todos'); // 'todos', 'en_proceso', 'mayor_valor'
     const [globalTags, setGlobalTags] = useState([]);
     const [mostrarFiltros, setMostrarFiltros] = useState(false);
-    const [vistaKanban, setVistaKanban] = useState(() => {
-        try {
-            const saved = localStorage.getItem('crm_vistaKanban_prospectos');
-            if (saved !== null) return JSON.parse(saved);
-        } catch (_) {}
-        return false;
-    });
+    const vistaKanban = false;
 
     const { data: oportunidadesList } = useApiCache(
         'dashboard-oportunidades',
@@ -180,9 +174,7 @@ const Seguimiento = () => {
         ).length;
     }, [oportunidadesList]);
 
-    useEffect(() => {
-        localStorage.setItem('crm_vistaKanban_prospectos', JSON.stringify(vistaKanban));
-    }, [vistaKanban]);
+
     const [modalCrearAbierto, setModalCrearAbierto] = useState(false);
     const [loadingCrear, setLoadingCrear] = useState(false);
     const [mostrarAvanzado, setMostrarAvanzado] = useState(false);
@@ -1448,31 +1440,7 @@ const Seguimiento = () => {
                             ></div>
                         </div>
 
-                        {/* Toggle Vista Lista / Kanban */}
-                        <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200 shrink-0 h-9">
-                            <button
-                                onClick={() => setVistaKanban(false)}
-                                title="Vista lista"
-                                className={`flex items-center justify-center w-8 h-full rounded-md transition-all ${
-                                    !vistaKanban
-                                        ? 'bg-white text-slate-800 shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700'
-                                }`}
-                            >
-                                <LayoutList className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => setVistaKanban(true)}
-                                title="Vista kanban"
-                                className={`flex items-center justify-center w-8 h-full rounded-md transition-all ${
-                                    vistaKanban
-                                        ? 'bg-white text-slate-800 shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700'
-                                }`}
-                            >
-                                <Kanban className="w-4 h-4" />
-                            </button>
-                        </div>
+
                     </div>
 
                     {/* Actions - Right Aligned */}
@@ -1824,7 +1792,7 @@ const Seguimiento = () => {
                                                         <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Cliente</th>
                                                         <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Valor estimado</th>
                                                         <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Contacto</th>
-                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[9px] md:text-xs uppercase tracking-wider">Etapa</th>
+                                                        <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[9px] md:text-xs uppercase tracking-wider">Estado</th>
                                                         <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[9px] md:text-xs uppercase tracking-wider whitespace-nowrap">Etiquetas</th>
                                                         <th className="px-2 md:px-4 py-2 md:py-3 text-left font-semibold text-[10px] md:text-xs">Recordatorio</th>
                                                         <th className="px-2 md:px-4 py-2 md:py-3 text-center font-semibold text-[10px] md:text-xs">Acciones</th>
