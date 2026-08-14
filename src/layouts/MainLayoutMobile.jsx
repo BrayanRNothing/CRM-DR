@@ -5,7 +5,7 @@ import SkeletonLoader from '../components/ui/SkeletonLoader';
 import AnimatedGridBackground from '../components/ui/AnimatedGridBackground';
 import logosolomycrm from '../assets/logosolomycrm.png';
 import GracePeriodBanner from '../components/ui/GracePeriodBanner';
-import { getToken } from '../utils/authUtils';
+import { getToken, logout } from '../utils/authUtils';
 import API_URL from '../config/api';
 
 const AnimatedOutlet = ({ context }) => {
@@ -117,7 +117,7 @@ const MainLayoutMobile = ({ menuItems, userInfo, diasGracia, planData }) => {
                                 💳 Renovar
                             </button>
                             <button
-                                onClick={() => { localStorage.clear(); sessionStorage.clear(); window.location.href = '/'; }}
+                                onClick={() => { logout(); window.location.href = '/'; }}
                                 className="mt-4 text-slate-500 font-bold"
                             >
                                 Cerrar sesión

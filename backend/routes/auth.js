@@ -37,29 +37,40 @@ router.post('/login', loginLimiter, async (req, res) => {
 
         console.log(`🔑 Intento de login para: "${identificador}"`);
 
-        // Búsqueda en Postgres por usuario (LOWER) o email (LOWER)
+        // Búsqueda: traer TODOS los registros que coincidan con ese usuario/email
+        // (puede haber más de uno si se crearon duplicados por case-sensitivity)
         const query = 'SELECT * FROM usuarios WHERE LOWER(usuario) = LOWER(?) OR LOWER(email) = LOWER(?)';
-        const row = await db.prepare(query).get(identificador.trim(), identificador.trim());
+        const rows = await db.prepare(query).all(identificador.trim(), identificador.trim());
 
-        if (!row) {
+        if (!rows || rows.length === 0) {
             console.log(`❌ Login fallido: Usuario/Email no encontrado: "${identificador}"`);
             return res.status(400).json({ mensaje: 'Credenciales inválidas' });
         }
 
-        console.log(`👤 Usuario encontrado: ${row.usuario} (ID: ${row.id}, Activo: ${row.activo}, Tipo de activo: ${typeof row.activo})`);
+        // Probar la contraseña contra cada registro coincidente
+        // (resuelve el caso de usuarios con el mismo nombre de usuario)
+        let row = null;
+        for (const candidate of rows) {
+            const match = await bcrypt.compare(contraseña, candidate.contraseña);
+            if (match) {
+                row = candidate;
+                break;
+            }
+        }
+
+        if (!row) {
+            console.log(`❌ Login fallido: Contraseña incorrecta para: "${identificador}"`);
+            return res.status(400).json({ mensaje: 'Credenciales inválidas' });
+        }
+
+        console.log(`👤 Usuario encontrado: ${row.usuario} (ID: ${row.id}, Activo: ${row.activo})`);
 
         if (row.activo == null || row.activo == 0 || row.activo === false) {
             console.warn(`⚠️ Intento de login en cuenta desactivada. Usuario: ${row.usuario}`);
             return res.status(401).json({ mensaje: 'Usuario desactivado. Contacte al administrador' });
         }
 
-        const contraseñaValida = await bcrypt.compare(contraseña, row.contraseña);
-        if (!contraseñaValida) {
-            console.log(`❌ Login fallido: Contraseña incorrecta para el usuario: "${row.usuario}"`);
-            return res.status(400).json({ mensaje: 'Credenciales inválidas' });
-        }
-
-        console.log(`✅ Login exitoso para el usuario: "${row.usuario}"`);
+        console.log(`✅ Login exitoso para el usuario: "${row.usuario}" (ID: ${row.id})`);
 
         // Crear Payload
         const payload = {

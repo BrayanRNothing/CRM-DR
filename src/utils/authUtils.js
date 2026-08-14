@@ -78,3 +78,53 @@ export const saveUser = (user, remember = false) => {
         sessionStorage.setItem('user', userData);
     }
 };
+
+/**
+ * Guarda una cuenta para recordar el inicio de sesión
+ */
+export const saveUserToRemember = (user) => {
+    try {
+        let savedAccounts = JSON.parse(localStorage.getItem('savedAccounts')) || [];
+        // Evitar duplicados
+        savedAccounts = savedAccounts.filter(acc => acc.usuario !== user.usuario);
+        
+        savedAccounts.unshift({
+            usuario: user.usuario,
+            nombre: user.nombre || user.nombre_completo || user.usuario,
+            avatar: user.foto || user.avatar || user.avatar_url || null,
+            password_saved: user.password_saved || null
+        });
+        
+        // Limitar a 3 cuentas guardadas por ejemplo
+        if (savedAccounts.length > 3) savedAccounts.pop();
+        
+        localStorage.setItem('savedAccounts', JSON.stringify(savedAccounts));
+    } catch (error) {
+        console.error('Error al guardar cuenta para recordar:', error);
+    }
+};
+
+/**
+ * Obtiene las cuentas guardadas
+ */
+export const getSavedAccounts = () => {
+    try {
+        return JSON.parse(localStorage.getItem('savedAccounts')) || [];
+    } catch {
+        return [];
+    }
+};
+
+/**
+ * Elimina una cuenta guardada
+ */
+export const removeSavedAccount = (usuario) => {
+    try {
+        let savedAccounts = JSON.parse(localStorage.getItem('savedAccounts')) || [];
+        savedAccounts = savedAccounts.filter(acc => acc.usuario !== usuario);
+        localStorage.setItem('savedAccounts', JSON.stringify(savedAccounts));
+    } catch (error) {
+        console.error('Error al eliminar cuenta guardada:', error);
+    }
+};
+

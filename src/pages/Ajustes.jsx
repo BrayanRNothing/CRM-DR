@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import API_URL from '../config/api';
-import { getUser, saveUser, getToken } from '../utils/authUtils';
+import { getUser, saveUser, getToken, logout } from '../utils/authUtils';
 import useThemeStore, { THEMES } from '../store/themeStore.js';
 
 const GoogleIcon = ({ size = 20 }) => (
@@ -220,8 +220,7 @@ export default function VendedorAjustes() {
     };
 
     const handleLogout = () => {
-        localStorage.clear();
-        sessionStorage.clear();
+        logout();
         window.location.href = '/';
     };
 

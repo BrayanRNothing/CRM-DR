@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, Check } from 'lucide-react';
-import { getUser, saveUser, saveToken } from '../../utils/authUtils';
+import { getUser, saveUser, saveToken, getSavedAccounts, saveUserToRemember, removeSavedAccount } from '../../utils/authUtils';
 import API_URL from '../../config/api';
 import socket from '../../config/socket';
 import logosolomycrm from '../../assets/logosolomycrm.png';
@@ -134,6 +134,9 @@ const LoginMobile = () => {
   const [focusedField, setFocusedField] = useState(null);
   const [rememberMe, setRememberMe] = useState(false);
   const [showDemoModal, setShowDemoModal] = useState(false);
+  const [savedAccounts, setSavedAccounts] = useState([]);
+  const [showAccountsList, setShowAccountsList] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -147,6 +150,12 @@ const LoginMobile = () => {
     if (user) {
       // Todos los usuarios van al dashboard de vendedor
       navigate('/vendedor');
+    }
+    const accs = getSavedAccounts();
+    if (accs.length > 0) {
+      setSavedAccounts(accs);
+      setShowAccountsList(true);
+      setRememberMe(true);
     }
   }, [navigate]);
 
@@ -164,6 +173,9 @@ const LoginMobile = () => {
       if (response.ok) {
         const userData = data.usuario || data.user;
         saveUser(userData, rememberMe);
+        if (rememberMe) {
+            saveUserToRemember({ ...userData, password_saved: password });
+        }
         if (data.token) saveToken(data.token, rememberMe);
         if (userData.tema) {
             useThemeStore.getState().setTheme(userData.tema);
@@ -284,85 +296,144 @@ const LoginMobile = () => {
             )}
           </AnimatePresence>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            {/* Usuario */}
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 px-0.5">Usuario</label>
-              <div className="relative flex items-center rounded-2xl overflow-hidden transition-all"
-                style={{
-                  background: focusedField === 'user' ? '#ffffff' : 'rgba(248,250,252,0.8)',
-                  border: focusedField === 'user' ? '1.5px solid var(--theme-500)' : '1.5px solid rgba(0,0,0,0.07)',
-                  boxShadow: focusedField === 'user' ? '0 0 0 3px var(--theme-500)15' : 'none',
-                }}>
-                <Mail size={16} className="absolute left-4 pointer-events-none transition-colors"
-                  style={{ color: focusedField === 'user' ? 'var(--theme-500)' : '#cbd5e1' }} />
-                <input
-                  type="text" value={username} onChange={e => setUsername(e.target.value)}
-                  onFocus={() => setFocusedField('user')} onBlur={() => setFocusedField(null)}
-                  required
-                  className="w-full bg-transparent pl-11 pr-4 py-3.5 text-sm font-bold outline-none text-slate-800 placeholder-slate-300"
-                  placeholder="Tu usuario"
-                />
+          {showAccountsList && savedAccounts.length > 0 ? (
+            <div className="space-y-4 animate-in fade-in zoom-in duration-300">
+              <div className="text-center mb-6">
+                <h3 className="text-lg font-black text-slate-800 tracking-tight">Selecciona una cuenta</h3>
+                <p className="text-xs font-medium text-slate-500 mt-1">Para iniciar sesión rápidamente</p>
               </div>
+              <div className="flex flex-col gap-3">
+                {savedAccounts.map((acc, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-200 hover:border-(--theme-400) hover:shadow-lg cursor-pointer transition-all group" onClick={() => { setUsername(acc.usuario); if(acc.password_saved) setPassword(acc.password_saved); setSelectedAccount(acc); setShowAccountsList(false); }}>
+                    <div className="flex items-center gap-4">
+                      {acc.avatar ? (
+                        <img src={acc.avatar} alt="avatar" className="w-12 h-12 rounded-full object-cover shadow-sm border border-slate-100" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-(--theme-100) text-(--theme-600) flex items-center justify-center font-black text-xl border border-(--theme-200)">{acc.usuario.charAt(0).toUpperCase()}</div>
+                      )}
+                      <div className="flex flex-col text-left">
+                        <span className="font-black text-slate-800 text-base group-hover:text-(--theme-600) transition-colors">{acc.nombre || acc.usuario}</span>
+                        <span className="text-xs font-bold text-slate-400">{acc.usuario}</span>
+                      </div>
+                    </div>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); const newAccs = savedAccounts.filter(a => a.usuario !== acc.usuario); setSavedAccounts(newAccs); removeSavedAccount(acc.usuario); if(newAccs.length === 0) setShowAccountsList(false); }} className="text-slate-300 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={() => { setShowAccountsList(false); setUsername(''); setPassword(''); setSelectedAccount(null); }} className="w-full mt-6 py-4 rounded-xl font-black text-xs uppercase tracking-widest text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-200 flex items-center justify-center gap-2">
+                Usar otra cuenta
+              </button>
             </div>
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              {/* Usuario */}
+              {selectedAccount ? (
+                <div className="relative mb-6">
+                  <label className="text-[10px] font-black uppercase tracking-widest px-1 text-slate-400 inline-block mb-2">Cuenta seleccionada</label>
+                  <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200 shadow-inner">
+                    <div className="flex items-center gap-3">
+                      {selectedAccount.avatar ? (
+                        <img src={selectedAccount.avatar} alt="avatar" className="w-10 h-10 rounded-full object-cover shadow-sm" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-(--theme-100) text-(--theme-600) flex items-center justify-center font-bold text-lg">{selectedAccount.usuario.charAt(0).toUpperCase()}</div>
+                      )}
+                      <div className="flex flex-col text-left">
+                        <span className="font-bold text-slate-800 text-sm">{selectedAccount.nombre || selectedAccount.usuario}</span>
+                        <span className="text-xs text-slate-400">{selectedAccount.usuario}</span>
+                      </div>
+                    </div>
+                      <button type="button" onClick={() => { if(savedAccounts.length > 0) { setShowAccountsList(true); } else { setSelectedAccount(null); setUsername(''); setPassword(''); } }} className="text-[10px] font-black uppercase tracking-widest text-(--theme-500) hover:text-(--theme-600) px-3 py-2 bg-white rounded-lg shadow-sm border border-slate-100 transition-colors">
+                        Cambiar
+                      </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5 px-0.5">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Usuario</label>
+                    {savedAccounts.length > 0 && (
+                      <button type="button" onClick={() => setShowAccountsList(true)} className="text-[10px] font-bold text-slate-300 hover:text-(--theme-500) transition-colors bg-slate-50 px-2 py-1 rounded-md">
+                        Ver cuentas guardadas
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative flex items-center rounded-2xl overflow-hidden transition-all"
+                    style={{
+                      background: focusedField === 'user' ? '#ffffff' : 'rgba(248,250,252,0.8)',
+                      border: focusedField === 'user' ? '1.5px solid var(--theme-500)' : '1.5px solid rgba(0,0,0,0.07)',
+                      boxShadow: focusedField === 'user' ? '0 0 0 3px var(--theme-500)15' : 'none',
+                    }}>
+                    <Mail size={16} className="absolute left-4 pointer-events-none transition-colors"
+                      style={{ color: focusedField === 'user' ? 'var(--theme-500)' : '#cbd5e1' }} />
+                    <input
+                      type="text" value={username} onChange={e => setUsername(e.target.value)}
+                      onFocus={() => setFocusedField('user')} onBlur={() => setFocusedField(null)}
+                      required className="w-full bg-transparent pl-11 pr-4 py-3.5 text-sm font-bold outline-none text-slate-800 placeholder-slate-300"
+                      placeholder="Tu usuario"
+                    />
+                  </div>
+                </div>
+              )}
 
-            {/* Contraseña */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5 px-0.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contraseña</label>
-                <Link to="/recuperar" className="text-[10px] font-bold transition-colors" style={{ color: 'var(--theme-500)' }}>¿Olvidaste?</Link>
+              {/* Contraseña */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5 px-0.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Contraseña</label>
+                  <Link to="/recuperar" className="text-[10px] font-bold transition-colors" style={{ color: 'var(--theme-500)' }}>¿Olvidaste?</Link>
+                </div>
+                <div className="relative flex items-center rounded-2xl overflow-hidden transition-all"
+                  style={{
+                    background: focusedField === 'pass' ? '#ffffff' : 'rgba(248,250,252,0.8)',
+                    border: focusedField === 'pass' ? '1.5px solid var(--theme-500)' : '1.5px solid rgba(0,0,0,0.07)',
+                    boxShadow: focusedField === 'pass' ? '0 0 0 3px var(--theme-500)15' : 'none',
+                  }}>
+                  <Lock size={16} className="absolute left-4 pointer-events-none"
+                    style={{ color: focusedField === 'pass' ? 'var(--theme-500)' : '#cbd5e1' }} />
+                  <input
+                    type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
+                    onFocus={() => setFocusedField('pass')} onBlur={() => setFocusedField(null)}
+                    required className="w-full bg-transparent pl-11 pr-12 py-3.5 text-sm font-bold outline-none text-slate-800 placeholder-slate-300"
+                    placeholder="••••••••"
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 p-1.5 rounded-lg text-slate-300 bg-white/80 border border-slate-100">
+                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
               </div>
-              <div className="relative flex items-center rounded-2xl overflow-hidden transition-all"
+
+              {/* Recordar */}
+              <label className="flex items-center gap-3 cursor-pointer px-0.5">
+                <div className="relative flex items-center justify-center shrink-0">
+                  <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)}
+                    className="peer appearance-none w-5 h-5 rounded-md border-2 border-slate-200 cursor-pointer transition-all"
+                    style={{ backgroundColor: rememberMe ? 'var(--theme-500)' : '', borderColor: rememberMe ? 'var(--theme-500)' : '' }} />
+                  <Check size={11} strokeWidth={3.5} className="absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none" />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mantener sesión activa</span>
+              </label>
+
+              {/* Botón */}
+              <motion.button
+                type="submit" disabled={loading}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-white shadow-lg flex items-center justify-center gap-2 relative overflow-hidden"
                 style={{
-                  background: focusedField === 'pass' ? '#ffffff' : 'rgba(248,250,252,0.8)',
-                  border: focusedField === 'pass' ? '1.5px solid var(--theme-500)' : '1.5px solid rgba(0,0,0,0.07)',
-                  boxShadow: focusedField === 'pass' ? '0 0 0 3px var(--theme-500)15' : 'none',
-                }}>
-                <Lock size={16} className="absolute left-4 pointer-events-none"
-                  style={{ color: focusedField === 'pass' ? 'var(--theme-500)' : '#cbd5e1' }} />
-                <input
-                  type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
-                  onFocus={() => setFocusedField('pass')} onBlur={() => setFocusedField(null)}
-                  required
-                  className="w-full bg-transparent pl-11 pr-12 py-3.5 text-sm font-bold outline-none text-slate-800 placeholder-slate-300"
-                  placeholder="••••••••"
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 p-1.5 rounded-lg text-slate-300 bg-white/80 border border-slate-100">
-                  {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Recordar */}
-            <label className="flex items-center gap-3 cursor-pointer px-0.5">
-              <div className="relative flex items-center justify-center shrink-0">
-                <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)}
-                  className="peer appearance-none w-5 h-5 rounded-md border-2 border-slate-200 cursor-pointer transition-all"
-                  style={{ backgroundColor: rememberMe ? 'var(--theme-500)' : '', borderColor: rememberMe ? 'var(--theme-500)' : '' }} />
-                <Check size={11} strokeWidth={3.5} className="absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none" />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mantener sesión activa</span>
-            </label>
-
-            {/* Botón */}
-            <motion.button
-              type="submit" disabled={loading}
-              whileTap={{ scale: 0.98 }}
-              className="w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-white shadow-lg flex items-center justify-center gap-2 relative overflow-hidden"
-              style={{
-                background: loading ? 'var(--theme-300)' : 'linear-gradient(135deg, var(--theme-500), var(--theme-600))',
-                boxShadow: loading ? 'none' : '0 12px 30px -8px var(--theme-500)60',
-              }}
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                  Validando...
-                </>
-              ) : 'Ingresar'}
-            </motion.button>
-          </form>
+                  background: loading ? 'var(--theme-300)' : 'linear-gradient(135deg, var(--theme-500), var(--theme-600))',
+                  boxShadow: loading ? 'none' : '0 12px 30px -8px var(--theme-500)60',
+                }}
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    Validando...
+                  </>
+                ) : 'Ingresar'}
+              </motion.button>
+            </form>
+          )}
         </motion.div>
 
         {/* Footer */}

@@ -135,9 +135,16 @@ router.post('/agregar-miembro', auth, esTeamOwner, async (req, res) => {
             return res.status(400).json({ mensaje: `Rol inválido. Roles permitidos: ${ROLES_PERMITIDOS.join(', ')}` });
         }
 
-        const existe = await db.prepare('SELECT id FROM usuarios WHERE usuario = ?').get(usuario.trim());
+        const existe = await db.prepare('SELECT id FROM usuarios WHERE LOWER(usuario) = LOWER(?)').get(usuario.trim());
         if (existe) {
             return res.status(400).json({ mensaje: 'El nombre de usuario ya está en uso' });
+        }
+
+        if (email && email.trim()) {
+            const emailExiste = await db.prepare('SELECT id FROM usuarios WHERE LOWER(email) = LOWER(?)').get(email.trim());
+            if (emailExiste) {
+                return res.status(400).json({ mensaje: 'El correo electrónico ya está en uso por otro usuario' });
+            }
         }
 
         const hash = await bcrypt.hash(contraseña, 10);

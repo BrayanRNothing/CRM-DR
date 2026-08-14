@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedGridBackground from '../components/ui/AnimatedGridBackground';
 import FloatingSidebar from '../components/ui/FloatingSidebar';
 import SkeletonLoader from '../components/ui/SkeletonLoader';
-import { getUser, getToken } from '../utils/authUtils';
+import { getUser, getToken, logout } from '../utils/authUtils';
 import logosolomycrm from '../assets/logosolomycrm.png';
 import useWindowSize from '../hooks/useWindowSize';
 import MainLayoutMobile from './MainLayoutMobile';
@@ -289,7 +289,7 @@ const MainLayout = () => {
                                 💳 Renovar Suscripción
                             </button>
                             <button
-                                onClick={() => { localStorage.clear(); sessionStorage.clear(); window.location.href = '/'; }}
+                                onClick={() => { logout(); window.location.href = '/'; }}
                                 className="mt-6 text-slate-500 hover:text-slate-800 font-bold transition-colors"
                             >
                                 Cerrar sesión
