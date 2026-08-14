@@ -93,7 +93,8 @@ router.post('/login', loginLimiter, async (req, res) => {
                         rol: row.rol,
                         email: row.email,
                         telefono: row.telefono,
-                        equipo_id: row.equipo_id || null
+                        equipo_id: row.equipo_id || null,
+                        tema: row.tema
                     }
                 });
             }
@@ -153,7 +154,7 @@ router.post('/register', async (req, res) => {
         // Asignar el equipo al usuario
         await db.prepare('UPDATE usuarios SET "equipo_id" = ? WHERE id = ?').run(nuevoEquipoId, nuevoUserId);
 
-        const newUser = await db.prepare('SELECT id, usuario, nombre, rol, email, "equipo_id" FROM usuarios WHERE id = ?').get(nuevoUserId);
+        const newUser = await db.prepare('SELECT id, usuario, nombre, rol, email, "equipo_id", tema FROM usuarios WHERE id = ?').get(nuevoUserId);
 
         console.log(`✅ Usuario registrado con éxito: ${newUser.usuario} (equipo_id: ${newUser.equipo_id})`);
 
@@ -307,7 +308,7 @@ router.post('/demo-login', async (req, res) => {
 // @access  Private
 router.get('/me', auth, async (req, res) => {
     try {
-        const user = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo, "equipo_id", plan_activo, plan_vencimiento, plan, stripe_customer_id FROM usuarios WHERE id = ?').get(req.usuario.id);
+        const user = await db.prepare('SELECT id, usuario, nombre, rol, email, telefono, activo, "equipo_id", plan_activo, plan_vencimiento, plan, stripe_customer_id, tema FROM usuarios WHERE id = ?').get(req.usuario.id);
 
         if (user && user.equipo_id) {
             const equipo = await db.prepare('SELECT owner_id FROM equipos WHERE id = ?').get(user.equipo_id);
@@ -476,7 +477,7 @@ router.post('/register-paid', async (req, res) => {
         // Asignar equipo al usuario
         await db.prepare('UPDATE usuarios SET "equipo_id" = ? WHERE id = ?').run(nuevoEquipoId, nuevoUserId);
 
-        const newUser = await db.prepare('SELECT id, usuario, nombre, rol, email, "equipo_id", plan, plan_activo FROM usuarios WHERE id = ?').get(nuevoUserId);
+        const newUser = await db.prepare('SELECT id, usuario, nombre, rol, email, "equipo_id", plan, plan_activo, tema FROM usuarios WHERE id = ?').get(nuevoUserId);
 
         console.log(`✅ Cuenta creada via Stripe para: ${newUser.usuario} (plan: ${plan})`);
 

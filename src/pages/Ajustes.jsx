@@ -51,6 +51,31 @@ export default function VendedorAjustes() {
     // Theme Global State
     const { currentThemeId, setTheme } = useThemeStore();
 
+    const handleThemeChange = async (themeId) => {
+        setTheme(themeId);
+        if (user?.id) {
+            try {
+                const res = await fetch(`${API_URL}/api/usuarios/${user.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-auth-token': getToken()
+                    },
+                    body: JSON.stringify({ tema: themeId })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.usuario) {
+                        const storedUser = getUser();
+                        saveUser({ ...storedUser, ...data.usuario });
+                    }
+                }
+            } catch (err) {
+                console.error('Error al guardar tema:', err);
+            }
+        }
+    };
+
     useEffect(() => {
         const storedUser = getUser();
         if (storedUser) {
@@ -265,7 +290,6 @@ export default function VendedorAjustes() {
         { id: 'seguridad', label: 'Seguridad', icon: KeyRound },
         { id: 'integraciones', label: 'Google', icon: Link2 },
         { id: 'colores', label: 'Colores del Sistema', icon: Palette },
-        { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
     ];
 
     return (
@@ -637,7 +661,7 @@ export default function VendedorAjustes() {
                                                                 <button
                                                                     type="button"
                                                                     key={theme.id}
-                                                                    onClick={() => setTheme(theme.id)}
+                                                                    onClick={() => handleThemeChange(theme.id)}
                                                                     className={`group relative flex items-center gap-3 p-3 pr-5 rounded-2xl border-2 transition-all ${isActive ? 'bg-white border-(--theme-300) shadow-sm' : 'border-transparent hover:bg-white/50'}`}
                                                                 >
                                                                     {theme.swatch === 'gradient' ? (
@@ -669,36 +693,7 @@ export default function VendedorAjustes() {
                                 </section>
                             )}
 
-                            {activeTab === 'notificaciones' && (
-                                <section className="bg-white md:rounded-3xl md:shadow-xl border-b md:border border-slate-200 overflow-x-hidden overflow-y-auto max-h-[72vh] lg:max-h-none lg:overflow-visible lg:min-h-[460px]">
-                                    <div className="p-8 sm:p-12 h-full flex flex-col items-center justify-center text-center">
-                                        <div className="relative mb-6">
-                                            <div className="absolute inset-0 bg-(--theme-500)/20 blur-3xl rounded-full" />
-                                            <div className="relative w-20 h-20 rounded-3xl bg-linear-to-br from-(--theme-500) to-(--theme-600) flex items-center justify-center shadow-2xl shadow-(--theme-500)/30 rotate-12">
-                                                <Bell className="text-white animate-bounce" size={40} />
-                                            </div>
-                                            <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-amber-100 border-2 border-white flex items-center justify-center shadow-md">
-                                                <AlertCircle className="text-amber-600" size={16} />
-                                            </div>
-                                        </div>
-                                        
-                                        <h2 className="text-2xl font-black text-slate-800 mb-2">Próximamente</h2>
-                                        <p className="text-slate-500 text-sm max-w-xs leading-relaxed font-medium">
-                                            Estamos trabajando en un sistema de notificaciones inteligente para que no te pierdas nada. 
-                                            <span className="block mt-2 text-(--theme-600) font-bold">¡Disponible muy pronto!</span>
-                                        </p>
-                                        
-                                        <div className="mt-8 flex gap-2">
-                                            <div className="px-3 py-1 rounded-full bg-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest border border-slate-200">
-                                                V2.1 Beta
-                                            </div>
-                                            <div className="px-3 py-1 rounded-full bg-(--theme-50) text-[10px] font-black text-(--theme-600) uppercase tracking-widest border border-(--theme-100)">
-                                                En Desarrollo
-                                            </div>
-                                        </div>
-                                    </div>
-                                </section>
-                            )}
+
 
                         </div>
                     </div>

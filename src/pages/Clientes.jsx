@@ -67,11 +67,14 @@ const Clientes = () => {
 
     const getOportunidadesActivas = useCallback((entidadId) => {
         if (!oportunidadesList) return 0;
-        return oportunidadesList.filter(o => 
-            String(o.cliente_id) === String(entidadId) && 
-            (o.etapa || '').toLowerCase() !== 'ganada' && 
-            (o.etapa || '').toLowerCase() !== 'perdida'
-        ).length;
+        return oportunidadesList.filter(o => {
+            if (String(o.cliente_id) !== String(entidadId)) return false;
+            const e = (o.etapa || '').toLowerCase();
+            const est = (o.estado || '').toLowerCase();
+            const isGanada = e === 'ganada' || e === 'venta_ganada' || est === 'ganada' || est === 'venta_ganada';
+            const isPerdida = e === 'perdida' || e === 'perdido' || est === 'perdida' || est === 'perdido';
+            return !isGanada && !isPerdida;
+        }).length;
     }, [oportunidadesList]);
 
     const [globalTags, setGlobalTags] = useState([]);

@@ -399,7 +399,11 @@ const KanbanColumn = ({
 
     const wipOver = column.wipLimit > 0 && clients.length > column.wipLimit;
     const textMuted = themeIsDark ? 'text-slate-400' : 'text-slate-400';
-    const columnTotalValue = clients.reduce((acc, c) => acc + (Number(c.monto || c.customMetricValue) || 0), 0);
+    const columnTotalValue = clients.reduce((acc, c) => {
+        const isPerdida = c.estado === 'perdida' || c.estado === 'perdido' || (c.etapa || '').toLowerCase() === 'perdida' || (c.etapa || '').toLowerCase() === 'perdido';
+        if (isPerdida) return acc;
+        return acc + (Number(c.monto || c.customMetricValue) || 0);
+    }, 0);
 
     return (
         <div

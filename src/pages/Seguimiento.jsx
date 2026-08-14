@@ -167,11 +167,30 @@ const Seguimiento = () => {
 
     const getOportunidadesActivas = useCallback((entidadId) => {
         if (!oportunidadesList) return 0;
-        return oportunidadesList.filter(o => 
-            String(o.cliente_id) === String(entidadId) && 
-            (o.etapa || '').toLowerCase() !== 'ganada' && 
-            (o.etapa || '').toLowerCase() !== 'perdida'
-        ).length;
+        return oportunidadesList.filter(o => {
+            if (String(o.cliente_id) !== String(entidadId)) return false;
+            const e = (o.etapa || '').toLowerCase();
+            const est = (o.estado || '').toLowerCase();
+            const isGanada = e === 'ganada' || e === 'venta_ganada' || est === 'ganada' || est === 'venta_ganada';
+            const isPerdida = e === 'perdida' || e === 'perdido' || est === 'perdida' || est === 'perdido';
+            return !isGanada && !isPerdida;
+        }).length;
+    }, [oportunidadesList]);
+
+    const getEffectiveValue = useCallback((p) => {
+        if (!oportunidadesList) return Number(p.customMetricValue || p.valorEstimado || p.presupuesto) || 0;
+        const opps = oportunidadesList.filter(o => String(o.cliente_id) === String(p.id || p._id));
+        if (opps.length > 0) {
+            return opps.filter(o => {
+                const e = (o.etapa || '').toLowerCase();
+                const est = (o.estado || '').toLowerCase();
+                const ganada = e === 'ganada' || e === 'venta_ganada' || est === 'ganada' || est === 'venta_ganada';
+                const perdida = e === 'perdida' || e === 'perdido' || est === 'perdida' || est === 'perdido';
+                return !ganada && !perdida;
+            }).reduce((sum, o) => sum + (Number(o.monto || o.customMetricValue) || 0), 0);
+        }
+        if (p.etapaEmbudo === 'perdido' || p.etapaCliente === 'perdido') return 0;
+        return Number(p.customMetricValue || p.valorEstimado || p.presupuesto) || 0;
     }, [oportunidadesList]);
 
 
@@ -498,7 +517,10 @@ const Seguimiento = () => {
 
     // Filtro principal
     const prospectosFiltrados = useMemo(() => {
-        let filtrados = prospectos;
+        let filtrados = prospectos.map(p => ({
+            ...p,
+            customMetricValue: getEffectiveValue(p)
+        }));
 
         // Búsqueda...
         if (busquedaProspecto.trim()) {
@@ -513,7 +535,7 @@ const Seguimiento = () => {
         }
 
         return filtrados;
-    }, [prospectos, busquedaProspecto, ordenFiltro]).sort((a, b) => {
+    }, [prospectos, busquedaProspecto, ordenFiltro, getEffectiveValue]).sort((a, b) => {
         if (ordenFiltro === 'mayor_valor_estimado' || ordenFiltro === 'mayor_facturado') {
             const facturadoA = Number(a.customMetricValue) || Number(a.totalFacturado) || 0;
             const facturadoB = Number(b.customMetricValue) || Number(b.totalFacturado) || 0;
@@ -1613,7 +1635,7 @@ const Seguimiento = () => {
                                             <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
                                                 <div className="flex flex-col">
                                                     <span className="text-[11px] md:text-sm font-semibold text-gray-800">
-                                                        {p.customMetricValue ? `${p.customMetricLabel || 'MXN'} $${Number(p.customMetricValue).toLocaleString('es-MX')}` : 'No definido'}
+                                                        {p.customMetricValue > 0 ? `${p.customMetricLabel || 'MXN'} $${Number(p.customMetricValue).toLocaleString('es-MX')}` : (p.customMetricValue !== undefined && p.customMetricValue !== null ? `${p.customMetricLabel || 'MXN'} $0` : 'No definido')}
                                                     </span>
                                                 </div>
                                             </td>

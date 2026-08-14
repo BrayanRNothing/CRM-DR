@@ -314,7 +314,8 @@ const initDb = async () => {
     "ultimaConexion" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     "googleRefreshToken" TEXT,
     "googleAccessToken" TEXT,
-    "googleTokenExpiry" DOUBLE PRECISION
+    "googleTokenExpiry" DOUBLE PRECISION,
+    tema TEXT DEFAULT 'blue'
   );
 
   CREATE TABLE IF NOT EXISTS clientes (
@@ -595,6 +596,7 @@ const initDb = async () => {
 
     // Agregar columnas que pueden faltar en DBs antiguas
     const colsMissingPg = [
+      ['usuarios', 'tema', "TEXT DEFAULT 'blue'"],
       ['usuarios', '"googleRefreshToken"', 'TEXT'],
       ['usuarios', '"googleAccessToken"', 'TEXT'],
       ['usuarios', '"googleTokenExpiry"', 'DOUBLE PRECISION'],

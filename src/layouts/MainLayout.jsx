@@ -10,6 +10,7 @@ import useWindowSize from '../hooks/useWindowSize';
 import MainLayoutMobile from './MainLayoutMobile';
 import GracePeriodBanner from '../components/ui/GracePeriodBanner';
 import API_URL from '../config/api';
+import useThemeStore from '../store/themeStore.js';
 
 const AnimatedOutlet = ({ context }) => {
     const location = useLocation();
@@ -62,6 +63,11 @@ const MainLayout = () => {
             })
                 .then(res => res.json())
                 .then(data => {
+                    // Si el usuario tiene un tema configurado en la DB, lo aplicamos
+                    if (data.tema) {
+                        useThemeStore.getState().setTheme(data.tema);
+                    }
+                    
                     // Guardar datos del plan para el botón de renovación
                     setPlanData({
                         plan: data.plan || 'mensual',

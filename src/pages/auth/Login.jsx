@@ -9,6 +9,7 @@ import logosolomycrm from '../../assets/logosolomycrm.png';
 import AnimatedGridBackground from '../../components/ui/AnimatedGridBackground';
 import Typewriter from 'typewriter-effect';
 import LoginMobile from './LoginMobile';
+import useThemeStore from '../../store/themeStore.js';
 
 const useWindowSize = () => {
   const [windowSize, setWindowSize] = useState({
@@ -216,6 +217,9 @@ const Login = () => {
         const userData = data.usuario || data.user;
         saveUser(userData, rememberMe);
         if (data.token) saveToken(data.token, rememberMe);
+        if (userData.tema) {
+            useThemeStore.getState().setTheme(userData.tema);
+        }
         if (userData.id) { socket.emit('user_connected', userData.id); }
         if (userData.equipo_id) { socket.emit('join_team', userData.equipo_id); }
         setLoginSuccess(true);
@@ -244,6 +248,9 @@ const Login = () => {
         const userData = data.usuario || data.user;
         saveUser(userData, rememberMe);
         if (data.token) saveToken(data.token, rememberMe);
+        if (userData.tema) {
+            useThemeStore.getState().setTheme(userData.tema);
+        }
         if (userData.id) {
           socket.emit('user_connected', userData.id);
         }

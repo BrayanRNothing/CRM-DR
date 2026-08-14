@@ -7,6 +7,7 @@ import API_URL from '../../config/api';
 import socket from '../../config/socket';
 import logosolomycrm from '../../assets/logosolomycrm.png';
 import AnimatedGridBackground from '../../components/ui/AnimatedGridBackground';
+import useThemeStore from '../../store/themeStore.js';
 const dynamicTexts = [
   {
     title: "Es simple y \ndirecto.",
@@ -164,6 +165,9 @@ const LoginMobile = () => {
         const userData = data.usuario || data.user;
         saveUser(userData, rememberMe);
         if (data.token) saveToken(data.token, rememberMe);
+        if (userData.tema) {
+            useThemeStore.getState().setTheme(userData.tema);
+        }
         if (userData.id) {
           socket.emit('user_connected', userData.id);
         }
@@ -195,6 +199,9 @@ const LoginMobile = () => {
         const userData = data.usuario || data.user;
         saveUser(userData, rememberMe);
         if (data.token) saveToken(data.token, rememberMe);
+        if (userData.tema) {
+            useThemeStore.getState().setTheme(userData.tema);
+        }
         if (userData.id) {
           socket.emit('user_connected', userData.id);
         }

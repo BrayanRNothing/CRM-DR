@@ -17,6 +17,7 @@ const formatUser = (row) => ({
     activo: !!row.activo,
     fechaCreacion: row.fechaCreacion,
     ultimaConexion: row.ultimaConexion,
+    tema: row.tema,
     googleLinked: !!(row.googleRefreshToken || row.googleAccessToken)
 });
 
@@ -29,6 +30,7 @@ const formatTeamOwner = (row) => ({
     telefono: row.telefono,
     activo: !!row.activo,
     ultimaConexion: row.ultimaConexion,
+    tema: row.tema,
     equipo: {
         id: row.team_id,
         nombre: row.team_name,
@@ -46,6 +48,7 @@ const formatTeamMember = (row) => ({
     activo: !!row.activo,
     fechaCreacion: row.fechaCreacion,
     ultimaConexion: row.ultimaConexion,
+    tema: row.tema,
     googleLinked: !!(row.googleRefreshToken || row.googleAccessToken)
 });
 
@@ -64,6 +67,7 @@ router.get('/team-owners', auth, esAdminUnico, async (req, res) => {
                 u.telefono,
                 u.activo,
                 u."ultimaConexion",
+                u.tema,
                 e.id AS team_id,
                 e.nombre AS team_name,
                 e."fechaCreacion" AS team_created
@@ -84,6 +88,7 @@ router.get('/team-owners', auth, esAdminUnico, async (req, res) => {
                 u.activo,
                 u.fechaCreacion,
                 u."ultimaConexion",
+                u.tema,
                 u.googleRefreshToken,
                 u.googleAccessToken,
                 u."equipo_id" AS team_id
@@ -127,6 +132,7 @@ router.get('/all', auth, esAdminUnico, async (req, res) => {
                 u.activo,
                 u.fechaCreacion,
                 u."ultimaConexion",
+                u.tema,
                 u.plan,
                 u.plan_activo,
                 u.plan_vencimiento,
@@ -423,12 +429,12 @@ router.get('/', auth, async (req, res) => {
         if (req.usuario.equipo_id) {
             // Devolver solo los usuarios del mismo equipo
             rows = await db.prepare(
-                'SELECT id, usuario, nombre, rol, email, telefono, activo, fechaCreacion, "ultimaConexion", googleRefreshToken, googleAccessToken FROM usuarios WHERE activo = 1 AND "equipo_id" = ? ORDER BY nombre ASC'
+                'SELECT id, usuario, nombre, rol, email, telefono, activo, fechaCreacion, "ultimaConexion", googleRefreshToken, googleAccessToken, tema FROM usuarios WHERE activo = 1 AND "equipo_id" = ? ORDER BY nombre ASC'
             ).all(req.usuario.equipo_id);
         } else {
             // Fallback para usuarios sin equipo asignado (no debería ocurrir tras la migración)
             rows = await db.prepare(
-                'SELECT id, usuario, nombre, rol, email, telefono, activo, fechaCreacion, "ultimaConexion", googleRefreshToken, googleAccessToken FROM usuarios WHERE activo = 1 ORDER BY nombre ASC'
+                'SELECT id, usuario, nombre, rol, email, telefono, activo, fechaCreacion, "ultimaConexion", googleRefreshToken, googleAccessToken, tema FROM usuarios WHERE activo = 1 ORDER BY nombre ASC'
             ).all();
         }
         res.json(rows.map(formatUser));
@@ -476,7 +482,7 @@ router.post('/', auth, esSuperUser, async (req, res) => {
 // @access  Private (Admin)
 router.put('/:id', auth, esSuperUser, async (req, res) => {
     try {
-        const { nombre, email, telefono, activo, contraseña, rol } = req.body;
+        const { nombre, email, telefono, activo, contraseña, rol, tema } = req.body;
         const id = parseInt(req.params.id);
 
         const row = await db.prepare('SELECT * FROM usuarios WHERE id = ?').get(id);
@@ -494,6 +500,7 @@ router.put('/:id', auth, esSuperUser, async (req, res) => {
         if (telefono !== undefined) { updates.push('telefono = ?'); params.push(telefono); }
         if (activo !== undefined) { updates.push('activo = ?'); params.push(activo ? 1 : 0); }
         if (rol) { updates.push('rol = ?'); params.push(rol); }
+        if (tema !== undefined) { updates.push('tema = ?'); params.push(tema); }
         if (contraseña) {
             const hash = await bcrypt.hash(contraseña, 10);
             updates.push('contraseña = ?');

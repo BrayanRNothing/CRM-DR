@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { calcularEstado } from '../utils/estadosEntidad';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, UserPlus, Calendar, TrendingUp, RefreshCw, Clock, CheckCircle2, Target, MessageSquare, ExternalLink, Users, Award, DollarSign, AlertTriangle, TrendingDown, Zap, Bell, ArrowRightLeft, PercentCircle, BarChart3, Search, FileText, Video, Globe, XCircle, Plus, Pencil, Trash2, Activity, ChevronRight, ChevronLeft, LogIn, LogOut, History, MousePointer2 } from 'lucide-react';
+import { Rocket, Sliders, Phone, UserPlus, Calendar, TrendingUp, RefreshCw, Clock, CheckCircle2, Target, MessageSquare, ExternalLink, Users, Award, DollarSign, AlertTriangle, TrendingDown, Zap, Bell, ArrowRightLeft, PercentCircle, BarChart3, Search, FileText, Video, Globe, XCircle, Plus, Pencil, Trash2, Activity, ChevronRight, ChevronLeft, ChevronsRight, LogIn, LogOut, History, MousePointer2 } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import FunnelVisual from '../components/FunnelVisual';
@@ -804,7 +804,7 @@ const Dashboard = () => {
                             cantidad: ganadas,
                             color: 'bg-green-500',
                             contadorHoy: allOportunidades.filter(o => {
-                                if ((o.etapa || '').toLowerCase() !== 'ganada') return false;
+                                if (!isOportunidadGanada(o)) return false;
                                 const hoy = new Date(); hoy.setHours(0,0,0,0);
                                 const upd = o.updatedAt ? new Date(o.updatedAt) : null;
                                 return upd && upd >= hoy;
@@ -832,7 +832,7 @@ const Dashboard = () => {
 
                                     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full">
                                         <div className="flex items-center gap-3 mb-6 shrink-0">
-                                            <Activity className="w-6 h-6 text-(--theme-600)" />
+                                            <Rocket className="w-6 h-6 text-(--theme-600)" />
                                             <div>
                                                 <h3 className="text-sm font-black uppercase tracking-widest text-gray-800">Atajos Rápidos</h3>
                                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Acciones frecuentes</p>
@@ -840,28 +840,36 @@ const Dashboard = () => {
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-3 flex-1">
-                                            <button onClick={() => navigate('/vendedor/prospectos')} className="group flex flex-col items-center justify-center gap-2 bg-gray-50/50 border border-gray-100 rounded-xl p-4 hover:border-(--theme-300) hover:bg-(--theme-50) transition-all">
-                                                <UserPlus className="w-6 h-6 text-gray-400 group-hover:text-(--theme-600) transition-colors" />
-                                                <span className="text-xs font-black uppercase tracking-widest text-gray-600 group-hover:text-(--theme-700)">Prospectos</span>
+                                            <button onClick={() => navigate('/vendedor/prospectos')} className="group flex flex-col items-center justify-center gap-1.5 bg-white border border-gray-100 rounded-xl p-4 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-gray-200 hover:-translate-y-1">
+                                                <div className="p-2 rounded-full transition-colors duration-300 group-hover:bg-(--theme-50)">
+                                                    <UserPlus className="w-6 h-6 text-gray-400 group-hover:text-(--theme-600) group-hover:scale-110 transition-all duration-300" />
+                                                </div>
+                                                <span className="text-xs font-black uppercase tracking-widest text-gray-600 group-hover:text-(--theme-700) transition-colors duration-300 mt-1">Prospectos</span>
                                             </button>
-                                            <button onClick={() => navigate('/vendedor/calendario')} className="group flex flex-col items-center justify-center gap-2 bg-gray-50/50 border border-gray-100 rounded-xl p-4 hover:border-indigo-300 hover:bg-indigo-50 transition-all">
-                                                <Calendar className="w-6 h-6 text-gray-400 group-hover:text-indigo-600 transition-colors" />
-                                                <span className="text-xs font-black uppercase tracking-widest text-gray-600 group-hover:text-indigo-700">Mi Agenda</span>
+                                            <button onClick={() => navigate('/vendedor/calendario')} className="group flex flex-col items-center justify-center gap-1.5 bg-white border border-gray-100 rounded-xl p-4 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-gray-200 hover:-translate-y-1">
+                                                <div className="p-2 rounded-full transition-colors duration-300 group-hover:bg-indigo-50">
+                                                    <Calendar className="w-6 h-6 text-gray-400 group-hover:text-indigo-600 group-hover:scale-110 transition-all duration-300" />
+                                                </div>
+                                                <span className="text-xs font-black uppercase tracking-widest text-gray-600 group-hover:text-indigo-700 transition-colors duration-300 mt-1">Mi Agenda</span>
                                             </button>
-                                            <button onClick={() => setHealthTab('tareas')} className="group flex flex-col items-center justify-center gap-2 bg-gray-50/50 border border-gray-100 rounded-xl p-4 hover:border-rose-300 hover:bg-rose-50 transition-all">
-                                                <Bell className="w-6 h-6 text-gray-400 group-hover:text-rose-600 transition-colors" />
-                                                <span className="text-xs font-black uppercase tracking-widest text-gray-600 group-hover:text-rose-700">Tareas</span>
+                                            <button onClick={() => setHealthTab('tareas')} className="group flex flex-col items-center justify-center gap-1.5 bg-white border border-gray-100 rounded-xl p-4 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-gray-200 hover:-translate-y-1">
+                                                <div className="p-2 rounded-full transition-colors duration-300 group-hover:bg-rose-50">
+                                                    <Bell className="w-6 h-6 text-gray-400 group-hover:text-rose-600 group-hover:scale-110 transition-all duration-300" />
+                                                </div>
+                                                <span className="text-xs font-black uppercase tracking-widest text-gray-600 group-hover:text-rose-700 transition-colors duration-300 mt-1">Tareas</span>
                                             </button>
-                                            <button onClick={() => setHealthTab('kpis')} className="group flex flex-col items-center justify-center gap-2 bg-gray-50/50 border border-gray-100 rounded-xl p-4 hover:border-emerald-300 hover:bg-emerald-50 transition-all">
-                                                <TrendingUp className="w-6 h-6 text-gray-400 group-hover:text-emerald-600 transition-colors" />
-                                                <span className="text-xs font-black uppercase tracking-widest text-gray-600 group-hover:text-emerald-700">Métricas</span>
+                                            <button onClick={() => setHealthTab('kpis')} className="group flex flex-col items-center justify-center gap-1.5 bg-white border border-gray-100 rounded-xl p-4 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-gray-200 hover:-translate-y-1">
+                                                <div className="p-2 rounded-full transition-colors duration-300 group-hover:bg-emerald-50">
+                                                    <TrendingUp className="w-6 h-6 text-gray-400 group-hover:text-emerald-600 group-hover:scale-110 transition-all duration-300" />
+                                                </div>
+                                                <span className="text-xs font-black uppercase tracking-widest text-gray-600 group-hover:text-emerald-700 transition-colors duration-300 mt-1">Métricas</span>
                                             </button>
                                         </div>
                                     </div>
 
                                     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col h-full">
                                         <div className="flex items-center gap-3 mb-6 shrink-0">
-                                            <Zap className="w-6 h-6 text-(--theme-600)" />
+                                            <Sliders className="w-6 h-6 text-(--theme-600)" />
                                             <div>
                                                 <h3 className="text-sm font-black uppercase tracking-widest text-gray-800">Centro de Control</h3>
                                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Módulos principales del sistema</p>
@@ -869,72 +877,50 @@ const Dashboard = () => {
                                         </div>
 
                                         <div className="flex-1 flex flex-col gap-3 min-h-0">
-                                            <motion.button layoutId="panel-kpis" onClick={() => setHealthTab('kpis')} className="flex-1 justify-center bg-gray-50/50 hover:bg-(--theme-50) border border-gray-100 hover:border-(--theme-300) rounded-xl p-4 flex flex-col text-left transition-all cursor-pointer w-full group relative overflow-hidden">
+                                            <motion.button layoutId="panel-kpis" onClick={() => setHealthTab('kpis')} className="flex-1 justify-center bg-white border border-gray-100 rounded-xl p-4 pr-16 flex flex-col text-left transition-all duration-300 cursor-pointer w-full group relative overflow-hidden hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-gray-200 hover:-translate-y-1">
+                                                <div className="absolute right-0 top-0 bottom-0 flex items-center justify-end pr-2 text-gray-200 transition-all duration-500 group-hover:translate-x-3 pointer-events-none -space-x-16">
+                                                    <ChevronRight strokeWidth={0.5} className="w-20 h-[90%]" />
+                                                    <ChevronRight strokeWidth={0.5} className="w-20 h-[90%]" />
+                                                </div>
                                                 <div className="flex items-start justify-between w-full mb-3 relative z-10">
-                                                    <h4 className="text-sm font-black text-gray-800 uppercase tracking-widest">Métricas</h4>
-                                                    <div className="flex flex-col items-center transition-transform group-hover:translate-x-1 relative">
-                                                        <div className="w-8 h-8 bg-gray-50 text-gray-500 rounded-full flex items-center justify-center group-hover:bg-white group-hover:text-gray-800 transition-all shadow-xs border border-gray-100">
-                                                            <BarChart3 className="w-4 h-4" />
-                                                        </div>
-                                                        <div className="flex items-center text-gray-300 group-hover:text-gray-500 transition-colors -space-x-1.5 absolute -bottom-3">
-                                                            <ChevronRight className="w-3 h-3" />
-                                                            <ChevronRight className="w-3 h-3" />
-                                                        </div>
-                                                    </div>
+                                                    <h4 className="text-sm font-black text-gray-800 uppercase tracking-widest group-hover:text-(--theme-700) transition-colors">Métricas</h4>
                                                 </div>
                                                 <div className="flex items-center gap-4 relative z-10">
                                                     <div>
-                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Ingresos</p>
-                                                        <p className="text-sm font-black text-gray-700">{formatMoney.format(closerData.metricas.ventas.montoMes || 0)}</p>
+                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Prospectos</p>
+                                                        <p className="text-sm font-black text-gray-700">{allProspectos.length}</p>
                                                     </div>
                                                     <div className="w-px h-6 bg-gray-200/50" />
                                                     <div>
-                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Conversión</p>
-                                                        <p className="text-sm font-black text-gray-700">{formatPercent(tasaCierre)}</p>
+                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Clientes</p>
+                                                        <p className="text-sm font-black text-gray-700">{allClientes.length}</p>
                                                     </div>
                                                 </div>
-                                                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                                             </motion.button>
 
-                                            <motion.button layoutId="panel-tareas" onClick={() => setHealthTab('tareas')} className="flex-1 justify-center bg-gray-50/50 hover:bg-(--theme-50) border border-gray-100 hover:border-(--theme-300) rounded-xl p-4 flex flex-col text-left transition-all cursor-pointer w-full group relative overflow-hidden">
+                                            <motion.button layoutId="panel-tareas" onClick={() => setHealthTab('tareas')} className="flex-1 justify-center bg-white border border-gray-100 rounded-xl p-4 pr-16 flex flex-col text-left transition-all duration-300 cursor-pointer w-full group relative overflow-hidden hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-gray-200 hover:-translate-y-1">
+                                                <div className="absolute right-0 top-0 bottom-0 flex items-center justify-end pr-2 text-gray-200 transition-all duration-500 group-hover:translate-x-3 pointer-events-none -space-x-16">
+                                                    <ChevronRight strokeWidth={0.5} className="w-20 h-[90%]" />
+                                                    <ChevronRight strokeWidth={0.5} className="w-20 h-[90%]" />
+                                                </div>
                                                 <div className="flex items-start justify-between w-full mb-3 relative z-10">
-                                                    <h4 className="text-sm font-black text-gray-800 uppercase tracking-widest">Tareas</h4>
-                                                    <div className="flex flex-col items-center transition-transform group-hover:translate-x-1 relative">
-                                                        <div className="w-8 h-8 bg-gray-50 text-gray-500 rounded-full flex items-center justify-center group-hover:bg-white group-hover:text-gray-800 transition-all shadow-xs border border-gray-100">
-                                                            <Bell className="w-4 h-4" />
-                                                        </div>
-                                                        <div className="flex items-center text-gray-300 group-hover:text-gray-500 transition-colors -space-x-1.5 absolute -bottom-3">
-                                                            <ChevronRight className="w-3 h-3" />
-                                                            <ChevronRight className="w-3 h-3" />
-                                                        </div>
-                                                    </div>
+                                                    <h4 className="text-sm font-black text-gray-800 uppercase tracking-widest group-hover:text-rose-700 transition-colors">Tareas</h4>
                                                 </div>
                                                 <div className="flex items-center gap-4 relative z-10">
                                                     <div>
                                                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Pendientes</p>
                                                         <p className="text-sm font-black text-gray-700">{teamTasks.filter(t => t.estado !== 'completada').length}</p>
                                                     </div>
-                                                    <div className="w-px h-6 bg-gray-200/50" />
-                                                    <div>
-                                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Estancados</p>
-                                                        <p className="text-sm font-black text-gray-700">{closerData?.eficiencia?.leadsEstancados || 0}</p>
-                                                    </div>
                                                 </div>
-                                                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                                             </motion.button>
 
-                                            <button onClick={() => navigate('/vendedor/prospectos')} className="flex-1 justify-center bg-gray-50/50 hover:bg-(--theme-50) border border-gray-100 hover:border-(--theme-300) rounded-xl p-4 flex flex-col text-left transition-all cursor-pointer w-full group relative overflow-hidden">
+                                            <button onClick={() => navigate('/vendedor/prospectos')} className="flex-1 justify-center bg-white border border-gray-100 rounded-xl p-4 pr-16 flex flex-col text-left transition-all duration-300 cursor-pointer w-full group relative overflow-hidden hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-gray-200 hover:-translate-y-1">
+                                                <div className="absolute right-0 top-0 bottom-0 flex items-center justify-end pr-2 text-gray-200 transition-all duration-500 group-hover:translate-x-3 pointer-events-none -space-x-16">
+                                                    <ChevronRight strokeWidth={0.5} className="w-20 h-[90%]" />
+                                                    <ChevronRight strokeWidth={0.5} className="w-20 h-[90%]" />
+                                                </div>
                                                 <div className="flex items-start justify-between w-full mb-3 relative z-10">
-                                                    <h4 className="text-sm font-black text-gray-800 uppercase tracking-widest">Prospectos</h4>
-                                                    <div className="flex flex-col items-center transition-transform group-hover:translate-x-1 relative">
-                                                        <div className="w-8 h-8 bg-gray-50 text-gray-500 rounded-full flex items-center justify-center group-hover:bg-white group-hover:text-gray-800 transition-all shadow-xs border border-gray-100">
-                                                            <Users className="w-4 h-4" />
-                                                        </div>
-                                                        <div className="flex items-center text-gray-300 group-hover:text-gray-500 transition-colors -space-x-1.5 absolute -bottom-3">
-                                                            <ChevronRight className="w-3 h-3" />
-                                                            <ChevronRight className="w-3 h-3" />
-                                                        </div>
-                                                    </div>
+                                                    <h4 className="text-sm font-black text-gray-800 uppercase tracking-widest group-hover:text-blue-700 transition-colors">Prospectos</h4>
                                                 </div>
                                                 <div className="flex items-center gap-4 relative z-10">
                                                     <div>
@@ -947,7 +933,6 @@ const Dashboard = () => {
                                                         <p className="text-sm font-black text-gray-700">{enContacto}</p>
                                                     </div>
                                                 </div>
-                                                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/40 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                                             </button>
                                         </div>
                                     </div>
@@ -957,7 +942,7 @@ const Dashboard = () => {
                         )}
 
                         {healthTab === 'kpis' && (
-                            <motion.div layoutId="panel-kpis" className="flex flex-col h-full bg-transparent relative z-20 overflow-hidden">
+                            <motion.div layoutId="panel-kpis" className="flex flex-col h-full bg-white border border-gray-200 rounded-xl p-5 shadow-sm relative z-20 overflow-hidden">
                                 {/* Back Header */}
                                 <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-200/50 shrink-0">
                                     <div className="flex items-center gap-2">
@@ -977,53 +962,63 @@ const Dashboard = () => {
                                 <div className="flex flex-col gap-6 flex-1 min-h-0 overflow-y-auto scrollbar-hide pr-1">
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 shrink-0">
                                         <MetricKPICard
-                                            title="Valor en Oportunidades"
-                                            value={valorOportunidadesPeriodo}
-                                            format="money"
-                                            icon={<DollarSign className="w-5 h-5" />}
-                                            detail={`${oppsProspectos} de prospectos, ${oppsClientes} de clientes (Total: ${cantidadOportunidadesPeriodo})`}
+                                            title="Cantidad de Prospectos"
+                                            value={allProspectos.length}
+                                            format="number"
+                                            icon={<Users className="w-5 h-5" />}
+                                            detail="Prospectos totales en sistema"
+                                            color="emerald"
+                                        />
+                                        <MetricKPICard
+                                            title="Cantidad de Clientes"
+                                            value={allClientes.length}
+                                            format="number"
+                                            icon={<Award className="w-5 h-5" />}
+                                            detail="Clientes ganados totales"
+                                            color="emerald"
+                                        />
+                                        <MetricKPICard
+                                            title="Cantidad de Oportunidades"
+                                            value={allOportunidades.length}
+                                            format="number"
+                                            icon={<Target className="w-5 h-5" />}
+                                            detail="Oportunidades abiertas y cerradas"
                                             color="blue"
                                         />
                                         <MetricKPICard
-                                            title="Prospectos Activos"
-                                            value={activosPeriodo}
-                                            format="number"
-                                            icon={<Activity className="w-5 h-5" />}
-                                            detail={`En contacto ${periodoSuffix}`}
-                                            color="emerald"
-                                        />
-                                        <MetricKPICard
-                                            title="Ventas (Cierres)"
-                                            value={valorVentasPeriodo}
+                                            title="Valor Estimado Prospectos"
+                                            value={allProspectos.reduce((acc, p) => {
+                                                const opps = allOportunidades.filter(o => String(o.cliente_id) === String(p.id || p._id));
+                                                if (opps.length > 0) {
+                                                    return acc + opps.filter(o => !isOportunidadGanada(o) && !isOportunidadPerdida(o)).reduce((sum, o) => sum + (Number(o.monto) || 0), 0);
+                                                }
+                                                const estado = calcularEstado(p, 0);
+                                                if (estado === 'perdido') return acc;
+                                                return acc + (Number(p.valorEstimado || p.presupuesto || p.customMetricValue) || 0);
+                                            }, 0)}
                                             format="money"
-                                            compact={true}
-                                            icon={<CheckCircle2 className="w-5 h-5" />}
-                                            detail={`${detalleVentas} (Total: ${cantidadVentasPeriodo})`}
+                                            icon={<TrendingUp className="w-5 h-5" />}
+                                            detail="Suma total estimada"
                                             color="emerald"
                                         />
                                         <MetricKPICard
-                                            title="Prospectos Inactivos"
-                                            value={inactivosPeriodo}
-                                            format="number"
-                                            icon={<AlertTriangle className="w-5 h-5" />}
-                                            detail={`>30 días sin actividad (${periodoSuffix})`}
-                                            color="rose"
+                                            title="Facturado a Clientes"
+                                            value={allClientes.reduce((acc, c) => acc + (Number(c.totalFacturado || c.facturado) || 0), 0)}
+                                            format="money"
+                                            icon={<DollarSign className="w-5 h-5" />}
+                                            detail="Ingresos totales de clientes"
+                                            color="emerald"
                                         />
                                         <MetricKPICard
-                                            title="Conversión Global"
-                                            value={tasaGlobal}
-                                            format="percent"
-                                            icon={<Target className="w-5 h-5" />}
-                                            detail="Histórica (Ganadas / Total)"
-                                            thresholds={{ good: 15, okay: 8 }}
-                                        />
-                                        <MetricKPICard
-                                            title="Leads Estancados"
-                                            value={closerData?.eficiencia?.leadsEstancados || 0}
-                                            format="number"
-                                            icon={<Clock className="w-5 h-5" />}
-                                            detail=">7 días sin avanzar"
-                                            color="orange"
+                                            title="Valor en Oportunidades"
+                                            value={allOportunidades.reduce((acc, o) => {
+                                                if (isOportunidadPerdida(o)) return acc;
+                                                return acc + (Number(o.monto || o.valor) || 0);
+                                            }, 0)}
+                                            format="money"
+                                            icon={<BarChart3 className="w-5 h-5" />}
+                                            detail="Suma total de oportunidades"
+                                            color="blue"
                                         />
                                     </div>
 
@@ -1116,7 +1111,7 @@ const Dashboard = () => {
                         )}
 
                         {healthTab === 'tareas' && (
-                            <motion.div layoutId="panel-tareas" className="flex flex-col h-full bg-white relative z-20 rounded-xl overflow-hidden">
+                            <motion.div layoutId="panel-tareas" className="flex flex-col h-full bg-white border border-gray-200 rounded-xl p-5 shadow-sm relative z-20 overflow-hidden">
                                 {/* Back Header */}
                                 <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100 shrink-0">
                                     <div className="flex items-center gap-2">

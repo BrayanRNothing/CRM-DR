@@ -1,24 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, UserPlus, Edit2, Power, Crown, Shield, X, Check, Loader2, RefreshCw, Trash2, Search, Download, AlertTriangle } from 'lucide-react';
+import { Users, UserPlus, Edit2, Power, Crown, Shield, X, Check, Loader2, RefreshCw, Trash2, Search, Download, AlertTriangle, Phone, Mail } from 'lucide-react';
 import { getUser, getToken } from '../utils/authUtils';
 import API_URL from '../config/api';
-
-const ROL_UNICO = { value: 'vendedor', label: 'Vendedor', color: '#10b981', bg: '#d1fae5' };
-
-
-
 const normalizeText = (value) => String(value || '')
   .toLowerCase()
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '');
-
-const getRolBadge = (rol) => {
-  return (
-    <span className="ge-badge" style={{ color: ROL_UNICO.color, background: ROL_UNICO.bg }}>
-      {ROL_UNICO.label}
-    </span>
-  );
-};
 
 const inferRoleKey = (rol) => {
   const normalized = String(rol || '').toLowerCase();
@@ -261,68 +248,85 @@ export default function Equipo() {
     const usuario = normalizeText(m.usuario);
     const email = normalizeText(m.email);
     return nombre.includes(busquedaActiva) || usuario.includes(busquedaActiva) || email.includes(busquedaActiva);
+  }).sort((a, b) => {
+    if (equipo && String(a.id) === String(equipo.owner_id)) return -1;
+    if (equipo && String(b.id) === String(equipo.owner_id)) return 1;
+    return 0;
   });
 
   return (
-    <div className="min-h-full flex flex-col md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 pb-8 md:pb-6">
-      {/* Team Info Card - NOW AT THE TOP */}
-      <div className="max-w-full w-full mx-auto space-y-6 flex flex-col flex-1">
+    <div className="md:bg-slate-50 md:p-6 bg-white -m-4 md:m-0 p-4 flex flex-col w-full min-h-screen pb-8 md:pb-6">
+      <div className="max-w-[1600px] w-full mx-auto flex flex-col h-full">
         {!loading && !error && equipo && (
-          <div className="bg-white rounded-2xl p-4 md:p-5 border border-slate-200 shadow-sm transition-all">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-(--theme-500) to-(--theme-600) flex items-center justify-center shadow-lg shadow-(--theme-500)/20">
-                  <Users size={28} className="text-white" />
-                </div>
-                <div>
-                  {renameMode ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        className="bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2 font-semibold text-gray-800 outline-none focus:border-(--theme-500) transition-all"
-                        value={nuevoNombre}
-                        onChange={e => setNuevoNombre(e.target.value)}
-                        autoFocus
-                      />
-                      <button className="p-2 bg-(--theme-500) text-white rounded-xl hover:opacity-90 transition-all" onClick={handleRename} disabled={renameLoading}>
-                        {renameLoading ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+          <div className="flex flex-col xl:flex-row xl:items-center gap-4 mb-6 shrink-0">
+            {/* Title - Left Aligned */}
+            <div className="shrink-0 xl:flex-1 min-w-0">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
+                {renameMode ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      className="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-base font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-(--theme-500) transition-all"
+                      value={nuevoNombre}
+                      onChange={e => setNuevoNombre(e.target.value)}
+                      autoFocus
+                    />
+                    <button className="p-1.5 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-all" onClick={handleRename} disabled={renameLoading}>
+                      {renameLoading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                    </button>
+                    <button className="p-1.5 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 transition-all" onClick={() => setRenameMode(false)}>
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <span>{equipo.nombre}</span>
+                    {esOwner && (
+                      <button
+                        className="p-1 text-gray-400 hover:text-(--theme-600) transition-colors"
+                        onClick={() => setRenameMode(true)}
+                        title="Renombrar equipo"
+                      >
+                        <Edit2 size={16} />
                       </button>
-                      <button className="p-2 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 transition-all" onClick={() => setRenameMode(false)}>
-                        <X size={18} />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-3">
-                        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-gray-900 leading-tight">{equipo.nombre}</h1>
-                        {esOwner && (
-                          <button
-                            className="p-1.5 text-gray-400 hover:text-(--theme-600) hover:bg-(--theme-50) rounded-lg transition-all"
-                            onClick={() => setRenameMode(true)}
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                        )}
-                      </div>
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mt-1">
-                        {esOwner ? 'Propietario del Equipo' : 'Miembro del Equipo'}
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 md:gap-3 w-full md:w-auto mt-2 md:mt-0">
-
-                {esOwner && (
-                  <button
-                    className="flex-1 sm:flex-none justify-center flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2.5 bg-linear-to-r from-(--theme-600) to-(--theme-500) text-white rounded-xl text-[11px] md:text-xs font-bold shadow-lg shadow-(--theme-600)/20 hover:-translate-y-0.5 transition-all"
-                    onClick={() => setShowAddModal(true)}
-                  >
-                    <UserPlus size={14} />
-                    AGREGAR MIEMBRO
-                  </button>
+                    )}
+                  </div>
                 )}
+              </h1>
+              <p className="text-xs md:text-sm text-gray-500 mt-0.5 leading-snug">
+                {esOwner ? 'Propietario del Equipo' : 'Miembro del Equipo'}
+              </p>
+            </div>
+
+            {/* Search - Centered */}
+            <div className="flex items-center justify-start xl:justify-center gap-2 w-full xl:w-auto xl:flex-none">
+              <div className="flex items-center bg-white border border-slate-200 rounded-lg h-9 shadow-sm shrink-0 w-full sm:w-[350px] overflow-visible relative">
+                <div className="relative flex-1 h-full min-w-[150px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar miembros..."
+                    value={filters.busqueda}
+                    onChange={(e) => {
+                      setDraftFilters(p => ({ ...p, busqueda: e.target.value }));
+                      setFilters(p => ({ ...p, busqueda: e.target.value }));
+                    }}
+                    className="w-full h-full pl-9 pr-3 bg-transparent outline-none text-[11px] font-medium text-slate-700 placeholder:text-slate-400 focus:bg-slate-50 transition-colors border-0 focus:ring-0 rounded-lg"
+                  />
+                </div>
               </div>
+            </div>
+
+            {/* Actions - Right Aligned */}
+            <div className="flex items-center justify-start xl:justify-end gap-2 w-full xl:w-auto xl:flex-1 min-w-0 mt-2 xl:mt-0">
+              {esOwner && (
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="flex w-full sm:w-auto justify-center items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-(--theme-600) text-white rounded-lg hover:bg-(--theme-700) transition-colors text-xs md:text-sm font-medium shadow-sm"
+                >
+                  <UserPlus className="w-4 h-4 md:w-5 md:h-5" />
+                  Agregar Miembro
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -335,7 +339,7 @@ export default function Equipo() {
         )}
 
         {error && (
-          <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl flex items-center gap-3 text-rose-600 font-semibold">
+          <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl flex items-center gap-3 text-rose-600 font-semibold mb-6">
             <AlertTriangle size={20} />
             {error}
           </div>
@@ -344,46 +348,40 @@ export default function Equipo() {
         {/* Member List Section */}
         {!loading && equipo && (
           <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="flex-1 bg-white rounded-2xl p-4 md:p-5 border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                  <h2 className="text-lg md:text-xl font-bold text-gray-900 leading-tight">Miembros del Equipo</h2>
-                </div>
-
-
-              </div>
+            <div className="flex-1 flex flex-col">
 
               {miembrosFiltrados.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                <div className="flex-1 flex flex-col items-center justify-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300">
                   <Users size={48} className="text-gray-300 mb-4" />
                   <p className="text-gray-500 font-semibold">No se encontraron miembros</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {miembrosFiltrados.map(m => (
                     <div
                       key={m.id}
-                      className={`group relative p-5 bg-white border border-gray-200 rounded-2xl transition-all hover:shadow-xl hover:shadow-gray-200/50 ${!m.activo ? 'grayscale opacity-70' : ''}`}
+                      className={`group relative p-5 bg-white border border-slate-200 rounded-xl transition-all shadow-sm hover:shadow-md ${!m.activo ? 'grayscale opacity-70' : ''}`}
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-linear-to-br from-(--theme-50) to-(--theme-100) text-(--theme-600) flex items-center justify-center font-bold text-lg border border-(--theme-100)">
+                          <div className="w-10 h-10 rounded-full bg-linear-to-br from-(--theme-50) to-(--theme-100) text-(--theme-600) flex items-center justify-center font-bold text-base border border-(--theme-200)">
                             {m.nombre?.charAt(0)?.toUpperCase() || '?'}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
                               <h3 className="font-bold text-gray-900 truncate max-w-[120px]">{m.nombre}</h3>
                               {String(m.id) === String(equipo.owner_id) && <Crown size={14} className="text-amber-500" />}
-                              {m.googleLinked && (
-                                <div title="Google Calendar Vinculado">
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                                    <path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z" fill="#FBBC05" />
-                                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
-                                  </svg>
-                                </div>
-                              )}
+                              <div title={m.googleLinked ? "Google Calendar Vinculado" : "Google Calendar No Vinculado"} className={`relative ${!m.googleLinked ? 'opacity-40 grayscale' : ''}`}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                  <path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z" fill="#FBBC05" />
+                                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+                                </svg>
+                                {!m.googleLinked && (
+                                  <div className="absolute top-1/2 left-1/2 w-4 h-[1.5px] bg-red-500 -translate-x-1/2 -translate-y-1/2 -rotate-45"></div>
+                                )}
+                              </div>
                             </div>
                             <p className="text-xs text-gray-400 font-semibold">@{m.usuario}</p>
                           </div>
@@ -393,21 +391,21 @@ export default function Equipo() {
                         </div>
                       </div>
 
-                      <div className="space-y-2 mb-6 text-xs text-gray-500 font-semibold">
-                        <div className="flex items-center gap-2">
-                          <Shield size={12} className="text-gray-400" />
-                          <span className="uppercase tracking-widest">{ROL_UNICO.label}</span>
+                      <div className="space-y-2 mb-6 text-xs text-gray-500 font-medium">
+                        <div className="flex items-center gap-2 truncate">
+                          <Mail size={12} className="text-gray-400 shrink-0" />
+                          <span className="truncate">{m.email || 'No tiene correo'}</span>
                         </div>
                         <div className="flex items-center gap-2 truncate">
-                          <Search size={12} className="text-gray-400" />
-                          <span className="truncate">{m.email || 'Sin correo registrado'}</span>
+                          <Phone size={12} className="text-gray-400 shrink-0" />
+                          <span className="truncate">{m.telefono || 'No tiene teléfono'}</span>
                         </div>
                       </div>
 
                       {esOwner && String(m.id) !== String(userAuth?.id) && (
-                        <div className="flex items-center gap-2 pt-4 border-t border-gray-50">
+                        <div className="flex items-center gap-2 pt-4 border-t border-slate-100">
                           <button
-                            className="flex-1 py-2 bg-gray-50 text-gray-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-gray-100 transition-all flex items-center justify-center gap-1"
+                            className="flex-1 py-1.5 bg-slate-50 text-slate-600 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center justify-center gap-1 border border-slate-200"
                             onClick={() => openEditModal(m)}
                           >
                             <Edit2 size={12} /> EDITAR
@@ -457,8 +455,8 @@ export default function Equipo() {
 
       {/* Modal Agregar Miembro */}
       {showAddModal && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white rounded-[32px] p-8 w-full max-w-xl shadow-2xl animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner">
@@ -489,10 +487,10 @@ export default function Equipo() {
             )}
 
             <form onSubmit={handleAddMember} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Nombre Completo *</label>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-slate-600 ml-1">Nombre Completo <span className="text-red-500">*</span></label>
                 <input
-                  className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 focus:shadow-lg focus:shadow-indigo-500/10 transition-all"
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:border-(--theme-500) focus:ring-1 focus:ring-(--theme-500) transition-all"
                   value={form.nombre}
                   onChange={e => setForm(p => ({ ...p, nombre: e.target.value }))}
                   required
@@ -501,20 +499,20 @@ export default function Equipo() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Usuario *</label>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-slate-600 ml-1">Usuario <span className="text-red-500">*</span></label>
                   <input
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all font-mono"
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:border-(--theme-500) focus:ring-1 focus:ring-(--theme-500) transition-all font-mono"
                     value={form.usuario}
                     onChange={e => setForm(p => ({ ...p, usuario: e.target.value }))}
                     required
                     placeholder="amgarcia"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Contraseña *</label>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-slate-600 ml-1">Contraseña <span className="text-red-500">*</span></label>
                   <input
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all"
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:border-(--theme-500) focus:ring-1 focus:ring-(--theme-500) transition-all"
                     type="password"
                     value={form.contraseña}
                     onChange={e => setForm(p => ({ ...p, contraseña: e.target.value }))}
@@ -525,20 +523,20 @@ export default function Equipo() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Correo Electrónico</label>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-slate-600 ml-1">Correo Electrónico</label>
                   <input
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all"
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:border-(--theme-500) focus:ring-1 focus:ring-(--theme-500) transition-all"
                     type="email"
                     value={form.email}
                     onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
                     placeholder="ana@empresa.com"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Teléfono</label>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-slate-600 ml-1">Teléfono</label>
                   <input
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-indigo-500 transition-all"
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:border-(--theme-500) focus:ring-1 focus:ring-(--theme-500) transition-all"
                     value={form.telefono}
                     onChange={e => setForm(p => ({ ...p, telefono: e.target.value }))}
                     placeholder="+52 55 ..."
@@ -546,21 +544,21 @@ export default function Equipo() {
                 </div>
               </div>
 
-              <div className="pt-6 flex gap-4">
-                <button
-                  type="submit"
-                  className="flex-1 py-4 bg-indigo-600 text-white rounded-[20px] text-xs font-bold uppercase tracking-widest shadow-xl shadow-indigo-600/30 hover:-translate-y-1 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                  disabled={formLoading}
-                >
-                  {formLoading ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
-                  {formLoading ? 'PROCESANDO...' : 'DAR DE ALTA EN EQUIPO'}
-                </button>
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 mt-6">
                 <button
                   type="button"
-                  className="px-8 py-4 bg-gray-100 text-gray-500 rounded-[20px] text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition-all"
+                  className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all"
                   onClick={() => { setShowAddModal(false); setFormError(''); setForm(initialForm); }}
                 >
-                  CANCELAR
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-(--theme-600) text-white rounded-lg text-sm font-medium hover:bg-(--theme-700) transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  disabled={formLoading}
+                >
+                  {formLoading ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
+                  {formLoading ? 'Procesando...' : 'Guardar'}
                 </button>
               </div>
             </form>
@@ -568,10 +566,10 @@ export default function Equipo() {
         </div>
       )}
 
-      {/* Edit Modal (Reusing add modal styles) */}
+      {/* Edit Modal */}
       {editMember && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white rounded-[32px] p-8 w-full max-w-xl shadow-2xl animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shadow-inner">
@@ -591,10 +589,10 @@ export default function Equipo() {
             </div>
 
             <form onSubmit={handleEditMember} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Nombre Completo *</label>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-slate-600 ml-1">Nombre Completo <span className="text-red-500">*</span></label>
                 <input
-                  className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-amber-500 transition-all"
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:border-(--theme-500) focus:ring-1 focus:ring-(--theme-500) transition-all"
                   value={editForm.nombre}
                   onChange={e => setEditForm(p => ({ ...p, nombre: e.target.value }))}
                   required
@@ -602,39 +600,40 @@ export default function Equipo() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Correo Electrónico</label>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-slate-600 ml-1">Correo Electrónico</label>
                   <input
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-amber-500 transition-all"
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:border-(--theme-500) focus:ring-1 focus:ring-(--theme-500) transition-all"
                     type="email"
                     value={editForm.email}
                     onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Teléfono</label>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-slate-600 ml-1">Teléfono</label>
                   <input
-                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:border-amber-500 transition-all"
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:border-(--theme-500) focus:ring-1 focus:ring-(--theme-500) transition-all"
                     value={editForm.telefono}
                     onChange={e => setEditForm(p => ({ ...p, telefono: e.target.value }))}
                   />
                 </div>
               </div>
 
-              <div className="pt-6 flex gap-4">
-                <button
-                  type="submit"
-                  className="flex-1 py-4 bg-amber-500 text-white rounded-[20px] text-xs font-bold uppercase tracking-widest shadow-xl shadow-amber-500/30 hover:-translate-y-1 transition-all disabled:opacity-50"
-                  disabled={editLoading}
-                >
-                  {editLoading ? 'GUARDANDO...' : 'ACTUALIZAR DATOS'}
-                </button>
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 mt-6">
                 <button
                   type="button"
-                  className="px-8 py-4 bg-gray-100 text-gray-500 rounded-[20px] text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition-all"
+                  className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all"
                   onClick={() => setEditMember(null)}
                 >
-                  CANCELAR
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-(--theme-600) text-white rounded-lg text-sm font-medium hover:bg-(--theme-700) transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  disabled={editLoading}
+                >
+                  {editLoading && <Loader2 size={16} className="animate-spin" />}
+                  {editLoading ? 'Guardando...' : 'Guardar Cambios'}
                 </button>
               </div>
             </form>

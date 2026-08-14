@@ -253,7 +253,7 @@ const cleanDemoAccounts = async () => {
                 
                 // Borrar dependencias primero para evitar fallos de Foreign Key
                 await db.prepare('DELETE FROM actividades WHERE vendedor = ?').run(user.id);
-                await db.prepare('DELETE FROM tareas WHERE vendedor_id = ?').run(user.id);
+                await db.prepare('DELETE FROM tareas WHERE vendedor = ?').run(user.id);
                 await db.prepare('DELETE FROM ventas WHERE vendedor = ?').run(user.id);
                 await db.prepare('DELETE FROM clientes WHERE "propietarioId" = ? OR vendedorAsignado = ?').run(user.id, user.id);
                 
